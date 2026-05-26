@@ -5,6 +5,17 @@ export interface RuntimeOptions {
   timeoutMs: number;
 }
 
+export interface SessionStatus {
+  dataDir: string;
+  authStatePath: string;
+  browserProfileDir: string;
+  diagnosticsDir: string;
+  hasAuthState: boolean;
+  hasBrowserProfileData: boolean;
+  markedLoggedIn: boolean;
+  updatedAt?: string;
+}
+
 export interface Product {
   index: number;
   automationId?: number;

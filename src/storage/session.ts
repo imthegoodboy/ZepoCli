@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { relative } from "node:path";
 
 import type { AppPaths } from "../config/paths.js";
+import type { SessionStatus } from "../types.js";
 import type { SqliteStore } from "./sqlite.js";
 
 export class SessionStore {
@@ -34,6 +35,21 @@ export class SessionStore {
     this.sqlite.markSession(false, this.paths.authStatePath);
   }
 
+  status(): SessionStatus {
+    const session = this.sqlite.getSession();
+
+    return {
+      dataDir: this.paths.dataDir,
+      authStatePath: this.paths.authStatePath,
+      browserProfileDir: this.paths.browserProfileDir,
+      diagnosticsDir: this.paths.diagnosticsDir,
+      hasAuthState: this.hasStorageState(),
+      hasBrowserProfileData: hasFiles(this.paths.browserProfileDir),
+      markedLoggedIn: session?.loggedIn ?? false,
+      updatedAt: session?.updatedAt
+    };
+  }
+
   clear(): void {
     if (existsSync(this.paths.authStatePath)) {
       rmSync(this.paths.authStatePath, { force: true });
@@ -51,4 +67,12 @@ export class SessionStore {
 function isWithin(parent: string, child: string): boolean {
   const path = relative(parent, child);
   return path.length > 0 && !path.startsWith("..") && !path.includes(":");
+}
+
+function hasFiles(path: string): boolean {
+  if (!existsSync(path)) {
+    return false;
+  }
+
+  return readdirSync(path).length > 0;
 }

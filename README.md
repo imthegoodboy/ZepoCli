@@ -15,6 +15,7 @@ npm run prepare:browsers
 
 ```bash
 zepo login
+zepo status
 zepo search milk
 zepo add "Amul Milk 500ml"
 zepo cart
@@ -38,6 +39,13 @@ CLI commands -> services -> Playwright automation -> Zepto website
 ```
 
 Login stores the browser storage state locally. Search, cart, address, order, and checkout commands reuse that state. Checkout never processes payment details; it opens Zepto checkout and waits for the user to complete payment in the browser.
+
+Check local readiness before account-dependent commands:
+
+```bash
+zepo status
+zepo status --json
+```
 
 ## Data Storage
 

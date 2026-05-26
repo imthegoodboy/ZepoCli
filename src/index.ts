@@ -11,6 +11,7 @@ import { registerCheckoutCommand } from "./commands/checkout.js";
 import { registerLoginCommand } from "./commands/login.js";
 import { registerOrderCommands } from "./commands/orders.js";
 import { registerSearchCommand } from "./commands/search.js";
+import { registerStatusCommand } from "./commands/status.js";
 import { isUserFacingError } from "./utils/errors.js";
 
 const program = new Command();
@@ -25,6 +26,7 @@ program
   .option("--timeout <ms>", "browser automation timeout", String(DEFAULT_TIMEOUT_MS));
 
 registerLoginCommand(program);
+registerStatusCommand(program);
 registerSearchCommand(program);
 registerAddCommand(program);
 registerCartCommands(program);
