@@ -51,6 +51,7 @@ Implementation consequence:
 - `zepo checkout` must open Zepto checkout in a visible browser and let the user complete payment.
 - The CLI must not collect or store payment credentials.
 - The CLI should reuse the user's own session and should not bypass platform controls.
+- `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.
 
 ## Verification Expectations
 
