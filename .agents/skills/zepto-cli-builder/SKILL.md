@@ -38,6 +38,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
 
 5. Storage behavior.
    - Session state lives in Playwright storage state.
+   - Browser profile data lives in the configured data directory so IndexedDB, cookies, and site state survive between CLI runs.
    - SQLite is for local metadata, snapshots, and cache only.
    - Do not use cached data as proof that a live Zepto operation succeeded.
 
@@ -52,3 +53,9 @@ node dist/index.js --help
 ```
 
 For browser-facing changes, also run a live command with a disposable `--data-dir` and document whether it required manual login/location setup. Use `--visible` when diagnosing Zepto rendering or blocking behavior.
+
+## GitHub Workflow
+
+- Open focused PRs with `gh`.
+- Merge only after local or CI checks pass.
+- Do not delete branches after merge.

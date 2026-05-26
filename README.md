@@ -56,8 +56,10 @@ zepo --visible search milk
 Stored data includes:
 
 - Playwright auth state
+- Persistent Chromium browser profile data for Zepto session continuity
 - SQLite metadata for sessions, searches, cart snapshots, addresses, and order snapshots
 - Log file for debugging
+- Debug HTML/screenshot artifacts when `--debug` is used and browser automation fails
 
 ## Safety Boundaries
 
