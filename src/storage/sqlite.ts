@@ -2,6 +2,12 @@ import Database from "better-sqlite3";
 
 import type { Address, CartSnapshot, OrderSnapshot } from "../types.js";
 
+export interface SessionRecord {
+  loggedIn: boolean;
+  storageStatePath: string;
+  updatedAt: string;
+}
+
 export class SqliteStore {
   private readonly db: Database.Database;
 
@@ -43,6 +49,22 @@ export class SqliteStore {
            updated_at = excluded.updated_at`
       )
       .run(loggedIn ? 1 : 0, storageStatePath);
+  }
+
+  getSession(): SessionRecord | undefined {
+    const row = this.db.prepare("select logged_in, storage_state_path, updated_at from sessions where id = 'default'").get() as
+      | { logged_in: number; storage_state_path: string; updated_at: string }
+      | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      loggedIn: row.logged_in === 1,
+      storageStatePath: row.storage_state_path,
+      updatedAt: row.updated_at
+    };
   }
 
   recordSearch(query: string, productCount: number): void {

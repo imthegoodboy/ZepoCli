@@ -45,4 +45,29 @@ describe("session storage", () => {
     expect(existsSync(paths.browserProfileDir)).toBe(true);
     expect(existsSync(join(paths.browserProfileDir, "Default", "Cookies"))).toBe(false);
   });
+
+  it("reports session status without requiring a live browser", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-status-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
+    mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+    session.markLoggedIn();
+
+    const status = session.status();
+    sqlite.close();
+
+    expect(status).toMatchObject({
+      dataDir: paths.dataDir,
+      authStatePath: paths.authStatePath,
+      browserProfileDir: paths.browserProfileDir,
+      diagnosticsDir: paths.diagnosticsDir,
+      hasAuthState: true,
+      hasBrowserProfileData: true,
+      markedLoggedIn: true
+    });
+    expect(status.updatedAt).toBeTypeOf("string");
+  });
 });
