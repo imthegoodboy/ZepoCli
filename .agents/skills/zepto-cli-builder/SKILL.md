@@ -16,6 +16,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
 2. Preserve the core workflow.
    - `zepo login`
    - `zepo status`
+   - `zepo doctor`
    - `zepo search <query>`
    - `zepo add <query>`
    - `zepo cart`

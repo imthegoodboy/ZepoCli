@@ -8,6 +8,7 @@ import { registerAddCommand } from "./commands/add.js";
 import { registerAddressCommand } from "./commands/address.js";
 import { registerCartCommands } from "./commands/cart.js";
 import { registerCheckoutCommand } from "./commands/checkout.js";
+import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerLoginCommand } from "./commands/login.js";
 import { registerOrderCommands } from "./commands/orders.js";
 import { registerSearchCommand } from "./commands/search.js";
@@ -27,6 +28,7 @@ program
 
 registerLoginCommand(program);
 registerStatusCommand(program);
+registerDoctorCommand(program);
 registerSearchCommand(program);
 registerAddCommand(program);
 registerCartCommands(program);
