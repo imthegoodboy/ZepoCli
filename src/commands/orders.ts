@@ -1,10 +1,9 @@
-import ora from "ora";
 import type { Command } from "commander";
 
 import { ZeptoService } from "../services/zepto.js";
 import { UserFacingError } from "../utils/errors.js";
 import { printOrders } from "../utils/output.js";
-import { withRuntime } from "./shared.js";
+import { withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerOrderCommands(program: Command): void {
   program
@@ -13,9 +12,10 @@ export function registerOrderCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
-        const spinner = options.json ? undefined : ora("Reading latest Zepto order").start();
-        const orders = await new ZeptoService(runtime).orders.track();
-        spinner?.succeed("Latest order loaded.");
+        const service = new ZeptoService(runtime).orders;
+        const orders = options.json
+          ? await service.track()
+          : await withCommandSpinner("Reading latest Zepto order", "Latest order loaded.", () => service.track());
         printOrders(orders, options.json);
       })
     );
@@ -26,9 +26,14 @@ export function registerOrderCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
-        const spinner = options.json ? undefined : ora("Reading Zepto order history").start();
-        const orders = await new ZeptoService(runtime).orders.history();
-        spinner?.succeed(`Found ${orders.length} order${orders.length === 1 ? "" : "s"}.`);
+        const service = new ZeptoService(runtime).orders;
+        const orders = options.json
+          ? await service.history()
+          : await withCommandSpinner(
+              "Reading Zepto order history",
+              (items) => `Found ${items.length} order${items.length === 1 ? "" : "s"}.`,
+              () => service.history()
+            );
         printOrders(orders, options.json);
       })
     );
@@ -43,9 +48,9 @@ export function registerOrderCommands(program: Command): void {
           throw new UserFacingError("Only `zepo reorder last` is supported.");
         }
 
-        const spinner = ora("Opening latest order reorder action").start();
-        await new ZeptoService(runtime).orders.reorderLast();
-        spinner.succeed("Reorder action completed.");
+        await withCommandSpinner("Opening latest order reorder action", "Reorder action completed.", () =>
+          new ZeptoService(runtime).orders.reorderLast()
+        );
       })
     );
 }

@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import ora from "ora";
 import { z } from "zod";
 
 import { createRuntime, type AppRuntime } from "../config/runtime.js";
@@ -39,6 +40,27 @@ export async function withRuntime(command: Command, action: (runtime: AppRuntime
     await action(runtime);
   } finally {
     runtime.sqlite.close();
+  }
+}
+
+export async function withCommandSpinner<T>(
+  startMessage: string,
+  successMessage: string | ((result: T) => string),
+  action: () => Promise<T>
+): Promise<T> {
+  if (!process.stderr.isTTY) {
+    return action();
+  }
+
+  const spinner = ora(startMessage).start();
+
+  try {
+    const result = await action();
+    spinner.succeed(typeof successMessage === "function" ? successMessage(result) : successMessage);
+    return result;
+  } catch (error) {
+    spinner.fail(startMessage);
+    throw error;
   }
 }
 

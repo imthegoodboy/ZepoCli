@@ -1,10 +1,9 @@
 import chalk from "chalk";
-import ora from "ora";
 import type { Command } from "commander";
 
 import { ZeptoService } from "../services/zepto.js";
 import { printCart } from "../utils/output.js";
-import { joinQuery, withRuntime } from "./shared.js";
+import { joinQuery, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerAddCommand(program: Command): void {
   program
@@ -16,14 +15,17 @@ export function registerAddCommand(program: Command): void {
     .action((queryParts: string[], options: { quantity: string; choose?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const query = joinQuery(queryParts);
-        const spinner = options.choose ? undefined : ora(`Adding "${query}"`).start();
-        const result = await new ZeptoService(runtime).cart.add(query, {
-          quantity: options.quantity,
-          choose: options.choose
-        });
-        spinner?.succeed(`Added ${result.product.name}.`);
+        const service = new ZeptoService(runtime).cart;
+        const add = () =>
+          service.add(query, {
+            quantity: options.quantity,
+            choose: options.choose
+          });
+        const result = options.choose
+          ? await add()
+          : await withCommandSpinner(`Adding "${query}"`, (item) => `Added ${item.product.name}.`, add);
 
-        if (!spinner) {
+        if (options.choose) {
           console.log(chalk.green(`Added ${result.product.name}.`));
         }
 
