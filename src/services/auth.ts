@@ -3,6 +3,7 @@ import { confirm, input } from "@inquirer/prompts";
 import type { AppRuntime } from "../config/runtime.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { detectLoginState, openLoginFlow } from "../automation/auth.js";
+import type { SessionStatus } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 
 export class AuthService {
@@ -13,6 +14,8 @@ export class AuthService {
   }
 
   async login(phone?: string): Promise<void> {
+    const previousStatus = this.runtime.session.status();
+
     try {
       await this.browser.withPage({ headless: false, saveState: true }, async (page) => {
         await openLoginFlow(page, phone);
@@ -43,7 +46,9 @@ export class AuthService {
 
       this.runtime.session.markLoggedIn();
     } catch (error) {
-      this.runtime.session.markLoggedOut();
+      if (!shouldPreserveExistingSessionAfterLoginFailure(previousStatus)) {
+        this.runtime.session.markLoggedOut();
+      }
       throw error;
     }
   }
@@ -51,4 +56,8 @@ export class AuthService {
   logout(): void {
     this.runtime.session.clear();
   }
+}
+
+export function shouldPreserveExistingSessionAfterLoginFailure(status: Pick<SessionStatus, "hasAuthState" | "markedLoggedIn">): boolean {
+  return status.hasAuthState && status.markedLoggedIn;
 }
