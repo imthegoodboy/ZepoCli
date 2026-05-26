@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { chromium, type BrowserContext, type Page } from "playwright";
 
@@ -25,12 +26,8 @@ export class BrowserAutomation {
       });
     }
 
-    const browser = await chromium.launch({
-      headless: options.headless ?? this.runtime.options.headless
-    });
-
-    const context = await browser.newContext({
-      storageState: this.runtime.session.hasStorageState() ? this.runtime.session.storageStatePath : undefined,
+    const context = await chromium.launchPersistentContext(this.runtime.session.browserProfileDir, {
+      headless: options.headless ?? this.runtime.options.headless,
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       locale: "en-IN",
@@ -52,10 +49,37 @@ export class BrowserAutomation {
         await context.storageState({ path: this.runtime.session.storageStatePath });
       }
       return result;
+    } catch (error) {
+      await this.captureFailure(page, error).catch(() => undefined);
+      throw error;
     } finally {
       await context.close().catch(() => undefined);
-      await browser.close().catch(() => undefined);
     }
+  }
+
+  private async captureFailure(page: Page, error: unknown): Promise<void> {
+    if (!this.runtime.options.debug) {
+      return;
+    }
+
+    mkdirSync(this.runtime.paths.diagnosticsDir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const screenshotPath = join(this.runtime.paths.diagnosticsDir, `${stamp}.png`);
+    const htmlPath = join(this.runtime.paths.diagnosticsDir, `${stamp}.html`);
+    const url = page.url();
+
+    await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => undefined);
+    writeFileSync(htmlPath, await page.content());
+
+    this.runtime.logger.error(
+      {
+        error: error instanceof Error ? error.message : String(error),
+        url,
+        screenshotPath,
+        htmlPath
+      },
+      "browser automation failed"
+    );
   }
 }
 
@@ -77,6 +101,3 @@ export async function clickFirstText(page: Page, labels: RegExp[]): Promise<bool
   return false;
 }
 
-export function hasExistingAuthState(path: string): boolean {
-  return existsSync(path);
-}

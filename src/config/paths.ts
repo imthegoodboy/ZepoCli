@@ -2,11 +2,13 @@ import { mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-import { APP_NAME, LOG_FILE, SQLITE_FILE, STORAGE_STATE_FILE } from "./constants.js";
+import { APP_NAME, BROWSER_PROFILE_DIR, LOG_FILE, SQLITE_FILE, STORAGE_STATE_FILE } from "./constants.js";
 
 export interface AppPaths {
   dataDir: string;
   authStatePath: string;
+  browserProfileDir: string;
+  diagnosticsDir: string;
   dbPath: string;
   logPath: string;
 }
@@ -19,12 +21,16 @@ export function resolveAppPaths(dataDirOverride?: string): AppPaths {
   const paths: AppPaths = {
     dataDir,
     authStatePath: join(dataDir, "storage", STORAGE_STATE_FILE),
+    browserProfileDir: join(dataDir, "storage", BROWSER_PROFILE_DIR),
+    diagnosticsDir: join(dataDir, "diagnostics"),
     dbPath: join(dataDir, SQLITE_FILE),
     logPath: join(dataDir, LOG_FILE)
   };
 
   mkdirSync(paths.dataDir, { recursive: true });
   mkdirSync(dirname(paths.authStatePath), { recursive: true });
+  mkdirSync(paths.browserProfileDir, { recursive: true });
+  mkdirSync(paths.diagnosticsDir, { recursive: true });
 
   return paths;
 }

@@ -24,8 +24,10 @@ CLI commands
 Storage:
 
 - Playwright auth state: local `auth-state.json`
+- Browser profile: persistent Chromium profile under the configured data directory
 - Metadata/cache: SQLite
 - Logs: local file under the configured data directory
+- Diagnostics: failure HTML/screenshot artifacts when `--debug` is used
 
 ## Researched Zepto Facts
 
@@ -59,3 +61,9 @@ Before claiming production readiness:
 - `node dist/index.js --help` shows the intended command surface.
 - At least one browser smoke test is run against Zepto for search or login handoff when Chromium is available.
 - Commands that depend on a real Zepto account are marked verified only after a human-controlled session exercises them.
+
+## GitHub Project Management
+
+- Use `gh` for issues and PRs when managing project work.
+- Do not delete local or remote branches after merging PRs.
+- Keep the production-hardening issue open until login, address, cart, checkout handoff, and order tracking are verified with a real human-controlled Zepto session.
