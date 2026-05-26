@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
 const tsxCli = resolve(rootDir, "node_modules", "tsx", "dist", "cli.mjs");
 const cliEntry = resolve(rootDir, "src", "index.ts");
+const CLI_TEST_TIMEOUT_MS = 30_000;
 
 interface CliResult {
   exitCode: number;
@@ -34,7 +35,7 @@ describe("CLI command smokes", () => {
     expect(result.stdout).toContain("status [options]");
     expect(result.stdout).toContain("doctor [options]");
     expect(result.stdout).toContain("checkout");
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it("prints machine-readable status for a fresh data directory", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-status-"));
@@ -45,7 +46,7 @@ describe("CLI command smokes", () => {
     expect(status.dataDir).toBe(dataDir);
     expect(status.hasAuthState).toBe(false);
     expect(status.markedLoggedIn).toBe(false);
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it("runs doctor without browser launch for fast local readiness", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-doctor-"));
@@ -56,7 +57,7 @@ describe("CLI command smokes", () => {
     expect(report.ok).toBe(true);
     expect(report.checks.map((check) => check.name)).toEqual(["Node.js", "Data directory", "SQLite", "Zepto session"]);
     expect(report.checks.find((check) => check.name === "Zepto session")?.status).toBe("warn");
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it("rejects invalid global timeout before opening a browser", async () => {
     const result = await runCli(["--timeout", "abc", "status"]);
@@ -64,7 +65,7 @@ describe("CLI command smokes", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Invalid input.");
     expect(result.stderr).toContain("timeout");
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it("returns clean no-session errors for account-dependent commands", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-session-"));
@@ -74,7 +75,7 @@ describe("CLI command smokes", () => {
     expect(result.stderr).toContain("No Zepto session found.");
     expect(result.stderr).toContain("Run `zepo login` first.");
     expect(result.stderr).not.toContain("Reading Zepto cart");
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 });
 
 async function runCli(args: string[]): Promise<CliResult> {

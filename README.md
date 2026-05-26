@@ -84,4 +84,5 @@ Stored data includes:
 ```bash
 npm run check
 node dist/index.js --help
+npm pack --dry-run
 ```

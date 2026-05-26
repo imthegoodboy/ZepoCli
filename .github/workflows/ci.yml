@@ -37,5 +37,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Remove build output before package test
+        run: rm -rf dist
+
       - name: Package dry-run
         run: npm pack --dry-run
