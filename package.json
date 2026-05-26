@@ -16,6 +16,7 @@
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "check": "npm run build && npm test",
+    "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"
   },
   "engines": {
@@ -29,6 +30,14 @@
   ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imthegoodboy/ZepoCli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imthegoodboy/ZepoCli/issues"
+  },
+  "homepage": "https://github.com/imthegoodboy/ZepoCli#readme",
   "dependencies": {
     "@inquirer/prompts": "^7.10.1",
     "better-sqlite3": "^12.10.0",
