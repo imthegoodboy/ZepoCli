@@ -38,6 +38,10 @@ export class SqliteStore {
     return row?.value;
   }
 
+  healthCheck(): void {
+    this.db.prepare("select 1").get();
+  }
+
   markSession(loggedIn: boolean, storageStatePath: string): void {
     this.db
       .prepare(

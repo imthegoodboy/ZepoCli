@@ -16,6 +16,21 @@ export interface SessionStatus {
   updatedAt?: string;
 }
 
+export type DoctorCheckStatus = "pass" | "warn" | "fail";
+
+export interface DoctorCheck {
+  name: string;
+  status: DoctorCheckStatus;
+  message: string;
+  hint?: string;
+}
+
+export interface DoctorReport {
+  ok: boolean;
+  generatedAt: string;
+  checks: DoctorCheck[];
+}
+
 export interface Product {
   index: number;
   automationId?: number;

@@ -16,6 +16,7 @@ npm run prepare:browsers
 ```bash
 zepo login
 zepo status
+zepo doctor
 zepo search milk
 zepo add "Amul Milk 500ml"
 zepo cart
@@ -45,6 +46,8 @@ Check local readiness before account-dependent commands:
 ```bash
 zepo status
 zepo status --json
+zepo doctor
+zepo doctor --json
 ```
 
 ## Data Storage
