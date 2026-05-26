@@ -32,6 +32,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Never process payment inside the CLI.
    - Always hand checkout/payment to a visible Zepto browser page.
    - Never store UPI IDs, card numbers, CVV, OTPs, or payment tokens.
+   - Do not mark login complete while Zepto still shows login or OTP prompts.
 
 4. Automation behavior.
    - Prefer resilient Playwright selectors: roles, visible text, form inputs, and short DOM walks.

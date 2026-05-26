@@ -39,7 +39,7 @@ The CLI layers are deliberately simple:
 CLI commands -> services -> Playwright automation -> Zepto website
 ```
 
-Login stores the browser storage state locally. Search, cart, address, order, and checkout commands reuse that state. Checkout never processes payment details; it opens Zepto checkout and waits for the user to complete payment in the browser.
+Login opens Zepto in a visible browser and stores the browser state locally only after the flow is completed or explicitly confirmed. Search, cart, address, order, and checkout commands reuse that state. Checkout never processes payment details; it opens Zepto checkout and waits for the user to complete payment in the browser.
 
 Check local readiness before account-dependent commands:
 
