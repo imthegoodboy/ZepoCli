@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
-import { relative } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 import type { AppPaths } from "../config/paths.js";
 import type { SessionStatus } from "../types.js";
@@ -24,7 +24,15 @@ export class SessionStore {
       return false;
     }
 
-    return statSync(this.paths.authStatePath).size > 2;
+    if (statSync(this.paths.authStatePath).size <= 2) {
+      return false;
+    }
+
+    try {
+      return isStorageState(JSON.parse(readFileSync(this.paths.authStatePath, "utf8")));
+    } catch {
+      return false;
+    }
   }
 
   markLoggedIn(): void {
@@ -44,7 +52,7 @@ export class SessionStore {
       browserProfileDir: this.paths.browserProfileDir,
       diagnosticsDir: this.paths.diagnosticsDir,
       hasAuthState: this.hasStorageState(),
-      hasBrowserProfileData: hasFiles(this.paths.browserProfileDir),
+      hasBrowserProfileData: hasProfileFiles(this.paths.browserProfileDir),
       markedLoggedIn: session?.loggedIn ?? false,
       updatedAt: session?.updatedAt
     };
@@ -74,10 +82,29 @@ function isWithin(parent: string, child: string): boolean {
   return path.length > 0 && !path.startsWith("..") && !path.includes(":");
 }
 
-function hasFiles(path: string): boolean {
+function isStorageState(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as { cookies?: unknown; origins?: unknown };
+  return Array.isArray(state.cookies) || Array.isArray(state.origins);
+}
+
+function hasProfileFiles(path: string): boolean {
   if (!existsSync(path)) {
     return false;
   }
 
-  return readdirSync(path).length > 0;
+  for (const entry of readdirSync(path, { withFileTypes: true })) {
+    if (entry.isFile()) {
+      return true;
+    }
+
+    if (entry.isDirectory() && hasProfileFiles(join(path, entry.name))) {
+      return true;
+    }
+  }
+
+  return false;
 }

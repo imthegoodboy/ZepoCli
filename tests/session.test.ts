@@ -54,6 +54,7 @@ describe("session storage", () => {
 
     writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
     mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+    writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
     session.markLoggedIn();
 
     const status = session.status();
@@ -86,5 +87,38 @@ describe("session storage", () => {
 
     expect(session.hasConfirmedSession()).toBe(true);
     sqlite.close();
+  });
+
+  it("does not treat corrupt auth state as present", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-corrupt-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(paths.authStatePath, "not-json");
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
+  it("does not treat empty browser profile directories as profile data", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-profile-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
+    mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+    session.markLoggedIn();
+
+    const status = session.status();
+    const confirmed = session.hasConfirmedSession();
+    sqlite.close();
+
+    expect(status.hasAuthState).toBe(true);
+    expect(status.hasBrowserProfileData).toBe(false);
+    expect(status.markedLoggedIn).toBe(true);
+    expect(confirmed).toBe(false);
   });
 });
