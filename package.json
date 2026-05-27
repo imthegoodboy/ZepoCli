@@ -15,7 +15,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
-    "check": "npm run build && npm test",
+    "verify:cli": "node scripts/verify-cli.mjs",
+    "check": "npm run build && npm test && npm run verify:cli && npm pack --dry-run",
     "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"
   },

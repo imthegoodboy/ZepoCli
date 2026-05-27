@@ -60,6 +60,7 @@ Run:
 ```bash
 npm run build
 npm test
+npm run verify:cli
 node dist/index.js --help
 ```
 
