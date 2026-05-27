@@ -2,6 +2,7 @@ import type { AppRuntime } from "../config/runtime.js";
 import type { CartSnapshot, OrderSnapshot } from "../types.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { readOrders, reorderLast } from "../automation/orders.js";
+import { UserFacingError } from "../utils/errors.js";
 
 export class OrdersService {
   private readonly browser: BrowserAutomation;
@@ -18,7 +19,7 @@ export class OrdersService {
 
   async track(): Promise<OrderSnapshot[]> {
     const orders = await this.history();
-    return orders.slice(0, 1);
+    return [requireLatestOrder(orders)];
   }
 
   async reorderLast(): Promise<CartSnapshot> {
@@ -26,4 +27,15 @@ export class OrdersService {
     this.runtime.sqlite.saveCartSnapshot(cart);
     return cart;
   }
+}
+
+export function requireLatestOrder(orders: OrderSnapshot[]): OrderSnapshot {
+  const latest = orders[0];
+  if (latest) {
+    return latest;
+  }
+
+  throw new UserFacingError("No Zepto order was detected to track.", {
+    hint: "Use `zepo history` to inspect detected orders, or complete an order in Zepto before running `zepo track`."
+  });
 }
