@@ -9,7 +9,7 @@ import { readCart } from "./cart.js";
 export async function openOrders(page: Page): Promise<void> {
   await gotoZepto(page, "/orders");
   let bodyText = await page.locator("body").innerText().catch(() => "");
-  if (/order|delivered|track|eta|history/i.test(bodyText)) {
+  if (isOrdersPageText(bodyText)) {
     return;
   }
 
@@ -17,7 +17,7 @@ export async function openOrders(page: Page): Promise<void> {
   await clickFirstText(page, [/orders/i, /my orders/i, /profile/i, /account/i]);
   bodyText = await page.locator("body").innerText().catch(() => "");
 
-  if (!/order|delivered|track|eta|history/i.test(bodyText)) {
+  if (!isOrdersPageText(bodyText)) {
     throw new UserFacingError("Could not open Zepto orders.", {
       hint: "Make sure you are logged in, then check the browser manually with `zepo login`."
     });
@@ -51,4 +51,19 @@ export function requireReorderCart(cart: CartSnapshot): CartSnapshot {
   throw new UserFacingError("Zepto did not expose any cart items after the reorder action.", {
     hint: "The latest order may be unavailable for reorder, or Zepto changed the reorder flow. Rerun with `--visible --debug`."
   });
+}
+
+export function isOrdersPageText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  if (parseOrdersFromText(normalized).length > 0) {
+    return true;
+  }
+
+  return /\b(my orders|order history|your orders|past orders|no orders|track order|reorder|order again|repeat order)\b/i.test(
+    normalized
+  );
 }
