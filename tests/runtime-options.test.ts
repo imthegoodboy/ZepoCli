@@ -9,12 +9,14 @@ describe("global runtime options", () => {
       parseRuntimeOptions({
         visible: true,
         debug: true,
+        input: false,
         timeout: "45000",
         dataDir: ".zepo-test"
       })
     ).toEqual({
       visible: true,
       debug: true,
+      input: false,
       timeout: 45000,
       dataDir: ".zepo-test"
     });

@@ -5,6 +5,7 @@ import { BrowserAutomation } from "../automation/browser.js";
 import { detectLoginState, openLoginFlow } from "../automation/auth.js";
 import type { SessionStatus } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
+import { requireInteractiveInput } from "../utils/interactive.js";
 
 export class AuthService {
   private readonly browser: BrowserAutomation;
@@ -14,6 +15,12 @@ export class AuthService {
   }
 
   async login(phone?: string): Promise<void> {
+    requireInteractiveInput(
+      this.runtime,
+      "Zepto login requires interactive input.",
+      "Rerun `zepo login` without `--no-input` so you can complete Zepto login or OTP in the browser."
+    );
+
     const previousStatus = this.runtime.session.status();
 
     try {

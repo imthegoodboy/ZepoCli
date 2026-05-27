@@ -7,6 +7,7 @@ import { createRuntime, type AppRuntime } from "../config/runtime.js";
 export interface GlobalOptions {
   dataDir?: string;
   debug?: boolean;
+  input?: boolean;
   visible?: boolean;
   timeout?: string;
 }
@@ -14,6 +15,7 @@ export interface GlobalOptions {
 const RuntimeOptionsSchema = z.object({
   dataDir: z.string().min(1).optional(),
   debug: z.boolean().default(false),
+  input: z.boolean().default(true),
   visible: z.boolean().default(false),
   timeout: z
     .string()
@@ -33,6 +35,7 @@ export async function withRuntime(command: Command, action: (runtime: AppRuntime
     dataDir: options.dataDir,
     debug: options.debug,
     headless: !options.visible,
+    interactive: options.input,
     timeoutMs: options.timeout
   });
 

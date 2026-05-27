@@ -23,6 +23,7 @@ program
   .version("0.1.0")
   .option("--data-dir <path>", "local directory for session, SQLite, and logs")
   .option("--debug", "write verbose automation logs")
+  .option("--no-input", "fail instead of prompting for interactive input")
   .option("--visible", "run supported browser automation in a visible browser")
   .option("--timeout <ms>", "browser automation timeout", String(DEFAULT_TIMEOUT_MS));
 

@@ -13,6 +13,7 @@ Build and maintain `zepo` like a normal production CLI:
 - If a command cannot really complete or hand off to Zepto, fail clearly with an actionable message.
 - Prefer `--json` when another agent or script needs to consume command output; do not scrape colored human text.
 - In JSON mode, command failures emit `{ "ok": false, "error": ... }` on stderr. Treat non-zero exit status as failure even when the JSON is parseable.
+- Use `--no-input` for unattended runs that must fail instead of waiting on an interactive prompt.
 
 ## Current Architecture
 
@@ -59,6 +60,7 @@ Implementation consequence:
 - Account-dependent commands should require confirmed local session state, not just leftover files.
 - State-changing commands should keep machine-readable `--json` output aligned with their human output.
 - Keep JSON-mode error payloads stable and structured enough for agents to branch on `error.type`, `error.message`, `error.hint`, and `error.exitCode`.
+- Prompting commands must reject `--no-input` before opening browsers or waiting for user input.
 
 ## Verification Expectations
 
