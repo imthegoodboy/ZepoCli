@@ -35,7 +35,8 @@ Sources checked on 2026-05-27:
 
 - Official site: https://www.zepto.com/
 - Terms: https://www.zepto.com/s/terms-of-service
-- App Store listing: https://apps.apple.com/us/app/zepto-groceries-in-minutes/id1575323645
+- Customer support: https://www.zepto.com/s/customer-support
+- App Store listing: https://apps.apple.com/in/app/zepto-groceries-in-minutes/id1575323645
 
 Relevant product behavior:
 
@@ -45,6 +46,7 @@ Relevant product behavior:
 - Payment methods are Zepto-side flows such as UPI, cards, wallets, netbanking, and COD when available.
 - Delivery ETA is shown by Zepto and may vary.
 - Users are responsible for accurate delivery address details.
+- Official real-time support is through the Zepto app; do not direct users to unofficial phone numbers.
 
 Implementation consequence:
 
@@ -52,6 +54,7 @@ Implementation consequence:
 - The CLI must not collect or store payment credentials.
 - The CLI should reuse the user's own session and should not bypass platform controls.
 - `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.
+- Account-dependent commands should require confirmed local session state, not just leftover files.
 
 ## Verification Expectations
 

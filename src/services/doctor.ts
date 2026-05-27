@@ -76,11 +76,20 @@ export class DoctorService {
 
   private checkSession(): DoctorCheck {
     const status = this.runtime.session.status();
-    if (status.hasAuthState && status.markedLoggedIn) {
+    if (this.runtime.session.hasConfirmedSession()) {
       return {
         name: "Zepto session",
         status: "pass",
-        message: "Saved auth state is present."
+        message: "Saved auth state and persistent browser profile are present."
+      };
+    }
+
+    if (status.hasAuthState || status.hasBrowserProfileData || status.markedLoggedIn) {
+      return {
+        name: "Zepto session",
+        status: "warn",
+        message: "Partial Zepto session data was found, but login is not confirmed.",
+        hint: "Run `zepo login` again before account-dependent commands."
       };
     }
 
