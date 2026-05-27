@@ -10,10 +10,16 @@ describe("login state inference", () => {
 
   it("detects logged-in account text when login text is absent", () => {
     expect(inferLoginStateFromText("Account My Orders Wallet")).toBe("logged-in");
+    expect(inferLoginStateFromText("Profile Wallet")).toBe("logged-in");
+    expect(inferLoginStateFromText("Log out")).toBe("logged-in");
   });
 
   it("returns unknown for ambiguous page text", () => {
     expect(inferLoginStateFromText("Search for milk Cart")).toBe("unknown");
+  });
+
+  it("does not accept generic account navigation as logged in", () => {
+    expect(inferLoginStateFromText("Search for milk Cart Account Profile")).toBe("unknown");
   });
 
   it("preserves a previously marked valid session when a re-login attempt fails", () => {

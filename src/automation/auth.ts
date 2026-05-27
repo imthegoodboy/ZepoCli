@@ -41,7 +41,7 @@ export function inferLoginStateFromText(text: string): LoginState {
     return "login-required";
   }
 
-  if (/\b(my orders|logout|log out|account|profile|wallet)\b/i.test(normalized) && !/\blogin\b/i.test(normalized)) {
+  if (hasLoggedInAccountEvidence(normalized) && !/\blogin\b/i.test(normalized)) {
     return "logged-in";
   }
 
@@ -50,4 +50,14 @@ export function inferLoginStateFromText(text: string): LoginState {
   }
 
   return "unknown";
+}
+
+function hasLoggedInAccountEvidence(text: string): boolean {
+  if (/\b(my orders|logout|log out)\b/i.test(text)) {
+    return true;
+  }
+
+  const hasAccountEntry = /\b(account|profile)\b/i.test(text);
+  const hasAccountOnlyFeature = /\b(wallet|orders|order history)\b/i.test(text);
+  return hasAccountEntry && hasAccountOnlyFeature;
 }
