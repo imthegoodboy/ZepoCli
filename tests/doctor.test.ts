@@ -7,6 +7,18 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createRuntime } from "../src/config/runtime.js";
 import { checkNodeVersion, compareVersions, DoctorService } from "../src/services/doctor.js";
 
+const AUTH_STATE = JSON.stringify({
+  cookies: [
+    {
+      name: "sid",
+      value: "1",
+      domain: "www.zepto.com",
+      path: "/"
+    }
+  ],
+  origins: []
+});
+
 describe("doctor service", () => {
   let tempDir: string | undefined;
 
@@ -60,7 +72,7 @@ describe("doctor service", () => {
       headless: true
     });
 
-    writeFileSync(runtime.paths.authStatePath, "{\"cookies\":[]}");
+    writeFileSync(runtime.paths.authStatePath, AUTH_STATE);
     runtime.session.markLoggedIn();
 
     const report = await new DoctorService(runtime).run({ browser: false });

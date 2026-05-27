@@ -91,7 +91,9 @@ function isStorageState(value: unknown): boolean {
   }
 
   const state = value as { cookies?: unknown; origins?: unknown };
-  return Array.isArray(state.cookies) || Array.isArray(state.origins);
+  const cookies = Array.isArray(state.cookies) ? state.cookies : [];
+  const origins = Array.isArray(state.origins) ? state.origins : [];
+  return cookies.length > 0 || origins.length > 0;
 }
 
 function hasProfileFiles(path: string): boolean {

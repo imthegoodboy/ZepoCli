@@ -8,6 +8,22 @@ import { resolveAppPaths } from "../src/config/paths.js";
 import { SessionStore } from "../src/storage/session.js";
 import { SqliteStore } from "../src/storage/sqlite.js";
 
+const AUTH_STATE = JSON.stringify({
+  cookies: [
+    {
+      name: "sid",
+      value: "1",
+      domain: "www.zepto.com",
+      path: "/",
+      expires: -1,
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax"
+    }
+  ],
+  origins: []
+});
+
 describe("session storage", () => {
   let tempDir: string | undefined;
 
@@ -52,7 +68,7 @@ describe("session storage", () => {
     const sqlite = new SqliteStore(paths.dbPath);
     const session = new SessionStore(paths, sqlite);
 
-    writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
+    writeFileSync(paths.authStatePath, AUTH_STATE);
     mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
     writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
     session.markLoggedIn();
@@ -79,7 +95,7 @@ describe("session storage", () => {
     const sqlite = new SqliteStore(paths.dbPath);
     const session = new SessionStore(paths, sqlite);
 
-    writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
+    writeFileSync(paths.authStatePath, AUTH_STATE);
     session.markLoggedIn();
     expect(session.hasConfirmedSession()).toBe(false);
 
@@ -103,13 +119,26 @@ describe("session storage", () => {
     sqlite.close();
   });
 
+  it("does not treat empty auth state as present", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(paths.authStatePath, "{\"cookies\":[],\"origins\":[]}");
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
   it("does not treat empty browser profile directories as profile data", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-profile-"));
     const paths = resolveAppPaths(tempDir);
     const sqlite = new SqliteStore(paths.dbPath);
     const session = new SessionStore(paths, sqlite);
 
-    writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
+    writeFileSync(paths.authStatePath, AUTH_STATE);
     mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
     session.markLoggedIn();
 
