@@ -24,6 +24,16 @@ const AUTH_STATE = JSON.stringify({
   origins: []
 });
 
+const ZEPTO_ORIGIN_AUTH_STATE = JSON.stringify({
+  cookies: [],
+  origins: [
+    {
+      origin: "https://www.zepto.com",
+      localStorage: []
+    }
+  ]
+});
+
 describe("session storage", () => {
   let tempDir: string | undefined;
 
@@ -126,6 +136,50 @@ describe("session storage", () => {
     const session = new SessionStore(paths, sqlite);
 
     writeFileSync(paths.authStatePath, "{\"cookies\":[],\"origins\":[]}");
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
+  it("accepts Zepto origins in saved auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-origin-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(paths.authStatePath, ZEPTO_ORIGIN_AUTH_STATE);
+
+    expect(session.hasStorageState()).toBe(true);
+    expect(session.status().hasAuthState).toBe(true);
+    sqlite.close();
+  });
+
+  it("does not treat unrelated storage state as Zepto auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-unrelated-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "sid",
+            value: "1",
+            domain: "example.com",
+            path: "/"
+          }
+        ],
+        origins: [
+          {
+            origin: "https://example.com",
+            localStorage: []
+          }
+        ]
+      })
+    );
 
     expect(session.hasStorageState()).toBe(false);
     expect(session.status().hasAuthState).toBe(false);
