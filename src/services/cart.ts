@@ -31,7 +31,7 @@ export class CartService {
 
   async add(query: string, options: AddOptions = {}): Promise<AddResult> {
     const cleanQuery = requireNonEmpty(query, "Product query");
-    const quantity = QuantitySchema.parse(options.quantity ?? 1);
+    const quantity = parseAddQuantity(options.quantity ?? 1);
 
     return this.browser.withPage({ requireSession: true }, async (page) => {
       const products = await searchProducts(page, cleanQuery, options.choose ? 10 : 5);
@@ -74,6 +74,17 @@ export class CartService {
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
+}
+
+export function parseAddQuantity(quantityInput: unknown): number {
+  const result = QuantitySchema.safeParse(quantityInput);
+  if (result.success) {
+    return result.data;
+  }
+
+  throw new UserFacingError("Quantity must be an integer from 1 to 50.", {
+    hint: "Use a value like `zepo add milk --quantity 2`."
+  });
 }
 
 export function assertCartContainsProduct(cart: CartSnapshot, product: Product): void {

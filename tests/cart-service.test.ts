@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { assertCartContainsProduct } from "../src/services/cart.js";
+import { assertCartContainsProduct, parseAddQuantity } from "../src/services/cart.js";
 
 describe("cart service verification helpers", () => {
+  it("parses valid add quantities", () => {
+    expect(parseAddQuantity("2")).toBe(2);
+  });
+
+  it("rejects invalid add quantities with a user-facing error", () => {
+    expect(() => parseAddQuantity("abc")).toThrow("Quantity must be an integer from 1 to 50.");
+    expect(() => parseAddQuantity("0")).toThrow("Quantity must be an integer from 1 to 50.");
+  });
+
   it("accepts a cart that contains the added product", () => {
     expect(() =>
       assertCartContainsProduct(
