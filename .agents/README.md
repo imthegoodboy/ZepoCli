@@ -11,6 +11,7 @@ Build and maintain `zepo` like a normal production CLI:
 - Payment, OTP, address confirmation, age checks, prescription checks, and delivery verification stay in Zepto-controlled browser UI.
 - Do not add fake "AI agent" features, autonomous purchasing, background ordering, or placeholder commands.
 - If a command cannot really complete or hand off to Zepto, fail clearly with an actionable message.
+- Prefer `--json` when another agent or script needs to consume command output; do not scrape colored human text.
 
 ## Current Architecture
 
@@ -55,6 +56,7 @@ Implementation consequence:
 - The CLI should reuse the user's own session and should not bypass platform controls.
 - `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.
 - Account-dependent commands should require confirmed local session state, not just leftover files.
+- State-changing commands should keep machine-readable `--json` output aligned with their human output.
 
 ## Verification Expectations
 
