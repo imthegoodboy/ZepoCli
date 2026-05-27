@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import Database from "better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { resolveAppPaths } from "../src/config/paths.js";
@@ -70,6 +71,47 @@ describe("session storage", () => {
     expect(existsSync(paths.authStatePath)).toBe(false);
     expect(existsSync(paths.browserProfileDir)).toBe(true);
     expect(existsSync(join(paths.browserProfileDir, "Default", "Cookies"))).toBe(false);
+  });
+
+  it("clears cached user metadata on logout", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-session-cache-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    sqlite.recordSearch("milk", 2);
+    sqlite.saveCartSnapshot({
+      items: [
+        {
+          name: "Amul Milk",
+          unit: "500 ml",
+          price: "₹32"
+        }
+      ],
+      total: "₹32",
+      rawText: "Cart Amul Milk 500 ml ₹32"
+    });
+    sqlite.upsertAddress({
+      label: "Home",
+      text: "221B Test Street",
+      selected: true
+    });
+    sqlite.saveOrders([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        rawText: "Order #ZEP1234 Delivered Total ₹32"
+      }
+    ]);
+
+    session.clear();
+    sqlite.close();
+
+    expect(countRows(paths.dbPath, "searches")).toBe(0);
+    expect(countRows(paths.dbPath, "cart_snapshots")).toBe(0);
+    expect(countRows(paths.dbPath, "addresses")).toBe(0);
+    expect(countRows(paths.dbPath, "orders")).toBe(0);
+    expect(countRows(paths.dbPath, "sessions")).toBe(1);
   });
 
   it("reports session status without requiring a live browser", () => {
@@ -207,3 +249,13 @@ describe("session storage", () => {
     expect(confirmed).toBe(false);
   });
 });
+
+function countRows(dbPath: string, table: string): number {
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const row = db.prepare(`select count(*) as count from ${table}`).get() as { count: number };
+    return row.count;
+  } finally {
+    db.close();
+  }
+}

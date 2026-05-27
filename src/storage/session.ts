@@ -77,6 +77,7 @@ export class SessionStore {
       mkdirSync(this.paths.browserProfileDir, { recursive: true });
     }
 
+    this.sqlite.clearUserData();
     this.markLoggedOut();
   }
 }

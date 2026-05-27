@@ -52,6 +52,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Browser profile data lives in the configured data directory so IndexedDB, cookies, and site state survive between CLI runs.
    - SQLite is for local metadata, snapshots, and cache only.
    - Do not use cached data as proof that a live Zepto operation succeeded.
+   - Logout must clear cached user metadata snapshots as well as auth state and browser profile data.
 
 ## Required Checks
 

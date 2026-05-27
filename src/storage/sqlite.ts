@@ -42,6 +42,19 @@ export class SqliteStore {
     this.db.prepare("select 1").get();
   }
 
+  clearUserData(): void {
+    const clear = this.db.transaction(() => {
+      this.db.prepare("delete from searches").run();
+      this.db.prepare("delete from cart_snapshots").run();
+      this.db.prepare("delete from addresses").run();
+      this.db.prepare("delete from orders").run();
+    });
+
+    clear();
+    this.db.pragma("wal_checkpoint(TRUNCATE)");
+    this.db.exec("vacuum");
+  }
+
   markSession(loggedIn: boolean, storageStatePath: string): void {
     this.db
       .prepare(
