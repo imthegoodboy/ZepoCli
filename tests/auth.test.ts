@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { inferLoginStateFromText } from "../src/automation/auth.js";
-import { shouldPreserveExistingSessionAfterLoginFailure } from "../src/services/auth.js";
+import { assertSavedLoginSession, shouldPreserveExistingSessionAfterLoginFailure } from "../src/services/auth.js";
 
 describe("login state inference", () => {
   it("detects obvious login prompts", () => {
@@ -19,8 +19,7 @@ describe("login state inference", () => {
   it("preserves a previously marked valid session when a re-login attempt fails", () => {
     expect(
       shouldPreserveExistingSessionAfterLoginFailure({
-        hasAuthState: true,
-        markedLoggedIn: true
+        confirmedSession: true
       })
     ).toBe(true);
   });
@@ -28,15 +27,15 @@ describe("login state inference", () => {
   it("does not preserve incomplete session state after failed first login", () => {
     expect(
       shouldPreserveExistingSessionAfterLoginFailure({
-        hasAuthState: false,
-        markedLoggedIn: true
+        confirmedSession: false
       })
     ).toBe(false);
-    expect(
-      shouldPreserveExistingSessionAfterLoginFailure({
-        hasAuthState: true,
-        markedLoggedIn: false
-      })
-    ).toBe(false);
+  });
+
+  it("accepts a login flow only when saved session state is confirmed", () => {
+    expect(() => assertSavedLoginSession({ confirmedSession: true })).not.toThrow();
+    expect(() => assertSavedLoginSession({ confirmedSession: false })).toThrow(
+      "Zepto login finished, but no usable local session was saved."
+    );
   });
 });
