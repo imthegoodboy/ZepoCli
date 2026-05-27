@@ -44,6 +44,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Keep human output concise and readable.
    - Keep `--json` output available for commands that return workflow state so agents and scripts do not scrape terminal text.
    - Do not print spinner/status prose when `--json` is requested.
+   - In JSON mode, failures should emit stable `{ ok: false, error: ... }` JSON on stderr while preserving the non-zero exit code.
 
 6. Storage behavior.
    - Session state lives in Playwright storage state.

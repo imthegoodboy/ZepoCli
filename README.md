@@ -49,6 +49,20 @@ zepo history --json
 zepo reorder last --json
 ```
 
+When `--json` is requested and a command fails, errors are emitted as JSON on stderr:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "type": "user_error",
+    "message": "No confirmed Zepto session found.",
+    "hint": "Run `zepo login` first.",
+    "exitCode": 1
+  }
+}
+```
+
 ## How It Works
 
 The CLI layers are deliberately simple:

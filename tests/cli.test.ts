@@ -93,6 +93,27 @@ describe("CLI command smokes", () => {
     expect(result.stderr).toContain("timeout");
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("prints machine-readable validation errors when JSON output is requested", async () => {
+    const result = await runCli(["--timeout", "abc", "status", "--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    const payload = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: {
+        type: string;
+        message: string;
+        exitCode: number;
+        issues: Array<{ path: string; message: string }>;
+      };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.error.type).toBe("invalid_input");
+    expect(payload.error.message).toBe("Invalid input.");
+    expect(payload.error.exitCode).toBe(1);
+    expect(payload.error.issues[0]?.path).toBe("timeout");
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("rejects invalid search limit before opening a browser", async () => {
     const result = await runCli(["search", "milk", "--limit", "abc"]);
 
@@ -111,6 +132,32 @@ describe("CLI command smokes", () => {
     expect(result.stderr).not.toContain("No confirmed Zepto session found.");
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("prints machine-readable user errors when JSON output is requested", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-json-error-"));
+    const result = await runCli(["--data-dir", dataDir, "add", "milk", "--quantity", "abc", "--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    const payload = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: {
+        type: string;
+        message: string;
+        hint?: string;
+        exitCode: number;
+      };
+    };
+    expect(payload).toEqual({
+      ok: false,
+      error: {
+        type: "user_error",
+        message: "Quantity must be an integer from 1 to 50.",
+        hint: "Use a value like `zepo add milk --quantity 2`.",
+        exitCode: 1
+      }
+    });
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("returns clean no-session errors for account-dependent commands", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-session-"));
     const result = await runCli(["--data-dir", dataDir, "cart"]);
@@ -119,6 +166,28 @@ describe("CLI command smokes", () => {
     expect(result.stderr).toContain("No confirmed Zepto session found.");
     expect(result.stderr).toContain("Run `zepo login` first.");
     expect(result.stderr).not.toContain("Reading Zepto cart");
+  }, CLI_TEST_TIMEOUT_MS);
+
+  it("prints machine-readable no-session errors when JSON output is requested", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-json-session-"));
+    const result = await runCli(["--data-dir", dataDir, "cart", "--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    const payload = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: {
+        type: string;
+        message: string;
+        hint?: string;
+        exitCode: number;
+      };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.error.type).toBe("user_error");
+    expect(payload.error.message).toBe("No confirmed Zepto session found.");
+    expect(payload.error.hint).toBe("Run `zepo login` first.");
+    expect(payload.error.exitCode).toBe(1);
   }, CLI_TEST_TIMEOUT_MS);
 
   it("rejects stale auth state that was not confirmed by login", async () => {
