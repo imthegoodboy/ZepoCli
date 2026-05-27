@@ -10,7 +10,7 @@ export async function openCart(page: Page): Promise<void> {
   await gotoZepto(page, "/cart");
 
   const bodyText = await page.locator("body").innerText().catch(() => "");
-  if (/cart|checkout|view bill|to pay/i.test(bodyText)) {
+  if (isCartPageText(bodyText)) {
     return;
   }
 
@@ -23,6 +23,12 @@ export async function openCart(page: Page): Promise<void> {
   }
 
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+  const openedText = await page.locator("body").innerText().catch(() => "");
+  if (!isCartPageText(openedText)) {
+    throw new UserFacingError("Could not confirm the Zepto cart page after opening cart.", {
+      hint: "Rerun with `--visible --debug` to inspect Zepto's cart navigation before changing cart contents."
+    });
+  }
 }
 
 export async function readCart(page: Page): Promise<CartSnapshot> {
@@ -101,6 +107,26 @@ export function cartHasMatchingItem(cart: CartSnapshot, query: string): boolean 
     const itemText = normalizeText([item.name, item.unit].filter(Boolean).join(" ")).toLowerCase();
     return itemText.includes(queryText) || queryText.includes(itemText);
   });
+}
+
+export function isCartPageText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  if (parseCartItemsFromText(text).length > 0) {
+    return true;
+  }
+
+  if (/\b(my cart|shopping cart|cart is empty|cart empty|empty cart|items? in cart)\b/i.test(normalized)) {
+    return true;
+  }
+
+  return (
+    /\b(checkout|view bill|to pay|grand total|item total|bill summary)\b/i.test(normalized) &&
+    /\b(cart|items?|coupon|delivery address|add more)\b/i.test(normalized)
+  );
 }
 
 async function findRemoveButtonId(page: Page, query?: string): Promise<number | undefined> {
