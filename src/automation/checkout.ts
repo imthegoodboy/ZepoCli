@@ -42,7 +42,9 @@ export function isCheckoutHandoffText(text: string): boolean {
     return false;
   }
 
-  return /\b(checkout|payment|pay|upi|card|wallet|cash on delivery|place order|delivery address|order summary|to pay)\b/i.test(
-    normalized
-  );
+  if (/\b(payment|select payment|upi|card|wallet|cash on delivery|cod|place order|order summary)\b/i.test(normalized)) {
+    return true;
+  }
+
+  return /\bdelivery address\b/i.test(normalized) && /\b(to pay|payable|pay now)\b/i.test(normalized);
 }
