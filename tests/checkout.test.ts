@@ -11,8 +11,16 @@ describe("checkout handoff detection", () => {
     expect(isCheckoutHandoffText("Delivery Address Home Place Order Cash on Delivery")).toBe(true);
   });
 
+  it("detects address plus amount-due checkout text", () => {
+    expect(isCheckoutHandoffText("Delivery Address Home To Pay ₹249")).toBe(true);
+  });
+
   it("rejects ordinary cart text", () => {
     expect(isCheckoutHandoffText("Cart Add more items Apply coupon Saved for later")).toBe(false);
+  });
+
+  it("rejects cart text with checkout labels but no payment handoff", () => {
+    expect(isCheckoutHandoffText("Cart View Bill To Pay ₹249 Checkout")).toBe(false);
   });
 
   it("rejects empty pages", () => {
