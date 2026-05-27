@@ -62,6 +62,7 @@ Run:
 npm run build
 npm test
 npm run verify:cli
+npm run verify:package
 node dist/index.js --help
 ```
 
