@@ -96,6 +96,15 @@ Use `--visible` when diagnosing Zepto rendering, location, or blocking behavior:
 zepo --visible search milk
 ```
 
+Use `--no-input` for unattended scripts that must fail instead of waiting for a prompt:
+
+```bash
+zepo --no-input cart --json
+zepo --no-input login --json
+```
+
+Interactive flows such as `login`, `address add`, `checkout`, and `add --choose` fail early with a structured error when `--no-input` is set.
+
 Stored data includes:
 
 - Playwright auth state

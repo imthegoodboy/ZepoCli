@@ -2,6 +2,7 @@ export interface RuntimeOptions {
   dataDir?: string;
   debug: boolean;
   headless: boolean;
+  interactive: boolean;
   timeoutMs: number;
 }
 

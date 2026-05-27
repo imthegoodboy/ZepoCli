@@ -5,6 +5,7 @@ import type { Address } from "../types.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { listAddresses, startAddAddress, useAddress } from "../automation/address.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
+import { requireInteractiveInput } from "../utils/interactive.js";
 
 export class AddressService {
   private readonly browser: BrowserAutomation;
@@ -27,6 +28,12 @@ export class AddressService {
   }
 
   async add(): Promise<Address[]> {
+    requireInteractiveInput(
+      this.runtime,
+      "Zepto address add requires interactive input.",
+      "Rerun `zepo address add` without `--no-input` so you can add or confirm the address in the browser."
+    );
+
     const addresses = await this.browser.withPage({ requireSession: true, headless: false }, async (page) => {
       await startAddAddress(page);
       await input({

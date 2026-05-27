@@ -9,6 +9,7 @@ import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
 import { clickProductAdd, increaseProductQuantity, searchProducts } from "../automation/search.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
 import { normalizeText } from "../utils/format.js";
+import { requireInteractiveInput } from "../utils/interactive.js";
 
 const QuantitySchema = z.coerce.number().int().min(1).max(50);
 
@@ -32,6 +33,13 @@ export class CartService {
   async add(query: string, options: AddOptions = {}): Promise<AddResult> {
     const cleanQuery = requireNonEmpty(query, "Product query");
     const quantity = parseAddQuantity(options.quantity ?? 1);
+    if (options.choose) {
+      requireInteractiveInput(
+        this.runtime,
+        "Interactive product selection requires input.",
+        "Rerun without `--no-input`, or remove `--choose` and provide a more specific product query."
+      );
+    }
 
     return this.browser.withPage({ requireSession: true }, async (page) => {
       const products = await searchProducts(page, cleanQuery, options.choose ? 10 : 5);

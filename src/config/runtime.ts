@@ -21,6 +21,7 @@ export function createRuntime(options: Partial<RuntimeOptions> = {}): AppRuntime
     dataDir: options.dataDir,
     debug: options.debug ?? false,
     headless: options.headless ?? true,
+    interactive: options.interactive ?? true,
     timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   };
 

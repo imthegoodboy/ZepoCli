@@ -45,6 +45,7 @@ describe("CLI command smokes", () => {
     expect(result.stdout).toContain("login [options]");
     expect(result.stdout).toContain("status [options]");
     expect(result.stdout).toContain("doctor [options]");
+    expect(result.stdout).toContain("--no-input");
     expect(result.stdout).toContain("checkout");
   }, CLI_TEST_TIMEOUT_MS);
 
@@ -156,6 +157,68 @@ describe("CLI command smokes", () => {
         exitCode: 1
       }
     });
+  }, CLI_TEST_TIMEOUT_MS * 2);
+
+  it("fails before prompts when no-input is used with browser handoff commands", async () => {
+    for (const testCase of [
+      {
+        args: ["login", "--json"],
+        message: "Zepto login requires interactive input."
+      },
+      {
+        args: ["address", "add", "--json"],
+        message: "Zepto address add requires interactive input."
+      },
+      {
+        args: ["checkout", "--json"],
+        message: "Zepto checkout requires interactive input."
+      }
+    ]) {
+      dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-no-input-"));
+      const result = await runCli(["--data-dir", dataDir, "--no-input", ...testCase.args]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe("");
+      const payload = JSON.parse(result.stderr) as {
+        ok: boolean;
+        error: {
+          type: string;
+          message: string;
+          hint?: string;
+          exitCode: number;
+        };
+      };
+      expect(payload.ok).toBe(false);
+      expect(payload.error.type).toBe("user_error");
+      expect(payload.error.message).toBe(testCase.message);
+      expect(payload.error.hint).toContain("without `--no-input`");
+      expect(payload.error.exitCode).toBe(1);
+      rmSync(dataDir, { recursive: true, force: true });
+      dataDir = undefined;
+    }
+  }, CLI_TEST_TIMEOUT_MS * 2);
+
+  it("fails before browser work when no-input is combined with choose", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-no-input-choose-"));
+    const result = await runCli(["--data-dir", dataDir, "--no-input", "add", "milk", "--choose", "--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    const payload = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: {
+        type: string;
+        message: string;
+        hint?: string;
+        exitCode: number;
+      };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.error.type).toBe("user_error");
+    expect(payload.error.message).toBe("Interactive product selection requires input.");
+    expect(payload.error.hint).toContain("remove `--choose`");
+    expect(payload.error.exitCode).toBe(1);
+    expect(result.stderr).not.toContain("No confirmed Zepto session found.");
   }, CLI_TEST_TIMEOUT_MS);
 
   it("returns clean no-session errors for account-dependent commands", async () => {
