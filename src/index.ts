@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { ZodError } from "zod";
 
 import { DEFAULT_TIMEOUT_MS } from "./config/constants.js";
+import { PACKAGE_VERSION } from "./config/package.js";
 import { registerAddCommand } from "./commands/add.js";
 import { registerAddressCommand } from "./commands/address.js";
 import { registerCartCommands } from "./commands/cart.js";
@@ -20,7 +21,7 @@ const program = new Command();
 program
   .name("zepo")
   .description("Developer CLI for user-directed Zepto workflows")
-  .version("0.1.0")
+  .version(PACKAGE_VERSION)
   .option("--data-dir <path>", "local directory for session, SQLite, and logs")
   .option("--debug", "write verbose automation logs")
   .option("--no-input", "fail instead of prompting for interactive input")
