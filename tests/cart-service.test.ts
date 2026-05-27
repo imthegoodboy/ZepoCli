@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assertCartContainsProduct, parseAddQuantity } from "../src/services/cart.js";
+import { assertCartContainsProduct, parseAddQuantity, requireBestMatch } from "../src/services/cart.js";
 
 describe("cart service verification helpers", () => {
   it("parses valid add quantities", () => {
@@ -10,6 +10,35 @@ describe("cart service verification helpers", () => {
   it("rejects invalid add quantities with a user-facing error", () => {
     expect(() => parseAddQuantity("abc")).toThrow("Quantity must be an integer from 1 to 50.");
     expect(() => parseAddQuantity("0")).toThrow("Quantity must be an integer from 1 to 50.");
+  });
+
+  it("returns a confident product match for auto-add", () => {
+    const product = {
+      index: 0,
+      automationId: 1,
+      name: "Amul Taaza Toned Milk",
+      unit: "1 pack (500 ml)",
+      price: "₹32"
+    };
+
+    expect(requireBestMatch([product], "amul milk")).toBe(product);
+  });
+
+  it("rejects auto-add when search results do not confidently match the query", () => {
+    expect(() =>
+      requireBestMatch(
+        [
+          {
+            index: 0,
+            automationId: 1,
+            name: "Potato Chips",
+            unit: "52 g",
+            price: "₹20"
+          }
+        ],
+        "amul milk"
+      )
+    ).toThrow('No confident Zepto product match was found for "amul milk".');
   });
 
   it("accepts a cart that contains the added product", () => {
