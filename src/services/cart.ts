@@ -41,7 +41,7 @@ export class CartService {
         });
       }
 
-      const product = options.choose ? await chooseProduct(products) : bestMatch(products, cleanQuery);
+      const product = options.choose ? await chooseProduct(products) : requireBestMatch(products, cleanQuery);
       await clickProductAdd(page, product);
       await page.waitForTimeout(700);
       await increaseProductQuantity(page, product, quantity);
@@ -144,13 +144,20 @@ function assertCartQuantity(item: CartItem, product: Product, minimumQuantity: n
   }
 }
 
-function bestMatch(products: Product[], query: string): Product {
+export function requireBestMatch(products: Product[], query: string): Product {
   const fuse = new Fuse(products, {
     keys: ["name", "unit"],
     threshold: 0.45,
     ignoreLocation: true
   });
-  return fuse.search(query)[0]?.item ?? products[0]!;
+  const match = fuse.search(query)[0]?.item;
+  if (match) {
+    return match;
+  }
+
+  throw new UserFacingError(`No confident Zepto product match was found for "${query}".`, {
+    hint: "Run `zepo add --choose <query>` to pick from the visible search results."
+  });
 }
 
 async function chooseProduct(products: Product[]): Promise<Product> {
