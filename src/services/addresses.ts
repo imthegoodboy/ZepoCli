@@ -4,7 +4,7 @@ import type { AppRuntime } from "../config/runtime.js";
 import type { Address } from "../types.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { listAddresses, startAddAddress, useAddress } from "../automation/address.js";
-import { requireNonEmpty } from "../utils/errors.js";
+import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
 
 export class AddressService {
   private readonly browser: BrowserAutomation;
@@ -32,10 +32,21 @@ export class AddressService {
       await input({
         message: "Add or edit the address in the browser, then press Enter here"
       });
-      return listAddresses(page).catch(() => []);
+      const detectedAddresses = await listAddresses(page);
+      return requireDetectedAddressesAfterAddressFlow(detectedAddresses);
     });
 
     this.runtime.preferences.saveAddresses(addresses);
     return addresses;
   }
+}
+
+export function requireDetectedAddressesAfterAddressFlow(addresses: Address[]): Address[] {
+  if (addresses.length > 0) {
+    return addresses;
+  }
+
+  throw new UserFacingError("No Zepto addresses were detected after the address flow.", {
+    hint: "Add or select an address in the visible browser before pressing Enter. Rerun with `--debug` if Zepto changed its address UI."
+  });
 }
