@@ -79,4 +79,22 @@ describe("Zepto page extraction helpers", () => {
       }
     ]);
   });
+
+  it("parses order status without an id only when order context is visible", () => {
+    const orders = parseOrdersFromText("Track order Out for delivery ETA: 8 mins Total ₹249");
+
+    expect(orders).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: 8 mins Total ₹249"
+      }
+    ]);
+  });
+
+  it("does not parse generic delivery copy as an order", () => {
+    expect(parseOrdersFromText("Groceries delivered in minutes ETA: 8 mins Total ₹249")).toEqual([]);
+  });
 });
