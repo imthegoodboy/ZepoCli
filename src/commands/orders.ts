@@ -2,7 +2,7 @@ import type { Command } from "commander";
 
 import { ZeptoService } from "../services/zepto.js";
 import { UserFacingError } from "../utils/errors.js";
-import { printOrders } from "../utils/output.js";
+import { printCart, printOrders } from "../utils/output.js";
 import { withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerOrderCommands(program: Command): void {
@@ -48,9 +48,10 @@ export function registerOrderCommands(program: Command): void {
           throw new UserFacingError("Only `zepo reorder last` is supported.");
         }
 
-        await withCommandSpinner("Opening latest order reorder action", "Reorder action completed.", () =>
+        const cart = await withCommandSpinner("Opening latest order reorder action", "Reorder cart loaded.", () =>
           new ZeptoService(runtime).orders.reorderLast()
         );
+        printCart(cart);
       })
     );
 }
