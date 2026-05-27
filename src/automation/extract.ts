@@ -107,7 +107,7 @@ export function parseOrdersFromText(rawText: string): OrderSnapshot[] {
     };
   });
 
-  return orders.filter((order) => order.status || order.id);
+  return orders.filter((order) => isLikelyOrderSnapshot(order));
 }
 
 function productNameFrom(imageAlt: string | undefined, lines: string[]): string | undefined {
@@ -151,6 +151,18 @@ function isLikelyCartProductName(line: string): boolean {
   }
 
   return /[a-z]/i.test(line);
+}
+
+function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
+  if (order.id) {
+    return true;
+  }
+
+  if (!order.status) {
+    return false;
+  }
+
+  return /\b(order|orders|track|tracking)\b/i.test(order.rawText);
 }
 
 function dedupeCartItems(items: CartItem[]): CartItem[] {
