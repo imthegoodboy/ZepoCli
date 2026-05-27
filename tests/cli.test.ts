@@ -67,6 +67,24 @@ describe("CLI command smokes", () => {
     expect(result.stderr).toContain("timeout");
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("rejects invalid search limit before opening a browser", async () => {
+    const result = await runCli(["search", "milk", "--limit", "abc"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Search limit must be an integer from 1 to 50.");
+    expect(result.stderr).toContain("zepo search milk --limit 10");
+  }, CLI_TEST_TIMEOUT_MS);
+
+  it("rejects invalid add quantity before checking session", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-quantity-"));
+    const result = await runCli(["--data-dir", dataDir, "add", "milk", "--quantity", "abc"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Quantity must be an integer from 1 to 50.");
+    expect(result.stderr).toContain("zepo add milk --quantity 2");
+    expect(result.stderr).not.toContain("No confirmed Zepto session found.");
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("returns clean no-session errors for account-dependent commands", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-session-"));
     const result = await runCli(["--data-dir", dataDir, "cart"]);
