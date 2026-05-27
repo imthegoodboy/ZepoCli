@@ -45,6 +45,7 @@ export class AuthService {
       });
 
       this.runtime.session.markLoggedIn();
+      assertSavedLoginSession(this.runtime.session.status());
     } catch (error) {
       if (!shouldPreserveExistingSessionAfterLoginFailure(previousStatus)) {
         this.runtime.session.markLoggedOut();
@@ -58,6 +59,16 @@ export class AuthService {
   }
 }
 
-export function shouldPreserveExistingSessionAfterLoginFailure(status: Pick<SessionStatus, "hasAuthState" | "markedLoggedIn">): boolean {
-  return status.hasAuthState && status.markedLoggedIn;
+export function shouldPreserveExistingSessionAfterLoginFailure(status: Pick<SessionStatus, "confirmedSession">): boolean {
+  return status.confirmedSession;
+}
+
+export function assertSavedLoginSession(status: Pick<SessionStatus, "confirmedSession">): void {
+  if (status.confirmedSession) {
+    return;
+  }
+
+  throw new UserFacingError("Zepto login finished, but no usable local session was saved.", {
+    hint: "Run `zepo login` again and continue only after Zepto shows your account, address, or cart in the browser."
+  });
 }
