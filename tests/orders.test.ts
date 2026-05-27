@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { requireReorderCart } from "../src/automation/orders.js";
+import { isOrdersPageText, requireReorderCart } from "../src/automation/orders.js";
 import { requireLatestOrder } from "../src/services/orders.js";
 
 describe("order automation helpers", () => {
@@ -39,5 +39,16 @@ describe("order automation helpers", () => {
 
   it("rejects latest-order tracking without detected orders", () => {
     expect(() => requireLatestOrder([])).toThrow("No Zepto order was detected to track.");
+  });
+
+  it("detects orders page text from parsed orders or empty-history copy", () => {
+    expect(isOrdersPageText("Order #ZEP1234 Confirmed ETA: 8 mins Total ₹249")).toBe(true);
+    expect(isOrdersPageText("My Orders No orders yet")).toBe(true);
+    expect(isOrdersPageText("Track order Out for delivery ETA: 8 mins")).toBe(true);
+  });
+
+  it("rejects generic delivery marketing text as orders page text", () => {
+    expect(isOrdersPageText("Groceries delivered in minutes ETA: 8 mins")).toBe(false);
+    expect(isOrdersPageText("Search milk Cart Account")).toBe(false);
   });
 });
