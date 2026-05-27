@@ -65,7 +65,7 @@ export function parseCartItemsFromText(rawText: string): CartItem[] {
       continue;
     }
 
-    const window = lines.slice(index, index + 5);
+    const window = cartItemDetailWindow(lines, index);
     const price = window.flatMap(extractPrices)[0];
     const unit = window.find((candidate) => looksLikeUnit(candidate));
     const quantityLine = window.find((candidate) => /^(?:qty|quantity)?\s*\d+$/i.test(candidate));
@@ -138,7 +138,7 @@ function isLikelyCartProductName(line: string): boolean {
     return false;
   }
 
-  if (/^(cart|checkout|subtotal|delivery|handling|view bill|apply coupon|add more|saved|address)$/i.test(line)) {
+  if (/^(cart|checkout|view bill|apply coupon|add more|saved|address)$/i.test(line) || isCartSummaryLine(line)) {
     return false;
   }
 
@@ -151,6 +151,18 @@ function isLikelyCartProductName(line: string): boolean {
   }
 
   return /[a-z]/i.test(line);
+}
+
+function cartItemDetailWindow(lines: string[], index: number): string[] {
+  const window = lines.slice(index, index + 5);
+  const summaryIndex = window.findIndex((line, offset) => offset > 0 && isCartSummaryLine(line));
+  return summaryIndex === -1 ? window : window.slice(0, summaryIndex);
+}
+
+function isCartSummaryLine(line: string): boolean {
+  return /\b(subtotal|grand total|item total|to pay|payable|delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|bill total)\b/i.test(
+    line
+  );
 }
 
 function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
