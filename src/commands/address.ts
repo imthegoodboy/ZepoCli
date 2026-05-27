@@ -46,7 +46,7 @@ export function registerAddressCommand(program: Command): void {
     .action((_options: unknown, command: Command) =>
       withRuntime(command, async (runtime) => {
         const addresses = await new ZeptoService(runtime).addresses.add();
-        console.log(chalk.green("Address flow completed."));
+        console.log(chalk.green("Address detected from Zepto."));
         printAddresses(addresses);
       })
     );
