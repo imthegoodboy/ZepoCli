@@ -8,6 +8,7 @@ import { BrowserAutomation } from "../automation/browser.js";
 import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
 import { clickProductAdd, increaseProductQuantity, searchProducts } from "../automation/search.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
+import { normalizeText } from "../utils/format.js";
 
 const QuantitySchema = z.coerce.number().int().min(1).max(50);
 
@@ -18,7 +19,7 @@ export interface AddOptions {
 
 export interface AddResult {
   product: Product;
-  cart?: CartSnapshot;
+  cart: CartSnapshot;
 }
 
 export class CartService {
@@ -44,11 +45,9 @@ export class CartService {
       await clickProductAdd(page, product);
       await page.waitForTimeout(700);
       await increaseProductQuantity(page, product, quantity);
-      const cart = await readCart(page).catch(() => undefined);
-
-      if (cart) {
-        this.runtime.sqlite.saveCartSnapshot(cart);
-      }
+      const cart = await readCart(page);
+      assertCartContainsProduct(cart, product);
+      this.runtime.sqlite.saveCartSnapshot(cart);
 
       return {
         product,
@@ -75,6 +74,38 @@ export class CartService {
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
+}
+
+export function assertCartContainsProduct(cart: CartSnapshot, product: Product): void {
+  if (cart.items.length === 0) {
+    throw new UserFacingError(`Zepto cart was opened after adding ${product.name}, but no readable cart items were detected.`, {
+      hint: "Rerun with `--visible --debug` to inspect Zepto's cart page instead of treating the add as successful."
+    });
+  }
+
+  const productName = normalizeText(product.name).toLowerCase();
+  const hasDirectMatch = cart.items.some((item) => {
+    const itemName = normalizeText(item.name).toLowerCase();
+    return itemName.includes(productName) || productName.includes(itemName);
+  });
+
+  if (hasDirectMatch) {
+    return;
+  }
+
+  const fuse = new Fuse(cart.items, {
+    keys: ["name"],
+    threshold: 0.55,
+    ignoreLocation: true
+  });
+
+  if (fuse.search(product.name).length > 0) {
+    return;
+  }
+
+  throw new UserFacingError(`Zepto cart did not show an item matching ${product.name} after ADD.`, {
+    hint: "The page may have changed or the item may be unavailable. Rerun with `--visible --debug` before retrying checkout."
+  });
 }
 
 function bestMatch(products: Product[], query: string): Product {

@@ -29,9 +29,7 @@ export function registerAddCommand(program: Command): void {
           console.log(chalk.green(`Added ${result.product.name}.`));
         }
 
-        if (result.cart) {
-          printCart(result.cart);
-        }
+        printCart(result.cart);
       })
     );
 }
