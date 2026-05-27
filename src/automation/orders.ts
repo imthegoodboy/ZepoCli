@@ -1,9 +1,10 @@
 import type { Page } from "playwright";
 
-import type { OrderSnapshot } from "../types.js";
+import type { CartSnapshot, OrderSnapshot } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { parseOrdersFromText } from "./extract.js";
 import { clickFirstText, gotoZepto } from "./browser.js";
+import { readCart } from "./cart.js";
 
 export async function openOrders(page: Page): Promise<void> {
   await gotoZepto(page, "/orders");
@@ -29,7 +30,7 @@ export async function readOrders(page: Page): Promise<OrderSnapshot[]> {
   return parseOrdersFromText(rawText).slice(0, 20);
 }
 
-export async function reorderLast(page: Page): Promise<void> {
+export async function reorderLast(page: Page): Promise<CartSnapshot> {
   await openOrders(page);
 
   const clicked = await clickFirstText(page, [/reorder/i, /order again/i, /repeat order/i]);
@@ -38,4 +39,16 @@ export async function reorderLast(page: Page): Promise<void> {
   }
 
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+  const cart = await readCart(page);
+  return requireReorderCart(cart);
+}
+
+export function requireReorderCart(cart: CartSnapshot): CartSnapshot {
+  if (cart.items.length > 0) {
+    return cart;
+  }
+
+  throw new UserFacingError("Zepto did not expose any cart items after the reorder action.", {
+    hint: "The latest order may be unavailable for reorder, or Zepto changed the reorder flow. Rerun with `--visible --debug`."
+  });
 }

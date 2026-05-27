@@ -1,5 +1,5 @@
 import type { AppRuntime } from "../config/runtime.js";
-import type { OrderSnapshot } from "../types.js";
+import type { CartSnapshot, OrderSnapshot } from "../types.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { readOrders, reorderLast } from "../automation/orders.js";
 
@@ -21,7 +21,9 @@ export class OrdersService {
     return orders.slice(0, 1);
   }
 
-  async reorderLast(): Promise<void> {
-    await this.browser.withPage({ requireSession: true }, (page) => reorderLast(page));
+  async reorderLast(): Promise<CartSnapshot> {
+    const cart = await this.browser.withPage({ requireSession: true }, (page) => reorderLast(page));
+    this.runtime.sqlite.saveCartSnapshot(cart);
+    return cart;
   }
 }
