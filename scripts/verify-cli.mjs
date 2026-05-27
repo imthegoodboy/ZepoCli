@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
+const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
 
 const checks = [
   {
@@ -15,6 +16,15 @@ const checks = [
       assert(stdout.includes("Developer CLI for user-directed Zepto workflows"), "expected CLI description");
       assert(stdout.includes("--no-input"), "expected --no-input in help output");
       assert(stdout.includes("checkout"), "expected checkout command in help output");
+    }
+  },
+  {
+    name: "version",
+    args: ["--version"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout === packageJson.version, "expected CLI version to match package.json");
     }
   },
   {

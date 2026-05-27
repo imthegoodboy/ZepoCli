@@ -6,6 +6,8 @@ import { promisify } from "node:util";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import packageJson from "../package.json" with { type: "json" };
+
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
 const tsxCli = resolve(rootDir, "node_modules", "tsx", "dist", "cli.mjs");
@@ -47,6 +49,14 @@ describe("CLI command smokes", () => {
     expect(result.stdout).toContain("doctor [options]");
     expect(result.stdout).toContain("--no-input");
     expect(result.stdout).toContain("checkout");
+  }, CLI_TEST_TIMEOUT_MS);
+
+  it("prints the package version", async () => {
+    const result = await runCli(["--version"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(packageJson.version);
+    expect(result.stderr).toBe("");
   }, CLI_TEST_TIMEOUT_MS);
 
   it("prints machine-readable status for a fresh data directory", async () => {
