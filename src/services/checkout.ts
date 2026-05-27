@@ -15,7 +15,7 @@ export class CheckoutService {
     await this.browser.withPage({ requireSession: true, headless: false, saveState: true }, async (page) => {
       await openCheckout(page);
       await input({
-        message: "Complete checkout/payment in the browser, then press Enter here"
+        message: "Use Zepto checkout/payment in the browser, then press Enter here when done"
       });
     });
   }

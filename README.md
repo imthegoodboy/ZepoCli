@@ -39,7 +39,7 @@ The CLI layers are deliberately simple:
 CLI commands -> services -> Playwright automation -> Zepto website
 ```
 
-Login opens Zepto in a visible browser and stores the browser state locally only after the flow is completed or explicitly confirmed. Search, cart, address, order, and checkout commands reuse that state. Checkout never processes payment details; it opens Zepto checkout and waits for the user to complete payment in the browser.
+Login opens Zepto in a visible browser and stores the browser state locally only after the flow is completed or explicitly confirmed. Search, cart, address, order, and checkout commands reuse that state. Checkout never processes payment details; it verifies Zepto exposes checkout/payment handoff UI, then leaves payment and order placement inside the visible Zepto browser.
 
 Check local readiness before account-dependent commands:
 
@@ -77,6 +77,7 @@ Stored data includes:
 - The CLI does not bypass login, OTP, payment, location, age checks, prescriptions, or delivery verification.
 - The CLI does not store payment credentials.
 - User-visible checkout/payment remains inside Zepto.
+- `zepo checkout` is a handoff, not proof that an order was paid or placed; use `zepo track` after completing Zepto payment.
 - If Zepto changes its website and automation cannot confidently complete a task, the command fails with a direct error instead of pretending success.
 
 ## Verification

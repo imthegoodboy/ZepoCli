@@ -11,7 +11,7 @@ export function registerCheckoutCommand(program: Command): void {
     .action((_options: unknown, command: Command) =>
       withRuntime(command, async (runtime) => {
         await new ZeptoService(runtime).checkout.checkout();
-        console.log(chalk.green("Checkout browser flow completed."));
+        console.log(chalk.green("Checkout handoff finished. Payment stayed inside Zepto."));
       })
     );
 }
