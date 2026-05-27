@@ -55,8 +55,14 @@ export async function clickProductAdd(page: Page, product: Product): Promise<voi
 }
 
 export async function increaseProductQuantity(page: Page, product: Product, quantity: number): Promise<void> {
-  if (quantity <= 1 || product.automationId === undefined) {
+  if (quantity <= 1) {
     return;
+  }
+
+  if (product.automationId === undefined) {
+    throw new UserFacingError(`Could not increase ${product.name} to quantity ${quantity}.`, {
+      hint: "The selected product cannot be mapped back to Zepto quantity controls."
+    });
   }
 
   const button = page.locator(`[data-zepo-add-id="${product.automationId}"]`).first();
@@ -69,7 +75,9 @@ export async function increaseProductQuantity(page: Page, product: Product, quan
       .last();
 
     if (!(await plus.isVisible().catch(() => false))) {
-      return;
+      throw new UserFacingError(`Could not increase ${product.name} to quantity ${quantity}.`, {
+        hint: "Zepto did not expose a plus control after adding the item. Open the cart with `zepo cart` and retry with a lower quantity."
+      });
     }
 
     await plus.click();
