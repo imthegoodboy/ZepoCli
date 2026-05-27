@@ -31,6 +31,7 @@ Storage:
 - Metadata/cache: SQLite
 - Logs: local file under the configured data directory
 - Diagnostics: failure HTML/screenshot artifacts when `--debug` is used
+- `zepo logout` must clear auth state, browser profile data, and cached user metadata snapshots.
 
 ## Researched Zepto Facts
 
@@ -61,6 +62,7 @@ Implementation consequence:
 - State-changing commands should keep machine-readable `--json` output aligned with their human output.
 - Keep JSON-mode error payloads stable and structured enough for agents to branch on `error.type`, `error.message`, `error.hint`, and `error.exitCode`.
 - Prompting commands must reject `--no-input` before opening browsers or waiting for user input.
+- Logout must remove cached user data such as searches, cart snapshots, addresses, and order snapshots.
 
 ## Verification Expectations
 

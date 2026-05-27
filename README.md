@@ -113,6 +113,8 @@ Stored data includes:
 - Log file for debugging
 - Debug HTML/screenshot artifacts when `--debug` is used and browser automation fails
 
+`zepo logout` removes the saved Zepto session, clears the persistent browser profile, and deletes cached local user metadata such as searches, cart snapshots, addresses, and order snapshots.
+
 ## Safety Boundaries
 
 - The CLI does not bypass login, OTP, payment, location, age checks, prescriptions, or delivery verification.
