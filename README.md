@@ -128,6 +128,7 @@ Stored data includes:
 ```bash
 npm run check
 npm run verify:cli
+npm run verify:package
 ```
 
-`npm run check` builds, runs tests, verifies compiled CLI smoke behavior, and runs `npm pack --dry-run`.
+`npm run check` builds, runs tests, verifies compiled CLI smoke behavior, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary, and runs `npm pack --dry-run`.

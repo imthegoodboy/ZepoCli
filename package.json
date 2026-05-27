@@ -16,7 +16,8 @@
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "verify:cli": "node scripts/verify-cli.mjs",
-    "check": "npm run build && npm test && npm run verify:cli && npm pack --dry-run",
+    "verify:package": "node scripts/verify-package.mjs",
+    "check": "npm run build && npm test && npm run verify:cli && npm run verify:package && npm pack --dry-run",
     "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"
   },
