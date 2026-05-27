@@ -9,7 +9,7 @@ import {
 } from "../utils/format.js";
 
 export interface RawProductCard {
-  automationId: number;
+  automationId?: number;
   text: string;
   imageAlt?: string;
   href?: string;
