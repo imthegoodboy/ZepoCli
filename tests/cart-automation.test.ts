@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cartHasMatchingItem } from "../src/automation/cart.js";
+import { cartHasMatchingItem, isCartPageText } from "../src/automation/cart.js";
 
 describe("cart automation helpers", () => {
   it("matches cart items by product query", () => {
@@ -49,5 +49,17 @@ describe("cart automation helpers", () => {
         "milk"
       )
     ).toBe(false);
+  });
+
+  it("detects cart page text from readable items or empty-cart copy", () => {
+    expect(isCartPageText("Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toBe(true);
+    expect(isCartPageText("My Cart Your cart is empty Add items to continue")).toBe(true);
+    expect(isCartPageText("Cart 2 items View bill To pay Rs 120")).toBe(true);
+  });
+
+  it("rejects generic navigation text as cart page proof", () => {
+    expect(isCartPageText("Search milk Cart Account Profile")).toBe(false);
+    expect(isCartPageText("Sign in to view your cart")).toBe(false);
+    expect(isCartPageText("Fresh groceries delivered fast Checkout these offers")).toBe(false);
   });
 });
