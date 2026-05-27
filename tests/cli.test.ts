@@ -11,6 +11,17 @@ const rootDir = resolve(import.meta.dirname, "..");
 const tsxCli = resolve(rootDir, "node_modules", "tsx", "dist", "cli.mjs");
 const cliEntry = resolve(rootDir, "src", "index.ts");
 const CLI_TEST_TIMEOUT_MS = 30_000;
+const AUTH_STATE = JSON.stringify({
+  cookies: [
+    {
+      name: "sid",
+      value: "1",
+      domain: "www.zepto.com",
+      path: "/"
+    }
+  ],
+  origins: []
+});
 
 interface CliResult {
   exitCode: number;
@@ -105,7 +116,7 @@ describe("CLI command smokes", () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-stale-session-"));
     const storageDir = join(dataDir, "storage");
     mkdirSync(storageDir, { recursive: true });
-    writeFileSync(join(storageDir, "auth-state.json"), "{\"cookies\":[]}");
+    writeFileSync(join(storageDir, "auth-state.json"), AUTH_STATE);
 
     const result = await runCli(["--data-dir", dataDir, "cart"]);
 
