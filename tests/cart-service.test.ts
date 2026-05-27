@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assertCartContainsProduct, parseAddQuantity, requireBestMatch } from "../src/services/cart.js";
+import { assertCartContainsProduct, parseAddQuantity, requireAddableProducts, requireBestMatch } from "../src/services/cart.js";
 
 describe("cart service verification helpers", () => {
   it("parses valid add quantities", () => {
@@ -39,6 +39,34 @@ describe("cart service verification helpers", () => {
         "amul milk"
       )
     ).toThrow('No confident Zepto product match was found for "amul milk".');
+  });
+
+  it("returns only products with mapped ADD buttons for add flows", () => {
+    const addable = {
+      index: 0,
+      automationId: 1,
+      name: "Amul Taaza Toned Milk"
+    };
+    const readOnly = {
+      index: 1,
+      name: "Tender Coconut"
+    };
+
+    expect(requireAddableProducts([addable, readOnly], "milk")).toEqual([addable]);
+  });
+
+  it("rejects add flows when search results do not expose ADD buttons", () => {
+    expect(() =>
+      requireAddableProducts(
+        [
+          {
+            index: 0,
+            name: "Tender Coconut"
+          }
+        ],
+        "coconut"
+      )
+    ).toThrow('Zepto did not expose ADD buttons for products matching "coconut".');
   });
 
   it("accepts a cart that contains the added product", () => {
