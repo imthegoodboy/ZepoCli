@@ -35,6 +35,76 @@ describe("cart service verification helpers", () => {
     ).not.toThrow();
   });
 
+  it("accepts a cart that shows at least the requested quantity", () => {
+    expect(() =>
+      assertCartContainsProduct(
+        {
+          items: [
+            {
+              name: "Amul Taaza Toned Milk",
+              unit: "1 pack (500 ml)",
+              price: "₹32",
+              quantity: "2"
+            }
+          ]
+        },
+        {
+          index: 0,
+          automationId: 1,
+          name: "Amul Taaza Toned Milk",
+          unit: "1 pack (500 ml)",
+          price: "₹32"
+        },
+        2
+      )
+    ).not.toThrow();
+  });
+
+  it("rejects multi-quantity add when the cart quantity is unreadable", () => {
+    expect(() =>
+      assertCartContainsProduct(
+        {
+          items: [
+            {
+              name: "Amul Taaza Toned Milk",
+              unit: "1 pack (500 ml)",
+              price: "₹32"
+            }
+          ]
+        },
+        {
+          index: 0,
+          automationId: 1,
+          name: "Amul Taaza Toned Milk"
+        },
+        2
+      )
+    ).toThrow("did not expose the quantity");
+  });
+
+  it("rejects multi-quantity add when Zepto shows a lower quantity", () => {
+    expect(() =>
+      assertCartContainsProduct(
+        {
+          items: [
+            {
+              name: "Amul Taaza Toned Milk",
+              unit: "1 pack (500 ml)",
+              price: "₹32",
+              quantity: "1"
+            }
+          ]
+        },
+        {
+          index: 0,
+          automationId: 1,
+          name: "Amul Taaza Toned Milk"
+        },
+        2
+      )
+    ).toThrow("below requested 2");
+  });
+
   it("rejects an unreadable cart after add", () => {
     expect(() =>
       assertCartContainsProduct(

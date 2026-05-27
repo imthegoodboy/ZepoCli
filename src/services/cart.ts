@@ -3,7 +3,7 @@ import { select } from "@inquirer/prompts";
 import { z } from "zod";
 
 import type { AppRuntime } from "../config/runtime.js";
-import type { CartSnapshot, Product } from "../types.js";
+import type { CartItem, CartSnapshot, Product } from "../types.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
 import { clickProductAdd, increaseProductQuantity, searchProducts } from "../automation/search.js";
@@ -46,7 +46,7 @@ export class CartService {
       await page.waitForTimeout(700);
       await increaseProductQuantity(page, product, quantity);
       const cart = await readCart(page);
-      assertCartContainsProduct(cart, product);
+      assertCartContainsProduct(cart, product, quantity);
       this.runtime.sqlite.saveCartSnapshot(cart);
 
       return {
@@ -87,21 +87,33 @@ export function parseAddQuantity(quantityInput: unknown): number {
   });
 }
 
-export function assertCartContainsProduct(cart: CartSnapshot, product: Product): void {
+export function assertCartContainsProduct(cart: CartSnapshot, product: Product, minimumQuantity = 1): void {
   if (cart.items.length === 0) {
     throw new UserFacingError(`Zepto cart was opened after adding ${product.name}, but no readable cart items were detected.`, {
       hint: "Rerun with `--visible --debug` to inspect Zepto's cart page instead of treating the add as successful."
     });
   }
 
+  const matchingItem = findMatchingCartItem(cart, product);
+  if (matchingItem) {
+    assertCartQuantity(matchingItem, product, minimumQuantity);
+    return;
+  }
+
+  throw new UserFacingError(`Zepto cart did not show an item matching ${product.name} after ADD.`, {
+    hint: "The page may have changed or the item may be unavailable. Rerun with `--visible --debug` before retrying checkout."
+  });
+}
+
+function findMatchingCartItem(cart: CartSnapshot, product: Product): CartItem | undefined {
   const productName = normalizeText(product.name).toLowerCase();
-  const hasDirectMatch = cart.items.some((item) => {
+  const directMatch = cart.items.find((item) => {
     const itemName = normalizeText(item.name).toLowerCase();
     return itemName.includes(productName) || productName.includes(itemName);
   });
 
-  if (hasDirectMatch) {
-    return;
+  if (directMatch) {
+    return directMatch;
   }
 
   const fuse = new Fuse(cart.items, {
@@ -110,13 +122,26 @@ export function assertCartContainsProduct(cart: CartSnapshot, product: Product):
     ignoreLocation: true
   });
 
-  if (fuse.search(product.name).length > 0) {
+  return fuse.search(product.name)[0]?.item;
+}
+
+function assertCartQuantity(item: CartItem, product: Product, minimumQuantity: number): void {
+  if (minimumQuantity <= 1) {
     return;
   }
 
-  throw new UserFacingError(`Zepto cart did not show an item matching ${product.name} after ADD.`, {
-    hint: "The page may have changed or the item may be unavailable. Rerun with `--visible --debug` before retrying checkout."
-  });
+  const quantity = item.quantity ? Number.parseInt(item.quantity, 10) : undefined;
+  if (!quantity) {
+    throw new UserFacingError(`Zepto cart did not expose the quantity for ${product.name} after requesting ${minimumQuantity}.`, {
+      hint: "Rerun with `--visible --debug` to inspect Zepto's cart quantity controls before retrying checkout."
+    });
+  }
+
+  if (quantity < minimumQuantity) {
+    throw new UserFacingError(`Zepto cart shows quantity ${quantity} for ${product.name}, below requested ${minimumQuantity}.`, {
+      hint: "Open `zepo cart` to inspect the item, then retry with a lower quantity if Zepto limits this product."
+    });
+  }
 }
 
 function bestMatch(products: Product[], query: string): Product {
