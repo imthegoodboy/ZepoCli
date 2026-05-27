@@ -66,6 +66,54 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not parse cart fee rows as products", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Delivery fee
+      ₹25
+      Handling charge
+      ₹5
+      Platform fee
+      ₹2
+      Grand Total ₹32
+    `);
+
+    expect(items).toEqual([]);
+  });
+
+  it("does not borrow fee prices for products without readable item details", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Amul Taaza Toned Milk
+      Delivery fee
+      ₹25
+      Grand Total ₹25
+    `);
+
+    expect(items).toEqual([]);
+  });
+
+  it("keeps product item details before bill summary rows", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+      Delivery fee
+      ₹25
+      Grand Total ₹57
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: undefined
+      }
+    ]);
+  });
+
   it("parses order status text", () => {
     const orders = parseOrdersFromText("Order #ZEP1234 Confirmed ETA: 8 mins Total ₹249");
 
