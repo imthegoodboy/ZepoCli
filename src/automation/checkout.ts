@@ -3,9 +3,12 @@ import type { Page } from "playwright";
 import { UserFacingError } from "../utils/errors.js";
 import { openCart } from "./cart.js";
 import { clickFirstText } from "./browser.js";
+import { parseCartItemsFromText } from "./extract.js";
 
 export async function openCheckout(page: Page): Promise<void> {
   await openCart(page);
+  const cartText = await page.locator("body").innerText().catch(() => "");
+  assertReadableCheckoutCart(cartText);
 
   const clicked = await clickFirstText(page, [/checkout/i, /proceed/i, /continue/i, /place order/i]);
   if (!clicked) {
@@ -21,6 +24,16 @@ export async function openCheckout(page: Page): Promise<void> {
       hint: "Check the visible browser for missing address, minimum cart value, unavailable items, or changed checkout UI."
     });
   }
+}
+
+export function assertReadableCheckoutCart(text: string): void {
+  if (parseCartItemsFromText(text).length > 0) {
+    return;
+  }
+
+  throw new UserFacingError("Zepto cart does not show any readable items for checkout.", {
+    hint: "Add an item with `zepo add`, then run `zepo cart` before retrying checkout."
+  });
 }
 
 export function isCheckoutHandoffText(text: string): boolean {

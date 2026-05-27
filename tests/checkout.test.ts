@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isCheckoutHandoffText } from "../src/automation/checkout.js";
+import { assertReadableCheckoutCart, isCheckoutHandoffText } from "../src/automation/checkout.js";
 
 describe("checkout handoff detection", () => {
   it("detects payment handoff text", () => {
@@ -17,5 +17,23 @@ describe("checkout handoff detection", () => {
 
   it("rejects empty pages", () => {
     expect(isCheckoutHandoffText("   ")).toBe(false);
+  });
+
+  it("accepts checkout only when cart text contains readable items", () => {
+    expect(() =>
+      assertReadableCheckoutCart(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Checkout
+      `)
+    ).not.toThrow();
+  });
+
+  it("rejects checkout when the cart has no readable items", () => {
+    expect(() => assertReadableCheckoutCart("Cart Add more items Apply coupon Checkout")).toThrow(
+      "Zepto cart does not show any readable items for checkout."
+    );
   });
 });
