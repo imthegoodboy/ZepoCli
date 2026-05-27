@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { requireReorderCart } from "../src/automation/orders.js";
+import { requireLatestOrder } from "../src/services/orders.js";
 
 describe("order automation helpers", () => {
   it("returns a reorder cart with items", () => {
@@ -23,5 +24,20 @@ describe("order automation helpers", () => {
         items: []
       })
     ).toThrow("Zepto did not expose any cart items after the reorder action.");
+  });
+
+  it("returns the latest order when tracking has order data", () => {
+    const latest = {
+      id: "ZEP1234",
+      status: "Out for delivery",
+      eta: "8 mins",
+      rawText: "Order #ZEP1234 Out for delivery ETA: 8 mins"
+    };
+
+    expect(requireLatestOrder([latest])).toBe(latest);
+  });
+
+  it("rejects latest-order tracking without detected orders", () => {
+    expect(() => requireLatestOrder([])).toThrow("No Zepto order was detected to track.");
   });
 });
