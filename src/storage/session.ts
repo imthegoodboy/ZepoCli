@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { BASE_URL } from "../config/constants.js";
 import type { AppPaths } from "../config/paths.js";
 import type { SessionStatus } from "../types.js";
 import type { SqliteStore } from "./sqlite.js";
@@ -93,7 +94,39 @@ function isStorageState(value: unknown): boolean {
   const state = value as { cookies?: unknown; origins?: unknown };
   const cookies = Array.isArray(state.cookies) ? state.cookies : [];
   const origins = Array.isArray(state.origins) ? state.origins : [];
-  return cookies.length > 0 || origins.length > 0;
+  return cookies.some(isZeptoCookie) || origins.some(isZeptoOrigin);
+}
+
+function isZeptoCookie(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const domain = (value as { domain?: unknown }).domain;
+  return typeof domain === "string" && isZeptoHost(domain);
+}
+
+function isZeptoOrigin(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const origin = (value as { origin?: unknown }).origin;
+  if (typeof origin !== "string") {
+    return false;
+  }
+
+  try {
+    return isZeptoHost(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isZeptoHost(host: string): boolean {
+  const configuredHost = new URL(BASE_URL).hostname.replace(/^www\./, "");
+  const normalizedHost = host.replace(/^\./, "").replace(/^www\./, "").toLowerCase();
+  return normalizedHost === configuredHost || normalizedHost.endsWith(`.${configuredHost}`);
 }
 
 function hasProfileFiles(path: string): boolean {
