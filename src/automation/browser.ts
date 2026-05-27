@@ -5,6 +5,7 @@ import { chromium, type BrowserContext, type Page } from "playwright";
 
 import { BASE_URL } from "../config/constants.js";
 import type { AppRuntime } from "../config/runtime.js";
+import type { SessionStatus } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 
 export interface BrowserRunOptions {
@@ -20,9 +21,10 @@ export class BrowserAutomation {
     options: BrowserRunOptions,
     task: (page: Page, context: BrowserContext) => Promise<T>
   ): Promise<T> {
-    if (options.requireSession && !this.runtime.session.hasStorageState()) {
-      throw new UserFacingError("No Zepto session found.", {
-        hint: "Run `zepo login` first."
+    if (options.requireSession && !this.runtime.session.hasConfirmedSession()) {
+      const status = this.runtime.session.status();
+      throw new UserFacingError("No confirmed Zepto session found.", {
+        hint: confirmedSessionHint(status)
       });
     }
 
@@ -81,6 +83,22 @@ export class BrowserAutomation {
       "browser automation failed"
     );
   }
+}
+
+function confirmedSessionHint(status: SessionStatus): string {
+  if (!status.hasAuthState) {
+    return "Run `zepo login` first.";
+  }
+
+  if (!status.markedLoggedIn) {
+    return "Run `zepo login` again and confirm only after Zepto shows your account.";
+  }
+
+  if (!status.hasBrowserProfileData) {
+    return "The persistent browser profile is missing. Run `zepo login` again.";
+  }
+
+  return "Run `zepo status` to inspect local session state, then retry `zepo login` if needed.";
 }
 
 export async function gotoZepto(page: Page, path = "/"): Promise<void> {

@@ -70,4 +70,21 @@ describe("session storage", () => {
     });
     expect(status.updatedAt).toBeTypeOf("string");
   });
+
+  it("requires auth state, browser profile data, and confirmed login for a usable session", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-confirmed-session-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(paths.authStatePath, "{\"cookies\":[]}");
+    session.markLoggedIn();
+    expect(session.hasConfirmedSession()).toBe(false);
+
+    mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+    writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
+
+    expect(session.hasConfirmedSession()).toBe(true);
+    sqlite.close();
+  });
 });

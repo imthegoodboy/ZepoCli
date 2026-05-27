@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -49,6 +49,27 @@ describe("doctor service", () => {
     ]);
     expect(report.checks.find((check) => check.name === "Zepto session")).toMatchObject({
       status: "warn"
+    });
+  });
+
+  it("warns when only partial session data exists", async () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-doctor-partial-session-"));
+    const runtime = createRuntime({
+      dataDir: tempDir,
+      debug: false,
+      headless: true
+    });
+
+    writeFileSync(runtime.paths.authStatePath, "{\"cookies\":[]}");
+    runtime.session.markLoggedIn();
+
+    const report = await new DoctorService(runtime).run({ browser: false });
+    runtime.sqlite.close();
+
+    expect(report.ok).toBe(true);
+    expect(report.checks.find((check) => check.name === "Zepto session")).toMatchObject({
+      status: "warn",
+      message: "Partial Zepto session data was found, but login is not confirmed."
     });
   });
 });

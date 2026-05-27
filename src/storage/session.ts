@@ -50,6 +50,11 @@ export class SessionStore {
     };
   }
 
+  hasConfirmedSession(): boolean {
+    const status = this.status();
+    return status.hasAuthState && status.hasBrowserProfileData && status.markedLoggedIn;
+  }
+
   clear(): void {
     if (existsSync(this.paths.authStatePath)) {
       rmSync(this.paths.authStatePath, { force: true });

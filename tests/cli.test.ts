@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -72,9 +72,22 @@ describe("CLI command smokes", () => {
     const result = await runCli(["--data-dir", dataDir, "cart"]);
 
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain("No Zepto session found.");
+    expect(result.stderr).toContain("No confirmed Zepto session found.");
     expect(result.stderr).toContain("Run `zepo login` first.");
     expect(result.stderr).not.toContain("Reading Zepto cart");
+  }, CLI_TEST_TIMEOUT_MS);
+
+  it("rejects stale auth state that was not confirmed by login", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-stale-session-"));
+    const storageDir = join(dataDir, "storage");
+    mkdirSync(storageDir, { recursive: true });
+    writeFileSync(join(storageDir, "auth-state.json"), "{\"cookies\":[]}");
+
+    const result = await runCli(["--data-dir", dataDir, "cart"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("No confirmed Zepto session found.");
+    expect(result.stderr).toContain("Run `zepo login` again");
   }, CLI_TEST_TIMEOUT_MS);
 });
 
