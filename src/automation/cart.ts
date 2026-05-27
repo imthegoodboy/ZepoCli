@@ -2,7 +2,7 @@ import type { Page } from "playwright";
 
 import type { CartSnapshot } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
-import { extractPrices } from "../utils/format.js";
+import { extractPrices, normalizeText } from "../utils/format.js";
 import { parseCartItemsFromText } from "./extract.js";
 import { clickFirstText, gotoZepto } from "./browser.js";
 
@@ -56,7 +56,14 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
     throw new UserFacingError(`Could not find a removable cart item matching "${query}".`);
   }
 
-  return readCart(page);
+  const cart = await readCart(page);
+  if (cartHasMatchingItem(cart, query)) {
+    throw new UserFacingError(`Zepto still shows a cart item matching "${query}" after remove.`, {
+      hint: "Rerun with `--visible --debug` to inspect the cart controls before retrying checkout."
+    });
+  }
+
+  return cart;
 }
 
 export async function clearCart(page: Page): Promise<CartSnapshot> {
@@ -74,11 +81,26 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
     await page.waitForTimeout(500);
   }
 
-  if (removedCount === 0) {
-    return readCart(page);
+  const cart = await readCart(page);
+  if (cart.items.length > 0) {
+    throw new UserFacingError("Could not clear all detected Zepto cart items.", {
+      hint: "Rerun with `--visible --debug` to inspect Zepto's cart controls, or remove the remaining items in the browser."
+    });
   }
 
-  return readCart(page);
+  return cart;
+}
+
+export function cartHasMatchingItem(cart: CartSnapshot, query: string): boolean {
+  const queryText = normalizeText(query).toLowerCase();
+  if (!queryText) {
+    return false;
+  }
+
+  return cart.items.some((item) => {
+    const itemText = normalizeText([item.name, item.unit].filter(Boolean).join(" ")).toLowerCase();
+    return itemText.includes(queryText) || queryText.includes(itemText);
+  });
 }
 
 async function findRemoveButtonId(page: Page, query?: string): Promise<number | undefined> {
