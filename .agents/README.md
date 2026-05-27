@@ -12,6 +12,7 @@ Build and maintain `zepo` like a normal production CLI:
 - Do not add fake "AI agent" features, autonomous purchasing, background ordering, or placeholder commands.
 - If a command cannot really complete or hand off to Zepto, fail clearly with an actionable message.
 - Prefer `--json` when another agent or script needs to consume command output; do not scrape colored human text.
+- In JSON mode, command failures emit `{ "ok": false, "error": ... }` on stderr. Treat non-zero exit status as failure even when the JSON is parseable.
 
 ## Current Architecture
 
@@ -57,6 +58,7 @@ Implementation consequence:
 - `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.
 - Account-dependent commands should require confirmed local session state, not just leftover files.
 - State-changing commands should keep machine-readable `--json` output aligned with their human output.
+- Keep JSON-mode error payloads stable and structured enough for agents to branch on `error.type`, `error.message`, `error.hint`, and `error.exitCode`.
 
 ## Verification Expectations
 
