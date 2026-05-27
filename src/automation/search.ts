@@ -180,10 +180,9 @@ async function extractProducts(page: Page, limit: number): Promise<Product[]> {
     return Array.from(document.querySelectorAll("img[alt]"))
       .filter((image) => isVisible(image))
       .slice(0, maxCards)
-      .map((image, index) => {
+      .map((image) => {
         const card = cardFor(image);
         return {
-          automationId: index,
           text: card.textContent ?? "",
           imageAlt: image.getAttribute("alt") ?? undefined,
           href: hrefFor(card)

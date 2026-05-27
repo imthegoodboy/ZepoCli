@@ -25,6 +25,27 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("does not invent an automation id for image-only product cards", () => {
+    const product = parseProductCard(
+      {
+        imageAlt: "Image: Tender Coconut",
+        text: "Tender Coconut\n1 piece\n₹65"
+      },
+      0
+    );
+
+    expect(product).toEqual({
+      index: 0,
+      automationId: undefined,
+      name: "Tender Coconut",
+      price: "₹65",
+      mrp: undefined,
+      unit: "1 piece",
+      rating: undefined,
+      url: undefined
+    });
+  });
+
   it("parses cart-like text without creating empty items", () => {
     const items = parseCartItemsFromText(`
       Cart
