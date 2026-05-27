@@ -41,7 +41,8 @@ export class CartService {
         });
       }
 
-      const product = options.choose ? await chooseProduct(products) : requireBestMatch(products, cleanQuery);
+      const addableProducts = requireAddableProducts(products, cleanQuery);
+      const product = options.choose ? await chooseProduct(addableProducts) : requireBestMatch(addableProducts, cleanQuery);
       await clickProductAdd(page, product);
       await page.waitForTimeout(700);
       await increaseProductQuantity(page, product, quantity);
@@ -157,6 +158,17 @@ export function requireBestMatch(products: Product[], query: string): Product {
 
   throw new UserFacingError(`No confident Zepto product match was found for "${query}".`, {
     hint: "Run `zepo add --choose <query>` to pick from the visible search results."
+  });
+}
+
+export function requireAddableProducts(products: Product[], query: string): Product[] {
+  const addableProducts = products.filter((product) => product.automationId !== undefined);
+  if (addableProducts.length > 0) {
+    return addableProducts;
+  }
+
+  throw new UserFacingError(`Zepto did not expose ADD buttons for products matching "${query}".`, {
+    hint: "Rerun with `--visible --debug` to inspect the search results, or try a more specific product query."
   });
 }
 
