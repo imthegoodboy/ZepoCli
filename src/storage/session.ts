@@ -45,22 +45,25 @@ export class SessionStore {
 
   status(): SessionStatus {
     const session = this.sqlite.getSession();
+    const hasAuthState = this.hasStorageState();
+    const hasBrowserProfileData = hasProfileFiles(this.paths.browserProfileDir);
+    const markedLoggedIn = session?.loggedIn ?? false;
 
     return {
       dataDir: this.paths.dataDir,
       authStatePath: this.paths.authStatePath,
       browserProfileDir: this.paths.browserProfileDir,
       diagnosticsDir: this.paths.diagnosticsDir,
-      hasAuthState: this.hasStorageState(),
-      hasBrowserProfileData: hasProfileFiles(this.paths.browserProfileDir),
-      markedLoggedIn: session?.loggedIn ?? false,
+      hasAuthState,
+      hasBrowserProfileData,
+      markedLoggedIn,
+      confirmedSession: hasAuthState && hasBrowserProfileData && markedLoggedIn,
       updatedAt: session?.updatedAt
     };
   }
 
   hasConfirmedSession(): boolean {
-    const status = this.status();
-    return status.hasAuthState && status.hasBrowserProfileData && status.markedLoggedIn;
+    return this.status().confirmedSession;
   }
 
   clear(): void {

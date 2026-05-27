@@ -67,7 +67,8 @@ describe("session storage", () => {
       diagnosticsDir: paths.diagnosticsDir,
       hasAuthState: true,
       hasBrowserProfileData: true,
-      markedLoggedIn: true
+      markedLoggedIn: true,
+      confirmedSession: true
     });
     expect(status.updatedAt).toBeTypeOf("string");
   });
@@ -119,6 +120,7 @@ describe("session storage", () => {
     expect(status.hasAuthState).toBe(true);
     expect(status.hasBrowserProfileData).toBe(false);
     expect(status.markedLoggedIn).toBe(true);
+    expect(status.confirmedSession).toBe(false);
     expect(confirmed).toBe(false);
   });
 });

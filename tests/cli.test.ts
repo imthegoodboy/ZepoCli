@@ -42,10 +42,16 @@ describe("CLI command smokes", () => {
     const result = await runCli(["--data-dir", dataDir, "status", "--json"]);
 
     expect(result.exitCode).toBe(0);
-    const status = JSON.parse(result.stdout) as { dataDir: string; hasAuthState: boolean; markedLoggedIn: boolean };
+    const status = JSON.parse(result.stdout) as {
+      dataDir: string;
+      hasAuthState: boolean;
+      markedLoggedIn: boolean;
+      confirmedSession: boolean;
+    };
     expect(status.dataDir).toBe(dataDir);
     expect(status.hasAuthState).toBe(false);
     expect(status.markedLoggedIn).toBe(false);
+    expect(status.confirmedSession).toBe(false);
   }, CLI_TEST_TIMEOUT_MS);
 
   it("runs doctor without browser launch for fast local readiness", async () => {
