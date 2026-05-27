@@ -23,25 +23,31 @@ export function registerCartCommands(program: Command): void {
     .command("remove")
     .description("Remove a matching item from the Zepto cart")
     .argument("<query...>", "cart item query")
-    .action((queryParts: string[], _options: unknown, command: Command) =>
+    .option("--json", "print machine-readable JSON")
+    .action((queryParts: string[], options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const query = joinQuery(queryParts);
-        const cart = await withCommandSpinner(`Removing "${query}"`, `Removed matching item for "${query}".`, () =>
-          new ZeptoService(runtime).cart.remove(query)
-        );
-        printCart(cart);
+        const service = new ZeptoService(runtime).cart;
+        const cart = options.json
+          ? await service.remove(query)
+          : await withCommandSpinner(`Removing "${query}"`, `Removed matching item for "${query}".`, () =>
+              service.remove(query)
+            );
+        printCart(cart, options.json);
       })
     );
 
   program
     .command("clear")
     .description("Remove all detected items from the Zepto cart")
-    .action((_options: unknown, command: Command) =>
+    .option("--json", "print machine-readable JSON")
+    .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
-        const cart = await withCommandSpinner("Clearing Zepto cart", "Cart cleared.", () =>
-          new ZeptoService(runtime).cart.clear()
-        );
-        printCart(cart);
+        const service = new ZeptoService(runtime).cart;
+        const cart = options.json
+          ? await service.clear()
+          : await withCommandSpinner("Clearing Zepto cart", "Cart cleared.", () => service.clear());
+        printCart(cart, options.json);
       })
     );
 

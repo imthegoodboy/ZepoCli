@@ -40,7 +40,12 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - If a selector becomes unreliable, fail with a specific error and hint.
    - Do not silently return fake cart/order/address data.
 
-5. Storage behavior.
+5. CLI output behavior.
+   - Keep human output concise and readable.
+   - Keep `--json` output available for commands that return workflow state so agents and scripts do not scrape terminal text.
+   - Do not print spinner/status prose when `--json` is requested.
+
+6. Storage behavior.
    - Session state lives in Playwright storage state.
    - Browser profile data lives in the configured data directory so IndexedDB, cookies, and site state survive between CLI runs.
    - SQLite is for local metadata, snapshots, and cache only.

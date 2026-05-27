@@ -65,6 +65,15 @@ describe("CLI command smokes", () => {
     expect(status.confirmedSession).toBe(false);
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("prints machine-readable logout output", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-logout-"));
+    const result = await runCli(["--data-dir", dataDir, "logout", "--json"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({ sessionRemoved: true });
+    expect(result.stderr).toBe("");
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("runs doctor without browser launch for fast local readiness", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-doctor-"));
     const result = await runCli(["--data-dir", dataDir, "doctor", "--skip-browser", "--json"]);

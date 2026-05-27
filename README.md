@@ -31,6 +31,24 @@ zepo history
 zepo reorder last
 ```
 
+Most commands that return workflow state or completion status support `--json` for scripts and agents:
+
+```bash
+zepo login --json
+zepo logout --json
+zepo search milk --json
+zepo add "Amul Milk 500ml" --json
+zepo cart --json
+zepo remove chips --json
+zepo clear --json
+zepo address list --json
+zepo address use home --json
+zepo checkout --json
+zepo track --json
+zepo history --json
+zepo reorder last --json
+```
+
 ## How It Works
 
 The CLI layers are deliberately simple:

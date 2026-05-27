@@ -2,7 +2,7 @@ import chalk from "chalk";
 import type { Command } from "commander";
 
 import { ZeptoService } from "../services/zepto.js";
-import { printAddresses } from "../utils/output.js";
+import { printAddresses, printJson } from "../utils/output.js";
 import { joinQuery, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerAddressCommand(program: Command): void {
@@ -30,12 +30,19 @@ export function registerAddressCommand(program: Command): void {
     .command("use")
     .description("Select a saved Zepto address by visible text")
     .argument("<query...>", "address label or text")
-    .action((queryParts: string[], _options: unknown, command: Command) =>
+    .option("--json", "print machine-readable JSON")
+    .action((queryParts: string[], options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const query = joinQuery(queryParts);
-        const selected = await withCommandSpinner(`Selecting address "${query}"`, "Address selected.", () =>
-          new ZeptoService(runtime).addresses.use(query)
-        );
+        const service = new ZeptoService(runtime).addresses;
+        const selected = options.json
+          ? await service.use(query)
+          : await withCommandSpinner(`Selecting address "${query}"`, "Address selected.", () => service.use(query));
+        if (options.json) {
+          printJson(selected);
+          return;
+        }
+
         console.log(chalk.green(selected.text));
       })
     );
@@ -43,9 +50,15 @@ export function registerAddressCommand(program: Command): void {
   address
     .command("add")
     .description("Open Zepto address flow in the browser")
-    .action((_options: unknown, command: Command) =>
+    .option("--json", "print machine-readable JSON")
+    .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const addresses = await new ZeptoService(runtime).addresses.add();
+        if (options.json) {
+          printAddresses(addresses, true);
+          return;
+        }
+
         console.log(chalk.green("Address detected from Zepto."));
         printAddresses(addresses);
       })
