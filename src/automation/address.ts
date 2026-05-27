@@ -55,7 +55,7 @@ export async function listAddresses(page: Page): Promise<Address[]> {
         return {
           label,
           text,
-          selected: /selected|deliver(?:ing)? here/i.test(text)
+          selected: /selected|deliver(?:ing)? (?:here|to)/i.test(text)
         };
       });
   });
@@ -91,11 +91,25 @@ export async function useAddress(page: Page, query: string): Promise<Address> {
   await page.locator(`[data-zepo-address-id="${matched.index}"]`).first().click();
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
 
-  return {
-    label: matched.label,
-    text: normalizeText(matched.text),
-    selected: true
-  };
+  const addresses = await listAddresses(page);
+  return requireSelectedAddress(addresses, query);
+}
+
+export function requireSelectedAddress(addresses: Address[], query: string): Address {
+  const selected = addresses.find((address) => address.selected && addressMatchesQuery(address, query));
+  if (selected) {
+    return selected;
+  }
+
+  throw new UserFacingError(`Zepto did not show a selected address matching "${query}" after the selection click.`, {
+    hint: "Rerun with `--visible --debug` and confirm Zepto marks the requested address as selected before retrying checkout."
+  });
+}
+
+export function addressMatchesQuery(address: Address, query: string): boolean {
+  const queryText = normalizeText(query).toLowerCase();
+  const addressText = normalizeText([address.label, address.text].filter(Boolean).join(" ")).toLowerCase();
+  return queryText.length > 0 && (addressText.includes(queryText) || queryText.includes(addressText));
 }
 
 export async function startAddAddress(page: Page): Promise<void> {
