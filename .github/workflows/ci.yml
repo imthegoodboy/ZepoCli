@@ -37,6 +37,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Verify compiled CLI
+        run: npm run verify:cli
+
       - name: Remove build output before package test
         run: rm -rf dist
 

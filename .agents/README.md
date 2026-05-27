@@ -68,7 +68,9 @@ Before claiming production readiness:
 
 - `npm run build` passes.
 - `npm test` passes.
+- `npm run verify:cli` passes against the compiled `dist/index.js`.
 - `node dist/index.js --help` shows the intended command surface.
+- `npm pack --dry-run` passes before publishing or claiming package readiness.
 - At least one browser smoke test is run against Zepto for search or login handoff when Chromium is available.
 - Commands that depend on a real Zepto account are marked verified only after a human-controlled session exercises them.
 

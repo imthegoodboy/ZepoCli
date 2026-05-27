@@ -125,6 +125,7 @@ Stored data includes:
 
 ```bash
 npm run check
-node dist/index.js --help
-npm pack --dry-run
+npm run verify:cli
 ```
+
+`npm run check` builds, runs tests, verifies compiled CLI smoke behavior, and runs `npm pack --dry-run`.
