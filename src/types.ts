@@ -13,6 +13,7 @@ export interface SessionStatus {
   hasAuthState: boolean;
   hasBrowserProfileData: boolean;
   markedLoggedIn: boolean;
+  confirmedSession: boolean;
   updatedAt?: string;
 }
 

@@ -27,10 +27,12 @@ function printStatus(status: SessionStatus): void {
   const auth = status.hasAuthState ? chalk.green("present") : chalk.yellow("missing");
   const profile = status.hasBrowserProfileData ? chalk.green("present") : chalk.yellow("empty");
   const loginMarker = status.markedLoggedIn ? chalk.green("yes") : chalk.yellow("no");
+  const confirmedSession = status.confirmedSession ? chalk.green("yes") : chalk.yellow("no");
 
   console.log(`${chalk.bold("Auth state:")} ${auth}`);
   console.log(`${chalk.bold("Browser profile:")} ${profile}`);
   console.log(`${chalk.bold("Marked logged in:")} ${loginMarker}`);
+  console.log(`${chalk.bold("Confirmed session:")} ${confirmedSession}`);
 
   if (status.updatedAt) {
     console.log(`${chalk.bold("Last session update:")} ${status.updatedAt}`);
