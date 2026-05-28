@@ -17,6 +17,7 @@
     "test": "vitest run",
     "verify:cli": "node scripts/verify-cli.mjs",
     "verify:package": "node scripts/verify-package.mjs",
+    "verify:live": "node scripts/verify-live-flow.mjs",
     "check": "npm run build && npm test && npm run verify:cli && npm run verify:package && node dist/index.js --help && npm pack --dry-run",
     "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"

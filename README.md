@@ -233,3 +233,12 @@ npm run verify:package
 ```
 
 `npm run check` builds, runs tests, verifies compiled CLI smoke behavior including the executable entry contract, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary, checks `node dist/index.js --help`, and runs `npm pack --dry-run`.
+
+For real human-account verification, use the opt-in live runner after building:
+
+```bash
+npm run build
+npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
+```
+
+`verify:live` runs the compiled `zepo` commands with a dedicated data directory and visible browser handoffs where needed. It writes a sanitized `live-verification-report.json` that records step status, counts, and stable error codes, but omits raw Zepto page text, addresses, cart item names, payment credentials, and order ids. It is not part of `npm run check` or CI because it requires a real human-controlled Zepto account, delivery context, cart choices, and optional Zepto-side payment/checkout decisions.

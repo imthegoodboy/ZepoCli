@@ -34,5 +34,11 @@ describe("package CLI contract", () => {
     ]) {
       expect(checkScript).toContain(gate);
     }
+
+    expect(checkScript).not.toContain("verify:live");
+  });
+
+  it("exposes live verification as an opt-in script outside CI gates", () => {
+    expect(packageJson.scripts?.["verify:live"]).toBe("node scripts/verify-live-flow.mjs");
   });
 });

@@ -51,5 +51,9 @@ describe("README package guidance", () => {
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
+    expect(readme).toContain("npm run verify:live -- --data-dir ./.zepo-live");
+    expect(readme).toContain("live-verification-report.json");
+    expect(readme).toContain("omits raw Zepto page text, addresses, cart item names, payment credentials, and order ids");
+    expect(readme).toContain("not part of `npm run check` or CI");
   });
 });
