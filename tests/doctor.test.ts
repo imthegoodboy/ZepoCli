@@ -174,17 +174,20 @@ describe("doctor service", () => {
     expect(report.browserLock).toMatchObject({
       path: runtime.paths.browserLockPath,
       present: true,
-      stale: false
+      stale: false,
+      pid: process.pid
     });
+    expect(report.browserLock.createdAt).toBeTypeOf("string");
     expect(report.browserAutomation).toMatchObject({
       ready: false,
       reasons: ["browser_lock_active"],
       retryAfterMs: 0
     });
-    expect(report.checks.find((check) => check.name === "Browser automation lock")).toMatchObject({
-      status: "warn",
-      message: "Another ZepoCli browser command appears to be using this data directory."
+    const lockCheck = report.checks.find((check) => check.name === "Browser automation lock");
+    expect(lockCheck).toMatchObject({
+      status: "warn"
     });
+    expect(lockCheck?.message).toContain(`PID ${process.pid}`);
   });
 
   it("warns when a browser automation lock is stale", async () => {
@@ -199,7 +202,7 @@ describe("doctor service", () => {
       runtime.paths.browserLockPath,
       JSON.stringify({
         token: "stale",
-        pid: 1,
+        pid: process.pid,
         createdAt: Date.now() - 20 * 60 * 1_000
       })
     );
@@ -211,12 +214,56 @@ describe("doctor service", () => {
     expect(report.browserLock).toMatchObject({
       path: runtime.paths.browserLockPath,
       present: true,
-      stale: true
+      stale: true,
+      pid: process.pid,
+      staleReason: "expired"
     });
-    expect(report.checks.find((check) => check.name === "Browser automation lock")).toMatchObject({
-      status: "warn",
-      message: "A stale browser automation lock exists for this data directory."
+    const lockCheck = report.checks.find((check) => check.name === "Browser automation lock");
+    expect(lockCheck).toMatchObject({
+      status: "warn"
     });
+    expect(lockCheck?.message).toContain("older than the stale-lock timeout");
+  });
+
+  it("warns when a browser automation lock belongs to an exited process", async () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-doctor-dead-lock-"));
+    const runtime = createRuntime({
+      dataDir: tempDir,
+      debug: false,
+      headless: true
+    });
+
+    writeFileSync(
+      runtime.paths.browserLockPath,
+      JSON.stringify({
+        token: "dead",
+        pid: 99_999_999,
+        createdAt: Date.now()
+      })
+    );
+
+    const report = await new DoctorService(runtime).run({ browser: false });
+    closeRuntimeBestEffort(runtime);
+
+    expect(report.ok).toBe(true);
+    expect(report.browserLock).toMatchObject({
+      path: runtime.paths.browserLockPath,
+      present: true,
+      stale: true,
+      pid: 99_999_999,
+      staleReason: "process_not_running"
+    });
+    expect(report.browserAutomation).toMatchObject({
+      ready: true,
+      reasons: [],
+      retryAfterMs: 0
+    });
+    const lockCheck = report.checks.find((check) => check.name === "Browser automation lock");
+    expect(lockCheck).toMatchObject({
+      status: "warn"
+    });
+    expect(lockCheck?.message).toContain("is no longer running");
+    expect(lockCheck?.hint).toContain("recover this lock automatically");
   });
 
   it("warns when headless automation is cooling down after a Zepto access challenge", async () => {

@@ -49,7 +49,12 @@ export interface BrowserRunLockStatus {
   path: string;
   present: boolean;
   stale: boolean;
+  pid?: number;
+  createdAt?: string;
+  staleReason?: BrowserRunLockStaleReason;
 }
+
+export type BrowserRunLockStaleReason = "expired" | "process_not_running";
 
 export type BrowserAutomationReadinessReason =
   | "browser_lock_active"

@@ -196,6 +196,8 @@ describe("CLI command smokes", () => {
         path: string;
         present: boolean;
         stale: boolean;
+        pid?: number;
+        createdAt?: string;
       };
       browserAutomation: {
         ready: boolean;
@@ -204,11 +206,13 @@ describe("CLI command smokes", () => {
         hint?: string;
       };
     };
-    expect(status.browserLock).toEqual({
+    expect(status.browserLock).toMatchObject({
       path: join(dataDir, "browser.lock"),
       present: true,
-      stale: false
+      stale: false,
+      pid: process.pid
     });
+    expect(status.browserLock.createdAt).toBeTypeOf("string");
     expect(status.browserAutomation).toMatchObject({
       ready: false,
       reasons: ["browser_lock_active"],

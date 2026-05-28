@@ -18,6 +18,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("browserAutomation.ready");
     expect(readme).toContain("browserAutomation.reasons");
     expect(readme).toContain("browserAutomation.retryAfterMs");
+    expect(readme).toContain("Browser lock JSON includes the lock owner `pid`, `createdAt`, and `staleReason`");
+    expect(readme).toContain("the next browser command can recover dead-owner or expired locks automatically");
     expect(readme).toContain("Do not parallelize multiple data directories to bypass pacing or throttle signals");
     expect(readme).toContain("`zepo doctor --json` also includes `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("raw Zepto page text");

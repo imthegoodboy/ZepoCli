@@ -245,16 +245,28 @@ export function acquireBrowserRunLock(lockPath: string, nowMs = Date.now()): () 
 }
 
 export function isStaleBrowserRunLock(lockPath: string, nowMs = Date.now()): boolean {
-  const createdAt = readBrowserRunLockCreatedAt(lockPath);
-  return nowMs - createdAt > BROWSER_RUN_LOCK_STALE_MS;
+  return browserRunLockStaleReason(lockPath, nowMs) !== undefined;
 }
 
 export function getBrowserRunLockStatus(lockPath: string, nowMs = Date.now()): BrowserRunLockStatus {
   const present = existsSync(lockPath);
+  if (!present) {
+    return {
+      path: lockPath,
+      present,
+      stale: false
+    };
+  }
+
+  const details = readBrowserRunLockDetails(lockPath);
+  const staleReason = browserRunLockStaleReason(lockPath, nowMs, details);
   return {
     path: lockPath,
     present,
-    stale: present ? isStaleBrowserRunLock(lockPath, nowMs) : false
+    stale: staleReason !== undefined,
+    ...(details.pid !== undefined ? { pid: details.pid } : {}),
+    ...(details.createdAt !== undefined ? { createdAt: new Date(details.createdAt).toISOString() } : {}),
+    ...(staleReason ? { staleReason } : {})
   };
 }
 
@@ -380,25 +392,76 @@ function releaseBrowserRunLock(lockPath: string, token: string): void {
   rmSync(lockPath, { force: true });
 }
 
-function readBrowserRunLockCreatedAt(lockPath: string): number {
-  try {
-    const lock = JSON.parse(readFileSync(lockPath, "utf8")) as { createdAt?: unknown };
-    if (typeof lock.createdAt === "number" && Number.isFinite(lock.createdAt)) {
-      return lock.createdAt;
-    }
-  } catch {
-    // Fall back to file mtime for older or damaged lock files.
+interface BrowserRunLockDetails {
+  token?: string;
+  pid?: number;
+  createdAt?: number;
+}
+
+function browserRunLockStaleReason(
+  lockPath: string,
+  nowMs: number,
+  details = readBrowserRunLockDetails(lockPath)
+): BrowserRunLockStatus["staleReason"] | undefined {
+  if (details.pid !== undefined && !isProcessAlive(details.pid)) {
+    return "process_not_running";
   }
 
-  return statSync(lockPath).mtimeMs;
+  const createdAt = details.createdAt;
+  if (createdAt === undefined) {
+    return undefined;
+  }
+
+  if (nowMs - createdAt > BROWSER_RUN_LOCK_STALE_MS) {
+    return "expired";
+  }
+
+  return undefined;
+}
+
+function readBrowserRunLockDetails(lockPath: string): BrowserRunLockDetails {
+  try {
+    const lock = JSON.parse(readFileSync(lockPath, "utf8")) as {
+      token?: unknown;
+      pid?: unknown;
+      createdAt?: unknown;
+    };
+    return {
+      ...(typeof lock.token === "string" ? { token: lock.token } : {}),
+      ...(typeof lock.pid === "number" && Number.isInteger(lock.pid) ? { pid: lock.pid } : {}),
+      ...(typeof lock.createdAt === "number" && isValidLockTimestamp(lock.createdAt)
+        ? { createdAt: lock.createdAt }
+        : {})
+    };
+  } catch {
+    try {
+      return {
+        createdAt: statSync(lockPath).mtimeMs
+      };
+    } catch {
+      return {};
+    }
+  }
 }
 
 function readBrowserRunLockToken(lockPath: string): string | undefined {
+  return readBrowserRunLockDetails(lockPath).token;
+}
+
+function isValidLockTimestamp(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 8.64e15;
+}
+
+function isProcessAlive(pid: number): boolean {
+  if (pid <= 0) {
+    return false;
+  }
+
   try {
-    const lock = JSON.parse(readFileSync(lockPath, "utf8")) as { token?: unknown };
-    return typeof lock.token === "string" ? lock.token : undefined;
-  } catch {
-    return undefined;
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "EPERM";
   }
 }
 

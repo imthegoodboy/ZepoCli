@@ -533,7 +533,9 @@ describe("browser automation helpers", () => {
     expect(getBrowserRunLockStatus(lockPath, 10_100)).toEqual({
       path: lockPath,
       present: true,
-      stale: false
+      stale: false,
+      pid: process.pid,
+      createdAt: new Date(10_000).toISOString()
     });
     const lock = JSON.parse(readFileSync(lockPath, "utf8")) as { pid: number; createdAt: number; token: string };
     expect(lock.pid).toBe(process.pid);
@@ -565,7 +567,7 @@ describe("browser automation helpers", () => {
       lockPath,
       JSON.stringify({
         token: "old",
-        pid: 1,
+        pid: process.pid,
         createdAt: 10_000
       })
     );
@@ -574,13 +576,48 @@ describe("browser automation helpers", () => {
     expect(getBrowserRunLockStatus(lockPath, 20 * 60 * 1_000)).toEqual({
       path: lockPath,
       present: true,
-      stale: true
+      stale: true,
+      pid: process.pid,
+      createdAt: new Date(10_000).toISOString(),
+      staleReason: "expired"
     });
     const release = acquireBrowserRunLock(lockPath, 20 * 60 * 1_000);
 
     const lock = JSON.parse(readFileSync(lockPath, "utf8")) as { token: string; createdAt: number };
     expect(lock.token).not.toBe("old");
     expect(lock.createdAt).toBe(20 * 60 * 1_000);
+
+    release();
+    expect(existsSync(lockPath)).toBe(false);
+  });
+
+  it("recovers browser automation locks whose owner process has exited", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-browser-dead-lock-"));
+    const lockPath = join(tempDir, "browser.lock");
+    writeFileSync(
+      lockPath,
+      JSON.stringify({
+        token: "dead",
+        pid: 99_999_999,
+        createdAt: 10_000
+      })
+    );
+
+    expect(isStaleBrowserRunLock(lockPath, 11_000)).toBe(true);
+    expect(getBrowserRunLockStatus(lockPath, 11_000)).toEqual({
+      path: lockPath,
+      present: true,
+      stale: true,
+      pid: 99_999_999,
+      createdAt: new Date(10_000).toISOString(),
+      staleReason: "process_not_running"
+    });
+
+    const release = acquireBrowserRunLock(lockPath, 11_000);
+    const lock = JSON.parse(readFileSync(lockPath, "utf8")) as { token: string; pid: number; createdAt: number };
+    expect(lock.token).not.toBe("dead");
+    expect(lock.pid).toBe(process.pid);
+    expect(lock.createdAt).toBe(11_000);
 
     release();
     expect(existsSync(lockPath)).toBe(false);

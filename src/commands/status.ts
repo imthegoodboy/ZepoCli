@@ -75,11 +75,7 @@ function printStatus(status: SessionStatus): void {
   const profile = status.hasBrowserProfileData ? chalk.green("present") : chalk.yellow("empty");
   const loginMarker = status.markedLoggedIn ? chalk.green("yes") : chalk.yellow("no");
   const confirmedSession = status.confirmedSession ? chalk.green("yes") : chalk.yellow("no");
-  const browserLock = status.browserLock.present
-    ? status.browserLock.stale
-      ? chalk.yellow("stale")
-      : chalk.yellow("active")
-    : chalk.green("clear");
+  const browserLock = status.browserLock.present ? chalk.yellow(formatBrowserLockStatus(status)) : chalk.green("clear");
   const headlessThrottle = status.headlessBrowserThrottle.throttleActive
     ? chalk.yellow(`cooling down, retry after ${formatDuration(status.headlessBrowserThrottle.retryAfterMs)}`)
     : status.headlessBrowserThrottle.recentRuns > 0
@@ -112,6 +108,21 @@ function printStatus(status: SessionStatus): void {
 
   console.log(`${chalk.bold("Data dir:")} ${status.dataDir}`);
   console.log(`${chalk.bold("Diagnostics:")} ${status.diagnosticsDir}`);
+}
+
+function formatBrowserLockStatus(status: SessionStatus): string {
+  const pid = status.browserLock.pid ? `, PID ${status.browserLock.pid}` : "";
+  if (!status.browserLock.stale) {
+    return `active${pid}`;
+  }
+
+  const reason =
+    status.browserLock.staleReason === "process_not_running"
+      ? "owner process exited"
+      : status.browserLock.staleReason === "expired"
+        ? "expired"
+        : "stale";
+  return `${reason}${pid}`;
 }
 
 function formatBrowserAutomationReadiness(status: BrowserAutomationReadiness): string {

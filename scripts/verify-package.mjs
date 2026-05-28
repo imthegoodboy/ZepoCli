@@ -377,6 +377,8 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
         assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected browser lock path");
         assert(payload.browserLock?.present === true, "expected browser lock present");
         assert(payload.browserLock?.stale === false, "expected browser lock not stale");
+        assert(payload.browserLock?.pid === process.pid, "expected browser lock owner pid");
+        assert(typeof payload.browserLock?.createdAt === "string", "expected browser lock createdAt");
         rmSync(join(dataDir, "browser.lock"), { force: true });
       }
     },

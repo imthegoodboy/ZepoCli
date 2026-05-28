@@ -172,18 +172,25 @@ export class DoctorService {
     }
 
     if (lock.stale) {
+      const ownerText = lock.pid ? ` PID ${lock.pid}` : "";
+      const reasonText =
+        lock.staleReason === "process_not_running"
+          ? `The recorded owner process${ownerText} is no longer running.`
+          : `The lock${ownerText} is older than the stale-lock timeout.`;
       return {
         name: "Browser automation lock",
         status: "warn",
-        message: "A stale browser automation lock exists for this data directory.",
-        hint: `If no ZepoCli browser command is running, remove ${lock.path} and retry.`
+        message: `A stale browser automation lock exists for this data directory. ${reasonText}`,
+        hint: `The next browser command can recover this lock automatically. If needed, remove ${lock.path} after confirming no ZepoCli browser command is running.`
       };
     }
 
     return {
       name: "Browser automation lock",
       status: "warn",
-      message: "Another ZepoCli browser command appears to be using this data directory.",
+      message: lock.pid
+        ? `Another ZepoCli browser command appears to be using this data directory from PID ${lock.pid}.`
+        : "Another ZepoCli browser command appears to be using this data directory.",
       hint: "Wait for it to finish, or use a separate `--data-dir` for an independent session."
     };
   }

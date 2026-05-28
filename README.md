@@ -141,7 +141,7 @@ zepo doctor
 zepo doctor --json
 ```
 
-`zepo status --json` includes `browserAutomation.ready`, `browserAutomation.reasons`, and `browserAutomation.retryAfterMs`, plus local browser lock state, headless browser throttle state, recent Zepto access-challenge cooldown state, and cache counts for searches, cart snapshots, addresses, and orders. Those counts are diagnostics only; account-dependent commands still require a confirmed Zepto session and live browser automation.
+`zepo status --json` includes `browserAutomation.ready`, `browserAutomation.reasons`, and `browserAutomation.retryAfterMs`, plus local browser lock state, headless browser throttle state, recent Zepto access-challenge cooldown state, and cache counts for searches, cart snapshots, addresses, and orders. Browser lock JSON includes the lock owner `pid`, `createdAt`, and `staleReason` when available so agents can distinguish an active command from a dead-owner or expired stale lock. Those counts are diagnostics only; account-dependent commands still require a confirmed Zepto session and live browser automation.
 `zepo doctor --json` also includes `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge` fields so agents can branch on readiness without scraping human check messages.
 `zepo status --live` opens Zepto with the saved browser profile and checks whether the session still appears accepted. If Zepto clearly asks for login or OTP again, the CLI reports `liveSession.state: "login-required"` and demotes the local login marker so agents do not continue with stale session state. Logged-in account/profile text is trusted before generic phone or numeric inputs, so a profile page that exposes a phone field is not demoted by that field alone. Ambiguous live checks are reported as `unknown` and should be resolved with `zepo status --live --visible` or `zepo login`.
 Account-dependent browser commands also demote the local login marker when a failed Zepto page clearly shows login or OTP prompts. The shared expired-session guard trusts explicit logged-in account/profile text before generic phone or numeric inputs, so profile pages with phone fields are not treated as expired sessions. This avoids repeated cart, checkout, address, or order commands against an expired session while preserving cached metadata for diagnostics.
@@ -163,7 +163,7 @@ zepo --data-dir ./.zepo login
 
 If the configured data directory is blank, cannot be created, or cannot be opened, the CLI fails before browser work starts. Use `zepo --data-dir <path> doctor` with a writable directory to diagnose local storage issues.
 
-Browser automation is serialized per data directory because Chromium profile state is shared there. If a command exits unexpectedly while holding the lock, `zepo doctor` reports the stale lock and where to remove it after confirming no browser command is still running. Use a separate `--data-dir` only when you intentionally need an independent session:
+Browser automation is serialized per data directory because Chromium profile state is shared there. If a command exits unexpectedly while holding the lock, `zepo doctor` reports the stale lock and the next browser command can recover dead-owner or expired locks automatically. Remove the lock manually only after confirming no browser command is still running. Use a separate `--data-dir` only when you intentionally need an independent session:
 
 ```bash
 zepo --data-dir ./.zepo-agent-a search milk
