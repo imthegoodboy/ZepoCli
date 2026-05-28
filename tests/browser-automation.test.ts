@@ -185,6 +185,23 @@ describe("browser automation helpers", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("force closes the owning browser when context close rejects", async () => {
+    const browser = {
+      close: vi.fn().mockResolvedValue(undefined)
+    };
+    const context = {
+      close: vi.fn().mockRejectedValue(new Error("close failed")),
+      browser: () => browser
+    };
+
+    await closeBrowserContextBestEffort(context, 5_000);
+
+    expect(context.close).toHaveBeenCalledOnce();
+    expect(browser.close).toHaveBeenCalledWith({
+      reason: "ZepoCli browser context cleanup failed."
+    });
+  });
+
   it("launches Chromium without a stale user-agent override", () => {
     const options = buildPersistentContextOptions(true);
 

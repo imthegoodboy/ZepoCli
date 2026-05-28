@@ -21,6 +21,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Browser lock JSON includes the lock owner `pid`, `createdAt`, and `staleReason`");
     expect(readme).toContain("Browser commands register interrupt handlers so Ctrl+C/SIGTERM attempts to close the Playwright browser context");
     expect(readme).toContain("Browser context close is bounded and best-effort");
+    expect(readme).toContain("if graceful context close fails or times out");
     expect(readme).toContain("the CLI attempts to force-close the owning browser before releasing the lock");
     expect(readme).toContain("the next browser command can recover dead-owner or expired locks automatically");
     expect(readme).toContain("Do not parallelize multiple data directories to bypass pacing or throttle signals");

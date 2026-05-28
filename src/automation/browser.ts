@@ -356,19 +356,24 @@ export async function closeBrowserContextBestEffort(
     return;
   }
 
+  let contextClose: CloseAttemptResult;
   try {
-    const contextClose = await waitForSettlementOrTimeout(context.close(), timeoutMs);
-    if (contextClose === "settled") {
+    contextClose = await waitForSettlementOrTimeout(context.close(), timeoutMs);
+  } catch {
+    contextClose = "rejected";
+  }
+
+  if (contextClose === "fulfilled") {
+    return;
+  }
+
+  try {
+    const browser = context.browser?.();
+    if (!browser) {
       return;
     }
 
-    const browser = context.browser?.();
-    if (browser) {
-      await waitForSettlementOrTimeout(
-        browser.close({ reason: "ZepoCli browser context cleanup timed out." }),
-        timeoutMs
-      );
-    }
+    await waitForSettlementOrTimeout(browser.close({ reason: browserForceCloseReason(contextClose) }), timeoutMs);
   } catch {
     // Best-effort cleanup must not replace the command's real result.
   }
@@ -379,20 +384,28 @@ interface ClosableBrowserContext {
   browser?: () => Pick<Browser, "close"> | null;
 }
 
-function waitForSettlementOrTimeout(promise: Promise<unknown>, timeoutMs: number): Promise<"settled" | "timed-out"> {
+type CloseAttemptResult = "fulfilled" | "rejected" | "timed-out";
+
+function waitForSettlementOrTimeout(promise: Promise<unknown>, timeoutMs: number): Promise<CloseAttemptResult> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve("timed-out"), timeoutMs);
     promise.then(
       () => {
         clearTimeout(timer);
-        resolve("settled");
+        resolve("fulfilled");
       },
       () => {
         clearTimeout(timer);
-        resolve("settled");
+        resolve("rejected");
       }
     );
   });
+}
+
+function browserForceCloseReason(contextClose: Exclude<CloseAttemptResult, "fulfilled">): string {
+  return contextClose === "timed-out"
+    ? "ZepoCli browser context cleanup timed out."
+    : "ZepoCli browser context cleanup failed.";
 }
 
 interface SignalProcess {
