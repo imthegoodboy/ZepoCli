@@ -18,6 +18,7 @@ import { UserFacingError } from "../utils/errors.js";
 
 const BROWSER_RUN_PACING_MS = 3_000;
 const BROWSER_RUN_LOCK_STALE_MS = 15 * 60 * 1_000;
+const BROWSER_CONTEXT_CLOSE_TIMEOUT_MS = 5_000;
 const HEADLESS_BROWSER_BURST_WINDOW_MS = 10 * 60 * 1_000;
 const HEADLESS_BROWSER_BURST_LIMIT = 8;
 export const ACCESS_CHALLENGE_COOLDOWN_MS = 15 * 60 * 1_000;
@@ -84,7 +85,8 @@ export class BrowserAutomation {
     let lockReleased = false;
     let context: BrowserContext | undefined;
     const releaseBrowserResources = async () => {
-      await context?.close().catch(() => undefined);
+      await closeBrowserContextBestEffort(context);
+      context = undefined;
       if (!lockReleased) {
         releaseLock();
         lockReleased = true;
@@ -111,55 +113,53 @@ export class BrowserAutomation {
       }
 
       const browserContext = context;
-      return withClosingBrowserContext(browserContext, async () => {
-        browserContext.setDefaultTimeout(this.runtime.options.timeoutMs);
-        browserContext.setDefaultNavigationTimeout(this.runtime.options.timeoutMs);
+      browserContext.setDefaultTimeout(this.runtime.options.timeoutMs);
+      browserContext.setDefaultNavigationTimeout(this.runtime.options.timeoutMs);
 
-        const page = await browserContext.newPage();
-        try {
-          configurePageAccessChallengeHandling(page, {
-            allowManualResolution: shouldAllowManualAccessChallengeResolution(headless, this.runtime.options.interactive),
-            waitMs: computeManualAccessChallengeWaitMs(this.runtime.options.timeoutMs)
-          });
-          if (headless) {
-            this.runtime.sqlite.setMeta(
-              HEADLESS_BROWSER_RUN_HISTORY_META_KEY,
-              recordHeadlessBrowserRun(this.runtime.sqlite.getMeta(HEADLESS_BROWSER_RUN_HISTORY_META_KEY))
-            );
-          }
-
-          try {
-            const result = await task(page, browserContext);
-            await assertNoAccessChallenge(page);
-            if (shouldCheckExpiredSession(options) && (await isLoginRequiredPage(page))) {
-              this.runtime.session.markLoggedOut();
-              throw expiredSessionError();
-            }
-            if (shouldSaveBrowserState(options)) {
-              await browserContext.storageState({ path: this.runtime.session.storageStatePath });
-            }
-            if (pageHadAccessChallenge(page)) {
-              this.runtime.sqlite.setMeta(LAST_ACCESS_CHALLENGE_META_KEY, String(Date.now()));
-            }
-            return result;
-          } catch (error) {
-            const expiredSessionError = isAccessChallengeError(error)
-              ? undefined
-              : await this.demoteExpiredSessionIfLoginRequired(page, shouldCheckExpiredSession(options)).catch(() => undefined);
-            const finalError = expiredSessionError ?? error;
-
-            if (isAccessProtectionError(finalError) || pageHadAccessChallenge(page)) {
-              this.runtime.sqlite.setMeta(LAST_ACCESS_CHALLENGE_META_KEY, String(Date.now()));
-            }
-            if (!expiredSessionError && shouldCaptureBrowserFailure(options, this.runtime.options.debug)) {
-              await this.captureFailure(page, finalError).catch(() => undefined);
-            }
-            throw finalError;
-          }
-        } finally {
-          clearPageAccessChallengeHandling(page);
+      const page = await browserContext.newPage();
+      try {
+        configurePageAccessChallengeHandling(page, {
+          allowManualResolution: shouldAllowManualAccessChallengeResolution(headless, this.runtime.options.interactive),
+          waitMs: computeManualAccessChallengeWaitMs(this.runtime.options.timeoutMs)
+        });
+        if (headless) {
+          this.runtime.sqlite.setMeta(
+            HEADLESS_BROWSER_RUN_HISTORY_META_KEY,
+            recordHeadlessBrowserRun(this.runtime.sqlite.getMeta(HEADLESS_BROWSER_RUN_HISTORY_META_KEY))
+          );
         }
-      });
+
+        try {
+          const result = await task(page, browserContext);
+          await assertNoAccessChallenge(page);
+          if (shouldCheckExpiredSession(options) && (await isLoginRequiredPage(page))) {
+            this.runtime.session.markLoggedOut();
+            throw expiredSessionError();
+          }
+          if (shouldSaveBrowserState(options)) {
+            await browserContext.storageState({ path: this.runtime.session.storageStatePath });
+          }
+          if (pageHadAccessChallenge(page)) {
+            this.runtime.sqlite.setMeta(LAST_ACCESS_CHALLENGE_META_KEY, String(Date.now()));
+          }
+          return result;
+        } catch (error) {
+          const expiredSessionError = isAccessChallengeError(error)
+            ? undefined
+            : await this.demoteExpiredSessionIfLoginRequired(page, shouldCheckExpiredSession(options)).catch(() => undefined);
+          const finalError = expiredSessionError ?? error;
+
+          if (isAccessProtectionError(finalError) || pageHadAccessChallenge(page)) {
+            this.runtime.sqlite.setMeta(LAST_ACCESS_CHALLENGE_META_KEY, String(Date.now()));
+          }
+          if (!expiredSessionError && shouldCaptureBrowserFailure(options, this.runtime.options.debug)) {
+            await this.captureFailure(page, finalError).catch(() => undefined);
+          }
+          throw finalError;
+        }
+      } finally {
+        clearPageAccessChallengeHandling(page);
+      }
     } finally {
       try {
         await releaseBrowserResources();
@@ -338,13 +338,45 @@ export function buildPersistentContextOptions(
 
 export async function withClosingBrowserContext<T>(
   context: Pick<BrowserContext, "close">,
-  task: () => Promise<T>
+  task: () => Promise<T>,
+  closeTimeoutMs = BROWSER_CONTEXT_CLOSE_TIMEOUT_MS
 ): Promise<T> {
   try {
     return await task();
   } finally {
-    await context.close().catch(() => undefined);
+    await closeBrowserContextBestEffort(context, closeTimeoutMs);
   }
+}
+
+export async function closeBrowserContextBestEffort(
+  context: Pick<BrowserContext, "close"> | undefined,
+  timeoutMs = BROWSER_CONTEXT_CLOSE_TIMEOUT_MS
+): Promise<void> {
+  if (!context) {
+    return;
+  }
+
+  try {
+    await waitForSettlementOrTimeout(context.close(), timeoutMs);
+  } catch {
+    // Best-effort cleanup must not replace the command's real result.
+  }
+}
+
+function waitForSettlementOrTimeout(promise: Promise<unknown>, timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    promise.then(
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      () => {
+        clearTimeout(timer);
+        resolve();
+      }
+    );
+  });
 }
 
 interface SignalProcess {

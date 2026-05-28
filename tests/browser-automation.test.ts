@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   acquireBrowserRunLock,
@@ -12,6 +12,7 @@ import {
   assertNoAccessChallengeCooldown,
   assertNoAccessChallengeResponse,
   buildPersistentContextOptions,
+  closeBrowserContextBestEffort,
   computeAccessChallengeCooldownDelay,
   computeBrowserPacingDelay,
   computeManualAccessChallengeWaitMs,
@@ -43,6 +44,7 @@ describe("browser automation helpers", () => {
   let tempDir: string | undefined;
 
   afterEach(() => {
+    vi.useRealTimers();
     if (tempDir && existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -124,6 +126,35 @@ describe("browser automation helpers", () => {
     };
 
     await expect(withClosingBrowserContext(context, async () => "ok")).resolves.toBe("ok");
+  });
+
+  it("does not hang command completion when browser context close never settles", async () => {
+    let closeStarted = false;
+    const context = {
+      async close() {
+        closeStarted = true;
+        await new Promise(() => undefined);
+      }
+    };
+
+    await expect(withClosingBrowserContext(context, async () => "ok", 1)).resolves.toBe("ok");
+    expect(closeStarted).toBe(true);
+  });
+
+  it("treats missing browser context cleanup as a no-op", async () => {
+    await expect(closeBrowserContextBestEffort(undefined, 1)).resolves.toBeUndefined();
+  });
+
+  it("clears the browser close timeout after successful close", async () => {
+    vi.useFakeTimers();
+    const context = {
+      close: vi.fn().mockResolvedValue(undefined)
+    };
+
+    await closeBrowserContextBestEffort(context, 5_000);
+
+    expect(context.close).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("launches Chromium without a stale user-agent override", () => {
