@@ -108,7 +108,7 @@ Implementation consequence:
 - Product ADD and quantity plus controls must be visible and enabled before clicking. Tagged ADD/quantity controls must still match the selected product card immediately before click. Automated `zepo add --quantity` should stay capped to normal cart-sized quantities and paced between plus-control clicks; do not add fast loops for bulk cart changes.
 - Cart remove/clear should target enabled controls inside likely product item rows only; ignore coupon, bill summary, fee, discount, and total rows even if they expose remove/decrease controls.
 - Order history navigation should click visible, enabled, explicit orders/history labels; account/profile clicks may only open the menu surface before a separate orders/history click.
-- Reorder should click only visible, enabled, explicit reorder/order-again/repeat-order controls inside a readable order card; never click generic text containing "reorder" or standalone order summary copy.
+- Reorder should click only visible, enabled, explicit reorder/order-again/repeat-order controls whose readable order-card text matches the latest detected order; never click generic text containing "reorder", standalone order summary copy, or a reorder control for an older order.
 - `zepo doctor` should verify all runtime paths needed by the CLI, not just one diagnostics directory.
 - `zepo doctor` should report active or stale browser automation locks so agents know whether to wait, remove a stale lock, or use a separate data directory.
 - Browser launch failures should be user-facing errors with `prepare:browsers` and `zepo doctor` recovery hints, not raw Playwright stack traces.

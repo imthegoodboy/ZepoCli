@@ -9,6 +9,7 @@ import {
   isOrdersOpenClickText,
   isOrdersPageText,
   isReorderControlInReadableOrderText,
+  isReorderControlInReadableLatestOrderText,
   isReorderActionClickText,
   ORDERS_OPEN_CLICK_LABELS,
   REORDER_ACTION_CLICK_LABELS,
@@ -159,6 +160,37 @@ describe("order automation helpers", () => {
     expect(isReorderControlInReadableOrderText("Order Again Trending products Reorder")).toBe(false);
   });
 
+  it("requires reorder controls to match the latest readable order when reordering last", () => {
+    const latest = {
+      id: "ZEP1234",
+      status: "Delivered",
+      total: "₹249",
+      rawText: "Order #ZEP1234 Delivered Total ₹249"
+    };
+
+    expect(isReorderControlInReadableLatestOrderText("Order #ZEP1234 Delivered Total ₹249 Reorder", latest)).toBe(true);
+    expect(isReorderControlInReadableLatestOrderText("Order #ZEP9999 Delivered Total ₹249 Reorder", latest)).toBe(false);
+  });
+
+  it("matches latest-order reorder controls without an order id using status plus ETA or total", () => {
+    const latest = {
+      status: "Out for delivery",
+      eta: "8 mins",
+      total: "₹249",
+      rawText: "Track order Out for delivery ETA: 8 mins Total ₹249"
+    };
+
+    expect(
+      isReorderControlInReadableLatestOrderText("Track order Out for delivery ETA: 8 mins Total ₹249 Reorder", latest)
+    ).toBe(true);
+    expect(isReorderControlInReadableLatestOrderText("Track order Out for delivery ETA: 9 mins Total ₹249 Reorder", latest)).toBe(
+      true
+    );
+    expect(isReorderControlInReadableLatestOrderText("Track order Delivered ETA: 8 mins Total ₹249 Reorder", latest)).toBe(
+      false
+    );
+  });
+
   it("uses role and aria-label reorder controls before generic text matching", async () => {
     const page = createAriaReorderPage();
 
@@ -179,6 +211,21 @@ describe("order automation helpers", () => {
     const page = createDisabledReorderPage();
 
     await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
+  it("does not click a reorder control for a different readable order when reordering last", async () => {
+    const page = createReorderForOlderOrderPage();
+
+    await expect(
+      clickReorderActionButton(page as never, {
+        id: "ZEP1234",
+        status: "Delivered",
+        total: "₹249",
+        rawText: "Order #ZEP1234 Delivered Total ₹249"
+      })
+    ).resolves.toBe(false);
 
     expect(page.clicked).toBe(false);
   });
@@ -236,6 +283,24 @@ function createDisabledReorderPage() {
         return createVisibleLocator("Reorder", async () => {
           page.clicked = true;
         }, undefined, "Order #ZEP1234 Delivered Total ₹249 Reorder", { "data-disabled": "true" });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createReorderForOlderOrderPage() {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Reorder")) {
+        return createVisibleLocator("Reorder", async () => {
+          page.clicked = true;
+        }, undefined, "Order #ZEP9999 Delivered Total ₹249 Reorder");
       }
 
       return createHiddenLocator();

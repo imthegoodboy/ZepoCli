@@ -122,9 +122,9 @@ export function requireReadableOrders(rawText: string): OrderSnapshot[] {
 export async function reorderLast(page: Page): Promise<CartSnapshot> {
   await openOrders(page);
   const rawText = await page.locator("body").innerText();
-  requireReadableLatestOrderForReorder(rawText);
+  const latestOrder = requireReadableLatestOrderForReorder(rawText);
 
-  const clicked = await clickReorderActionButton(page);
+  const clicked = await clickReorderActionButton(page, latestOrder);
   if (!clicked) {
     throw new UserFacingError("Could not find a reorder action for the latest order.", {
       code: "reorder_unavailable"
@@ -149,7 +149,7 @@ export function requireReadableLatestOrderForReorder(rawText: string): OrderSnap
   });
 }
 
-export async function clickReorderActionButton(page: Page): Promise<boolean> {
+export async function clickReorderActionButton(page: Page, latestOrder?: OrderSnapshot): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of REORDER_ACTION_CLICK_LABELS) {
     const candidates = [
@@ -159,7 +159,7 @@ export async function clickReorderActionButton(page: Page): Promise<boolean> {
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeReorderControl(candidate)) {
+      if (await clickSafeReorderControl(candidate, latestOrder)) {
         return true;
       }
     }
@@ -168,7 +168,7 @@ export async function clickReorderActionButton(page: Page): Promise<boolean> {
   return false;
 }
 
-async function clickSafeReorderControl(locator: Locator): Promise<boolean> {
+async function clickSafeReorderControl(locator: Locator, latestOrder: OrderSnapshot | undefined): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -185,6 +185,10 @@ async function clickSafeReorderControl(locator: Locator): Promise<boolean> {
 
   const cardText = await locator.evaluate(readClosestOrderCardText).catch(() => "");
   if (!isReorderControlInReadableOrderText(cardText)) {
+    return false;
+  }
+
+  if (latestOrder && !isReorderControlInReadableLatestOrderText(cardText, latestOrder)) {
     return false;
   }
 
@@ -217,6 +221,22 @@ export function isAccountMenuClickText(text: string): boolean {
 
 export function isReorderControlInReadableOrderText(text: string): boolean {
   return parseOrdersFromText(text).length > 0;
+}
+
+export function isReorderControlInReadableLatestOrderText(text: string, latestOrder: OrderSnapshot): boolean {
+  return parseOrdersFromText(text).some((candidate) => orderSnapshotsMatch(candidate, latestOrder));
+}
+
+function orderSnapshotsMatch(candidate: OrderSnapshot, expected: OrderSnapshot): boolean {
+  if (expected.id) {
+    return candidate.id?.toLowerCase() === expected.id.toLowerCase();
+  }
+
+  const statusMatches = expected.status !== undefined && candidate.status === expected.status;
+  const etaMatches = expected.eta !== undefined && candidate.eta === expected.eta;
+  const totalMatches = expected.total !== undefined && candidate.total === expected.total;
+
+  return statusMatches && (etaMatches || totalMatches);
 }
 
 function readClosestOrderCardText(element: Element): string {
