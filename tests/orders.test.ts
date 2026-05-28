@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ACCOUNT_MENU_CLICK_LABELS,
+  clickAccountMenuControl,
   clickReorderActionButton,
   clickOrdersNavigationControl,
   isAccountMenuClickText,
@@ -11,6 +12,9 @@ import {
   isReorderControlInReadableOrderText,
   isReorderControlInReadableLatestOrderText,
   isReorderActionClickText,
+  isUnsafeAccountMenuClickText,
+  isUnsafeOrdersOpenClickText,
+  isUnsafeReorderActionClickText,
   ORDERS_OPEN_CLICK_LABELS,
   REORDER_ACTION_CLICK_LABELS,
   requireReadableOrders,
@@ -136,11 +140,16 @@ describe("order automation helpers", () => {
     expect(ACCOUNT_MENU_CLICK_LABELS.some((pattern) => pattern.test("My Orders"))).toBe(false);
 
     expect(isOrdersOpenClickText("My Orders")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("My Orders")).toBe(false);
     expect(isOrdersOpenClickText("Account My Orders Wallet")).toBe(false);
+    expect(isUnsafeOrdersOpenClickText("Account My Orders Wallet")).toBe(true);
     expect(isOrdersOpenClickText("Track Order")).toBe(false);
+    expect(isUnsafeOrdersOpenClickText("Track Order")).toBe(true);
     expect(isAccountMenuClickText("Account")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Account")).toBe(false);
     expect(isAccountMenuClickText("Account settings are secure")).toBe(false);
     expect(isAccountMenuClickText("My Orders")).toBe(false);
+    expect(isUnsafeAccountMenuClickText("My Orders")).toBe(true);
   });
 
   it("clicks only explicit reorder action labels", () => {
@@ -153,6 +162,10 @@ describe("order automation helpers", () => {
       expect(REORDER_ACTION_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isReorderActionClickText(label)).toBe(false);
     }
+
+    expect(isUnsafeReorderActionClickText("Reorder")).toBe(false);
+    expect(isUnsafeReorderActionClickText("Proceed to Pay")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Cancel Order")).toBe(true);
   });
 
   it("requires reorder controls to be inside readable order text", () => {
@@ -207,12 +220,36 @@ describe("order automation helpers", () => {
     expect(page.clicked).toBe(false);
   });
 
+  it("does not click order navigation controls when any visible or accessible label is unsafe", async () => {
+    for (const page of [createMixedLabelOrdersNavigationPage("Checkout", "My Orders"), createMixedLabelOrdersNavigationPage("My Orders", "Track Order")]) {
+      await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(false);
+
+      expect(page.clicked).toBe(false);
+    }
+  });
+
+  it("does not click account menu controls when any visible or accessible label is unsafe", async () => {
+    for (const page of [createMixedLabelAccountMenuPage("My Orders", "Account"), createMixedLabelAccountMenuPage("Account", "Cart")]) {
+      await expect(clickAccountMenuControl(page as never)).resolves.toBe(false);
+
+      expect(page.clicked).toBe(false);
+    }
+  });
+
   it("does not click disabled reorder controls", async () => {
     const page = createDisabledReorderPage();
 
     await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
 
     expect(page.clicked).toBe(false);
+  });
+
+  it("does not click reorder controls when any visible or accessible label is unsafe", async () => {
+    for (const page of [createMixedLabelReorderPage("Proceed to Pay", "Reorder"), createMixedLabelReorderPage("Reorder", "Cancel Order")]) {
+      await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
+
+      expect(page.clicked).toBe(false);
+    }
   });
 
   it("does not click a reorder control for a different readable order when reordering last", async () => {
@@ -275,6 +312,48 @@ function createDisabledOrdersNavigationPage() {
   return page;
 }
 
+function createMixedLabelOrdersNavigationPage(text: string, ariaLabel: string) {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        role === "button" &&
+        (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))
+      ) {
+        return createVisibleLocator(text, async () => {
+          page.clicked = true;
+        }, ariaLabel);
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createMixedLabelAccountMenuPage(text: string, ariaLabel: string) {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        role === "button" &&
+        (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))
+      ) {
+        return createVisibleLocator(text, async () => {
+          page.clicked = true;
+        }, ariaLabel);
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDisabledReorderPage() {
   const page = {
     clicked: false,
@@ -283,6 +362,27 @@ function createDisabledReorderPage() {
         return createVisibleLocator("Reorder", async () => {
           page.clicked = true;
         }, undefined, "Order #ZEP1234 Delivered Total ₹249 Reorder", { "data-disabled": "true" });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createMixedLabelReorderPage(text: string, ariaLabel: string) {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        role === "button" &&
+        (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))
+      ) {
+        return createVisibleLocator(text, async () => {
+          page.clicked = true;
+        }, ariaLabel, "Order #ZEP1234 Delivered Total ₹249 Reorder");
       }
 
       return createHiddenLocator();

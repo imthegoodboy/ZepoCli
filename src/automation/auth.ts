@@ -77,7 +77,12 @@ async function clickSafeAccountSurfaceControl(locator: Locator): Promise<boolean
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isAccountSurfaceClickText(text) && !isAccountSurfaceClickText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  if (labels.some(isUnsafeAccountSurfaceClickText)) {
+    return false;
+  }
+
+  if (!labels.some(isAccountSurfaceClickText)) {
     return false;
   }
 
@@ -111,6 +116,17 @@ export function isAccountSurfaceClickText(text: string): boolean {
   }
 
   return ACCOUNT_SURFACE_CLICK_LABELS.some((label) => label.test(normalized));
+}
+
+export function isUnsafeAccountSurfaceClickText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(search results?|cart|my cart|checkout|proceed|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
+    normalized
+  );
 }
 
 export function inferLoginStateFromText(text: string): LoginState {

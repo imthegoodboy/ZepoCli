@@ -215,7 +215,12 @@ async function clickSafeSearchTrigger(locator: Locator): Promise<boolean> {
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isSearchTriggerClickText(text) && !isSearchTriggerClickText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  if (labels.some(isUnsafeSearchTriggerClickText)) {
+    return false;
+  }
+
+  if (!labels.some(isSearchTriggerClickText)) {
     return false;
   }
 
@@ -242,6 +247,17 @@ export function isSearchTriggerClickText(text: string): boolean {
   }
 
   return SEARCH_TRIGGER_CLICK_LABELS.some((label) => label.test(normalized));
+}
+
+export function isUnsafeSearchTriggerClickText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
+    normalized
+  );
 }
 
 export function isLocationSetupRequiredText(text: string): boolean {

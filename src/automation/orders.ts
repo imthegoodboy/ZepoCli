@@ -49,17 +49,18 @@ export async function openOrders(page: Page): Promise<void> {
 }
 
 export async function clickOrdersNavigationControl(page: Page): Promise<boolean> {
-  return clickLabeledControl(page, ORDERS_OPEN_CLICK_LABELS, isOrdersOpenClickText);
+  return clickLabeledControl(page, ORDERS_OPEN_CLICK_LABELS, isOrdersOpenClickText, isUnsafeOrdersOpenClickText);
 }
 
 export async function clickAccountMenuControl(page: Page): Promise<boolean> {
-  return clickLabeledControl(page, ACCOUNT_MENU_CLICK_LABELS, isAccountMenuClickText);
+  return clickLabeledControl(page, ACCOUNT_MENU_CLICK_LABELS, isAccountMenuClickText, isUnsafeAccountMenuClickText);
 }
 
 async function clickLabeledControl(
   page: Page,
   labels: readonly RegExp[],
-  isSafeText: (text: string) => boolean
+  isSafeText: (text: string) => boolean,
+  isUnsafeText: (text: string) => boolean
 ): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of labels) {
@@ -70,7 +71,7 @@ async function clickLabeledControl(
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeLabeledControl(candidate, isSafeText)) {
+      if (await clickSafeLabeledControl(candidate, isSafeText, isUnsafeText)) {
         return true;
       }
     }
@@ -81,7 +82,8 @@ async function clickLabeledControl(
 
 async function clickSafeLabeledControl(
   locator: Locator,
-  isSafeText: (text: string) => boolean
+  isSafeText: (text: string) => boolean,
+  isUnsafeText: (text: string) => boolean
 ): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
@@ -89,7 +91,12 @@ async function clickSafeLabeledControl(
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isSafeText(text) && !isSafeText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  if (labels.some(isUnsafeText)) {
+    return false;
+  }
+
+  if (!labels.some(isSafeText)) {
     return false;
   }
 
@@ -175,7 +182,12 @@ async function clickSafeReorderControl(locator: Locator, latestOrder: OrderSnaps
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isReorderActionClickText(text) && !isReorderActionClickText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  if (labels.some(isUnsafeReorderActionClickText)) {
+    return false;
+  }
+
+  if (!labels.some(isReorderActionClickText)) {
     return false;
   }
 
@@ -219,6 +231,39 @@ export function isAccountMenuClickText(text: string): boolean {
   return matchesLabel(text, ACCOUNT_MENU_CLICK_LABELS);
 }
 
+export function isUnsafeOrdersOpenClickText(text: string): boolean {
+  const normalized = normalizeLabelText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order|cancel order)\b/i.test(
+    normalized
+  );
+}
+
+export function isUnsafeAccountMenuClickText(text: string): boolean {
+  const normalized = normalizeLabelText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(wallet|cart|my cart|search results?|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
+    normalized
+  );
+}
+
+export function isUnsafeReorderActionClickText(text: string): boolean {
+  const normalized = normalizeLabelText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|cancel order)\b/i.test(
+    normalized
+  );
+}
+
 export function isReorderControlInReadableOrderText(text: string): boolean {
   return parseOrdersFromText(text).length > 0;
 }
@@ -255,12 +300,16 @@ function readClosestOrderCardText(element: Element): string {
 }
 
 function matchesLabel(text: string, labels: readonly RegExp[]): boolean {
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = normalizeLabelText(text);
   if (!normalized) {
     return false;
   }
 
   return labels.some((label) => label.test(normalized));
+}
+
+function normalizeLabelText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 export function isOrdersPageText(text: string): boolean {

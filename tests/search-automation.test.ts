@@ -7,6 +7,7 @@ import {
   increaseProductQuantity,
   isLocationSetupRequiredText,
   isSearchTriggerClickText,
+  isUnsafeSearchTriggerClickText,
   searchProducts,
   SEARCH_TRIGGER_CLICK_LABELS,
   waitForProductAddSettled
@@ -91,6 +92,7 @@ describe("search automation helpers", () => {
     for (const label of ["Search milk Cart Account", "Popular Searches", "Research products", "Search results for milk"]) {
       expect(SEARCH_TRIGGER_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isSearchTriggerClickText(label)).toBe(false);
+      expect(isUnsafeSearchTriggerClickText(label)).toBe(label !== "Research products");
     }
   });
 
@@ -100,6 +102,14 @@ describe("search automation helpers", () => {
     await expect(clickSearchTrigger(page as never)).resolves.toBe(false);
 
     expect(page.clicked).toBe(false);
+  });
+
+  it("does not click search controls when any visible or accessible label is unsafe", async () => {
+    for (const page of [createMixedLabelSearchTriggerPage("Cart", "Search"), createMixedLabelSearchTriggerPage("Search", "Search results for milk")]) {
+      await expect(clickSearchTrigger(page as never)).resolves.toBe(false);
+
+      expect(page.clicked).toBe(false);
+    }
   });
 
   it("detects delivery-location setup copy without treating normal search text as setup", () => {
@@ -460,6 +470,32 @@ function createDisabledSearchTriggerPage() {
           ...createVisibleLocator("Search", async () => {
             page.clicked = true;
           }, { "aria-disabled": "true" }),
+          filter() {
+            return createHiddenLocator();
+          }
+        };
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createMixedLabelSearchTriggerPage(text: string, ariaLabel: string) {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        role === "button" &&
+        (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))
+      ) {
+        return {
+          ...createVisibleLocator(text, async () => {
+            page.clicked = true;
+          }, { "aria-label": ariaLabel }),
           filter() {
             return createHiddenLocator();
           }

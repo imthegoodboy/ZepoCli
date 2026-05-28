@@ -7,6 +7,7 @@ import {
   detectLoginState,
   inferLoginStateFromText,
   isAccountSurfaceClickText,
+  isUnsafeAccountSurfaceClickText,
   openLoginFlow
 } from "../src/automation/auth.js";
 import { loginOutput } from "../src/commands/login.js";
@@ -75,6 +76,10 @@ describe("login state inference", () => {
       expect(ACCOUNT_SURFACE_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isAccountSurfaceClickText(label)).toBe(false);
     }
+
+    for (const label of ["Login to continue checkout", "My Orders", "Cart", "Delivering to Home"]) {
+      expect(isUnsafeAccountSurfaceClickText(label)).toBe(true);
+    }
   });
 
   it("does not click disabled account or login controls", async () => {
@@ -83,6 +88,14 @@ describe("login state inference", () => {
     await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);
 
     expect(page.clicked).toBe(false);
+  });
+
+  it("does not click account or login controls when any visible or accessible label is unsafe", async () => {
+    for (const page of [createMixedLabelAccountSurfacePage("Checkout", "Login"), createMixedLabelAccountSurfacePage("Account", "My Orders")]) {
+      await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);
+
+      expect(page.clicked).toBe(false);
+    }
   });
 
   it("prefills phone only into explicit phone or mobile fields", () => {
@@ -229,6 +242,27 @@ function createDisabledAccountSurfacePage() {
         return createVisibleLocator("Login", async () => {
           page.clicked = true;
         }, { "aria-disabled": "true" });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createMixedLabelAccountSurfacePage(text: string, ariaLabel: string) {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        role === "button" &&
+        (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))
+      ) {
+        return createVisibleLocator(text, async () => {
+          page.clicked = true;
+        }, { "aria-label": ariaLabel });
       }
 
       return createHiddenLocator();
