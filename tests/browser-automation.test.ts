@@ -147,13 +147,41 @@ describe("browser automation helpers", () => {
 
   it("clears the browser close timeout after successful close", async () => {
     vi.useFakeTimers();
-    const context = {
+    const browser = {
       close: vi.fn().mockResolvedValue(undefined)
+    };
+    const context = {
+      close: vi.fn().mockResolvedValue(undefined),
+      browser: () => browser
     };
 
     await closeBrowserContextBestEffort(context, 5_000);
 
     expect(context.close).toHaveBeenCalledOnce();
+    expect(browser.close).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("force closes the owning browser when context close times out", async () => {
+    vi.useFakeTimers();
+    const browser = {
+      close: vi.fn().mockResolvedValue(undefined)
+    };
+    const context = {
+      close: vi.fn(async () => {
+        await new Promise(() => undefined);
+      }),
+      browser: () => browser
+    };
+
+    const cleanup = closeBrowserContextBestEffort(context, 5_000);
+    await vi.advanceTimersByTimeAsync(5_000);
+    await cleanup;
+
+    expect(context.close).toHaveBeenCalledOnce();
+    expect(browser.close).toHaveBeenCalledWith({
+      reason: "ZepoCli browser context cleanup timed out."
+    });
     expect(vi.getTimerCount()).toBe(0);
   });
 

@@ -2,7 +2,7 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statS
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 
-import { chromium, type BrowserContext, type Page, type Response } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page, type Response } from "playwright";
 
 import { BASE_URL } from "../config/constants.js";
 import type { AppRuntime } from "../config/runtime.js";
@@ -337,7 +337,7 @@ export function buildPersistentContextOptions(
 }
 
 export async function withClosingBrowserContext<T>(
-  context: Pick<BrowserContext, "close">,
+  context: ClosableBrowserContext,
   task: () => Promise<T>,
   closeTimeoutMs = BROWSER_CONTEXT_CLOSE_TIMEOUT_MS
 ): Promise<T> {
@@ -349,7 +349,7 @@ export async function withClosingBrowserContext<T>(
 }
 
 export async function closeBrowserContextBestEffort(
-  context: Pick<BrowserContext, "close"> | undefined,
+  context: ClosableBrowserContext | undefined,
   timeoutMs = BROWSER_CONTEXT_CLOSE_TIMEOUT_MS
 ): Promise<void> {
   if (!context) {
@@ -357,23 +357,39 @@ export async function closeBrowserContextBestEffort(
   }
 
   try {
-    await waitForSettlementOrTimeout(context.close(), timeoutMs);
+    const contextClose = await waitForSettlementOrTimeout(context.close(), timeoutMs);
+    if (contextClose === "settled") {
+      return;
+    }
+
+    const browser = context.browser?.();
+    if (browser) {
+      await waitForSettlementOrTimeout(
+        browser.close({ reason: "ZepoCli browser context cleanup timed out." }),
+        timeoutMs
+      );
+    }
   } catch {
     // Best-effort cleanup must not replace the command's real result.
   }
 }
 
-function waitForSettlementOrTimeout(promise: Promise<unknown>, timeoutMs: number): Promise<void> {
+interface ClosableBrowserContext {
+  close(): Promise<void>;
+  browser?: () => Pick<Browser, "close"> | null;
+}
+
+function waitForSettlementOrTimeout(promise: Promise<unknown>, timeoutMs: number): Promise<"settled" | "timed-out"> {
   return new Promise((resolve) => {
-    const timer = setTimeout(resolve, timeoutMs);
+    const timer = setTimeout(() => resolve("timed-out"), timeoutMs);
     promise.then(
       () => {
         clearTimeout(timer);
-        resolve();
+        resolve("settled");
       },
       () => {
         clearTimeout(timer);
-        resolve();
+        resolve("settled");
       }
     );
   });
