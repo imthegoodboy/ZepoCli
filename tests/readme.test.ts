@@ -23,7 +23,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("Browser context close is bounded and best-effort");
     expect(readme).toContain("if graceful context close fails or times out");
     expect(readme).toContain("the CLI attempts to force-close the owning browser before releasing the lock");
-    expect(readme).toContain("the next browser command can recover dead-owner or expired locks automatically");
+    expect(readme).toContain("the next browser command can recover dead-owner locks, plus old lock files that have no live owner PID");
+    expect(readme).toContain("A lock with a still-running owner PID remains active even when it is old");
     expect(readme).toContain("Do not parallelize multiple data directories to bypass pacing or throttle signals");
     expect(readme).toContain("`zepo doctor --json` also includes `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("raw Zepto page text");

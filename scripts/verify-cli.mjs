@@ -309,14 +309,14 @@ const checks = [
     }
   },
   {
-    name: "status browser lock json",
+    name: "status old active browser lock json",
     args: ({ dataDir }) => {
       writeFileSync(
         join(dataDir, "browser.lock"),
         JSON.stringify({
           token: "smoke",
           pid: process.pid,
-          createdAt: Date.now()
+          createdAt: Date.now() - 20 * 60 * 1_000
         })
       );
       return ["--data-dir", dataDir, "status", "--json"];
@@ -329,6 +329,11 @@ const checks = [
       assert(payload.browserLock?.stale === false, "expected browser lock not stale");
       assert(payload.browserLock?.pid === process.pid, "expected browser lock owner pid");
       assert(typeof payload.browserLock?.createdAt === "string", "expected browser lock createdAt");
+      assert(payload.browserAutomation?.ready === false, "expected old live-owner lock to block automation");
+      assert(
+        payload.browserAutomation?.reasons?.includes("browser_lock_active"),
+        "expected active browser lock stop reason"
+      );
     }
   },
   {

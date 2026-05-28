@@ -533,8 +533,8 @@ function browserRunLockStaleReason(
   nowMs: number,
   details = readBrowserRunLockDetails(lockPath)
 ): BrowserRunLockStatus["staleReason"] | undefined {
-  if (details.pid !== undefined && !isProcessAlive(details.pid)) {
-    return "process_not_running";
+  if (details.pid !== undefined) {
+    return isProcessAlive(details.pid) ? undefined : "process_not_running";
   }
 
   const createdAt = details.createdAt;

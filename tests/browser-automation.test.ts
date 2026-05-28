@@ -637,7 +637,7 @@ describe("browser automation helpers", () => {
     });
   });
 
-  it("recovers stale browser automation locks", () => {
+  it("does not expire browser automation locks while the owner process is still alive", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-browser-stale-lock-"));
     const lockPath = join(tempDir, "browser.lock");
     writeFileSync(
@@ -649,12 +649,35 @@ describe("browser automation helpers", () => {
       })
     );
 
+    expect(isStaleBrowserRunLock(lockPath, 20 * 60 * 1_000)).toBe(false);
+    expect(getBrowserRunLockStatus(lockPath, 20 * 60 * 1_000)).toEqual({
+      path: lockPath,
+      present: true,
+      stale: false,
+      pid: process.pid,
+      createdAt: new Date(10_000).toISOString()
+    });
+    expect(() => acquireBrowserRunLock(lockPath, 20 * 60 * 1_000)).toThrow(
+      "Another ZepoCli browser command is already running for this data directory."
+    );
+  });
+
+  it("recovers stale browser automation locks without a live owner process", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-browser-stale-lock-"));
+    const lockPath = join(tempDir, "browser.lock");
+    writeFileSync(
+      lockPath,
+      JSON.stringify({
+        token: "old",
+        createdAt: 10_000
+      })
+    );
+
     expect(isStaleBrowserRunLock(lockPath, 20 * 60 * 1_000)).toBe(true);
     expect(getBrowserRunLockStatus(lockPath, 20 * 60 * 1_000)).toEqual({
       path: lockPath,
       present: true,
       stale: true,
-      pid: process.pid,
       createdAt: new Date(10_000).toISOString(),
       staleReason: "expired"
     });

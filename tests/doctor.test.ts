@@ -190,8 +190,8 @@ describe("doctor service", () => {
     expect(lockCheck?.message).toContain(`PID ${process.pid}`);
   });
 
-  it("warns when a browser automation lock is stale", async () => {
-    tempDir = mkdtempSync(join(tmpdir(), "zepo-doctor-stale-lock-"));
+  it("keeps an old browser automation lock active while its owner process is still running", async () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-doctor-old-active-lock-"));
     const runtime = createRuntime({
       dataDir: tempDir,
       debug: false,
@@ -201,7 +201,7 @@ describe("doctor service", () => {
     writeFileSync(
       runtime.paths.browserLockPath,
       JSON.stringify({
-        token: "stale",
+        token: "active",
         pid: process.pid,
         createdAt: Date.now() - 20 * 60 * 1_000
       })
@@ -214,8 +214,45 @@ describe("doctor service", () => {
     expect(report.browserLock).toMatchObject({
       path: runtime.paths.browserLockPath,
       present: true,
+      stale: false,
+      pid: process.pid
+    });
+    expect(report.browserAutomation).toMatchObject({
+      ready: false,
+      reasons: ["browser_lock_active"],
+      retryAfterMs: 0
+    });
+    const lockCheck = report.checks.find((check) => check.name === "Browser automation lock");
+    expect(lockCheck).toMatchObject({
+      status: "warn"
+    });
+    expect(lockCheck?.message).toContain(`PID ${process.pid}`);
+  });
+
+  it("warns when a browser automation lock without a live owner is stale", async () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-doctor-stale-lock-"));
+    const runtime = createRuntime({
+      dataDir: tempDir,
+      debug: false,
+      headless: true
+    });
+
+    writeFileSync(
+      runtime.paths.browserLockPath,
+      JSON.stringify({
+        token: "stale",
+        createdAt: Date.now() - 20 * 60 * 1_000
+      })
+    );
+
+    const report = await new DoctorService(runtime).run({ browser: false });
+    closeRuntimeBestEffort(runtime);
+
+    expect(report.ok).toBe(true);
+    expect(report.browserLock).toMatchObject({
+      path: runtime.paths.browserLockPath,
+      present: true,
       stale: true,
-      pid: process.pid,
       staleReason: "expired"
     });
     const lockCheck = report.checks.find((check) => check.name === "Browser automation lock");
