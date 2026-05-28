@@ -90,13 +90,18 @@ async function clickSafeAccountSurfaceControl(locator: Locator): Promise<boolean
 }
 
 export async function detectLoginState(page: Page): Promise<LoginState> {
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  const textState = inferLoginStateFromText(bodyText);
+  if (textState !== "unknown") {
+    return textState;
+  }
+
   const phoneInput = page.locator("input[type='tel'], input[inputmode='numeric'], input[name*='phone' i]").first();
   if (await phoneInput.isVisible().catch(() => false)) {
     return "login-required";
   }
 
-  const bodyText = await page.locator("body").innerText().catch(() => "");
-  return inferLoginStateFromText(bodyText);
+  return "unknown";
 }
 
 export function isAccountSurfaceClickText(text: string): boolean {

@@ -4,6 +4,7 @@ import {
   ACCOUNT_SURFACE_CLICK_LABELS,
   PHONE_PREFILL_INPUT_SELECTOR,
   clickAccountSurfaceButton,
+  detectLoginState,
   inferLoginStateFromText,
   isAccountSurfaceClickText,
   openLoginFlow
@@ -44,6 +45,24 @@ describe("login state inference", () => {
   it("does not accept account-only words when login prompts are still visible", () => {
     expect(inferLoginStateFromText("Account Wallet Login to continue")).toBe("login-required");
     expect(inferLoginStateFromText("Profile My Orders Verify OTP")).toBe("login-required");
+  });
+
+  it("does not treat logged-in account pages with phone fields as login-required", async () => {
+    const page = createLoginStatePage({
+      bodyText: "Account My Orders Wallet Profile",
+      phoneInputVisible: true
+    });
+
+    await expect(detectLoginState(page as never)).resolves.toBe("logged-in");
+  });
+
+  it("uses visible phone or numeric inputs as login-required evidence only when page text is ambiguous", async () => {
+    const page = createLoginStatePage({
+      bodyText: "Zepto",
+      phoneInputVisible: true
+    });
+
+    await expect(detectLoginState(page as never)).resolves.toBe("login-required");
   });
 
   it("clicks only explicit account or login controls", () => {
@@ -242,6 +261,29 @@ function createLoginFlowPage(attributes: Record<string, string | null> = {}) {
   };
 
   return { page, phone };
+}
+
+function createLoginStatePage(options: { bodyText: string; phoneInputVisible: boolean }) {
+  const phoneInput = {
+    first() {
+      return this;
+    },
+    isVisible: async () => options.phoneInputVisible
+  };
+
+  return {
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return createBodyLocator(options.bodyText);
+      }
+
+      if (selector.includes("input[type='tel']")) {
+        return phoneInput;
+      }
+
+      return createHiddenLocator();
+    }
+  };
 }
 
 function createPhoneInputLocator(attributes: Record<string, string | null>) {
