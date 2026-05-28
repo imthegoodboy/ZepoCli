@@ -10,6 +10,7 @@ import {
   isCartPageText,
   isEmptyCartText,
   isLikelyRemovableCartItemText,
+  isUnsafeCartOpenClickText,
   requireReadableCartSnapshot
 } from "../src/automation/cart.js";
 
@@ -140,9 +141,10 @@ describe("cart automation helpers", () => {
       expect(isCartOpenClickText(label)).toBe(true);
     }
 
-    for (const label of ["Checkout", "Proceed", "Continue", "Proceed to Pay", "Pay Now"]) {
+    for (const label of ["Checkout", "Proceed", "Continue", "Proceed to Pay", "Pay Now", "Pay ₹249"]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isCartOpenClickText(label)).toBe(false);
+      expect(isUnsafeCartOpenClickText(label)).toBe(true);
     }
   });
 
@@ -152,6 +154,14 @@ describe("cart automation helpers", () => {
     await expect(clickCartOpenButton(page as never)).resolves.toBe(false);
 
     expect(page.clicked).toBe(false);
+  });
+
+  it("does not click cart navigation controls when any visible or accessible label is unsafe", async () => {
+    for (const page of [createMixedLabelCartOpenPage("Checkout", "Cart"), createMixedLabelCartOpenPage("Cart", "To Pay ₹249")]) {
+      await expect(clickCartOpenButton(page as never)).resolves.toBe(false);
+
+      expect(page.clicked).toBe(false);
+    }
   });
 
   it("does not click disabled tagged cart remove controls", async () => {
@@ -230,6 +240,27 @@ function createDisabledCartOpenPage() {
         return createVisibleLocator("Cart", async () => {
           page.clicked = true;
         }, { "aria-disabled": "true" });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createMixedLabelCartOpenPage(text: string, ariaLabel: string) {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        role === "button" &&
+        (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))
+      ) {
+        return createVisibleLocator(text, async () => {
+          page.clicked = true;
+        }, { "aria-label": ariaLabel });
       }
 
       return createHiddenLocator();

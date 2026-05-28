@@ -30,7 +30,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Checkout handoff controls are rejected if any visible or accessible label contains final-payment or final-order text");
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");
     expect(readme).toContain("visible, enabled address controls");
-    expect(readme).toContain("Cart navigation and cart remove/clear automation use visible, enabled cart controls only");
+    expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment, bill, or final order text");
     expect(readme).toContain("visible, enabled, explicit reorder/order-again/repeat-order control");
     expect(readme).toContain("legacy `zeptonow.com` responses");
     expect(readme).toContain("Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage");

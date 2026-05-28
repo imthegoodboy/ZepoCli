@@ -64,7 +64,12 @@ async function clickSafeCartOpenControl(locator: Locator): Promise<boolean> {
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isCartOpenClickText(text) && !isCartOpenClickText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => label.trim().length > 0);
+  if (labels.some(isUnsafeCartOpenClickText)) {
+    return false;
+  }
+
+  if (!labels.some(isCartOpenClickText)) {
     return false;
   }
 
@@ -221,6 +226,17 @@ export function isCartOpenClickText(text: string): boolean {
   }
 
   return CART_OPEN_CLICK_LABELS.some((label) => label.test(normalized));
+}
+
+export function isUnsafeCartOpenClickText(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(checkout|proceed|continue|payment|pay|make payment|place order|confirm order|view bill|bill summary|item total|grand total|to pay)\b/i.test(
+    normalized
+  );
 }
 
 export function hasCartSurfaceEvidence(text: string): boolean {
