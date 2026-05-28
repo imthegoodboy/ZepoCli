@@ -163,7 +163,7 @@ zepo --data-dir ./.zepo login
 
 If the configured data directory is blank, cannot be created, or cannot be opened, the CLI fails before browser work starts. Use `zepo --data-dir <path> doctor` with a writable directory to diagnose local storage issues.
 
-Browser automation is serialized per data directory because Chromium profile state is shared there. If a command exits unexpectedly while holding the lock, `zepo doctor` reports the stale lock and the next browser command can recover dead-owner or expired locks automatically. Remove the lock manually only after confirming no browser command is still running. Use a separate `--data-dir` only when you intentionally need an independent session:
+Browser automation is serialized per data directory because Chromium profile state is shared there. Browser commands register interrupt handlers so Ctrl+C/SIGTERM attempts to close the Playwright browser context and release the data-dir lock before exit. If a command exits unexpectedly while holding the lock, `zepo doctor` reports the stale lock and the next browser command can recover dead-owner or expired locks automatically. Remove the lock manually only after confirming no browser command is still running. Use a separate `--data-dir` only when you intentionally need an independent session:
 
 ```bash
 zepo --data-dir ./.zepo-agent-a search milk

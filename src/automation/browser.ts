@@ -30,6 +30,11 @@ const ACCESS_CHALLENGE_TEXT_PATTERN =
   /\b(captcha|cloudflare|security check|verify you are human|are you human|unusual traffic|automated traffic|access denied|access forbidden|request blocked|request forbidden|too many requests|too many attempts|rate limit|temporarily blocked|temporarily restricted|you have been blocked|checking if the site connection is secure|checking your browser|just a moment|enable javascript and cookies)\b|(?:\b(?:http|error|status)\s*(?:403|429)\b)|(?:\b(?:403|429)\s*(?:forbidden|too many requests)\b)/i;
 const LOGIN_REQUIRED_TEXT_PATTERN =
   /\b(enter mobile|mobile number|phone number|otp|verify otp|verify mobile|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
+const PROCESS_CLEANUP_SIGNALS = ["SIGINT", "SIGTERM"] as const;
+const SIGNAL_EXIT_CODES: Record<(typeof PROCESS_CLEANUP_SIGNALS)[number], number> = {
+  SIGINT: 130,
+  SIGTERM: 143
+};
 
 interface PageSafetyState {
   allowManualAccessChallengeResolution: boolean;
@@ -76,10 +81,19 @@ export class BrowserAutomation {
     }
 
     const releaseLock = acquireBrowserRunLock(this.runtime.paths.browserLockPath);
+    let lockReleased = false;
+    let context: BrowserContext | undefined;
+    const releaseBrowserResources = async () => {
+      await context?.close().catch(() => undefined);
+      if (!lockReleased) {
+        releaseLock();
+        lockReleased = true;
+      }
+    };
+    const disposeSignalCleanup = installProcessSignalCleanup(releaseBrowserResources);
     try {
       await this.paceBrowserRun();
 
-      let context: BrowserContext;
       try {
         context = await chromium.launchPersistentContext(
           this.runtime.session.browserProfileDir,
@@ -96,11 +110,12 @@ export class BrowserAutomation {
         throw toBrowserLaunchError(error);
       }
 
-      return withClosingBrowserContext(context, async () => {
-        context.setDefaultTimeout(this.runtime.options.timeoutMs);
-        context.setDefaultNavigationTimeout(this.runtime.options.timeoutMs);
+      const browserContext = context;
+      return withClosingBrowserContext(browserContext, async () => {
+        browserContext.setDefaultTimeout(this.runtime.options.timeoutMs);
+        browserContext.setDefaultNavigationTimeout(this.runtime.options.timeoutMs);
 
-        const page = await context.newPage();
+        const page = await browserContext.newPage();
         try {
           configurePageAccessChallengeHandling(page, {
             allowManualResolution: shouldAllowManualAccessChallengeResolution(headless, this.runtime.options.interactive),
@@ -114,14 +129,14 @@ export class BrowserAutomation {
           }
 
           try {
-            const result = await task(page, context);
+            const result = await task(page, browserContext);
             await assertNoAccessChallenge(page);
             if (shouldCheckExpiredSession(options) && (await isLoginRequiredPage(page))) {
               this.runtime.session.markLoggedOut();
               throw expiredSessionError();
             }
             if (shouldSaveBrowserState(options)) {
-              await context.storageState({ path: this.runtime.session.storageStatePath });
+              await browserContext.storageState({ path: this.runtime.session.storageStatePath });
             }
             if (pageHadAccessChallenge(page)) {
               this.runtime.sqlite.setMeta(LAST_ACCESS_CHALLENGE_META_KEY, String(Date.now()));
@@ -146,7 +161,11 @@ export class BrowserAutomation {
         }
       });
     } finally {
-      releaseLock();
+      try {
+        await releaseBrowserResources();
+      } finally {
+        disposeSignalCleanup();
+      }
     }
   }
 
@@ -326,6 +345,56 @@ export async function withClosingBrowserContext<T>(
   } finally {
     await context.close().catch(() => undefined);
   }
+}
+
+interface SignalProcess {
+  once(signal: NodeJS.Signals, listener: (signal: NodeJS.Signals) => void | Promise<void>): unknown;
+  off(signal: NodeJS.Signals, listener: (signal: NodeJS.Signals) => void | Promise<void>): unknown;
+}
+
+export function installProcessSignalCleanup(
+  cleanup: () => void | Promise<void>,
+  processLike: SignalProcess = process,
+  exit: (code: number) => void = (code) => {
+    process.exit(code);
+  }
+): () => void {
+  let disposed = false;
+  let cleaningUp = false;
+  const handler = async (signal: NodeJS.Signals) => {
+    if (cleaningUp) {
+      return;
+    }
+
+    cleaningUp = true;
+    try {
+      await cleanup();
+    } finally {
+      dispose();
+      exit(signalExitCode(signal));
+    }
+  };
+
+  const dispose = () => {
+    if (disposed) {
+      return;
+    }
+
+    disposed = true;
+    for (const signal of PROCESS_CLEANUP_SIGNALS) {
+      processLike.off(signal, handler);
+    }
+  };
+
+  for (const signal of PROCESS_CLEANUP_SIGNALS) {
+    processLike.once(signal, handler);
+  }
+
+  return dispose;
+}
+
+function signalExitCode(signal: NodeJS.Signals): number {
+  return signal === "SIGTERM" ? SIGNAL_EXIT_CODES.SIGTERM : SIGNAL_EXIT_CODES.SIGINT;
 }
 
 export function shouldAllowManualAccessChallengeResolution(headless: boolean, interactive: boolean): boolean {

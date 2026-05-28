@@ -21,6 +21,7 @@ import {
   getBrowserAutomationReadiness,
   getBrowserRunLockStatus,
   getHeadlessBrowserThrottleStatus,
+  installProcessSignalCleanup,
   isAccessChallengeText,
   isAccessChallengeError,
   isAccessProtectionError,
@@ -622,4 +623,67 @@ describe("browser automation helpers", () => {
     release();
     expect(existsSync(lockPath)).toBe(false);
   });
+
+  it("runs browser cleanup before exiting on termination signals", async () => {
+    const signalProcess = createSignalProcess();
+    const cleanupCalls: string[] = [];
+    const exitCodes: number[] = [];
+    const dispose = installProcessSignalCleanup(
+      async () => {
+        cleanupCalls.push("cleanup");
+      },
+      signalProcess.process,
+      (code) => {
+        exitCodes.push(code);
+      }
+    );
+
+    expect(signalProcess.listenerCount()).toBe(2);
+
+    await signalProcess.emit("SIGINT");
+
+    expect(cleanupCalls).toEqual(["cleanup"]);
+    expect(exitCodes).toEqual([130]);
+    expect(signalProcess.listenerCount()).toBe(0);
+
+    dispose();
+    expect(signalProcess.listenerCount()).toBe(0);
+  });
+
+  it("removes signal cleanup handlers after normal browser completion", () => {
+    const signalProcess = createSignalProcess();
+    const dispose = installProcessSignalCleanup(() => undefined, signalProcess.process, () => undefined);
+
+    expect(signalProcess.listenerCount()).toBe(2);
+
+    dispose();
+
+    expect(signalProcess.listenerCount()).toBe(0);
+  });
 });
+
+function createSignalProcess() {
+  const listeners = new Map<NodeJS.Signals, (signal: NodeJS.Signals) => void | Promise<void>>();
+  const process = {
+    once(signal: NodeJS.Signals, listener: (signal: NodeJS.Signals) => void | Promise<void>) {
+      listeners.set(signal, listener);
+      return this;
+    },
+    off(signal: NodeJS.Signals, listener: (signal: NodeJS.Signals) => void | Promise<void>) {
+      if (listeners.get(signal) === listener) {
+        listeners.delete(signal);
+      }
+      return this;
+    }
+  };
+
+  return {
+    process,
+    listenerCount: () => listeners.size,
+    emit: async (signal: NodeJS.Signals) => {
+      const listener = listeners.get(signal);
+      listeners.delete(signal);
+      await listener?.(signal);
+    }
+  };
+}

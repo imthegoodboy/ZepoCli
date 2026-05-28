@@ -99,6 +99,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Session auth-state validation should treat both `zepto.com` and legacy `zeptonow.com` storage as Zepto platform session evidence.
    - Doctor checks should probe all runtime directories needed for auth state, browser profile data, logs, and diagnostics.
    - Doctor checks should report active or stale browser automation locks for the configured data directory.
+   - Browser commands should register interrupt handlers so Ctrl+C/SIGTERM closes the Playwright context and releases the data-dir lock before exit.
    - Browser lock JSON should include `pid`, `createdAt`, and `staleReason` when available so agents can distinguish active commands from dead-owner or expired stale locks. Dead-owner or expired locks may be recovered by the next browser command, but agents should not delete active locks or stop processes unless a human has confirmed the owner is stale.
    - `zepo status --json` and `zepo doctor --json` should expose aggregate `browserAutomation` readiness, headless browser throttle, and recent Zepto access-challenge cooldown state so agents can wait or switch to `--visible` instead of retrying headless commands.
    - `zepo doctor --json` should expose structured `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge` fields; agents should not parse human doctor messages.
