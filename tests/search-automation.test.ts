@@ -128,6 +128,27 @@ describe("search automation helpers", () => {
     expect(page.gotoUrls.filter((url) => url.includes("/search?query=milk"))).toHaveLength(1);
   });
 
+  it("does not type into a readonly search input after opening search", async () => {
+    const page = createReadonlyInputAfterSearchTriggerPage();
+
+    await expect(searchProducts(page as never, "milk", 1)).resolves.toEqual([]);
+
+    expect(page.searchClicked).toBe(true);
+    expect(page.inputFilled).toBe(false);
+    expect(page.inputTyped).toBe(false);
+    expect(page.gotoUrls.filter((url) => url.includes("/search?query=milk"))).toHaveLength(1);
+  });
+
+  it("does not type into a readonly direct search input", async () => {
+    const page = createReadonlyDirectSearchInputPage();
+
+    await expect(searchProducts(page as never, "milk", 1)).resolves.toEqual([]);
+
+    expect(page.inputFilled).toBe(false);
+    expect(page.inputTyped).toBe(false);
+    expect(page.gotoUrls.filter((url) => url.includes("/search?query=milk"))).toHaveLength(1);
+  });
+
   it("fails with a setup-specific error when Zepto asks for delivery location", async () => {
     const page = createLocationRequiredPage();
 
@@ -454,6 +475,14 @@ function createDisabledSearchTriggerPage() {
 }
 
 function createDisabledInputAfterSearchTriggerPage() {
+  return createInputAfterSearchTriggerPage({ "aria-disabled": "true" });
+}
+
+function createReadonlyInputAfterSearchTriggerPage() {
+  return createInputAfterSearchTriggerPage({ readonly: "" });
+}
+
+function createInputAfterSearchTriggerPage(attributes: Record<string, string | null>) {
   const gotoUrls: string[] = [];
   const page = {
     gotoUrls,
@@ -491,7 +520,7 @@ function createDisabledInputAfterSearchTriggerPage() {
       }
 
       if (selector.includes("input[type='search']")) {
-        return page.searchClicked ? createDisabledSearchInput(page) : createHiddenLocator();
+        return page.searchClicked ? createSearchInput(page, attributes) : createHiddenLocator();
       }
 
       return createHiddenLocator();
@@ -501,7 +530,44 @@ function createDisabledInputAfterSearchTriggerPage() {
   return page;
 }
 
-function createDisabledSearchInput(page: { inputFilled: boolean; inputTyped: boolean }) {
+function createReadonlyDirectSearchInputPage() {
+  const gotoUrls: string[] = [];
+  const page = {
+    gotoUrls,
+    inputFilled: false,
+    inputTyped: false,
+    goto: async (url: string | URL) => {
+      gotoUrls.push(String(url));
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    title: async () => "",
+    evaluate: async () => [],
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return {
+          ...createHiddenLocator(),
+          innerText: async () => "No results"
+        };
+      }
+
+      if (selector.includes("input[type='search']")) {
+        return createSearchInput(page, { readonly: "" });
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
+function createSearchInput(
+  page: { inputFilled: boolean; inputTyped: boolean },
+  attributes: Record<string, string | null>
+) {
   return {
     first() {
       return this;
@@ -511,7 +577,7 @@ function createDisabledSearchInput(page: { inputFilled: boolean; inputTyped: boo
     },
     isVisible: async () => true,
     innerText: async () => "",
-    getAttribute: async (name: string) => (name === "aria-disabled" ? "true" : null),
+    getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async () => false,
     fill: async () => {
       page.inputFilled = true;

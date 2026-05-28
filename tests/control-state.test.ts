@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isDisabledControl } from "../src/automation/control-state.js";
+import { isDisabledControl, isEditableTextInput } from "../src/automation/control-state.js";
 
 describe("automation control state", () => {
   afterEach(() => {
@@ -26,6 +26,19 @@ describe("automation control state", () => {
 
     await expect(isDisabledControl(createLocator({}, child) as never)).resolves.toBe(true);
   });
+
+  it("treats enabled text inputs as editable", async () => {
+    await expect(isEditableTextInput(createTextInputLocator() as never)).resolves.toBe(true);
+  });
+
+  it("treats readonly text inputs as not editable", async () => {
+    await expect(isEditableTextInput(createTextInputLocator({ readonly: "" }) as never)).resolves.toBe(false);
+    await expect(isEditableTextInput(createTextInputLocator({ "aria-readonly": "TRUE" }) as never)).resolves.toBe(false);
+  });
+
+  it("treats non-text controls as not editable", async () => {
+    await expect(isEditableTextInput(createTextInputLocator({}, false) as never)).resolves.toBe(false);
+  });
 });
 
 function createLocator(attributes: Record<string, string | null>, domState: boolean | TestElement = false) {
@@ -33,6 +46,17 @@ function createLocator(attributes: Record<string, string | null>, domState: bool
     getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async (callback: (element: TestElement) => boolean) =>
       typeof domState === "boolean" ? domState : callback(domState)
+  };
+}
+
+function createTextInputLocator(attributes: Record<string, string | null> = {}, editableDomState = true) {
+  let evaluateCalls = 0;
+  return {
+    getAttribute: async (name: string) => attributes[name] ?? null,
+    evaluate: async () => {
+      evaluateCalls += 1;
+      return evaluateCalls === 1 ? false : editableDomState;
+    }
   };
 }
 

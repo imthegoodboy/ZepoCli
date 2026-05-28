@@ -44,6 +44,28 @@ export async function isDisabledControl(locator: Locator): Promise<boolean> {
     .catch(() => false);
 }
 
+export async function isEditableTextInput(locator: Locator): Promise<boolean> {
+  if (await isDisabledControl(locator)) {
+    return false;
+  }
+
+  const readOnly = await locator.getAttribute("readonly").catch(() => null);
+  const ariaReadOnly = await locator.getAttribute("aria-readonly").catch(() => null);
+  if (readOnly !== null || isTrueAttribute(ariaReadOnly)) {
+    return false;
+  }
+
+  return locator
+    .evaluate((element) => {
+      if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+        return !element.disabled && !element.readOnly;
+      }
+
+      return false;
+    })
+    .catch(() => false);
+}
+
 function isTrueAttribute(value: string | null): boolean {
   return value?.toLowerCase() === "true";
 }

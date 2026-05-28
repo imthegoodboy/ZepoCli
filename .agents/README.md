@@ -84,7 +84,7 @@ Implementation consequence:
 - Successful `zepo checkout --json` output must not imply payment or order placement succeeded; keep `paymentStatus` and `orderPlacement` explicitly unconfirmed, include `orderStatusCommand: "zepo track"`, and tell agents to run `zepo track` after Zepto payment.
 - Checkout handoff controls must be rejected when any visible or accessible label contains unsafe final-payment/order text, even if another label looks like a safe checkout handoff.
 - `zepo search` may use real product cards visible on Zepto's public homepage as a fallback when the search page is empty before location setup; never synthesize product results from search suggestions or popular-search text.
-- Search navigation should use a visible, enabled search input or explicit enabled search-control labels; avoid broad `/search/` text clicks that can match popular-search or result copy.
+- Search navigation should use a visible, enabled, editable search input or explicit enabled search-control labels; avoid broad `/search/` text clicks that can match popular-search or result copy.
 - `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.
 - `zepo login --phone` should validate and normalize Indian mobile formats before opening the browser, then prefill only visible, enabled, editable Zepto phone fields with paced typing.
 - Phone prefill must target explicit phone/mobile/tel fields only; never use bare numeric input selectors because those can match OTP fields.

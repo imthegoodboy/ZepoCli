@@ -5,7 +5,7 @@ import type { Product } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { textMatchesProductQuery } from "../utils/product-matching.js";
 import { ACCESS_CHALLENGE_COOLDOWN_MS, assertNoAccessChallenge, gotoWithAccessProtection } from "./browser.js";
-import { isDisabledControl } from "./control-state.js";
+import { isDisabledControl, isEditableTextInput } from "./control-state.js";
 import { dedupeProducts, parseProductCard, type RawProductCard } from "./extract.js";
 
 export const SEARCH_TRIGGER_CLICK_LABELS = [
@@ -165,7 +165,7 @@ async function searchFromHome(page: Page, query: string): Promise<boolean> {
     .locator("input[type='search'], input[placeholder*='Search' i], input[aria-label*='Search' i]")
     .first();
 
-  if ((await directInput.isVisible().catch(() => false)) && !(await isDisabledControl(directInput))) {
+  if ((await directInput.isVisible().catch(() => false)) && (await isEditableTextInput(directInput))) {
     await submitSearchInput(page, directInput, query);
     return true;
   }
@@ -178,7 +178,7 @@ async function searchFromHome(page: Page, query: string): Promise<boolean> {
       return false;
     }
 
-    if (await isDisabledControl(inputAfterClick)) {
+    if (!(await isEditableTextInput(inputAfterClick))) {
       return false;
     }
 

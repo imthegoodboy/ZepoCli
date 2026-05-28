@@ -1,7 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
-import { isDisabledControl } from "./control-state.js";
+import { isDisabledControl, isEditableTextInput } from "./control-state.js";
 
 export type LoginState = "logged-in" | "login-required" | "unknown";
 export const ACCOUNT_SURFACE_CLICK_LABELS = [
@@ -34,7 +34,7 @@ export async function openLoginFlow(page: Page, phone?: string): Promise<void> {
 
   if (phone) {
     const phoneInput = page.locator(PHONE_PREFILL_INPUT_SELECTOR).first();
-    if (await isEditablePhonePrefillInput(phoneInput)) {
+    if ((await phoneInput.isVisible().catch(() => false)) && (await isEditableTextInput(phoneInput))) {
       await phoneInput.fill("");
       await phoneInput.pressSequentially(phone, { delay: PHONE_PREFILL_TYPE_DELAY_MS });
     }
@@ -143,30 +143,4 @@ function hasLoggedInAccountEvidence(text: string): boolean {
   const hasAccountEntry = /\b(account|profile)\b/i.test(text);
   const hasAccountOnlyFeature = /\b(wallet|my orders|orders|order history)\b/i.test(text);
   return hasAccountEntry && hasAccountOnlyFeature;
-}
-
-async function isEditablePhonePrefillInput(locator: Locator): Promise<boolean> {
-  if (!(await locator.isVisible().catch(() => false))) {
-    return false;
-  }
-
-  if (await isDisabledControl(locator)) {
-    return false;
-  }
-
-  const readOnly = await locator.getAttribute("readonly").catch(() => null);
-  const ariaReadOnly = await locator.getAttribute("aria-readonly").catch(() => null);
-  if (readOnly !== null || ariaReadOnly === "true") {
-    return false;
-  }
-
-  return locator
-    .evaluate((element) => {
-      if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-        return !element.disabled && !element.readOnly;
-      }
-
-      return false;
-    })
-    .catch(() => false);
 }

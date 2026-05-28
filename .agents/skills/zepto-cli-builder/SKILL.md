@@ -61,7 +61,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Do not silently return fake cart/order/address data.
    - Product/cart/order parsers must ignore UI badges, generic image alt text, fee rows, and summary rows instead of treating them as real user data.
    - `zepo search` may fall back to real product cards visible on Zepto's public homepage when Zepto's search page is empty before location setup; never synthesize product results from search suggestions, popular-search text, or AI guesses.
-   - Search navigation should use a visible, enabled search input or explicit enabled search-control labels; avoid broad `/search/` text clicks that can match popular-search or result copy.
+   - Search navigation should use a visible, enabled, editable search input or explicit enabled search-control labels; avoid broad `/search/` text clicks that can match popular-search or result copy.
    - Search should avoid retry loops: use at most one homepage search attempt, at most one direct `/search?query=` attempt, then one public-homepage product-card fallback.
    - Product extraction should require real product detail such as price or unit before returning a card; image-only navigation, category, popular-search, and suggestion content is not a product result.
    - Address extraction should prefer specific saved address rows, avoid clicking broad containers that include multiple saved addresses, and reject label-only navigation/category text such as "Home" or "Work" without real address detail.
