@@ -1,8 +1,7 @@
 import type { Command } from "commander";
 
-import { ZeptoService } from "../services/zepto.js";
 import { printCart } from "../utils/output.js";
-import { joinQuery, withCommandSpinner, withRuntime } from "./shared.js";
+import { joinQuery, wantsJson, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerCartCommands(program: Command): void {
   program
@@ -11,11 +10,13 @@ export function registerCartCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const service = new ZeptoService(runtime).cart;
-        const cart = options.json
+        const cart = json
           ? await service.read()
           : await withCommandSpinner("Reading Zepto cart", "Cart loaded.", () => service.read());
-        printCart(cart, options.json);
+        printCart(cart, json);
       })
     );
 
@@ -26,14 +27,16 @@ export function registerCartCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((queryParts: string[], options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const query = joinQuery(queryParts);
         const service = new ZeptoService(runtime).cart;
-        const cart = options.json
+        const cart = json
           ? await service.remove(query)
           : await withCommandSpinner(`Removing "${query}"`, `Removed matching item for "${query}".`, () =>
               service.remove(query)
             );
-        printCart(cart, options.json);
+        printCart(cart, json);
       })
     );
 
@@ -43,11 +46,13 @@ export function registerCartCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const service = new ZeptoService(runtime).cart;
-        const cart = options.json
+        const cart = json
           ? await service.clear()
           : await withCommandSpinner("Clearing Zepto cart", "Cart cleared.", () => service.clear());
-        printCart(cart, options.json);
+        printCart(cart, json);
       })
     );
 

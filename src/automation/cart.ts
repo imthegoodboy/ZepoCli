@@ -1,10 +1,14 @@
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 
 import type { CartSnapshot } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { extractPrices, normalizeText } from "../utils/format.js";
+import { textMatchesProductQuery } from "../utils/product-matching.js";
 import { parseCartItemsFromText } from "./extract.js";
-import { clickFirstText, gotoZepto } from "./browser.js";
+import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
+import { isDisabledControl } from "./control-state.js";
+
+export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
 
 export async function openCart(page: Page): Promise<void> {
   await gotoZepto(page, "/cart");
@@ -15,31 +19,66 @@ export async function openCart(page: Page): Promise<void> {
   }
 
   await gotoZepto(page);
-  const opened = await clickFirstText(page, [/cart/i, /view cart/i, /checkout/i]);
+  const opened = await clickCartOpenButton(page);
   if (!opened) {
     throw new UserFacingError("Could not open the Zepto cart.", {
+      code: "cart_unavailable",
       hint: "Log in and add an item first, then rerun the command."
     });
   }
 
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+  await assertNoAccessChallenge(page);
   const openedText = await page.locator("body").innerText().catch(() => "");
   if (!isCartPageText(openedText)) {
     throw new UserFacingError("Could not confirm the Zepto cart page after opening cart.", {
-      hint: "Rerun with `--visible --debug` to inspect Zepto's cart navigation before changing cart contents."
+      code: "cart_navigation_unverified",
+      hint: "Rerun with `--visible` to inspect Zepto's cart navigation before changing cart contents."
     });
   }
 }
 
+export async function clickCartOpenButton(page: Page): Promise<boolean> {
+  const controls = page.locator("button, [role='button'], a");
+  for (const label of CART_OPEN_CLICK_LABELS) {
+    const candidates = [
+      page.getByRole("button", { name: label }).first(),
+      page.getByRole("link", { name: label }).first(),
+      controls.filter({ hasText: label }).first()
+    ];
+
+    for (const candidate of candidates) {
+      if (await clickSafeCartOpenControl(candidate)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+async function clickSafeCartOpenControl(locator: Locator): Promise<boolean> {
+  if (!(await locator.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  const text = await locator.innerText().catch(() => "");
+  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
+  if (!isCartOpenClickText(text) && !isCartOpenClickText(ariaLabel ?? "")) {
+    return false;
+  }
+
+  if (await isDisabledControl(locator)) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
 export async function readCart(page: Page): Promise<CartSnapshot> {
   await openCart(page);
-
-  const rawText = await page.locator("body").innerText();
-  return {
-    items: parseCartItemsFromText(rawText),
-    total: extractCartTotal(rawText),
-    rawText
-  };
+  return readVisibleCart(page);
 }
 
 export async function removeCartItem(page: Page, query: string): Promise<CartSnapshot> {
@@ -52,20 +91,23 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
       break;
     }
 
-    const button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
-    await button.click();
+    await clickTaggedCartRemoveButton(page, removeId);
     removed = true;
     await page.waitForTimeout(700);
+    await assertNoAccessChallenge(page);
   }
 
   if (!removed) {
-    throw new UserFacingError(`Could not find a removable cart item matching "${query}".`);
+    throw new UserFacingError(`Could not find a removable cart item matching "${query}".`, {
+      code: "cart_item_not_found"
+    });
   }
 
   const cart = await readCart(page);
   if (cartHasMatchingItem(cart, query)) {
     throw new UserFacingError(`Zepto still shows a cart item matching "${query}" after remove.`, {
-      hint: "Rerun with `--visible --debug` to inspect the cart controls before retrying checkout."
+      code: "cart_remove_unverified",
+      hint: "Rerun with `--visible` to inspect the cart controls before retrying checkout."
     });
   }
 
@@ -75,22 +117,40 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
 export async function clearCart(page: Page): Promise<CartSnapshot> {
   await openCart(page);
 
-  let removedCount = 0;
+  let cart = await readVisibleCart(page);
   for (let attempt = 0; attempt < 40; attempt += 1) {
-    const removeId = await findRemoveButtonId(page);
+    const target = cart.items[0];
+    if (!target) {
+      return cart;
+    }
+
+    const targetQueries = [
+      [target.name, target.unit].filter(Boolean).join(" "),
+      target.name
+    ].filter((query, index, queries) => query && queries.indexOf(query) === index);
+
+    let removeId: number | undefined;
+    for (const targetQuery of targetQueries) {
+      removeId = await findRemoveButtonId(page, targetQuery);
+      if (removeId !== undefined) {
+        break;
+      }
+    }
+
     if (removeId === undefined) {
       break;
     }
 
-    await page.locator(`[data-zepo-remove-id="${removeId}"]`).first().click();
-    removedCount += 1;
+    await clickTaggedCartRemoveButton(page, removeId);
     await page.waitForTimeout(500);
+    await assertNoAccessChallenge(page);
+    cart = await readVisibleCart(page);
   }
 
-  const cart = await readCart(page);
   if (cart.items.length > 0) {
     throw new UserFacingError("Could not clear all detected Zepto cart items.", {
-      hint: "Rerun with `--visible --debug` to inspect Zepto's cart controls, or remove the remaining items in the browser."
+      code: "cart_clear_incomplete",
+      hint: "Rerun with `--visible` to inspect Zepto's cart controls, or remove the remaining items in the browser."
     });
   }
 
@@ -98,14 +158,9 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
 }
 
 export function cartHasMatchingItem(cart: CartSnapshot, query: string): boolean {
-  const queryText = normalizeText(query).toLowerCase();
-  if (!queryText) {
-    return false;
-  }
-
   return cart.items.some((item) => {
-    const itemText = normalizeText([item.name, item.unit].filter(Boolean).join(" ")).toLowerCase();
-    return itemText.includes(queryText) || queryText.includes(itemText);
+    const itemText = [item.name, item.unit].filter(Boolean).join(" ");
+    return textMatchesProductQuery(itemText, query);
   });
 }
 
@@ -116,10 +171,10 @@ export function isCartPageText(text: string): boolean {
   }
 
   if (parseCartItemsFromText(text).length > 0) {
-    return true;
+    return hasCartSurfaceEvidence(normalized);
   }
 
-  if (/\b(my cart|shopping cart|cart is empty|cart empty|empty cart|items? in cart)\b/i.test(normalized)) {
+  if (isEmptyCartText(normalized)) {
     return true;
   }
 
@@ -129,10 +184,147 @@ export function isCartPageText(text: string): boolean {
   );
 }
 
+export function requireReadableCartSnapshot(rawText: string): CartSnapshot {
+  const snapshot = {
+    items: parseCartItemsFromText(rawText),
+    total: extractCartTotal(rawText),
+    rawText
+  };
+
+  if ((snapshot.items.length > 0 && hasCartSurfaceEvidence(rawText)) || isEmptyCartText(rawText)) {
+    return snapshot;
+  }
+
+  throw new UserFacingError("Zepto cart page did not expose readable cart items.", {
+    code: "cart_unreadable",
+    hint: "Rerun with `--visible` to inspect Zepto's cart page before treating the cart as empty."
+  });
+}
+
+export function isEmptyCartText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(cart is empty|cart empty|empty cart|your cart is empty|no items in cart|no items added)\b/i.test(
+    normalized
+  );
+}
+
+export function isCartOpenClickText(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return CART_OPEN_CLICK_LABELS.some((label) => label.test(normalized));
+}
+
+export function hasCartSurfaceEvidence(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(cart|my cart|view bill|bill summary|item total|grand total|to pay|qty|quantity|remove|delete|decrease)\b/i.test(
+    normalized
+  );
+}
+
+export function isLikelyRemovableCartItemText(text: string, query?: string): boolean {
+  const normalized = normalizeText(text).toLowerCase();
+  if (!normalized || !/[₹]|rs\.?\s*\d/i.test(normalized)) {
+    return false;
+  }
+
+  if (isCartSummaryOrFeeText(normalized)) {
+    return false;
+  }
+
+  if (isNonCartProductSurfaceText(normalized)) {
+    return false;
+  }
+
+  if (!hasCartMutationSignal(normalized)) {
+    return false;
+  }
+
+  if (!query) {
+    return true;
+  }
+
+  return textMatchesProductQuery(normalized, query);
+}
+
 async function findRemoveButtonId(page: Page, query?: string): Promise<number | undefined> {
   return page.evaluate((itemQuery) => {
+    const sizeUnitPattern =
+      "ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules";
     const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
-    const queryText = itemQuery ? normalize(itemQuery) : undefined;
+    const normalizeProductMatchText = (value: string) =>
+      normalize(value)
+        .replace(new RegExp(`(\\d+(?:\\.\\d+)?)\\s+(?=(?:${sizeUnitPattern})\\b)`, "gi"), "$1")
+        .replace(/(\d+(?:\.\d+)?)(?:litres?|liters?|ltr)\b/gi, "$1l")
+        .replace(/(\d+(?:\.\d+)?)(?:grams?|gms?|gm)\b/gi, "$1g")
+        .replace(/(\d+(?:\.\d+)?)kgs\b/gi, "$1kg")
+        .replace(/(\d+(?:\.\d+)?)(?:pieces?|pcs?)\b/gi, "$1pc");
+    const compactProductMatchText = (value: string) => value.replace(/[^a-z0-9.]+/gi, "");
+    const productMatchTerms = (value: string) =>
+      normalizeProductMatchText(value)
+        .split(/[^a-z0-9.]+/i)
+        .filter((term) => term.length > 1);
+    const productMatchTermVariants = (term: string) => {
+      const variants = [term];
+      if (/^[a-z]{4,}ies$/i.test(term)) {
+        variants.push(`${term.slice(0, -3)}y`);
+      } else if (/^[a-z]{4,}s$/i.test(term)) {
+        variants.push(term.slice(0, -1));
+      }
+      return variants;
+    };
+    const textMatchesProductQuery = (text: string, query: string) => {
+      const searchable = normalizeProductMatchText(text);
+      const queryText = normalizeProductMatchText(query);
+      if (!searchable || !queryText) {
+        return false;
+      }
+
+      const compactSearchable = compactProductMatchText(searchable);
+      const compactQuery = compactProductMatchText(queryText);
+      if (searchable.includes(queryText) || (compactQuery.length > 1 && compactSearchable.includes(compactQuery))) {
+        return true;
+      }
+
+      const terms = productMatchTerms(queryText);
+      return terms.length > 0
+        ? terms.every((term) =>
+            productMatchTermVariants(term).some(
+              (variant) => searchable.includes(variant) || compactSearchable.includes(variant)
+            )
+          )
+        : false;
+    };
+    const isSummaryOrFeeText = (text: string) =>
+      /\b(apply coupon|coupon|bill summary|item total|grand total|to pay|delivery fee|delivery charge|handling fee|platform fee|surge fee|discount|savings|taxes?)\b/i.test(
+        text
+      );
+    const isNonCartProductSurfaceText = (text: string) =>
+      /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought)\b/i.test(
+        text
+      );
+    const hasCartMutationSignal = (text: string) =>
+      /\b(qty|quantity|remove|delete|decrease)\b/i.test(text) ||
+      /(?:^|\s)x\s*\d+\b/i.test(text) ||
+      /\b\d+\s*x(?:\s|$)/i.test(text) ||
+      /[+\-−]\s*\d+\b/.test(text) ||
+      /\b\d+\s*[+\-−]/.test(text);
+    const isLikelyRemovableItemText = (text: string) =>
+      /[₹]|rs\.?\s*\d/i.test(text) &&
+      !isSummaryOrFeeText(text) &&
+      !isNonCartProductSurfaceText(text) &&
+      hasCartMutationSignal(text) &&
+      (!itemQuery || textMatchesProductQuery(text, itemQuery));
     const isRemoveButton = (element: Element) => {
       const text = normalize(element.textContent ?? "");
       const aria = normalize(element.getAttribute("aria-label") ?? "");
@@ -146,6 +338,40 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
         aria.includes("decrease")
       );
     };
+    const hasDisabledState = (element: Element) => {
+      const dataDisabled = element.getAttribute("data-disabled");
+      return (
+        element.hasAttribute("disabled") ||
+        element.getAttribute("aria-disabled")?.toLowerCase() === "true" ||
+        (dataDisabled !== null && dataDisabled.toLowerCase() !== "false")
+      );
+    };
+    const isClickableElement = (element: Element) => {
+      if (
+        element instanceof HTMLButtonElement ||
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        if (element.disabled) {
+          return false;
+        }
+      }
+
+      for (let current: Element | null = element; current; current = current.parentElement) {
+        if (hasDisabledState(current)) {
+          return false;
+        }
+      }
+
+      if (element.closest("fieldset[disabled]")) {
+        return false;
+      }
+
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
     const cardFor = (element: Element) => {
       let current: Element | null = element;
       for (let depth = 0; current && depth < 8; depth += 1) {
@@ -158,10 +384,19 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
       return element;
     };
 
-    const candidates = Array.from(document.querySelectorAll("button, [role='button']")).filter(isRemoveButton);
+    document
+      .querySelectorAll("[data-zepo-remove-id]")
+      .forEach((element) => element.removeAttribute("data-zepo-remove-id"));
+
+    const candidates = Array.from(document.querySelectorAll("button, [role='button']")).filter(
+      (button) => isClickableElement(button) && isRemoveButton(button)
+    );
     for (const [index, button] of candidates.entries()) {
-      const cardText = normalize(cardFor(button).textContent ?? "");
-      if (!queryText || cardText.includes(queryText)) {
+      const controlText = normalize(
+        `${button.textContent ?? ""} ${button.getAttribute("aria-label") ?? ""} ${button.getAttribute("title") ?? ""}`
+      );
+      const cardText = normalize(`${cardFor(button).textContent ?? ""} ${controlText}`);
+      if (isLikelyRemovableItemText(cardText)) {
         button.setAttribute("data-zepo-remove-id", String(index));
         return index;
       }
@@ -169,6 +404,32 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
 
     return undefined;
   }, query);
+}
+
+export async function clickTaggedCartRemoveButton(page: Page, removeId: number): Promise<void> {
+  const button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
+  if (!(await button.isVisible().catch(() => false))) {
+    throw new UserFacingError("Zepto cart remove control changed before it could be clicked.", {
+      code: "cart_remove_control_unavailable",
+      hint: "Rerun with `--visible` to inspect the current cart controls before retrying."
+    });
+  }
+
+  if (await isDisabledControl(button)) {
+    throw new UserFacingError("Zepto cart remove control is disabled.", {
+      code: "cart_remove_control_disabled",
+      hint: "The item may no longer be removable from the current cart state. Rerun `zepo cart` or inspect with `--visible`."
+    });
+  }
+
+  await button.click();
+}
+
+async function readVisibleCart(page: Page): Promise<CartSnapshot> {
+  await assertNoAccessChallenge(page);
+
+  const rawText = await page.locator("body").innerText();
+  return requireReadableCartSnapshot(rawText);
 }
 
 function extractCartTotal(rawText: string): string | undefined {
@@ -183,4 +444,26 @@ function extractCartTotal(rawText: string): string | undefined {
   }
 
   return extractPrices(rawText).at(-1);
+}
+
+function isCartSummaryOrFeeText(text: string): boolean {
+  return /\b(apply coupon|coupon|bill summary|item total|grand total|to pay|delivery fee|delivery charge|handling fee|platform fee|surge fee|discount|savings|taxes?)\b/i.test(
+    text
+  );
+}
+
+function isNonCartProductSurfaceText(text: string): boolean {
+  return /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought)\b/i.test(
+    text
+  );
+}
+
+function hasCartMutationSignal(text: string): boolean {
+  return (
+    /\b(qty|quantity|remove|delete|decrease)\b/i.test(text) ||
+    /(?:^|\s)x\s*\d+\b/i.test(text) ||
+    /\b\d+\s*x(?:\s|$)/i.test(text) ||
+    /[+\-−]\s*\d+\b/.test(text) ||
+    /\b\d+\s*[+\-−]/.test(text)
+  );
 }

@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 
-import type { Address, CartSnapshot, OrderSnapshot } from "../types.js";
+import type { Address, CartSnapshot, OrderSnapshot, UserDataCacheStatus } from "../types.js";
 
 export interface SessionRecord {
   loggedIn: boolean;
@@ -55,6 +55,15 @@ export class SqliteStore {
     this.db.exec("vacuum");
   }
 
+  userDataCacheStatus(): UserDataCacheStatus {
+    return {
+      searches: this.countRows("searches"),
+      cartSnapshots: this.countRows("cart_snapshots"),
+      addresses: this.countRows("addresses"),
+      orders: this.countRows("orders")
+    };
+  }
+
   markSession(loggedIn: boolean, storageStatePath: string): void {
     this.db
       .prepare(
@@ -91,9 +100,10 @@ export class SqliteStore {
   }
 
   saveCartSnapshot(snapshot: CartSnapshot): void {
+    // Keep parsed cache fields only; raw page text can contain address or order copy.
     this.db
       .prepare("insert into cart_snapshots (items_json, total, raw_text, created_at) values (?, ?, ?, datetime('now'))")
-      .run(JSON.stringify(snapshot.items), snapshot.total ?? null, snapshot.rawText ?? null);
+      .run(JSON.stringify(snapshot.items), snapshot.total ?? null, null);
   }
 
   upsertAddress(address: Address): void {
@@ -126,12 +136,12 @@ export class SqliteStore {
       `insert into orders (order_id, status, eta, total, placed_at, raw_text, updated_at)
        values (?, ?, ?, ?, ?, ?, datetime('now'))
        on conflict(order_id) do update set
-         status = excluded.status,
-         eta = excluded.eta,
-         total = excluded.total,
-         placed_at = excluded.placed_at,
-         raw_text = excluded.raw_text,
-         updated_at = excluded.updated_at`
+        status = excluded.status,
+        eta = excluded.eta,
+        total = excluded.total,
+        placed_at = excluded.placed_at,
+        raw_text = excluded.raw_text,
+        updated_at = excluded.updated_at`
     );
 
     const save = this.db.transaction((items: OrderSnapshot[]) => {
@@ -142,7 +152,8 @@ export class SqliteStore {
           order.eta ?? null,
           order.total ?? null,
           order.placedAt ?? null,
-          order.rawText
+          // Keep parsed cache fields only; raw page text can contain sensitive order copy.
+          ""
         );
       }
     });
@@ -195,9 +206,17 @@ export class SqliteStore {
         eta text,
         total text,
         placed_at text,
-        raw_text text not null,
+        raw_text text,
         updated_at text not null
       );
+
+      update cart_snapshots set raw_text = null where raw_text is not null;
+      update orders set raw_text = '' where raw_text is not null and raw_text <> '';
     `);
+  }
+
+  private countRows(table: "searches" | "cart_snapshots" | "addresses" | "orders"): number {
+    const row = this.db.prepare(`select count(*) as count from ${table}`).get() as { count: number };
+    return row.count;
   }
 }

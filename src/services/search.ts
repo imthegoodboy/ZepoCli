@@ -36,6 +36,7 @@ export function parseSearchLimit(limitInput: unknown): number {
   }
 
   throw new UserFacingError("Search limit must be an integer from 1 to 50.", {
+    code: "invalid_input",
     hint: "Use a value like `zepo search milk --limit 10`."
   });
 }

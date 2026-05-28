@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { APP_NAME, BROWSER_PROFILE_DIR, LOG_FILE, SQLITE_FILE, STORAGE_STATE_FILE } from "./constants.js";
 
 export interface AppPaths {
+  browserLockPath: string;
   dataDir: string;
   authStatePath: string;
   browserProfileDir: string;
@@ -19,6 +20,7 @@ export function resolveAppPaths(dataDirOverride?: string): AppPaths {
     : defaultDataDir();
 
   const paths: AppPaths = {
+    browserLockPath: join(dataDir, "browser.lock"),
     dataDir,
     authStatePath: join(dataDir, "storage", STORAGE_STATE_FILE),
     browserProfileDir: join(dataDir, "storage", BROWSER_PROFILE_DIR),

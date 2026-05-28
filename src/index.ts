@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import chalk from "chalk";
-import { Command } from "commander";
+import { Command, CommanderError } from "commander";
 import { ZodError } from "zod";
 
 import { DEFAULT_TIMEOUT_MS } from "./config/constants.js";
@@ -15,6 +15,7 @@ import { registerOrderCommands } from "./commands/orders.js";
 import { registerSearchCommand } from "./commands/search.js";
 import { registerStatusCommand } from "./commands/status.js";
 import { isUserFacingError } from "./utils/errors.js";
+import { printJsonError } from "./utils/output.js";
 
 const program = new Command();
 
@@ -24,9 +25,15 @@ program
   .version(PACKAGE_VERSION)
   .option("--data-dir <path>", "local directory for session, SQLite, and logs")
   .option("--debug", "write verbose automation logs")
+  .option("--json", "print machine-readable JSON when supported")
   .option("--no-input", "fail instead of prompting for interactive input")
   .option("--visible", "run supported browser automation in a visible browser")
   .option("--timeout <ms>", "browser automation timeout", String(DEFAULT_TIMEOUT_MS));
+
+program.exitOverride();
+program.configureOutput({
+  writeErr: () => undefined
+});
 
 registerLoginCommand(program);
 registerStatusCommand(program);
@@ -41,13 +48,37 @@ registerOrderCommands(program);
 program.parseAsync(process.argv).catch((error: unknown) => {
   const wantsJson = wantsJsonOutput(process.argv);
 
+  if (error instanceof CommanderError) {
+    if (error.exitCode === 0) {
+      process.exitCode = 0;
+      return;
+    }
+
+    if (wantsJson) {
+      printJsonError({
+        type: "invalid_input",
+        code: "invalid_input",
+        message: error.message,
+        exitCode: error.exitCode
+      });
+      process.exitCode = error.exitCode;
+      return;
+    }
+
+    console.error(chalk.red(error.message));
+    process.exitCode = error.exitCode;
+    return;
+  }
+
   if (isUserFacingError(error)) {
     if (wantsJson) {
       printJsonError({
         type: "user_error",
+        code: error.code,
         message: error.message,
         hint: error.hint,
-        exitCode: error.exitCode
+        exitCode: error.exitCode,
+        retryAfterMs: error.retryAfterMs
       });
       process.exitCode = error.exitCode;
       return;
@@ -65,6 +96,7 @@ program.parseAsync(process.argv).catch((error: unknown) => {
     if (wantsJson) {
       printJsonError({
         type: "invalid_input",
+        code: "invalid_input",
         message: "Invalid input.",
         exitCode: 1,
         issues: error.issues.map((issue) => ({
@@ -88,6 +120,7 @@ program.parseAsync(process.argv).catch((error: unknown) => {
   if (wantsJson) {
     printJsonError({
       type: "unexpected_error",
+      code: "unexpected_error",
       message,
       exitCode: 1
     });
@@ -99,30 +132,6 @@ program.parseAsync(process.argv).catch((error: unknown) => {
   process.exitCode = 1;
 });
 
-interface JsonError {
-  type: "user_error" | "invalid_input" | "unexpected_error";
-  message: string;
-  hint?: string;
-  exitCode: number;
-  issues?: Array<{
-    path: string;
-    message: string;
-  }>;
-}
-
 function wantsJsonOutput(argv: string[]): boolean {
   return argv.includes("--json");
-}
-
-function printJsonError(error: JsonError): void {
-  console.error(
-    JSON.stringify(
-      {
-        ok: false,
-        error
-      },
-      null,
-      2
-    )
-  );
 }

@@ -1,9 +1,8 @@
 import type { Command } from "commander";
 
-import { ZeptoService } from "../services/zepto.js";
 import { UserFacingError } from "../utils/errors.js";
 import { printCart, printOrders } from "../utils/output.js";
-import { withCommandSpinner, withRuntime } from "./shared.js";
+import { wantsJson, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerOrderCommands(program: Command): void {
   program
@@ -12,11 +11,13 @@ export function registerOrderCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const service = new ZeptoService(runtime).orders;
-        const orders = options.json
+        const orders = json
           ? await service.track()
           : await withCommandSpinner("Reading latest Zepto order", "Latest order loaded.", () => service.track());
-        printOrders(orders, options.json);
+        printOrders(orders, json);
       })
     );
 
@@ -26,15 +27,17 @@ export function registerOrderCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const service = new ZeptoService(runtime).orders;
-        const orders = options.json
+        const orders = json
           ? await service.history()
           : await withCommandSpinner(
               "Reading Zepto order history",
               (items) => `Found ${items.length} order${items.length === 1 ? "" : "s"}.`,
               () => service.history()
             );
-        printOrders(orders, options.json);
+        printOrders(orders, json);
       })
     );
 
@@ -45,17 +48,19 @@ export function registerOrderCommands(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((target: string, options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const json = wantsJson(command, options);
         if (target !== "last") {
-          throw new UserFacingError("Only `zepo reorder last` is supported.");
+          throw new UserFacingError("Only `zepo reorder last` is supported.", { code: "unsupported_operation" });
         }
 
+        const { ZeptoService } = await import("../services/zepto.js");
         const service = new ZeptoService(runtime).orders;
-        const cart = options.json
+        const cart = json
           ? await service.reorderLast()
           : await withCommandSpinner("Opening latest order reorder action", "Reorder cart loaded.", () =>
               service.reorderLast()
             );
-        printCart(cart, options.json);
+        printCart(cart, json);
       })
     );
 }

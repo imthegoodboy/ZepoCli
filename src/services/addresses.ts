@@ -6,6 +6,7 @@ import { BrowserAutomation } from "../automation/browser.js";
 import { listAddresses, startAddAddress, useAddress } from "../automation/address.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
 import { requireInteractiveInput } from "../utils/interactive.js";
+import { promptContext } from "../utils/prompts.js";
 
 export class AddressService {
   private readonly browser: BrowserAutomation;
@@ -15,14 +16,18 @@ export class AddressService {
   }
 
   async list(): Promise<Address[]> {
-    const addresses = await this.browser.withPage({ requireSession: true }, (page) => listAddresses(page));
+    const addresses = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
+      listAddresses(page)
+    );
     this.runtime.preferences.saveAddresses(addresses);
     return addresses;
   }
 
   async use(query: string): Promise<Address> {
     const cleanQuery = requireNonEmpty(query, "Address query");
-    const address = await this.browser.withPage({ requireSession: true }, (page) => useAddress(page, cleanQuery));
+    const address = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
+      useAddress(page, cleanQuery)
+    );
     this.runtime.preferences.saveAddresses([address]);
     return address;
   }
@@ -34,14 +39,20 @@ export class AddressService {
       "Rerun `zepo address add` without `--no-input` so you can add or confirm the address in the browser."
     );
 
-    const addresses = await this.browser.withPage({ requireSession: true, headless: false }, async (page) => {
-      await startAddAddress(page);
-      await input({
-        message: "Add or edit the address in the browser, then press Enter here"
-      });
-      const detectedAddresses = await listAddresses(page);
-      return requireDetectedAddressesAfterAddressFlow(detectedAddresses);
-    });
+    const addresses = await this.browser.withPage(
+      { captureFailures: false, requireSession: true, headless: false },
+      async (page) => {
+        await startAddAddress(page);
+        await input(
+          {
+            message: "Add or edit the address in the browser, then press Enter here"
+          },
+          promptContext()
+        );
+        const detectedAddresses = await listAddresses(page);
+        return requireDetectedAddressesAfterAddressFlow(detectedAddresses);
+      }
+    );
 
     this.runtime.preferences.saveAddresses(addresses);
     return addresses;
@@ -54,6 +65,7 @@ export function requireDetectedAddressesAfterAddressFlow(addresses: Address[]): 
   }
 
   throw new UserFacingError("No Zepto addresses were detected after the address flow.", {
-    hint: "Add or select an address in the visible browser before pressing Enter. Rerun with `--debug` if Zepto changed its address UI."
+    code: "addresses_unreadable",
+    hint: "Add or select an address in the visible browser before pressing Enter. Rerun with `--visible` if Zepto changed its address UI."
   });
 }

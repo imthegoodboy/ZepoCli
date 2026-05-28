@@ -1,9 +1,8 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 
-import { ZeptoService } from "../services/zepto.js";
 import { printAddresses, printJson } from "../utils/output.js";
-import { joinQuery, withCommandSpinner, withRuntime } from "./shared.js";
+import { joinQuery, wantsJson, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerAddressCommand(program: Command): void {
   const address = program.command("address").description("Manage Zepto delivery addresses");
@@ -14,15 +13,17 @@ export function registerAddressCommand(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const service = new ZeptoService(runtime).addresses;
-        const addresses = options.json
+        const addresses = json
           ? await service.list()
           : await withCommandSpinner(
               "Reading Zepto addresses",
               (items) => `Found ${items.length} address${items.length === 1 ? "" : "es"}.`,
               () => service.list()
             );
-        printAddresses(addresses, options.json);
+        printAddresses(addresses, json);
       })
     );
 
@@ -33,12 +34,14 @@ export function registerAddressCommand(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((queryParts: string[], options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const query = joinQuery(queryParts);
         const service = new ZeptoService(runtime).addresses;
-        const selected = options.json
+        const selected = json
           ? await service.use(query)
           : await withCommandSpinner(`Selecting address "${query}"`, "Address selected.", () => service.use(query));
-        if (options.json) {
+        if (json) {
           printJson(selected);
           return;
         }
@@ -53,8 +56,10 @@ export function registerAddressCommand(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         const addresses = await new ZeptoService(runtime).addresses.add();
-        if (options.json) {
+        if (json) {
           printAddresses(addresses, true);
           return;
         }

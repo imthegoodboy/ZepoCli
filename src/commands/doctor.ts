@@ -1,10 +1,9 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 
-import { DoctorService } from "../services/doctor.js";
 import type { DoctorCheck, DoctorReport } from "../types.js";
 import { printJson } from "../utils/output.js";
-import { withRuntime } from "./shared.js";
+import { wantsJson, withRuntime } from "./shared.js";
 
 export function registerDoctorCommand(program: Command): void {
   program
@@ -14,11 +13,13 @@ export function registerDoctorCommand(program: Command): void {
     .option("--skip-browser", "skip the Playwright Chromium launch check")
     .action((options: { json?: boolean; skipBrowser?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { DoctorService } = await import("../services/doctor.js");
+        const json = wantsJson(command, options);
         const report = await new DoctorService(runtime).run({
           browser: !(options.skipBrowser ?? false)
         });
 
-        if (options.json) {
+        if (json) {
           printJson(report);
         } else {
           printDoctorReport(report);

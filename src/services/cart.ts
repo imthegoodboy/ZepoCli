@@ -6,12 +6,14 @@ import type { AppRuntime } from "../config/runtime.js";
 import type { CartItem, CartSnapshot, Product } from "../types.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
-import { clickProductAdd, increaseProductQuantity, searchProducts } from "../automation/search.js";
+import { clickProductAdd, increaseProductQuantity, searchProducts, waitForProductAddSettled } from "../automation/search.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
-import { normalizeText } from "../utils/format.js";
 import { requireInteractiveInput } from "../utils/interactive.js";
+import { queryHasSpecificSizeTerm, textMatchesProductQuery } from "../utils/product-matching.js";
+import { promptContext } from "../utils/prompts.js";
 
-const QuantitySchema = z.coerce.number().int().min(1).max(50);
+const MAX_ADD_QUANTITY = 12;
+const QuantitySchema = z.coerce.number().int().min(1).max(MAX_ADD_QUANTITY);
 
 export interface AddOptions {
   quantity?: unknown;
@@ -41,10 +43,11 @@ export class CartService {
       );
     }
 
-    return this.browser.withPage({ requireSession: true }, async (page) => {
+    return this.browser.withPage({ captureFailures: false, requireSession: true }, async (page) => {
       const products = await searchProducts(page, cleanQuery, options.choose ? 10 : 5);
       if (products.length === 0) {
         throw new UserFacingError(`No Zepto products found for "${cleanQuery}".`, {
+          code: "product_not_found",
           hint: "Try a more specific product name or set a delivery location with `zepo address add`."
         });
       }
@@ -52,7 +55,7 @@ export class CartService {
       const addableProducts = requireAddableProducts(products, cleanQuery);
       const product = options.choose ? await chooseProduct(addableProducts) : requireBestMatch(addableProducts, cleanQuery);
       await clickProductAdd(page, product);
-      await page.waitForTimeout(700);
+      await waitForProductAddSettled(page);
       await increaseProductQuantity(page, product, quantity);
       const cart = await readCart(page);
       assertCartContainsProduct(cart, product, quantity);
@@ -66,20 +69,22 @@ export class CartService {
   }
 
   async read(): Promise<CartSnapshot> {
-    const snapshot = await this.browser.withPage({ requireSession: true }, (page) => readCart(page));
+    const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) => readCart(page));
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
 
   async remove(query: string): Promise<CartSnapshot> {
     const cleanQuery = requireNonEmpty(query, "Cart item query");
-    const snapshot = await this.browser.withPage({ requireSession: true }, (page) => removeCartItem(page, cleanQuery));
+    const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
+      removeCartItem(page, cleanQuery)
+    );
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
 
   async clear(): Promise<CartSnapshot> {
-    const snapshot = await this.browser.withPage({ requireSession: true }, (page) => clearCart(page));
+    const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) => clearCart(page));
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
@@ -91,7 +96,8 @@ export function parseAddQuantity(quantityInput: unknown): number {
     return result.data;
   }
 
-  throw new UserFacingError("Quantity must be an integer from 1 to 50.", {
+  throw new UserFacingError(`Quantity must be an integer from 1 to ${MAX_ADD_QUANTITY}.`, {
+    code: "invalid_input",
     hint: "Use a value like `zepo add milk --quantity 2`."
   });
 }
@@ -99,7 +105,8 @@ export function parseAddQuantity(quantityInput: unknown): number {
 export function assertCartContainsProduct(cart: CartSnapshot, product: Product, minimumQuantity = 1): void {
   if (cart.items.length === 0) {
     throw new UserFacingError(`Zepto cart was opened after adding ${product.name}, but no readable cart items were detected.`, {
-      hint: "Rerun with `--visible --debug` to inspect Zepto's cart page instead of treating the add as successful."
+      code: "cart_add_unverified",
+      hint: "Rerun with `--visible` to inspect Zepto's cart page instead of treating the add as successful."
     });
   }
 
@@ -110,19 +117,20 @@ export function assertCartContainsProduct(cart: CartSnapshot, product: Product, 
   }
 
   throw new UserFacingError(`Zepto cart did not show an item matching ${product.name} after ADD.`, {
-    hint: "The page may have changed or the item may be unavailable. Rerun with `--visible --debug` before retrying checkout."
+    code: "cart_add_unverified",
+    hint: "The page may have changed or the item may be unavailable. Rerun with `--visible` before retrying checkout."
   });
 }
 
 function findMatchingCartItem(cart: CartSnapshot, product: Product): CartItem | undefined {
-  const productName = normalizeText(product.name).toLowerCase();
-  const directMatch = cart.items.find((item) => {
-    const itemName = normalizeText(item.name).toLowerCase();
-    return itemName.includes(productName) || productName.includes(itemName);
-  });
-
+  const productText = productSearchText(product);
+  const directMatch = cart.items.find((item) => textMatchesProductQuery(cartItemSearchText(item), productText));
   if (directMatch) {
     return directMatch;
+  }
+
+  if (product.unit) {
+    return undefined;
   }
 
   const fuse = new Fuse(cart.items, {
@@ -134,6 +142,10 @@ function findMatchingCartItem(cart: CartSnapshot, product: Product): CartItem | 
   return fuse.search(product.name)[0]?.item;
 }
 
+function cartItemSearchText(item: CartItem): string {
+  return [item.name, item.unit].filter(Boolean).join(" ");
+}
+
 function assertCartQuantity(item: CartItem, product: Product, minimumQuantity: number): void {
   if (minimumQuantity <= 1) {
     return;
@@ -142,18 +154,32 @@ function assertCartQuantity(item: CartItem, product: Product, minimumQuantity: n
   const quantity = item.quantity ? Number.parseInt(item.quantity, 10) : undefined;
   if (!quantity) {
     throw new UserFacingError(`Zepto cart did not expose the quantity for ${product.name} after requesting ${minimumQuantity}.`, {
-      hint: "Rerun with `--visible --debug` to inspect Zepto's cart quantity controls before retrying checkout."
+      code: "cart_quantity_unverified",
+      hint: "Rerun with `--visible` to inspect Zepto's cart quantity controls before retrying checkout."
     });
   }
 
   if (quantity < minimumQuantity) {
     throw new UserFacingError(`Zepto cart shows quantity ${quantity} for ${product.name}, below requested ${minimumQuantity}.`, {
+      code: "cart_quantity_unverified",
       hint: "Open `zepo cart` to inspect the item, then retry with a lower quantity if Zepto limits this product."
     });
   }
 }
 
 export function requireBestMatch(products: Product[], query: string): Product {
+  const lexicalMatch = products.find((product) => textMatchesProductQuery(productSearchText(product), query));
+  if (lexicalMatch) {
+    return lexicalMatch;
+  }
+
+  if (queryHasSpecificSizeTerm(query)) {
+    throw new UserFacingError(`No confident Zepto product match was found for "${query}".`, {
+      code: "product_match_unconfirmed",
+      hint: "Run `zepo add --choose <query>` to pick from the visible search results."
+    });
+  }
+
   const fuse = new Fuse(products, {
     keys: ["name", "unit"],
     threshold: 0.45,
@@ -165,8 +191,13 @@ export function requireBestMatch(products: Product[], query: string): Product {
   }
 
   throw new UserFacingError(`No confident Zepto product match was found for "${query}".`, {
+    code: "product_match_unconfirmed",
     hint: "Run `zepo add --choose <query>` to pick from the visible search results."
   });
+}
+
+function productSearchText(product: Product): string {
+  return [product.name, product.unit].filter(Boolean).join(" ");
 }
 
 export function requireAddableProducts(products: Product[], query: string): Product[] {
@@ -176,16 +207,20 @@ export function requireAddableProducts(products: Product[], query: string): Prod
   }
 
   throw new UserFacingError(`Zepto did not expose ADD buttons for products matching "${query}".`, {
-    hint: "Rerun with `--visible --debug` to inspect the search results, or try a more specific product query."
+    code: "product_not_addable",
+    hint: "Rerun with `--visible` to inspect the search results, or try a more specific product query."
   });
 }
 
 async function chooseProduct(products: Product[]): Promise<Product> {
-  return select({
-    message: "Select product",
-    choices: products.map((product) => ({
-      name: `${product.name}${product.unit ? ` - ${product.unit}` : ""}${product.price ? ` (${product.price})` : ""}`,
-      value: product
-    }))
-  });
+  return select(
+    {
+      message: "Select product",
+      choices: products.map((product) => ({
+        name: `${product.name}${product.unit ? ` - ${product.unit}` : ""}${product.price ? ` (${product.price})` : ""}`,
+        value: product
+      }))
+    },
+    promptContext()
+  );
 }

@@ -10,5 +10,5 @@ export function requireInteractiveInput(
     return;
   }
 
-  throw new UserFacingError(message, { hint });
+  throw new UserFacingError(message, { code: "interactive_input_required", hint });
 }

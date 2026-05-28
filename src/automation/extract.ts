@@ -1,6 +1,7 @@
 import type { CartItem, OrderSnapshot, Product } from "../types.js";
 import {
   extractPrices,
+  looksLikePrice,
   looksLikeRating,
   looksLikeUnit,
   normalizeText,
@@ -17,10 +18,15 @@ export interface RawProductCard {
 
 export function parseProductCard(raw: RawProductCard, outputIndex: number): Product | undefined {
   const lines = splitVisibleLines(raw.text);
-  const prices = extractPrices(raw.text);
+  const { price, mrp } = productPricesFrom(lines);
+  const unit = lines.find((line) => isLikelyProductUnitLine(line));
   const name = productNameFrom(raw.imageAlt, lines);
 
   if (!name) {
+    return undefined;
+  }
+
+  if (!price && !unit) {
     return undefined;
   }
 
@@ -28,9 +34,9 @@ export function parseProductCard(raw: RawProductCard, outputIndex: number): Prod
     index: outputIndex,
     automationId: raw.automationId,
     name,
-    price: prices[0],
-    mrp: prices[1],
-    unit: lines.find((line) => looksLikeUnit(line)),
+    price,
+    mrp,
+    unit,
     rating: lines.find((line) => looksLikeRating(line)),
     url: raw.href
   };
@@ -61,15 +67,18 @@ export function parseCartItemsFromText(rawText: string): CartItem[] {
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (!line || !isLikelyCartProductName(line)) {
+    if (!line || isCartAddressContextLine(lines, index) || !isLikelyCartProductName(line)) {
       continue;
     }
 
     const window = cartItemDetailWindow(lines, index);
+    if (isCartRecommendationContextLine(lines, index) || isCartSuggestedProductWindow(window)) {
+      continue;
+    }
+
     const price = window.flatMap(extractPrices)[0];
     const unit = window.find((candidate) => looksLikeUnit(candidate));
-    const quantityLine = window.find((candidate) => /^(?:qty|quantity)?\s*\d+$/i.test(candidate));
-    const quantity = quantityLine?.match(/\d+/)?.[0];
+    const quantity = window.map(extractCartQuantity).find((candidate) => candidate !== undefined);
 
     if (price || unit) {
       items.push({
@@ -87,15 +96,15 @@ export function parseCartItemsFromText(rawText: string): CartItem[] {
 export function parseOrdersFromText(rawText: string): OrderSnapshot[] {
   const normalizedText = normalizeText(rawText);
   const blocks = normalizedText
-    .split(/(?=Order\s?#?\s?[A-Z0-9-]{4,})/i)
+    .split(/(?=\bOrder\s?#?\s?(?=[A-Z0-9-]*\d)[A-Z0-9-]{4,})/i)
     .map(normalizeText)
     .filter((block) => block.length > 20);
 
   const parseBlocks = blocks.length > 0 ? blocks : [normalizedText];
   const orders = parseBlocks.map((block) => {
-    const status = block.match(/\b(Delivered|Confirmed|Packed|Out for delivery|Placed|Cancelled|Refunded)\b/i)?.[1];
-    const eta = block.match(/\bETA[:\s]+(.+?)(?=\s+(?:Total|₹|Order|Delivered|Confirmed|Packed|Out|Cancelled)\b|$)/i)?.[1];
-    const id = block.match(/\bOrder\s?#?\s?([A-Z0-9-]{4,})\b/i)?.[1];
+    const status = extractOrderStatus(block);
+    const eta = extractOrderEta(block);
+    const id = block.match(/\bOrder\s?#?\s?((?=[A-Z0-9-]*\d)[A-Z0-9-]{4,})\b/i)?.[1];
     const total = extractPrices(block).at(-1);
 
     return {
@@ -110,10 +119,53 @@ export function parseOrdersFromText(rawText: string): OrderSnapshot[] {
   return orders.filter((order) => isLikelyOrderSnapshot(order));
 }
 
+function extractOrderStatus(block: string): string | undefined {
+  const statuses = [
+    "Delivered",
+    "Out for delivery",
+    "On the way",
+    "Arriving",
+    "Packed",
+    "Confirmed",
+    "Preparing",
+    "Processing",
+    "Placed",
+    "Cancelled",
+    "Refunded"
+  ];
+  const matched = statuses.filter((status) => new RegExp(`\\b${status}\\b`, "i").test(block));
+  return matched[0];
+}
+
+function extractOrderEta(block: string): string | undefined {
+  return (
+    block.match(/\bETA[:\s]+(.+?)(?=\s+(?:Total|₹|Order|Delivered|Confirmed|Packed|Out|Cancelled)\b|$)/i)?.[1] ??
+    block.match(/\b(?:arriving|delivery)\s+in\s+(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b/i)?.[1]
+  );
+}
+
+function productPricesFrom(lines: string[]): { price?: string; mrp?: string } {
+  const priceLines = lines
+    .map((line) => ({
+      line,
+      prices: extractPrices(line)
+    }))
+    .filter((item) => item.prices.length > 0);
+
+  const labeledMrp = priceLines.find((item) => /\b(mrp|maximum retail price)\b/i.test(item.line))?.prices[0];
+  const firstNonMrpPrice = priceLines.find((item) => !/\b(mrp|maximum retail price)\b/i.test(item.line))?.prices[0];
+  const allPrices = priceLines.flatMap((item) => item.prices);
+
+  return {
+    price: firstNonMrpPrice ?? allPrices[0],
+    mrp: labeledMrp ?? allPrices.find((price) => price !== (firstNonMrpPrice ?? allPrices[0]))
+  };
+}
+
 function productNameFrom(imageAlt: string | undefined, lines: string[]): string | undefined {
   if (imageAlt) {
     const alt = stripImagePrefix(imageAlt);
-    if (alt && !/^zepto$/i.test(alt)) {
+    if (alt && !isGenericImageAlt(alt)) {
       return alt;
     }
   }
@@ -121,16 +173,29 @@ function productNameFrom(imageAlt: string | undefined, lines: string[]): string 
   return lines.find((line) => !isIgnoredProductLine(line));
 }
 
+function isGenericImageAlt(value: string): boolean {
+  return /^(zepto|image|product|product image|item|item image|thumbnail|placeholder|banner|popular searches|search|searches|category|categories|shop by category)$/i.test(
+    value
+  );
+}
+
 function isIgnoredProductLine(line: string): boolean {
   return (
     /^add$/i.test(line) ||
     /^added$/i.test(line) ||
     /^out of stock$/i.test(line) ||
-    /^₹/.test(line) ||
+    /^(sponsored|ad|advertisement|best\s?seller|popular|trending|recommended|featured)$/i.test(line) ||
+    isRecommendationHeaderLine(line) ||
+    /^(limited time deal|deal of the day|only \d+ left|in stock)$/i.test(line) ||
+    looksLikePrice(line) ||
     /off$/i.test(line) ||
     looksLikeRating(line) ||
     looksLikeUnit(line)
   );
+}
+
+function isLikelyProductUnitLine(line: string): boolean {
+  return line.length <= 80 && looksLikeUnit(line) && !looksLikePrice(line) && !/\b(add|off)\b/i.test(line);
 }
 
 function isLikelyCartProductName(line: string): boolean {
@@ -138,19 +203,94 @@ function isLikelyCartProductName(line: string): boolean {
     return false;
   }
 
-  if (/^(cart|checkout|view bill|apply coupon|add more|saved|address)$/i.test(line) || isCartSummaryLine(line)) {
+  if (
+    /^(cart|checkout|view bill|apply coupon|add|added|add more|out of stock|saved|address)$/i.test(line) ||
+    isCartSummaryLine(line) ||
+    isRecommendationHeaderLine(line)
+  ) {
     return false;
   }
 
-  if (/\b(total|grand total|to pay|qty|quantity)\b/i.test(line)) {
+  if (/^\d+\s+items?$/i.test(line) || /\b(total|grand total|to pay|qty|quantity)\b/i.test(line)) {
     return false;
   }
 
-  if (/^₹/.test(line) || looksLikeRating(line) || looksLikeUnit(line)) {
+  if (looksLikePrice(line) || looksLikeRating(line) || looksLikeUnit(line)) {
     return false;
   }
 
   return /[a-z]/i.test(line);
+}
+
+function isCartAddressContextLine(lines: string[], index: number): boolean {
+  const line = normalizeText(lines[index] ?? "");
+  if (!line) {
+    return false;
+  }
+
+  const previousLine = normalizeText(lines[index - 1] ?? "");
+  const secondPreviousLine = normalizeText(lines[index - 2] ?? "");
+
+  if (isAddressLabelLine(line)) {
+    return isCartAddressHeaderLine(previousLine) || isCartAddressHeaderLine(secondPreviousLine);
+  }
+
+  if (!isAddressDetailLine(line)) {
+    return false;
+  }
+
+  return (
+    isCartAddressHeaderLine(previousLine) ||
+    isCartAddressHeaderLine(secondPreviousLine) ||
+    isAddressLabelLine(previousLine) ||
+    (isAddressDetailLine(previousLine) && isAddressLabelLine(secondPreviousLine))
+  );
+}
+
+function isCartRecommendationContextLine(lines: string[], index: number): boolean {
+  const lookbackLimit = Math.max(0, index - 8);
+  for (let candidateIndex = index - 1; candidateIndex >= lookbackLimit; candidateIndex -= 1) {
+    const candidate = normalizeText(lines[candidateIndex] ?? "");
+    if (!candidate) {
+      continue;
+    }
+
+    if (isCartSummaryLine(candidate) || isCartAddressHeaderLine(candidate) || /^cart$/i.test(candidate)) {
+      return false;
+    }
+
+    if (isRecommendationHeaderLine(candidate)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isCartSuggestedProductWindow(lines: string[]): boolean {
+  return lines.some((line) => /^(add|added|out of stock)$/i.test(normalizeText(line)));
+}
+
+function isRecommendationHeaderLine(line: string): boolean {
+  return /\b(you may also like|similar products|recommended|frequently bought|popular picks|sponsored|before you checkout|complete your cart|customers also bought|add more items?)\b/i.test(
+    line
+  );
+}
+
+function isCartAddressHeaderLine(line: string): boolean {
+  return /\b(delivery address|deliver(?:ing)? to|selected address|saved addresses?)\b/i.test(line);
+}
+
+function isAddressLabelLine(line: string): boolean {
+  return /^(home|work|other)$/i.test(line);
+}
+
+function isAddressDetailLine(line: string): boolean {
+  return (
+    /\b(house|flat|road|street|sector|phase|apartment|building|floor|tower|block|pin|pincode|bengaluru|bangalore|mumbai|delhi|pune|hyderabad|chennai|kolkata|ahmedabad|gurugram|gurgaon|noida)\b/i.test(
+      line
+    ) || /\b\d{3,}\b/.test(line)
+  );
 }
 
 function cartItemDetailWindow(lines: string[], index: number): string[] {
@@ -165,8 +305,16 @@ function isCartSummaryLine(line: string): boolean {
   );
 }
 
+function extractCartQuantity(line: string): string | undefined {
+  return (
+    line.match(/^(?:qty|quantity)\s*:?\s*(\d+)$/i)?.[1] ??
+    line.match(/^x\s*(\d+)$/i)?.[1] ??
+    line.match(/^(\d+)\s*x$/i)?.[1]
+  );
+}
+
 function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
-  if (order.id) {
+  if (order.id && (order.status || order.eta)) {
     return true;
   }
 
@@ -174,7 +322,13 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
     return false;
   }
 
-  return /\b(order|orders|track|tracking)\b/i.test(order.rawText);
+  if (/\b(track order|tracking|my orders|order history|past orders)\b/i.test(order.rawText)) {
+    return true;
+  }
+
+  return /\border\s+(?:confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/i.test(
+    order.rawText
+  );
 }
 
 function dedupeCartItems(items: CartItem[]): CartItem[] {

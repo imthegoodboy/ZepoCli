@@ -2,13 +2,39 @@ import chalk from "chalk";
 
 import type { Address, CartSnapshot, OrderSnapshot, Product } from "../types.js";
 
+export interface JsonError {
+  type: "user_error" | "invalid_input" | "unexpected_error";
+  code: string;
+  message: string;
+  hint?: string;
+  exitCode: number;
+  retryAfterMs?: number;
+  issues?: Array<{
+    path: string;
+    message: string;
+  }>;
+}
+
 export function printJson(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
 }
 
+export function printJsonError(error: JsonError): void {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error
+      },
+      null,
+      2
+    )
+  );
+}
+
 export function printProducts(products: Product[], json = false): void {
   if (json) {
-    printJson(products);
+    printJson(products.map(toPublicProduct));
     return;
   }
 
@@ -24,14 +50,21 @@ export function printProducts(products: Product[], json = false): void {
   }
 }
 
+export function printAddResult(result: { product: Product; cart: CartSnapshot }): void {
+  printJson({
+    product: toPublicProduct(result.product),
+    cart: toPublicCartSnapshot(result.cart)
+  });
+}
+
 export function printCart(cart: CartSnapshot, json = false): void {
   if (json) {
-    printJson(cart);
+    printJson(toPublicCartSnapshot(cart));
     return;
   }
 
   if (cart.items.length === 0) {
-    console.log(chalk.yellow("Cart is empty or could not be read from the current page."));
+    console.log(chalk.yellow("Cart is empty."));
     return;
   }
 
@@ -67,7 +100,7 @@ export function printAddresses(addresses: Address[], json = false): void {
 
 export function printOrders(orders: OrderSnapshot[], json = false): void {
   if (json) {
-    printJson(orders);
+    printJson(orders.map(toPublicOrderSnapshot));
     return;
   }
 
@@ -83,4 +116,33 @@ export function printOrders(orders: OrderSnapshot[], json = false): void {
     const total = order.total ? chalk.green(` ${order.total}`) : "";
     console.log(`${index + 1}. ${status}${id}${eta}${total}`);
   }
+}
+
+function toPublicProduct(product: Product): Omit<Product, "automationId"> {
+  return {
+    index: product.index,
+    name: product.name,
+    ...(product.price ? { price: product.price } : {}),
+    ...(product.mrp ? { mrp: product.mrp } : {}),
+    ...(product.unit ? { unit: product.unit } : {}),
+    ...(product.rating ? { rating: product.rating } : {}),
+    ...(product.url ? { url: product.url } : {})
+  };
+}
+
+function toPublicCartSnapshot(cart: CartSnapshot): Omit<CartSnapshot, "rawText"> {
+  return {
+    items: cart.items,
+    ...(cart.total ? { total: cart.total } : {})
+  };
+}
+
+function toPublicOrderSnapshot(order: OrderSnapshot): Omit<OrderSnapshot, "rawText"> {
+  return {
+    ...(order.id ? { id: order.id } : {}),
+    ...(order.status ? { status: order.status } : {}),
+    ...(order.eta ? { eta: order.eta } : {}),
+    ...(order.total ? { total: order.total } : {}),
+    ...(order.placedAt ? { placedAt: order.placedAt } : {})
+  };
 }

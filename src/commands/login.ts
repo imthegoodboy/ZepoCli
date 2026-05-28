@@ -1,9 +1,8 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 
-import { ZeptoService } from "../services/zepto.js";
 import { printJson } from "../utils/output.js";
-import { withRuntime } from "./shared.js";
+import { wantsJson, withRuntime } from "./shared.js";
 
 export function registerLoginCommand(program: Command): void {
   program
@@ -13,9 +12,11 @@ export function registerLoginCommand(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .action((options: { phone?: string; json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         await new ZeptoService(runtime).auth.login(options.phone);
-        if (options.json) {
-          printJson({ sessionSaved: true });
+        if (json) {
+          printJson(loginOutput());
           return;
         }
 
@@ -28,14 +29,48 @@ export function registerLoginCommand(program: Command): void {
     .description("Remove the locally saved Zepto session")
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
-      withRuntime(command, (runtime) => {
+      withRuntime(command, async (runtime) => {
+        const { ZeptoService } = await import("../services/zepto.js");
+        const json = wantsJson(command, options);
         new ZeptoService(runtime).auth.logout();
-        if (options.json) {
-          printJson({ sessionRemoved: true });
+        if (json) {
+          printJson(logoutOutput());
           return;
         }
 
         console.log(chalk.green("Local Zepto session removed."));
       })
     );
+}
+
+export interface LoginOutput {
+  status: "session_saved";
+  sessionSaved: true;
+  confirmedSession: true;
+  next: string;
+}
+
+export function loginOutput(): LoginOutput {
+  return {
+    status: "session_saved",
+    sessionSaved: true,
+    confirmedSession: true,
+    next: "Run `zepo status --live --json` before account-dependent commands."
+  };
+}
+
+export interface LogoutOutput {
+  status: "session_removed";
+  sessionRemoved: true;
+  cacheCleared: true;
+  next: string;
+}
+
+export function logoutOutput(): LogoutOutput {
+  return {
+    status: "session_removed",
+    sessionRemoved: true,
+    cacheCleared: true,
+    next: "Run `zepo login` before account-dependent commands."
+  };
 }

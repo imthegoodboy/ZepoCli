@@ -12,7 +12,7 @@ export class OrdersService {
   }
 
   async history(): Promise<OrderSnapshot[]> {
-    const orders = await this.browser.withPage({ requireSession: true }, (page) => readOrders(page));
+    const orders = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) => readOrders(page));
     this.runtime.sqlite.saveOrders(orders);
     return orders;
   }
@@ -23,7 +23,7 @@ export class OrdersService {
   }
 
   async reorderLast(): Promise<CartSnapshot> {
-    const cart = await this.browser.withPage({ requireSession: true }, (page) => reorderLast(page));
+    const cart = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) => reorderLast(page));
     this.runtime.sqlite.saveCartSnapshot(cart);
     return cart;
   }
@@ -31,11 +31,19 @@ export class OrdersService {
 
 export function requireLatestOrder(orders: OrderSnapshot[]): OrderSnapshot {
   const latest = orders[0];
-  if (latest) {
+  if (!latest) {
+    throw new UserFacingError("No Zepto order was detected to track.", {
+      code: "order_not_found",
+      hint: "Use `zepo history` to inspect detected orders, or complete an order in Zepto before running `zepo track`."
+    });
+  }
+
+  if (latest.status || latest.eta) {
     return latest;
   }
 
-  throw new UserFacingError("No Zepto order was detected to track.", {
-    hint: "Use `zepo history` to inspect detected orders, or complete an order in Zepto before running `zepo track`."
+  throw new UserFacingError("Latest Zepto order did not expose a status or ETA.", {
+    code: "order_status_unreadable",
+    hint: "Use `zepo history` to inspect detected order details, or rerun `zepo track --visible` after Zepto updates tracking."
   });
 }

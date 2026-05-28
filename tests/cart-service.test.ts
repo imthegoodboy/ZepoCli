@@ -8,8 +8,9 @@ describe("cart service verification helpers", () => {
   });
 
   it("rejects invalid add quantities with a user-facing error", () => {
-    expect(() => parseAddQuantity("abc")).toThrow("Quantity must be an integer from 1 to 50.");
-    expect(() => parseAddQuantity("0")).toThrow("Quantity must be an integer from 1 to 50.");
+    expect(() => parseAddQuantity("abc")).toThrow("Quantity must be an integer from 1 to 12.");
+    expect(() => parseAddQuantity("0")).toThrow("Quantity must be an integer from 1 to 12.");
+    expect(() => parseAddQuantity("13")).toThrow("Quantity must be an integer from 1 to 12.");
   });
 
   it("returns a confident product match for auto-add", () => {
@@ -22,6 +23,18 @@ describe("cart service verification helpers", () => {
     };
 
     expect(requireBestMatch([product], "amul milk")).toBe(product);
+  });
+
+  it("matches compact unit queries to spaced product units for auto-add", () => {
+    const product = {
+      index: 0,
+      automationId: 1,
+      name: "Amul Taaza Toned Milk",
+      unit: "1 pack (500 ml)",
+      price: "₹32"
+    };
+
+    expect(requireBestMatch([product], "amul milk 500ml")).toBe(product);
   });
 
   it("rejects auto-add when search results do not confidently match the query", () => {
@@ -39,6 +52,23 @@ describe("cart service verification helpers", () => {
         "amul milk"
       )
     ).toThrow('No confident Zepto product match was found for "amul milk".');
+  });
+
+  it("rejects auto-add when a size-specific query only has the wrong size available", () => {
+    expect(() =>
+      requireBestMatch(
+        [
+          {
+            index: 0,
+            automationId: 1,
+            name: "Amul Taaza Toned Milk",
+            unit: "1 pack (500 ml)",
+            price: "₹32"
+          }
+        ],
+        "milk 1l"
+      )
+    ).toThrow('No confident Zepto product match was found for "milk 1l".');
   });
 
   it("returns only products with mapped ADD buttons for add flows", () => {
@@ -87,6 +117,50 @@ describe("cart service verification helpers", () => {
           name: "Amul Taaza Toned Milk",
           unit: "1 pack (500 ml)",
           price: "₹32"
+        }
+      )
+    ).not.toThrow();
+  });
+
+  it("rejects add verification when the cart shows the same product name with a different unit", () => {
+    expect(() =>
+      assertCartContainsProduct(
+        {
+          items: [
+            {
+              name: "Amul Taaza Toned Milk",
+              unit: "1 pack (1 L)",
+              price: "₹68"
+            }
+          ]
+        },
+        {
+          index: 0,
+          automationId: 1,
+          name: "Amul Taaza Toned Milk",
+          unit: "1 pack (500 ml)",
+          price: "₹32"
+        }
+      )
+    ).toThrow("did not show an item matching");
+  });
+
+  it("still verifies added products by name when Zepto did not expose a product unit", () => {
+    expect(() =>
+      assertCartContainsProduct(
+        {
+          items: [
+            {
+              name: "Tender Coconut",
+              unit: "1 piece",
+              price: "₹65"
+            }
+          ]
+        },
+        {
+          index: 0,
+          automationId: 1,
+          name: "Tender Coconut"
         }
       )
     ).not.toThrow();
