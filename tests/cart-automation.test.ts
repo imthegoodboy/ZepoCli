@@ -164,6 +164,34 @@ describe("cart automation helpers", () => {
     expect(page.clicked).toBe(false);
   });
 
+  it("clicks tagged cart remove controls only when the row still matches the requested item", async () => {
+    const page = createTaggedCartRemovePage({}, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "milk 500ml")).resolves.toBeUndefined();
+
+    expect(page.clicked).toBe(true);
+  });
+
+  it("does not click stale tagged cart remove controls that no longer match the requested item", async () => {
+    const page = createTaggedCartRemovePage({}, "Potato Chips 52 g ₹20 Qty 1 Remove");
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "milk")).rejects.toThrow(
+      "Zepto cart remove control no longer matches a removable cart item."
+    );
+
+    expect(page.clicked).toBe(false);
+  });
+
+  it("does not click tagged cart remove controls inside cart summary rows", async () => {
+    const page = createTaggedCartRemovePage({}, "Bill Summary Item total ₹249 Delivery fee ₹30 Remove");
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3)).rejects.toThrow(
+      "Zepto cart remove control no longer matches a removable cart item."
+    );
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("fails clearly when a tagged cart remove control is no longer visible", async () => {
     const page = createHiddenTaggedCartRemovePage();
 
@@ -212,13 +240,16 @@ function createDisabledCartOpenPage() {
   return page;
 }
 
-function createTaggedCartRemovePage(attributes: Record<string, string | null> = {}) {
+function createTaggedCartRemovePage(
+  attributes: Record<string, string | null> = {},
+  cardText = "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove"
+) {
   const page = {
     clicked: false,
     locator: () =>
       createVisibleLocator("Remove", async () => {
         page.clicked = true;
-      }, attributes)
+      }, attributes, cardText)
   };
 
   return page;
@@ -234,7 +265,8 @@ function createHiddenTaggedCartRemovePage() {
 function createVisibleLocator(
   text: string,
   click: () => Promise<void>,
-  attributes: Record<string, string | null> = {}
+  attributes: Record<string, string | null> = {},
+  cardText = text
 ) {
   return {
     first() {
@@ -246,7 +278,14 @@ function createVisibleLocator(
     isVisible: async () => true,
     innerText: async () => text,
     getAttribute: async (name: string) => attributes[name] ?? null,
-    evaluate: async () => false,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("HTMLButtonElement") || source.includes("hasDisabledState")) {
+        return false;
+      }
+
+      return cardText;
+    },
     click
   };
 }

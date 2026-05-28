@@ -91,7 +91,7 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
       break;
     }
 
-    await clickTaggedCartRemoveButton(page, removeId);
+    await clickTaggedCartRemoveButton(page, removeId, query);
     removed = true;
     await page.waitForTimeout(700);
     await assertNoAccessChallenge(page);
@@ -130,9 +130,11 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
     ].filter((query, index, queries) => query && queries.indexOf(query) === index);
 
     let removeId: number | undefined;
+    let removeQuery: string | undefined;
     for (const targetQuery of targetQueries) {
       removeId = await findRemoveButtonId(page, targetQuery);
       if (removeId !== undefined) {
+        removeQuery = targetQuery;
         break;
       }
     }
@@ -141,7 +143,7 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
       break;
     }
 
-    await clickTaggedCartRemoveButton(page, removeId);
+    await clickTaggedCartRemoveButton(page, removeId, removeQuery);
     await page.waitForTimeout(500);
     await assertNoAccessChallenge(page);
     cart = await readVisibleCart(page);
@@ -406,7 +408,7 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
   }, query);
 }
 
-export async function clickTaggedCartRemoveButton(page: Page, removeId: number): Promise<void> {
+export async function clickTaggedCartRemoveButton(page: Page, removeId: number, query?: string): Promise<void> {
   const button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
   if (!(await button.isVisible().catch(() => false))) {
     throw new UserFacingError("Zepto cart remove control changed before it could be clicked.", {
@@ -422,7 +424,36 @@ export async function clickTaggedCartRemoveButton(page: Page, removeId: number):
     });
   }
 
+  const cardText = String(await button.evaluate(readClosestCartRemoveCardText).catch(() => ""));
+  if (!isLikelyRemovableCartItemText(cardText, query)) {
+    throw new UserFacingError("Zepto cart remove control no longer matches a removable cart item.", {
+      code: "cart_remove_control_stale",
+      hint: "Rerun `zepo cart` or inspect with `--visible`; Zepto may have re-rendered or reordered the cart."
+    });
+  }
+
   await button.click();
+}
+
+function readClosestCartRemoveCardText(element: Element): string {
+  const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+  const visibleText = (target: Element) =>
+    target instanceof HTMLElement ? normalize(target.innerText) : normalize(target.textContent ?? "");
+  const controlText = normalize(
+    `${element.textContent ?? ""} ${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""}`
+  );
+
+  let current: Element | null = element;
+  for (let depth = 0; current && depth < 8; depth += 1) {
+    const text = visibleText(current);
+    if (text.length > 0 && text.length < 1500 && /[₹]|rs\.?\s*\d/i.test(text)) {
+      return normalize(`${text} ${controlText}`);
+    }
+
+    current = current.parentElement;
+  }
+
+  return normalize(`${visibleText(element)} ${controlText}`);
 }
 
 async function readVisibleCart(page: Page): Promise<CartSnapshot> {
