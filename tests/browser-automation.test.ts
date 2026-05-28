@@ -24,6 +24,7 @@ import {
   isAccessChallengeText,
   isAccessChallengeError,
   isAccessProtectionError,
+  isLoginRequiredPage,
   isLoginRequiredText,
   recordHeadlessBrowserRun,
   pageHadAccessChallenge,
@@ -420,6 +421,36 @@ describe("browser automation helpers", () => {
     };
   }
 
+  function createLoginStatePage(options: { bodyText: string; phoneInputVisible: boolean }) {
+    const phoneInput = {
+      first() {
+        return this;
+      },
+      isVisible: async () => options.phoneInputVisible
+    };
+
+    return {
+      locator: (selector: string) => {
+        if (selector === "body") {
+          return {
+            innerText: async () => options.bodyText
+          };
+        }
+
+        if (selector.includes("input[type='tel']")) {
+          return phoneInput;
+        }
+
+        return {
+          first() {
+            return this;
+          },
+          isVisible: async () => false
+        };
+      }
+    };
+  }
+
   it("detects login-required Zepto pages without treating account navigation as expired auth", () => {
     expect(isLoginRequiredText("Enter mobile number to continue")).toBe(true);
     expect(isLoginRequiredText("Verify OTP sent to your phone number")).toBe(true);
@@ -430,6 +461,33 @@ describe("browser automation helpers", () => {
     expect(isLoginRequiredText("Login Cart Your cart is empty")).toBe(true);
     expect(isLoginRequiredText("Search for milk Cart Account Profile")).toBe(false);
     expect(isLoginRequiredText("Account My Orders Wallet")).toBe(false);
+  });
+
+  it("does not treat logged-in account pages with phone fields as expired auth", async () => {
+    const page = createLoginStatePage({
+      bodyText: "Account My Orders Wallet Profile",
+      phoneInputVisible: true
+    });
+
+    await expect(isLoginRequiredPage(page as never)).resolves.toBe(false);
+  });
+
+  it("uses visible phone or numeric inputs as expired-auth evidence only when page text is ambiguous", async () => {
+    const page = createLoginStatePage({
+      bodyText: "Zepto",
+      phoneInputVisible: true
+    });
+
+    await expect(isLoginRequiredPage(page as never)).resolves.toBe(true);
+  });
+
+  it("treats login prompts as expired auth even when account words are present", async () => {
+    const page = createLoginStatePage({
+      bodyText: "Account Wallet Verify OTP",
+      phoneInputVisible: false
+    });
+
+    await expect(isLoginRequiredPage(page as never)).resolves.toBe(true);
   });
 
   it("identifies access challenge errors distinctly from other user errors", () => {

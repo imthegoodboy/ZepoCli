@@ -737,13 +737,17 @@ export function isAccessChallengeText(text: string): boolean {
 }
 
 export async function isLoginRequiredPage(page: Page): Promise<boolean> {
-  const phoneInput = page.locator("input[type='tel'], input[inputmode='numeric'], input[name*='phone' i]").first();
-  if (await phoneInput.isVisible().catch(() => false)) {
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  if (isLoginRequiredText(bodyText)) {
     return true;
   }
 
-  const bodyText = await page.locator("body").innerText().catch(() => "");
-  return isLoginRequiredText(bodyText);
+  if (isLoggedInAccountText(bodyText)) {
+    return false;
+  }
+
+  const phoneInput = page.locator("input[type='tel'], input[inputmode='numeric'], input[name*='phone' i]").first();
+  return phoneInput.isVisible().catch(() => false);
 }
 
 export function isLoginRequiredText(text: string): boolean {
@@ -759,6 +763,21 @@ export function isLoginRequiredText(text: string): boolean {
   return /\blogin\b/i.test(normalized) && !/\b(my orders|order history|wallet|logout|log out)\b/i.test(
     normalized
   );
+}
+
+function isLoggedInAccountText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  if (/\b(logout|log out)\b/i.test(normalized)) {
+    return true;
+  }
+
+  const hasAccountEntry = /\b(account|profile)\b/i.test(normalized);
+  const hasAccountOnlyFeature = /\b(wallet|my orders|orders|order history)\b/i.test(normalized);
+  return hasAccountEntry && hasAccountOnlyFeature;
 }
 
 function expiredSessionError(): UserFacingError {
