@@ -73,7 +73,12 @@ async function clickSafeAddressManagerControl(locator: Locator): Promise<boolean
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isAddressManagerClickText(text) && !isAddressManagerClickText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => normalizeText(label).length > 0);
+  if (labels.some(isUnsafeAddressAutomationClickText)) {
+    return false;
+  }
+
+  if (!labels.some(isAddressManagerClickText)) {
     return false;
   }
 
@@ -461,7 +466,12 @@ async function clickSafeAddAddressControl(locator: Locator): Promise<boolean> {
 
   const text = await locator.innerText().catch(() => "");
   const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  if (!isAddAddressClickText(text) && !isAddAddressClickText(ariaLabel ?? "")) {
+  const labels = [text, ariaLabel ?? ""].filter((label) => normalizeText(label).length > 0);
+  if (labels.some(isUnsafeAddressAutomationClickText)) {
+    return false;
+  }
+
+  if (!labels.some(isAddAddressClickText)) {
     return false;
   }
 
@@ -475,7 +485,7 @@ async function clickSafeAddAddressControl(locator: Locator): Promise<boolean> {
 
 export function isAddAddressClickText(text: string): boolean {
   const normalized = normalizeText(text);
-  if (!normalized || isUserLocationConsentText(normalized)) {
+  if (!normalized || isUnsafeAddressAutomationClickText(normalized)) {
     return false;
   }
 
@@ -484,7 +494,7 @@ export function isAddAddressClickText(text: string): boolean {
 
 export function isAddressManagerClickText(text: string): boolean {
   const normalized = normalizeText(text);
-  if (!normalized || isUserLocationConsentText(normalized)) {
+  if (!normalized || isUnsafeAddressAutomationClickText(normalized)) {
     return false;
   }
 
@@ -499,6 +509,20 @@ export function isUserLocationConsentText(text: string): boolean {
 
   return /\b(use (?:my )?current location|allow (?:browser )?location|share (?:my )?location|detect (?:my )?location|enable location|locate me|enter current location)\b/i.test(
     normalized
+  );
+}
+
+export function isUnsafeAddressAutomationClickText(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    isUserLocationConsentText(normalized) ||
+    /\b(save address|confirm address|confirm location|save\s+(?:&|and)\s+continue|deliver here|select this location)\b/i.test(
+      normalized
+    )
   );
 }
 

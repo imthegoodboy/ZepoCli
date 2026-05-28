@@ -9,7 +9,7 @@ Build and maintain `zepo` like a normal production CLI:
 - Commands are explicit user actions.
 - Browser automation performs the requested Zepto workflow.
 - Payment, OTP, address confirmation, age checks, prescription checks, and delivery verification stay in Zepto-controlled browser UI.
-- Address automation may open the add-address UI only; never click current-location sharing, browser location permission, or final address-confirmation controls.
+- Address automation may open the add-address UI only; never click current-location sharing, browser location permission, or final address-confirmation controls. Reject address manager/add-address controls when any visible or accessible label contains location-consent or final address-confirmation text, even if another label looks safe.
 - Checkout automation may open checkout/payment handoff only; never click `Place Order`, `Pay Now`, `Confirm Order`, or equivalent order-placement/payment controls.
 - Checkout handoff clicks should target enabled, explicit checkout/proceed-to-checkout/proceed-to-pay style button controls; avoid generic `continue` or bare `proceed` text that can match unrelated page actions.
 - Do not add fake "AI agent" features, autonomous purchasing, background ordering, or placeholder commands.
@@ -102,7 +102,7 @@ Implementation consequence:
 - `zepo history` may return an empty list only when Zepto exposes explicit empty-order-history copy. If the orders page opens but order cards are unreadable, fail clearly instead of treating history as empty.
 - `zepo track` must require a readable latest-order status or ETA. Do not present a bare order id or incomplete tracking text as a tracked order.
 - Address manager navigation should click only visible, enabled, explicit address controls; avoid broad `/address/` or `/location/` text clicks that can match current-location, selected-address, or final address-confirmation copy.
-- Address add should click only visible, enabled, explicit add-address controls; never click current-location sharing, save/confirm address, or selected-address copy.
+- Address add should click only visible, enabled, explicit add-address controls; never click current-location sharing, save/confirm address, selected-address copy, or mixed-label controls where any label is unsafe.
 - Cart navigation should click visible, enabled, explicit cart controls only; do not use checkout/proceed/payment labels or generic page text while opening cart for `zepo cart`, `zepo remove`, or `zepo clear`.
 - Parsed product-like rows count as cart data only when Zepto also exposes cart-surface evidence such as cart, quantity, bill, total, or remove controls.
 - Product ADD and quantity plus controls must be visible and enabled before clicking. Tagged ADD/quantity controls must still match the selected product card immediately before click. Automated `zepo add --quantity` should stay capped to normal cart-sized quantities and paced between plus-control clicks; do not add fast loops for bulk cart changes.

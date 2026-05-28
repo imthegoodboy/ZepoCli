@@ -12,6 +12,7 @@ import {
   isAddAddressClickText,
   isAddAddressFlowText,
   isAddressManagerClickText,
+  isUnsafeAddressAutomationClickText,
   isUserLocationConsentText,
   isLikelyAddressText,
   requireSelectedAddress,
@@ -220,6 +221,21 @@ describe("address automation helpers", () => {
     expect(isAddAddressClickText("Enter Delivery Location")).toBe(true);
   });
 
+  it("treats final address confirmation labels as unsafe automation clicks", () => {
+    for (const unsafeText of [
+      "Save Address",
+      "Confirm Address",
+      "Confirm Location",
+      "Save and Continue",
+      "Deliver Here",
+      "Select this location"
+    ]) {
+      expect(isUnsafeAddressAutomationClickText(unsafeText)).toBe(true);
+      expect(isAddressManagerClickText(unsafeText)).toBe(false);
+      expect(isAddAddressClickText(unsafeText)).toBe(false);
+    }
+  });
+
   it("clicks only explicit address-manager labels", () => {
     for (const label of ["Delivering to Home", "Select Location", "Delivery Address", "Saved Addresses"]) {
       expect(isAddressManagerClickText(label)).toBe(true);
@@ -238,6 +254,18 @@ describe("address automation helpers", () => {
     expect(page.managerClicked).toBe(false);
   });
 
+  it("does not click address-manager controls when any label is unsafe", async () => {
+    for (const page of [
+      createMixedLabelAddressManagerPage("Use current location", "Delivery Address"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Use current location"),
+      createMixedLabelAddressManagerPage("Confirm Address", "Delivery Address")
+    ]) {
+      await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
+
+      expect(page.managerClicked).toBe(false);
+    }
+  });
+
   it("clicks only explicit add-address action labels", () => {
     for (const label of ["Add New", "Add Address", "Add New Address", "Enter Delivery Location"]) {
       expect(isAddAddressClickText(label)).toBe(true);
@@ -254,6 +282,18 @@ describe("address automation helpers", () => {
     await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
 
     expect(page.addAddressClicked).toBe(false);
+  });
+
+  it("does not click add-address controls when any label is unsafe", async () => {
+    for (const page of [
+      createMixedLabelAddAddressPage("Use current location", "Add Address"),
+      createMixedLabelAddAddressPage("Add Address", "Use current location"),
+      createMixedLabelAddAddressPage("Save Address", "Add Address")
+    ]) {
+      await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
+
+      expect(page.addAddressClicked).toBe(false);
+    }
   });
 
   it("clicks a tagged saved-address row only after it is revalidated", async () => {
@@ -349,6 +389,42 @@ describe("address automation helpers", () => {
     expect(page.addAddressClicked).toBe(true);
   });
 });
+
+function createMixedLabelAddressManagerPage(text: string, ariaLabel: string) {
+  const page = {
+    managerClicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))) {
+        return createVisibleLocatorWithAria(text, ariaLabel, async () => {
+          page.managerClicked = true;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createMixedLabelAddAddressPage(text: string, ariaLabel: string) {
+  const page = {
+    addAddressClicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))) {
+        return createVisibleLocatorWithAria(text, ariaLabel, async () => {
+          page.addAddressClicked = true;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
 
 function createDirectAddressAddFlowPage() {
   let stage: "home" | "add-flow" = "home";
@@ -508,6 +584,22 @@ function createTaggedAddressSelectionPage(
   };
 
   return page;
+}
+
+function createVisibleLocatorWithAria(text: string, ariaLabel: string, click: () => Promise<void>) {
+  return {
+    first() {
+      return this;
+    },
+    filter() {
+      return createHiddenLocator();
+    },
+    isVisible: async () => true,
+    innerText: async () => text,
+    getAttribute: async (name: string) => (name === "aria-label" ? ariaLabel : null),
+    evaluate: async () => false,
+    click
+  };
 }
 
 function createVisibleLocator(
