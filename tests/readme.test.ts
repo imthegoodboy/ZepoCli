@@ -53,8 +53,10 @@ describe("README package guidance", () => {
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("npm run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain("live-verification-report.json");
-    expect(readme).toContain("omits raw Zepto page text, addresses, cart item names, payment credentials, and order ids");
-    expect(readme).toContain("Stored report command strings redact phone input plus search, add, and address-use query text");
+    expect(readme).toContain(
+      "omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths"
+    );
+    expect(readme).toContain("Stored report command strings redact search, add, and address-use query text");
     expect(readme).toContain("not part of `npm run check` or CI");
   });
 });

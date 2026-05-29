@@ -19,7 +19,9 @@ describe("live verification runner", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("human-controlled live verification");
     expect(result.stdout).toContain("--checkout");
-    expect(result.stdout).toContain("omits raw page text, addresses, cart item names, payment credentials, and order ids");
+    expect(result.stdout).toContain(
+      "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths"
+    );
   });
 
   it("requires an explicit data directory before touching the compiled CLI", () => {
@@ -85,7 +87,7 @@ describe("live verification runner", () => {
     expect(
       redactArgsForLiveReport([
         "--data-dir",
-        ".zepo-live",
+        "C:\\Users\\parth\\.zepo-live",
         "--visible",
         "add",
         "Amul Milk 500ml",
@@ -93,13 +95,30 @@ describe("live verification runner", () => {
         "2",
         "--json"
       ])
-    ).toEqual(["--data-dir", ".zepo-live", "--visible", "add", "<redacted-query>", "--quantity", "2", "--json"]);
-
-    expect(
-      redactArgsForLiveReport(["--data-dir", ".zepo-live", "--visible", "address", "use", "Home Tower 7", "--json"])
     ).toEqual([
       "--data-dir",
-      ".zepo-live",
+      "<redacted-data-dir>",
+      "--visible",
+      "add",
+      "<redacted-query>",
+      "--quantity",
+      "2",
+      "--json"
+    ]);
+
+    expect(
+      redactArgsForLiveReport([
+        "--data-dir",
+        "/home/user/.zepo-live",
+        "--visible",
+        "address",
+        "use",
+        "Home Tower 7",
+        "--json"
+      ])
+    ).toEqual([
+      "--data-dir",
+      "<redacted-data-dir>",
       "--visible",
       "address",
       "use",
@@ -108,8 +127,26 @@ describe("live verification runner", () => {
     ]);
 
     expect(
-      redactArgsForLiveReport(["--data-dir", ".zepo-live", "--visible", "search", "protein bars", "--json"])
-    ).toEqual(["--data-dir", ".zepo-live", "--visible", "search", "<redacted-query>", "--json"]);
+      redactArgsForLiveReport([
+        "--data-dir",
+        ".zepo-live",
+        "--visible",
+        "search",
+        "protein bars",
+        "--report",
+        "C:\\Users\\parth\\report.json",
+        "--json"
+      ])
+    ).toEqual([
+      "--data-dir",
+      "<redacted-data-dir>",
+      "--visible",
+      "search",
+      "<redacted-query>",
+      "--report",
+      "<redacted-report-path>",
+      "--json"
+    ]);
   });
 
   it("keeps console command output useful while redacting phone input", () => {

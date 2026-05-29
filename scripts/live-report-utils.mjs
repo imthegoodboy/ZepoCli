@@ -46,7 +46,14 @@ export function redactArgsForLiveConsole(args) {
 }
 
 export function redactArgsForLiveReport(args) {
-  const redacted = redactOptionValues(args, new Map([["--phone", "<redacted-phone>"]]));
+  const redacted = redactOptionValues(
+    args,
+    new Map([
+      ["--data-dir", "<redacted-data-dir>"],
+      ["--phone", "<redacted-phone>"],
+      ["--report", "<redacted-report-path>"]
+    ])
+  );
   const positionals = collectPositionals(redacted);
   const command = positionals[0]?.value;
 
@@ -88,7 +95,7 @@ function redactOptionValues(args, redactions) {
 }
 
 function collectPositionals(args) {
-  const valueOptions = new Set(["--data-dir", "--phone", "--quantity"]);
+  const valueOptions = new Set(["--data-dir", "--phone", "--quantity", "--report"]);
   const positionals = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];

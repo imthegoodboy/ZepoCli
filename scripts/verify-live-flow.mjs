@@ -35,10 +35,10 @@ const reportPath = options.report ?? resolve(options.dataDir, "live-verification
 const report = {
   ok: true,
   generatedAt: new Date().toISOString(),
-  dataDir: options.dataDir,
-  reportPath,
+  dataDir: "<redacted-data-dir>",
+  reportPath: "<redacted-report-path>",
   note:
-    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, and order ids.",
+    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths.",
   steps: []
 };
 
@@ -425,5 +425,5 @@ Example:
   npm run build
   npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 
-The report intentionally omits raw page text, addresses, cart item names, payment credentials, and order ids.`);
+The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths.`);
 }
