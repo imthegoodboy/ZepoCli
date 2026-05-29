@@ -172,6 +172,21 @@ describe("address automation helpers", () => {
     expect(isLikelyAddressText("Popular picks delivered across India 500 g pack")).toBe(false);
   });
 
+  it("rejects location-consent and final-confirmation copy as saved addresses", () => {
+    expect(isLikelyAddressText("Use current location Bengaluru Karnataka 560001 India")).toBe(false);
+    expect(isLikelyAddressText("Detect my location Bengaluru Karnataka 560001 India")).toBe(false);
+    expect(isLikelyAddressText("Confirm Address Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Deliver Here Home 221B Baker Street, Bengaluru, India")).toBe(false);
+
+    expect(
+      filterAddressTexts([
+        "Use current location Bengaluru Karnataka 560001 India",
+        "Home 221B Baker Street, Bengaluru, India",
+        "Confirm Address Home 221B Baker Street, Bengaluru, India"
+      ])
+    ).toEqual(["Home 221B Baker Street, Bengaluru, India"]);
+  });
+
   it("rejects label-only navigation or category text as saved addresses", () => {
     expect(isLikelyAddressText("Home Toys Fresh Electronics Beauty Fashion")).toBe(false);
     expect(isLikelyAddressText("Work Orders Wallet Profile Account")).toBe(false);
