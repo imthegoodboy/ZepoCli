@@ -230,7 +230,25 @@ describe("cart automation helpers", () => {
       expect(isUnsafeCartOpenClickText(label)).toBe(false);
     }
 
-    for (const label of ["Checkout", "Proceed", "Continue", "Proceed to Pay", "Pay Now", "Pay ₹249", "Go", "Open", "Next", "Submit"]) {
+    for (const label of [
+      "Checkout",
+      "Proceed",
+      "Continue",
+      "Proceed to Pay",
+      "Pay Now",
+      "Pay ₹249",
+      "Payment Method",
+      "UPI",
+      "Credit Card",
+      "Debit Card",
+      "Wallet",
+      "Cash on Delivery",
+      "COD",
+      "Go",
+      "Open",
+      "Next",
+      "Submit"
+    ]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isCartOpenClickText(label)).toBe(false);
       expect(isUnsafeCartOpenClickText(label)).toBe(true);
@@ -248,6 +266,9 @@ describe("cart automation helpers", () => {
   it("does not click cart navigation controls when any visible or accessible label is unsafe", async () => {
     for (const page of [
       createMixedLabelCartOpenPage("Checkout", "Cart"),
+      createMixedLabelCartOpenPage("UPI", "Cart"),
+      createMixedLabelCartOpenPage("Cart", "Credit Card"),
+      createMixedLabelCartOpenPage("Cart", "Cart", { title: "Payment Method" }),
       createMixedLabelCartOpenPage("Open", "Cart"),
       createMixedLabelCartOpenPage("Cart", "Cart", { title: "Checkout" }),
       createMixedLabelCartOpenPage("Cart", "To Pay ₹249")
@@ -274,7 +295,25 @@ describe("cart automation helpers", () => {
       expect(isUnsafeCartRemoveControlText(label)).toBe(false);
     }
 
-    for (const label of ["Add coupon", "Apply coupon", "Checkout", "Pay", "Payment", "Confirm order", "Address", "Clear cart", "+", "Qty +"]) {
+    for (const label of [
+      "Add coupon",
+      "Apply coupon",
+      "Checkout",
+      "Pay",
+      "Payment",
+      "Payment Method",
+      "UPI",
+      "Credit Card",
+      "Debit Card",
+      "Wallet",
+      "Cash on Delivery",
+      "COD",
+      "Confirm order",
+      "Address",
+      "Clear cart",
+      "+",
+      "Qty +"
+    ]) {
       expect(isCartRemoveControlText(label)).toBe(false);
       expect(isUnsafeCartRemoveControlText(label)).toBe(true);
     }
@@ -299,7 +338,14 @@ describe("cart automation helpers", () => {
   });
 
   it("does not click tagged cart remove controls when any label is unsafe", async () => {
-    for (const attributes of [{ "aria-label": "Checkout" }, { title: "Add coupon" }, { "aria-description": "Payment" }]) {
+    for (const attributes of [
+      { "aria-label": "Checkout" },
+      { title: "Add coupon" },
+      { "aria-description": "Payment" },
+      { "aria-label": "UPI" },
+      { title: "Cash on Delivery" },
+      { "aria-description": "Credit Card" }
+    ]) {
       const page = createTaggedCartRemovePage(attributes, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
 
       await expect(clickTaggedCartRemoveButton(page as never, 3, "milk")).rejects.toThrow(
