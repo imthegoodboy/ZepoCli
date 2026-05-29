@@ -153,9 +153,17 @@ function extractOrderTotal(block: string): string | undefined {
       continue;
     }
 
-    const sameLineTotal = extractPrices(line.slice(labelEndIndex))[0];
+    const suffix = line
+      .slice(labelEndIndex)
+      .replace(/^[:=\-–—]+/, "")
+      .trim();
+    const sameLineTotal = startsWithPrice(suffix) ? extractPrices(suffix)[0] : undefined;
     if (sameLineTotal) {
       return sameLineTotal;
+    }
+
+    if (suffix.length > 0) {
+      continue;
     }
 
     for (let offset = 1; offset <= 2; offset += 1) {
@@ -172,6 +180,10 @@ function extractOrderTotal(block: string): string | undefined {
   }
 
   return undefined;
+}
+
+function startsWithPrice(value: string): boolean {
+  return /^(₹\s?[\d,]+(?:\.\d+)?|(?:rs\.?|inr)\s?[\d,]+(?:\.\d+)?)/i.test(value);
 }
 
 function findOrderTotalLabelEndIndex(line: string): number | undefined {
@@ -288,7 +300,11 @@ function isLikelyCartProductName(line: string): boolean {
     return false;
   }
 
-  if (/^\d+\s+items?$/i.test(line) || /\b(total|grand total|to pay|qty|quantity)\b/i.test(line)) {
+  if (
+    /^\d+\s+items?$/i.test(line) ||
+    /^(?:total|grand total|to pay)$/i.test(line) ||
+    /^(?:qty|quantity)(?:\s*:?\s*\d+)?$/i.test(line)
+  ) {
     return false;
   }
 

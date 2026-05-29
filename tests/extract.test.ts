@@ -654,6 +654,16 @@ describe("Zepto page extraction helpers", () => {
       }
     ]);
 
+    expect(parseOrdersFromText("Order #ZEP1234 Delivered Total Protein Bar ₹120")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: undefined,
+        rawText: "Order #ZEP1234 Delivered Total Protein Bar ₹120"
+      }
+    ]);
+
     expect(parseOrdersFromText("Order #ZEP1234 Delivered Item total ₹32 Delivery fee ₹25 Total ₹57")).toEqual([
       {
         id: "ZEP1234",

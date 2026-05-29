@@ -126,6 +126,40 @@ describe("cart automation helpers", () => {
     expect(
       requireReadableCartSnapshot(`
         Cart
+        Total Protein Bar
+        50 g
+        ₹120
+        Qty 1
+      `)
+    ).toMatchObject({
+      items: [
+        {
+          name: "Total Protein Bar",
+          price: "₹120",
+          unit: "50 g",
+          quantity: "1"
+        }
+      ],
+      total: undefined
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        To Pay:
+        ₹57
+      `)
+    ).toMatchObject({
+      total: "₹57"
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32

@@ -483,19 +483,23 @@ async function readVisibleCart(page: Page): Promise<CartSnapshot> {
 
 function extractCartTotal(rawText: string): string | undefined {
   const lines = rawText.split(/\r?\n/).map((line) => line.trim());
-  return extractLabeledCartTotal(lines, isPrimaryCartTotalLine) ?? extractLabeledCartTotal(lines, isSecondaryCartTotalLine);
+  return (
+    extractLabeledCartTotal(lines, isPrimaryCartTotalLabel) ??
+    extractLabeledCartTotal(lines, isFinalCartTotalLabel) ??
+    extractLabeledCartTotal(lines, isFallbackCartTotalLabel)
+  );
 }
 
-function extractLabeledCartTotal(lines: string[], matchesTotalLabel: (line: string) => boolean): string | undefined {
+function extractLabeledCartTotal(lines: string[], matchesTotalLabel: (label: string) => boolean): string | undefined {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
-    if (!matchesTotalLabel(line)) {
-      continue;
-    }
-
     const sameLineTotal = extractCartTotalPriceAfterLabel(line, matchesTotalLabel);
     if (sameLineTotal) {
       return sameLineTotal;
+    }
+
+    if (!matchesTotalLabel(line)) {
+      continue;
     }
 
     for (let offset = 1; offset <= 2; offset += 1) {
@@ -523,7 +527,16 @@ function extractCartTotalPriceAfterLabel(line: string, matchesTotalLabel: (line:
         continue;
       }
 
-      const price = extractPrices(words.slice(end).join(" "))[0];
+      const suffix = words
+        .slice(end)
+        .join(" ")
+        .replace(/^[:=\-–—]+/, "")
+        .trim();
+      if (!startsWithPrice(suffix)) {
+        continue;
+      }
+
+      const price = extractPrices(suffix)[0];
       if (price) {
         return price;
       }
@@ -533,12 +546,24 @@ function extractCartTotalPriceAfterLabel(line: string, matchesTotalLabel: (line:
   return undefined;
 }
 
-function isPrimaryCartTotalLine(line: string): boolean {
-  return /\b(to pay|grand total|payable|bill total|amount payable|order total)\b/i.test(line);
+function isPrimaryCartTotalLabel(label: string): boolean {
+  return /^(to pay|grand total|payable|bill total|amount payable|order total)$/i.test(normalizeTotalLabel(label));
 }
 
-function isSecondaryCartTotalLine(line: string): boolean {
-  return /\b(item total|subtotal|total)\b/i.test(line) && !/\b(discount|saving|coupon|fee|charge|tax|tip|donation)\b/i.test(line);
+function isFinalCartTotalLabel(label: string): boolean {
+  return /^total$/i.test(normalizeTotalLabel(label));
+}
+
+function isFallbackCartTotalLabel(label: string): boolean {
+  return /^(item total|subtotal)$/i.test(normalizeTotalLabel(label));
+}
+
+function startsWithPrice(value: string): boolean {
+  return /^(₹\s?[\d,]+(?:\.\d+)?|(?:rs\.?|inr)\s?[\d,]+(?:\.\d+)?)/i.test(value);
+}
+
+function normalizeTotalLabel(label: string): string {
+  return normalizeText(label).replace(/[:=\-–—]+$/, "").trim();
 }
 
 function isCartTotalStopLine(line: string): boolean {
