@@ -152,6 +152,9 @@ describe("order automation helpers", () => {
     expect(isUnsafeOrdersOpenClickText("Continue")).toBe(true);
     expect(isOrdersOpenClickText("Track Order")).toBe(false);
     expect(isUnsafeOrdersOpenClickText("Track Order")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("UPI")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Cash on Delivery")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("COD")).toBe(true);
     expect(isAccountMenuClickText("Account")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Account")).toBe(false);
     expect(isAccountMenuClickText("Account settings are secure")).toBe(false);
@@ -159,6 +162,9 @@ describe("order automation helpers", () => {
     expect(isUnsafeAccountMenuClickText("My Orders")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Menu")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Open")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("UPI")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Cash on Delivery")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("COD")).toBe(true);
   });
 
   it("clicks only explicit reorder action labels", () => {
@@ -286,7 +292,9 @@ describe("order automation helpers", () => {
     for (const page of [
       createMixedLabelOrdersNavigationPage("Checkout", "My Orders"),
       createMixedLabelOrdersNavigationPage("Open", "My Orders"),
+      createMixedLabelOrdersNavigationPage("UPI", "My Orders"),
       createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { title: "Checkout" }),
+      createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { "aria-description": "Cash on Delivery" }),
       createMixedLabelOrdersNavigationPage("My Orders", "Track Order")
     ]) {
       await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(false);
@@ -299,7 +307,9 @@ describe("order automation helpers", () => {
     for (const page of [
       createMixedLabelAccountMenuPage("My Orders", "Account"),
       createMixedLabelAccountMenuPage("Open", "Account"),
+      createMixedLabelAccountMenuPage("UPI", "Account"),
       createMixedLabelAccountMenuPage("Account", "Account", { title: "Cart" }),
+      createMixedLabelAccountMenuPage("Account", "Account", { "aria-description": "Cash on Delivery" }),
       createMixedLabelAccountMenuPage("Account", "Cart")
     ]) {
       await expect(clickAccountMenuControl(page as never)).resolves.toBe(false);

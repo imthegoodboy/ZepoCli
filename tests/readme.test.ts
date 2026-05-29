@@ -48,6 +48,8 @@ describe("README package guidance", () => {
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'
     );
     expect(readme).toContain("no-id history rows need stronger evidence than a bare status word");
+    expect(readme).toContain("Order-history navigation clicks only visible, enabled, explicit orders/history controls");
+    expect(readme).toContain("unrelated cart, account, address, checkout, payment-method/payment, tracking, reorder, or final-order actions are rejected");
     expect(readme).toContain("visible, enabled, explicit reorder/order-again/repeat-order control");
     expect(readme).toContain("legacy `zeptonow.com` responses");
     expect(readme).toContain("Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage");
