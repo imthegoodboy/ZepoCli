@@ -40,7 +40,8 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Do not mark login complete while Zepto still shows login or OTP prompts.
    - A failed re-login attempt must not invalidate a previously marked valid local session.
    - Failed re-login attempts must restore both Playwright auth state and persistent browser profile data when a confirmed session existed before the attempt.
-   - Validate `zepo login --phone` before launching the browser; if an explicit phone input is visible, enabled, and editable, prefill it with paced typing and leave OTP fully Zepto-controlled.
+   - Validate `zepo login --phone` before launching the browser; if an explicit phone/mobile/tel input is visible, enabled, and editable, prefill it with paced typing and leave OTP fully Zepto-controlled.
+   - Phone input discovery may use placeholder/title/description/referenced accessible labels, but must reject mixed-label controls that look like OTP, verification, payment, address, cart, order, or search controls.
    - Phone prefill must target explicit phone/mobile/tel fields only; never use bare numeric input selectors because those can match OTP fields.
 
 4. Automation behavior.
@@ -107,8 +108,8 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - `zepo doctor --json` should expose structured `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge` fields; agents should not parse human doctor messages.
    - `zepo status --live --json` should verify the saved session against Zepto before account workflows and demote the local login marker if Zepto clearly asks for login/OTP again. Do not delete cached user data for a live-status demotion.
    - `zepo status --live --json` should return structured `liveSession.state = "login-required"` when Zepto asks for login again; do not let the shared account-command expired-session guard throw before live-status can report and demote.
-   - Login-state detection should trust explicit page text before generic phone/numeric inputs. A logged-in account/profile page that exposes a phone field must not be demoted unless Zepto also shows login/OTP prompts.
-   - Account-dependent browser commands should demote the local login marker when a failed Zepto page clearly shows login/OTP prompts. The shared expired-session guard should trust explicit logged-in account/profile text before generic phone/numeric inputs, so profile pages with phone fields are not demoted. Do not capture debug HTML/screenshots for account-dependent browser pages, including the expired-session failure path.
+   - Login-state detection should trust explicit page text before login input evidence. A logged-in account/profile page that exposes a phone field must not be demoted unless Zepto also shows login/OTP prompts. Bare numeric fields alone are not login proof.
+   - Account-dependent browser commands should demote the local login marker when a failed Zepto page clearly shows login/OTP prompts. The shared expired-session guard should trust explicit logged-in account/profile text before login input evidence and ignore bare numeric fields on ambiguous pages, so profile pages with phone fields are not demoted. Do not capture debug HTML/screenshots for account-dependent browser pages, including the expired-session failure path.
    - SQLite is for local metadata, snapshots, and cache only.
    - Search cache writes should keep diagnostic counts without storing raw user search query text.
    - Cart and order cache writes should persist parsed fields only; do not store raw Zepto cart/order page text in SQLite snapshots.

@@ -547,7 +547,24 @@ describe("browser automation helpers", () => {
       first() {
         return this;
       },
-      isVisible: async () => options.phoneInputVisible
+      filter() {
+        return createLoginInputCollection([]);
+      },
+      isVisible: async () => options.phoneInputVisible,
+      innerText: async () => "",
+      getAttribute: async (name: string) => (name === "type" ? "tel" : null),
+      evaluate: async (fn?: unknown) => {
+        const source = String(fn ?? "");
+        if (source.includes("aria-labelledby") || source.includes("aria-describedby")) {
+          return [];
+        }
+
+        if (source.includes("hasDisabledState") || source.includes("HTMLButtonElement")) {
+          return false;
+        }
+
+        return true;
+      }
     };
 
     return {
@@ -559,7 +576,7 @@ describe("browser automation helpers", () => {
         }
 
         if (selector.includes("input[type='tel']")) {
-          return phoneInput;
+          return createLoginInputCollection(options.phoneInputVisible ? [phoneInput] : []);
         }
 
         return {
@@ -568,6 +585,19 @@ describe("browser automation helpers", () => {
           },
           isVisible: async () => false
         };
+      }
+    };
+  }
+
+  function createLoginInputCollection<T>(items: T[]) {
+    return {
+      first: () => items[0] ?? {
+        isVisible: async () => false
+      },
+      filter: () => createLoginInputCollection([]),
+      count: async () => items.length,
+      nth: (index: number) => items[index] ?? {
+        isVisible: async () => false
       }
     };
   }

@@ -5,9 +5,13 @@ import {
   PHONE_PREFILL_INPUT_SELECTOR,
   clickAccountSurfaceButton,
   detectLoginState,
+  findPhonePrefillInput,
+  hasVisibleLoginFormInput,
   inferLoginStateFromText,
   isAccountSurfaceClickText,
+  isPhonePrefillInputText,
   isUnsafeAccountSurfaceClickText,
+  isUnsafePhonePrefillInputText,
   openLoginFlow
 } from "../src/automation/auth.js";
 import { loginOutput } from "../src/commands/login.js";
@@ -114,10 +118,20 @@ describe("login state inference", () => {
 
   it("prefills phone only into explicit phone or mobile fields", () => {
     expect(PHONE_PREFILL_INPUT_SELECTOR).toContain("input[type='tel']");
+    expect(PHONE_PREFILL_INPUT_SELECTOR).toContain("autocomplete='tel'");
     expect(PHONE_PREFILL_INPUT_SELECTOR).toContain("phone");
     expect(PHONE_PREFILL_INPUT_SELECTOR).toContain("mobile");
     expect(PHONE_PREFILL_INPUT_SELECTOR).not.toContain("input[inputmode='numeric']");
     expect(PHONE_PREFILL_INPUT_SELECTOR).not.toContain("otp");
+
+    for (const label of ["Phone number", "Mobile", "MobileNumber", "Telephone"]) {
+      expect(isPhonePrefillInputText(label)).toBe(true);
+      expect(isUnsafePhonePrefillInputText(label)).toBe(false);
+    }
+
+    for (const label of ["Verify OTP", "One time code", "Search phone", "Payment phone"]) {
+      expect(isUnsafePhonePrefillInputText(label)).toBe(true);
+    }
   });
 
   it("prefills phone only when the explicit phone field is editable", async () => {
@@ -138,6 +152,50 @@ describe("login state inference", () => {
 
     expect(readonly.phone.fillValues).toEqual([]);
     expect(readonly.phone.typedValues).toEqual([]);
+  });
+
+  it("finds phone prefill fields from referenced accessible labels", async () => {
+    const referenced = createLoginInputDiscoveryPage([
+      createPhoneInputLocator(
+        {
+          "aria-labelledby": "phone-label"
+        },
+        { "phone-label": "Mobile number" }
+      )
+    ]);
+
+    await expect(findPhonePrefillInput(referenced as never)).resolves.toBe(referenced.inputs[0]);
+  });
+
+  it("does not prefill unsafe or bare numeric fields", async () => {
+    const unsafe = createLoginInputDiscoveryPage([
+      createPhoneInputLocator({
+        type: "tel",
+        "aria-label": "Verify OTP"
+      }),
+      createPhoneInputLocator({
+        type: "number"
+      })
+    ]);
+
+    await expect(findPhonePrefillInput(unsafe as never)).resolves.toBeUndefined();
+  });
+
+  it("treats labeled login inputs, but not bare numeric fields, as login form evidence", async () => {
+    const otp = createLoginInputDiscoveryPage([
+      createPhoneInputLocator({
+        type: "number",
+        "aria-label": "OTP"
+      })
+    ]);
+    const bareNumeric = createLoginInputDiscoveryPage([
+      createPhoneInputLocator({
+        type: "number"
+      })
+    ]);
+
+    await expect(hasVisibleLoginFormInput(otp as never)).resolves.toBe(true);
+    await expect(hasVisibleLoginFormInput(bareNumeric as never)).resolves.toBe(false);
   });
 
   it("preserves a previously marked valid session when a re-login attempt fails", () => {
@@ -292,7 +350,7 @@ function createMixedLabelAccountSurfacePage(
 }
 
 function createLoginFlowPage(attributes: Record<string, string | null> = {}) {
-  const phone = createPhoneInputLocator(attributes);
+  const phone = createPhoneInputLocator({ type: "tel", ...attributes });
   const page = {
     goto: async () => null,
     waitForLoadState: async () => undefined,
@@ -301,7 +359,7 @@ function createLoginFlowPage(attributes: Record<string, string | null> = {}) {
     getByRole: () => createHiddenLocator(),
     locator: (selector: string) => {
       if (selector === PHONE_PREFILL_INPUT_SELECTOR) {
-        return phone;
+        return createLocatorCollection([phone]);
       }
 
       if (selector === "body") {
@@ -316,12 +374,7 @@ function createLoginFlowPage(attributes: Record<string, string | null> = {}) {
 }
 
 function createLoginStatePage(options: { bodyText: string; phoneInputVisible: boolean }) {
-  const phoneInput = {
-    first() {
-      return this;
-    },
-    isVisible: async () => options.phoneInputVisible
-  };
+  const phoneInput = createPhoneInputLocator({ type: "tel" }, {}, options.phoneInputVisible);
 
   return {
     locator: (selector: string) => {
@@ -330,7 +383,7 @@ function createLoginStatePage(options: { bodyText: string; phoneInputVisible: bo
       }
 
       if (selector.includes("input[type='tel']")) {
-        return phoneInput;
+        return createLocatorCollection(options.phoneInputVisible ? [phoneInput] : []);
       }
 
       return createHiddenLocator();
@@ -338,7 +391,38 @@ function createLoginStatePage(options: { bodyText: string; phoneInputVisible: bo
   };
 }
 
-function createPhoneInputLocator(attributes: Record<string, string | null>) {
+function createLoginInputDiscoveryPage(inputs: ReturnType<typeof createPhoneInputLocator>[]) {
+  return {
+    inputs,
+    locator: (selector: string) => {
+      const directInputs = inputs.filter((input) => input.direct);
+      if (selector.includes("name*='phone'") || selector.includes("autocomplete='one-time-code'")) {
+        return createLocatorCollection(directInputs);
+      }
+
+      if (selector.includes("input:not([type])")) {
+        return createLocatorCollection(inputs);
+      }
+
+      return createLocatorCollection([]);
+    }
+  };
+}
+
+function createLocatorCollection<T>(items: T[]) {
+  return {
+    first: () => items[0] ?? createHiddenLocator(),
+    filter: () => createLocatorCollection([]),
+    count: async () => items.length,
+    nth: (index: number) => items[index] ?? createHiddenLocator()
+  };
+}
+
+function createPhoneInputLocator(
+  attributes: Record<string, string | null>,
+  referencedLabels: Record<string, string> = {},
+  visible = true
+) {
   const state = {
     fillValues: [] as string[],
     typedValues: [] as string[],
@@ -354,11 +438,36 @@ function createPhoneInputLocator(attributes: Record<string, string | null>) {
     filter() {
       return createHiddenLocator();
     },
-    isVisible: async () => true,
+    direct:
+      attributes.type === "tel" ||
+      /\btel(?:-\w+)?\b/i.test(attributes.autocomplete ?? "") ||
+      /phone|mobile/i.test(`${attributes.name ?? ""} ${attributes.id ?? ""}`) ||
+      /phone|mobile/i.test(`${attributes.placeholder ?? ""} ${attributes["aria-label"] ?? ""}`) ||
+      /otp|verification code/i.test(`${attributes.placeholder ?? ""} ${attributes["aria-label"] ?? ""}`) ||
+      /\bone-time-code\b/i.test(attributes.autocomplete ?? ""),
+    isVisible: async () => visible,
     innerText: async () => "",
     getAttribute: async (name: string) => attributes[name] ?? null,
-    evaluate: async () => {
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("aria-labelledby") || source.includes("aria-describedby")) {
+        return `${attributes["aria-labelledby"] ?? ""} ${attributes["aria-describedby"] ?? ""}`
+          .split(/\s+/)
+          .map((id) => id.trim())
+          .filter(Boolean)
+          .map((id) => referencedLabels[id] ?? "")
+          .filter(Boolean);
+      }
+
       state.evaluateCalls += 1;
+      if (source.includes("hasDisabledState") || source.includes("HTMLButtonElement")) {
+        return false;
+      }
+
+      if (source.includes("HTMLInputElement")) {
+        return attributes.disabled === undefined && attributes.readonly === undefined;
+      }
+
       return state.evaluateCalls > 1 && attributes.disabled === undefined && attributes.readonly === undefined;
     },
     fill: async (value: string) => {

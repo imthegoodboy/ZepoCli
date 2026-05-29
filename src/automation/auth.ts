@@ -1,9 +1,18 @@
 import type { Locator, Page } from "playwright";
 
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
-import { isDisabledControl, isEditableTextInput, readControlLabels } from "./control-state.js";
+import { isDisabledControl, readControlLabels } from "./control-state.js";
+import { findPhonePrefillInput, hasVisibleLoginFormInput } from "./login-inputs.js";
 
 export type LoginState = "logged-in" | "login-required" | "unknown";
+export {
+  findPhonePrefillInput,
+  hasVisibleLoginFormInput,
+  isPhonePrefillInputText,
+  isSafePhonePrefillInput,
+  isUnsafePhonePrefillInputText,
+  PHONE_PREFILL_INPUT_SELECTOR
+} from "./login-inputs.js";
 export const ACCOUNT_SURFACE_CLICK_LABELS = [
   /^account$/i,
   /^profile$/i,
@@ -13,18 +22,6 @@ export const ACCOUNT_SURFACE_CLICK_LABELS = [
   /^login\s*\/\s*sign\s*up$/i,
   /^log in\s*\/\s*sign up$/i
 ] as const;
-export const PHONE_PREFILL_INPUT_SELECTOR = [
-  "input[type='tel']",
-  "input[autocomplete='tel']",
-  "input[name*='phone' i]",
-  "input[name*='mobile' i]",
-  "input[id*='phone' i]",
-  "input[id*='mobile' i]",
-  "input[placeholder*='phone' i]",
-  "input[placeholder*='mobile' i]",
-  "input[aria-label*='phone' i]",
-  "input[aria-label*='mobile' i]"
-].join(", ");
 const PHONE_PREFILL_TYPE_DELAY_MS = 45;
 const LOGIN_REQUIRED_TEXT_PATTERN =
   /\b(enter mobile|mobile number|phone number|otp|verify otp|verify mobile|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
@@ -33,8 +30,8 @@ export async function openLoginFlow(page: Page, phone?: string): Promise<void> {
   await openAccountSurface(page);
 
   if (phone) {
-    const phoneInput = page.locator(PHONE_PREFILL_INPUT_SELECTOR).first();
-    if ((await phoneInput.isVisible().catch(() => false)) && (await isEditableTextInput(phoneInput))) {
+    const phoneInput = await findPhonePrefillInput(page);
+    if (phoneInput) {
       await phoneInput.fill("");
       await phoneInput.pressSequentially(phone, { delay: PHONE_PREFILL_TYPE_DELAY_MS });
     }
@@ -99,8 +96,7 @@ export async function detectLoginState(page: Page): Promise<LoginState> {
     return textState;
   }
 
-  const phoneInput = page.locator("input[type='tel'], input[inputmode='numeric'], input[name*='phone' i]").first();
-  if (await phoneInput.isVisible().catch(() => false)) {
+  if (await hasVisibleLoginFormInput(page)) {
     return "login-required";
   }
 

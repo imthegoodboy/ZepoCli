@@ -6,6 +6,7 @@ import { chromium, type Browser, type BrowserContext, type Page, type Response }
 
 import { BASE_URL } from "../config/constants.js";
 import type { AppRuntime } from "../config/runtime.js";
+import { hasVisibleLoginFormInput } from "./login-inputs.js";
 import type {
   AccessChallengeStatus,
   BrowserAutomationReadiness,
@@ -985,8 +986,7 @@ export async function isLoginRequiredPage(page: Page): Promise<boolean> {
     return false;
   }
 
-  const phoneInput = page.locator("input[type='tel'], input[inputmode='numeric'], input[name*='phone' i]").first();
-  return phoneInput.isVisible().catch(() => false);
+  return hasVisibleLoginFormInput(page);
 }
 
 export function isLoginRequiredText(text: string): boolean {
