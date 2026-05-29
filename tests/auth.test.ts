@@ -77,7 +77,16 @@ describe("login state inference", () => {
       expect(isAccountSurfaceClickText(label)).toBe(false);
     }
 
-    for (const label of ["Login to continue checkout", "My Orders", "Cart", "Delivering to Home"]) {
+    for (const label of [
+      "Login to continue checkout",
+      "Continue with phone",
+      "Verify OTP",
+      "Next",
+      "Submit",
+      "My Orders",
+      "Cart",
+      "Delivering to Home"
+    ]) {
       expect(isUnsafeAccountSurfaceClickText(label)).toBe(true);
     }
   });
@@ -91,7 +100,11 @@ describe("login state inference", () => {
   });
 
   it("does not click account or login controls when any visible or accessible label is unsafe", async () => {
-    for (const page of [createMixedLabelAccountSurfacePage("Checkout", "Login"), createMixedLabelAccountSurfacePage("Account", "My Orders")]) {
+    for (const page of [
+      createMixedLabelAccountSurfacePage("Checkout", "Login"),
+      createMixedLabelAccountSurfacePage("Continue", "Login"),
+      createMixedLabelAccountSurfacePage("Account", "My Orders")
+    ]) {
       await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);
 
       expect(page.clicked).toBe(false);

@@ -124,7 +124,7 @@ export function isUnsafeAccountSurfaceClickText(text: string): boolean {
     return false;
   }
 
-  return /\b(search results?|cart|my cart|checkout|proceed|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
+  return /\b(search results?|cart|my cart|checkout|proceed|continue|next|submit|verify|otp|mobile number|phone number|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
     normalized
   );
 }
