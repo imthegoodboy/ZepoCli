@@ -54,7 +54,7 @@ Storage:
 - Session auth-state validation should treat both `zepto.com` and legacy `zeptonow.com` storage as Zepto platform session evidence.
 - Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls, not generic page copy containing those words.
 - Safe-click checks must inspect visible text, `aria-label`, `title`, `aria-description`, and `aria-labelledby`/`aria-describedby` referenced text before clicking. Reject a control when any label points at an unsafe action for that command.
-- Payment-method label matching lives in `src/automation/payment-labels.ts`; use the shared helper/source instead of adding per-module regex copies.
+- Payment-method label matching lives in `src/automation/payment-labels.ts`; use the shared helper/source and do not add per-module payment regex copies.
 
 ## Researched Zepto Facts
 
