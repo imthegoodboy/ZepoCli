@@ -120,6 +120,42 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("ignores delivery and promo image alt text before visible product text", () => {
+    expect(
+      parseProductCard(
+        {
+          automationId: 15,
+          imageAlt: "Image: 10 MINS",
+          text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)"
+        },
+        0
+      )
+    ).toMatchObject({
+      index: 0,
+      automationId: 15,
+      name: "Amul Taaza Toned Milk",
+      price: "₹32",
+      unit: "1 pack (500 ml)"
+    });
+
+    expect(
+      parseProductCard(
+        {
+          automationId: 16,
+          imageAlt: "Image: Super Saver",
+          text: "ADD\n₹120\nProtein Bar\n50 g"
+        },
+        0
+      )
+    ).toMatchObject({
+      index: 0,
+      automationId: 16,
+      name: "Protein Bar",
+      price: "₹120",
+      unit: "50 g"
+    });
+  });
+
   it("normalizes common rupee text variants in product cards", () => {
     const product = parseProductCard(
       {

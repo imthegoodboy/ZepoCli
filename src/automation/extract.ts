@@ -269,7 +269,7 @@ function isDiscountOnlyPriceLine(line: string, prices: string[]): boolean {
 function productNameFrom(imageAlt: string | undefined, lines: string[]): string | undefined {
   if (imageAlt) {
     const alt = stripImagePrefix(imageAlt);
-    if (alt && !isGenericImageAlt(alt)) {
+    if (alt && !isGenericImageAlt(alt) && !isIgnoredProductLine(alt)) {
       return alt;
     }
   }
