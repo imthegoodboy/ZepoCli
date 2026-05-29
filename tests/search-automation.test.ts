@@ -13,6 +13,7 @@ import {
   isSearchInputText,
   isSearchTriggerClickText,
   isUnsafeProductAddControlText,
+  isUnsafeQuantityIncreaseControlText,
   isUnsafeSearchInputText,
   isUnsafeSearchTriggerClickText,
   searchProducts,
@@ -220,10 +221,17 @@ describe("search automation helpers", () => {
   it("recognizes explicit quantity increase controls without accepting broad add labels", () => {
     for (const label of ["+", "Increase quantity", "Increment qty", "Add one", "Qty +"]) {
       expect(isQuantityIncreaseControlText(label)).toBe(true);
+      expect(isUnsafeQuantityIncreaseControlText(label)).toBe(false);
     }
 
-    for (const label of ["Add", "Add to Cart", "Add more", "Continue", ""]) {
+    for (const label of ["Add", "Add to Cart", ""]) {
       expect(isQuantityIncreaseControlText(label)).toBe(false);
+      expect(isUnsafeQuantityIncreaseControlText(label)).toBe(false);
+    }
+
+    for (const label of ["Decrease quantity", "Remove", "-", "Qty -", "Add more", "Add coupon", "Checkout", "Pay"]) {
+      expect(isQuantityIncreaseControlText(label)).toBe(false);
+      expect(isUnsafeQuantityIncreaseControlText(label)).toBe(true);
     }
   });
 
@@ -454,6 +462,26 @@ describe("search automation helpers", () => {
     ).rejects.toThrow("Could not increase Amul Milk to quantity 2.");
 
     expect(page.plusClicked).toBe(false);
+  });
+
+  it("does not click quantity plus controls when any label is unsafe", async () => {
+    for (const attributes of [{ "aria-label": "Decrease quantity" }, { title: "Add coupon" }, { "aria-description": "Checkout" }]) {
+      const page = createMixedLabelQuantityPage(attributes);
+
+      await expect(
+        increaseProductQuantity(
+          page as never,
+          {
+            index: 0,
+            automationId: 1,
+            name: "Amul Milk"
+          },
+          2
+        )
+      ).rejects.toThrow("Could not increase Amul Milk to quantity 2.");
+
+      expect(page.plusClicked).toBe(false);
+    }
   });
 
   it("does not click stale quantity plus controls that no longer match the product", async () => {
@@ -827,6 +855,42 @@ function createDisabledQuantityPage() {
     locator: () => ({
       filter: () => plusLocator
     })
+  };
+  const addButtonLocator = {
+    first() {
+      return this;
+    },
+    evaluate: async () => "Amul Milk ₹32",
+    locator: () => cardLocator
+  };
+  const page = {
+    plusClicked: false,
+    locator: () => addButtonLocator
+  };
+
+  return page;
+}
+
+function createMixedLabelQuantityPage(attributes: Record<string, string | null>) {
+  const plusLocator = {
+    last() {
+      return this;
+    },
+    isVisible: async () => true,
+    innerText: async () => "+",
+    getAttribute: async (name: string) => attributes[name] ?? null,
+    evaluate: async () => false,
+    click: async () => {
+      page.plusClicked = true;
+    }
+  };
+  const controls = {
+    filter: () => plusLocator,
+    count: async () => 1,
+    nth: () => plusLocator
+  };
+  const cardLocator = {
+    locator: () => controls
   };
   const addButtonLocator = {
     first() {

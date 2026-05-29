@@ -352,6 +352,17 @@ export function isQuantityIncreaseControlText(text: string): boolean {
   );
 }
 
+export function isUnsafeQuantityIncreaseControlText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized || isQuantityIncreaseControlText(normalized)) {
+    return false;
+  }
+
+  return /\b(decrease|decrement|remove|delete|minus|add more|add coupon|apply coupon|coupon|promo|voucher|address|location|checkout|payment|pay|place order|confirm order|continue|proceed)\b|^[-−]$|^(?:qty|quantity)\s*[-−]$/i.test(
+    normalized
+  );
+}
+
 async function assertTaggedProductControlIsStillAdd(locator: Locator, product: Product): Promise<void> {
   const labels = await readControlLabels(locator);
   if (labels.some(isProductAddControlText) && !labels.some(isUnsafeProductAddControlText)) {
@@ -391,7 +402,7 @@ async function isQuantityIncreaseControlCandidate(locator: Locator): Promise<boo
   }
 
   const labels = await readControlLabels(locator);
-  return labels.some(isQuantityIncreaseControlText);
+  return labels.some(isQuantityIncreaseControlText) && !labels.some(isUnsafeQuantityIncreaseControlText);
 }
 
 export function isLocationSetupRequiredText(text: string): boolean {
