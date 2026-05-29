@@ -375,5 +375,7 @@ function hasUnreadableOrderHistoryEvidence(text: string): boolean {
 }
 
 function stripOrderHistoryMarketingText(text: string): string {
-  return text.replace(/\bdelivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/gi, "");
+  return text
+    .replace(/\bdelivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/gi, "")
+    .replace(/\barriving\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/gi, "");
 }

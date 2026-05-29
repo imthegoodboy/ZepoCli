@@ -41,7 +41,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("Search, account, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");
     expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment, bill, or final order text");
-    expect(readme).toContain('Empty-history marketing copy such as groceries "delivered in minutes" is ignored');
+    expect(readme).toContain(
+      'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'
+    );
     expect(readme).toContain("no-id history rows need stronger evidence than a bare status word");
     expect(readme).toContain("visible, enabled, explicit reorder/order-again/repeat-order control");
     expect(readme).toContain("legacy `zeptonow.com` responses");

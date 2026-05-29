@@ -143,6 +143,10 @@ function extractOrderStatus(block: string): string | undefined {
       continue;
     }
 
+    if (status === "Arriving" && isArrivingMarketingStatusMatch(block, match.index)) {
+      continue;
+    }
+
     return status;
   }
 
@@ -495,6 +499,23 @@ function hasExplicitOrderStatusPhrase(text: string): boolean {
 function isDeliveryMarketingStatusMatch(block: string, matchIndex: number): boolean {
   const suffix = normalizeText(block.slice(matchIndex, matchIndex + 80));
   return /^delivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/i.test(suffix);
+}
+
+function isArrivingMarketingStatusMatch(block: string, matchIndex: number): boolean {
+  if (hasOrderTrackingContext(block)) {
+    return false;
+  }
+
+  const suffix = normalizeText(block.slice(matchIndex, matchIndex + 80));
+  return /^arriving\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/i.test(suffix);
+}
+
+function hasOrderTrackingContext(text: string): boolean {
+  return (
+    /\btrack order|tracking\b/i.test(text) ||
+    /\bOrder\s?#?\s?(?=[A-Z0-9-]*\d)[A-Z0-9-]{4,}\b/i.test(text) ||
+    hasExplicitOrderStatusPhrase(text)
+  );
 }
 
 function dedupeCartItems(items: CartItem[]): CartItem[] {
