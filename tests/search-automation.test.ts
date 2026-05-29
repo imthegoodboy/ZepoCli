@@ -4,13 +4,16 @@ import {
   clickSearchTrigger,
   clickProductAdd,
   extractProducts,
+  findSearchInput,
   filterProductsForQuery,
   increaseProductQuantity,
   isProductAddControlText,
   isQuantityIncreaseControlText,
   isLocationSetupRequiredText,
+  isSearchInputText,
   isSearchTriggerClickText,
   isUnsafeProductAddControlText,
+  isUnsafeSearchInputText,
   isUnsafeSearchTriggerClickText,
   searchProducts,
   SEARCH_TRIGGER_CLICK_LABELS,
@@ -111,6 +114,57 @@ describe("search automation helpers", () => {
       expect(isSearchTriggerClickText(label)).toBe(false);
       expect(isUnsafeSearchTriggerClickText(label)).toBe(label !== "Research products");
     }
+  });
+
+  it("recognizes safe search input labels and rejects unrelated workflow labels", () => {
+    for (const label of ["Search", "Search Products", "Search for products", "Search groceries"]) {
+      expect(isSearchInputText(label)).toBe(true);
+      expect(isUnsafeSearchInputText(label)).toBe(false);
+    }
+
+    for (const label of ["Search results", "Search address", "Search phone", "Search coupon", "Popular searches"]) {
+      expect(isSearchInputText(label)).toBe(false);
+      expect(isUnsafeSearchInputText(label)).toBe(true);
+    }
+  });
+
+  it("finds editable search inputs from title or referenced accessible labels", async () => {
+    const titledPage = createSearchInputDiscoveryPage([
+      createSearchInputCandidate({
+        title: "Search products"
+      })
+    ]);
+    const referencedPage = createSearchInputDiscoveryPage([
+      createSearchInputCandidate({
+        "aria-labelledby": "search-label"
+      }, {
+        "search-label": "Search groceries"
+      })
+    ]);
+
+    await expect(findSearchInput(titledPage as never)).resolves.toBe(titledPage.inputs[0]);
+    await expect(findSearchInput(referencedPage as never)).resolves.toBe(referencedPage.inputs[0]);
+  });
+
+  it("does not find unsafe or readonly search inputs", async () => {
+    const unsafePage = createSearchInputDiscoveryPage([
+      createSearchInputCandidate({
+        placeholder: "Search address"
+      }),
+      createSearchInputCandidate({
+        type: "search",
+        title: "Search phone"
+      })
+    ]);
+    const readonlyPage = createSearchInputDiscoveryPage([
+      createSearchInputCandidate({
+        placeholder: "Search products",
+        readonly: ""
+      })
+    ]);
+
+    await expect(findSearchInput(unsafePage as never)).resolves.toBeUndefined();
+    await expect(findSearchInput(readonlyPage as never)).resolves.toBeUndefined();
   });
 
   it("recognizes only explicit product add control labels", () => {
@@ -586,6 +640,72 @@ function createProductAddLocator(
     },
     scrollIntoViewIfNeeded: async () => undefined,
     click
+  };
+}
+
+function createSearchInputDiscoveryPage(inputs: ReturnType<typeof createSearchInputCandidate>[]) {
+  return {
+    inputs,
+    locator: (selector: string) => {
+      const directSearchInputs = inputs.filter((input) => input.direct);
+      if (selector.includes("placeholder*='Search'")) {
+        return createLocatorCollection(directSearchInputs);
+      }
+
+      if (selector.includes("input:not([type])")) {
+        return createLocatorCollection(inputs);
+      }
+
+      return createLocatorCollection([]);
+    }
+  };
+}
+
+function createLocatorCollection<T>(items: T[]) {
+  return {
+    count: async () => items.length,
+    nth: (index: number) => items[index]
+  };
+}
+
+function createSearchInputCandidate(
+  attributes: Record<string, string | null>,
+  referencedLabels: Record<string, string> = {}
+) {
+  const direct =
+    attributes.type === "search" ||
+    /search/i.test(attributes.placeholder ?? "") ||
+    /search/i.test(attributes["aria-label"] ?? "");
+
+  return {
+    direct,
+    isVisible: async () => true,
+    innerText: async () => "",
+    getAttribute: async (name: string) => attributes[name] ?? null,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("aria-labelledby") || source.includes("aria-describedby")) {
+        return `${attributes["aria-labelledby"] ?? ""} ${attributes["aria-describedby"] ?? ""}`
+          .split(/\s+/)
+          .map((id) => id.trim())
+          .filter(Boolean)
+          .map((id) => referencedLabels[id] ?? "")
+          .filter(Boolean);
+      }
+
+      if (source.includes("hasDisabledState") || source.includes("HTMLButtonElement")) {
+        return false;
+      }
+
+      if (source.includes("HTMLInputElement")) {
+        return attributes.readonly === undefined && attributes["aria-readonly"]?.toLowerCase() !== "true";
+      }
+
+      return false;
+    },
+    fill: async () => undefined,
+    pressSequentially: async () => undefined,
+    press: async () => undefined
   };
 }
 

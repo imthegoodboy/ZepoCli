@@ -162,32 +162,52 @@ async function openSearch(page: Page, query: string): Promise<void> {
 async function searchFromHome(page: Page, query: string): Promise<boolean> {
   await gotoWithAccessProtection(page, BASE_URL);
 
-  const directInput = page
-    .locator("input[type='search'], input[placeholder*='Search' i], input[aria-label*='Search' i]")
-    .first();
-
-  if ((await directInput.isVisible().catch(() => false)) && (await isEditableTextInput(directInput))) {
+  const directInput = await findSearchInput(page);
+  if (directInput) {
     await submitSearchInput(page, directInput, query);
     return true;
   }
 
   if (await clickSearchTrigger(page)) {
-    const inputAfterClick = page
-      .locator("input[type='search'], input[placeholder*='Search' i], input[aria-label*='Search' i]")
-      .first();
-    if (!(await inputAfterClick.isVisible().catch(() => false))) {
+    const inputAfterClick = await findSearchInput(page);
+    if (!inputAfterClick) {
       return false;
     }
-
-    if (!(await isEditableTextInput(inputAfterClick))) {
-      return false;
-    }
-
     await submitSearchInput(page, inputAfterClick, query);
     return true;
   }
 
   return false;
+}
+
+export async function findSearchInput(page: Page): Promise<Locator | undefined> {
+  const inputs = page.locator("input[type='search'], input[placeholder*='Search' i], input[aria-label*='Search' i]");
+  const directCount = await locatorCount(inputs);
+  for (let index = 0; index < Math.min(directCount, 5); index += 1) {
+    const input = inputs.nth(index);
+    if (await isSafeSearchInput(input)) {
+      return input;
+    }
+  }
+
+  const candidateInputs = page.locator("input:not([type]), input[type='search'], input[type='text'], textarea");
+  const count = await locatorCount(candidateInputs);
+  for (let index = 0; index < Math.min(count, 20); index += 1) {
+    const input = candidateInputs.nth(index);
+    if (await isSafeSearchInput(input)) {
+      return input;
+    }
+  }
+
+  return undefined;
+}
+
+async function locatorCount(locator: Locator): Promise<number> {
+  const countable = locator as {
+    count?: () => Promise<number>;
+  };
+
+  return typeof countable.count === "function" ? countable.count().catch(() => 0) : 0;
 }
 
 export async function clickSearchTrigger(page: Page): Promise<boolean> {
@@ -248,6 +268,26 @@ export function isSearchTriggerClickText(text: string): boolean {
   return SEARCH_TRIGGER_CLICK_LABELS.some((label) => label.test(normalized));
 }
 
+export function isSearchInputText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized || isUnsafeSearchInputText(normalized)) {
+    return false;
+  }
+
+  return /\bsearch\b/i.test(normalized);
+}
+
+export function isUnsafeSearchInputText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay|phone|mobile|otp|coupon)\b/i.test(
+    normalized
+  );
+}
+
 export function isUnsafeSearchTriggerClickText(text: string): boolean {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (!normalized) {
@@ -257,6 +297,27 @@ export function isUnsafeSearchTriggerClickText(text: string): boolean {
   return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay)\b/i.test(
     normalized
   );
+}
+
+async function isSafeSearchInput(input: Locator): Promise<boolean> {
+  if (!(await input.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  if (!(await isEditableTextInput(input))) {
+    return false;
+  }
+
+  const labels = await readControlLabels(input);
+  if (labels.some(isUnsafeSearchInputText)) {
+    return false;
+  }
+
+  if (labels.some(isSearchInputText)) {
+    return true;
+  }
+
+  return (await input.getAttribute("type").catch(() => ""))?.toLowerCase() === "search";
 }
 
 export function isProductAddControlText(text: string): boolean {

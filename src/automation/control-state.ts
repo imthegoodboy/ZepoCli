@@ -1,15 +1,16 @@
 import type { Locator } from "playwright";
 
 export async function readControlLabels(locator: Locator): Promise<string[]> {
-  const [text, ariaLabel, title, ariaDescription, referencedLabels] = await Promise.all([
+  const [text, ariaLabel, title, placeholder, ariaDescription, referencedLabels] = await Promise.all([
     locator.innerText().catch(() => ""),
     locator.getAttribute("aria-label").catch(() => ""),
     locator.getAttribute("title").catch(() => ""),
+    locator.getAttribute("placeholder").catch(() => ""),
     locator.getAttribute("aria-description").catch(() => ""),
     readReferencedControlLabels(locator)
   ]);
 
-  return [text, ariaLabel ?? "", title ?? "", ariaDescription ?? "", ...referencedLabels].filter(
+  return [text, ariaLabel ?? "", title ?? "", placeholder ?? "", ariaDescription ?? "", ...referencedLabels].filter(
     (label) => label.replace(/\s+/g, " ").trim().length > 0
   );
 }
