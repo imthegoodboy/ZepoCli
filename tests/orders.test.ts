@@ -107,6 +107,9 @@ describe("order automation helpers", () => {
     expect(isEmptyOrdersText("My Orders No past orders yet")).toBe(true);
     expect(isEmptyOrdersText("My Orders Reorder Order summary")).toBe(false);
     expect(requireReadableOrders("My Orders No orders yet")).toEqual([]);
+    expect(() => requireReadableOrders("My Orders No orders yet Reorder Order summary")).toThrow(
+      "Zepto orders page did not expose readable order history."
+    );
     expect(requireReadableOrders("Order #ZEP1234 Delivered Total ₹249")).toEqual([
       {
         id: "ZEP1234",

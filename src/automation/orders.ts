@@ -114,7 +114,11 @@ export async function readOrders(page: Page): Promise<OrderSnapshot[]> {
 
 export function requireReadableOrders(rawText: string): OrderSnapshot[] {
   const orders = parseOrdersFromText(rawText).slice(0, 20);
-  if (orders.length > 0 || isEmptyOrdersText(rawText)) {
+  if (orders.length > 0) {
+    return orders;
+  }
+
+  if (isEmptyOrdersText(rawText) && !hasUnreadableOrderHistoryEvidence(rawText)) {
     return orders;
   }
 
@@ -355,6 +359,17 @@ export function isEmptyOrdersText(text: string): boolean {
   }
 
   return /\b(no orders|no past orders|no order history|you have not placed any orders|haven't placed any orders|no recent orders)\b/i.test(
+    normalized
+  );
+}
+
+function hasUnreadableOrderHistoryEvidence(text: string): boolean {
+  const normalized = normalizeLabelText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(reorder|order again|repeat order|track order|order summary|order\s?#|eta|delivered|confirmed|packed|out for delivery|on the way|arriving|cancelled|refunded)\b/i.test(
     normalized
   );
 }

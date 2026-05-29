@@ -100,8 +100,8 @@ Implementation consequence:
 - Cart and order totals should be parsed only from explicit total/payable labels. Do not infer totals from arbitrary product, fee, discount, or badge prices.
 - Prompting commands must reject `--no-input` before opening browsers or waiting for user input.
 - Logout must remove cached user data such as searches, cart snapshots, addresses, and order snapshots.
-- `zepo cart` may return an empty cart only when Zepto exposes explicit empty-cart copy. If the cart page opens but items are unreadable, fail clearly instead of treating the cart as empty.
-- `zepo history` may return an empty list only when Zepto exposes explicit empty-order-history copy. If the orders page opens but order cards are unreadable, fail clearly instead of treating history as empty.
+- `zepo cart` may return an empty cart only when Zepto exposes explicit empty-cart copy without non-empty cart signals such as item counts, bill/total, checkout, quantity, or remove controls. If the cart page opens but items are unreadable, fail clearly instead of treating the cart as empty.
+- `zepo history` may return an empty list only when Zepto exposes explicit empty-order-history copy without unreadable order signals such as reorder, order summary, track order, ETA, or status text. If the orders page opens but order cards are unreadable, fail clearly instead of treating history as empty.
 - `zepo track` must require a readable latest-order status or ETA. Do not present a bare order id or incomplete tracking text as a tracked order.
 - Address manager navigation should click only visible, enabled, explicit address controls; avoid broad `/address/` or `/location/` text clicks that can match current-location, selected-address, or final address-confirmation copy.
 - Address add should click only visible, enabled, explicit add-address controls; never click current-location sharing, save/confirm address, selected-address copy, or mixed-label controls where any label is unsafe.

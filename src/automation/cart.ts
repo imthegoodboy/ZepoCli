@@ -196,7 +196,11 @@ export function requireReadableCartSnapshot(rawText: string): CartSnapshot {
     rawText
   };
 
-  if ((snapshot.items.length > 0 && hasCartSurfaceEvidence(rawText)) || isEmptyCartText(rawText)) {
+  if (snapshot.items.length > 0 && hasCartSurfaceEvidence(rawText)) {
+    return snapshot;
+  }
+
+  if (isEmptyCartText(rawText) && !hasNonEmptyCartEvidence(rawText)) {
     return snapshot;
   }
 
@@ -569,6 +573,17 @@ function normalizeTotalLabel(label: string): string {
 function isCartTotalStopLine(line: string): boolean {
   return /\b(delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|address|cart|qty|quantity|remove|delete|item total|subtotal|to pay|grand total|payable|bill total)\b/i.test(
     line
+  );
+}
+
+function hasNonEmptyCartEvidence(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b([1-9]\d*\s+items?|view bill|bill summary|item total|grand total|to pay|payable|checkout|proceed to checkout|qty|quantity|remove|delete|decrease)\b/i.test(
+    normalized
   );
 }
 

@@ -91,6 +91,10 @@ describe("cart automation helpers", () => {
       items: [],
       total: undefined
     });
+    expect(requireReadableCartSnapshot("My Cart Your cart is empty 0 items Add items to continue")).toMatchObject({
+      items: [],
+      total: undefined
+    });
     expect(requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toMatchObject({
       items: [
         {
@@ -103,6 +107,9 @@ describe("cart automation helpers", () => {
       total: undefined
     });
     expect(() => requireReadableCartSnapshot("Cart 2 items View bill To pay Rs 120")).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
+    expect(() => requireReadableCartSnapshot("My Cart Your cart is empty 2 items View bill To pay Rs 120")).toThrow(
       "Zepto cart page did not expose readable cart items."
     );
   });
