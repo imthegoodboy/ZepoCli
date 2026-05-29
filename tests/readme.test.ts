@@ -34,7 +34,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("restrict access through non-Zepto interfaces or automatic devices");
     expect(readme).toContain("403/429-style block pages");
     expect(readme).toContain("access protection");
-    expect(readme).toContain("Checkout handoff controls are rejected if any visible or accessible label contains final-payment or final-order text");
+    expect(readme).toContain(
+      "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, or final-order text"
+    );
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");
     expect(readme).toContain("Search, account, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");

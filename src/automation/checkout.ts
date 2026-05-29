@@ -106,7 +106,10 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
     /\b(payment method|payment methods|select payment|choose payment|payment option|payment options|payment mode)\b/i.test(
       normalized
     ) ||
-    /^(payment|payments|upi|cards?|credit card|debit card|wallet|cash on delivery|cod)$/i.test(normalized) ||
+    /\b(upi|cards?|credit\s*(?:\/|and)?\s*debit|debit\s*(?:\/|and)?\s*credit|credit card|debit card|wallet|net\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\b/i.test(
+      normalized
+    ) ||
+    /^(payment|payments)$/i.test(normalized) ||
     /\b(complete payment|confirm payment|pay securely|pay with|pay using|pay via|pay by|order now|review order)\b/i.test(
       normalized
     ) ||

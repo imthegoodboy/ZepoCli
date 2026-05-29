@@ -33,7 +33,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Always hand checkout/payment to a visible Zepto browser page.
    - Checkout automation may open checkout/payment handoff only; never click `Place Order`, `Pay Now`, `Confirm Order`, or equivalent final order-placement/payment controls.
    - Checkout handoff clicks should target enabled, explicit checkout/proceed-to-checkout/proceed-to-pay style button controls; avoid generic `continue`, bare `proceed`, `checkout and pay`, or amount-bearing pay text that can match unrelated or final-payment page actions.
-   - Reject a checkout handoff control when any visible or accessible label contains final-payment/order text, even if another label looks like a safe checkout handoff.
+   - Reject a checkout handoff control when any visible or accessible label contains payment-method/final-payment/order text, even if another label looks like a safe checkout handoff.
    - Address automation may open the add-address UI only; never click current-location sharing, browser location-access/GPS permission, or final address-confirmation controls. Reject address manager/add-address controls when any visible or accessible label contains location-consent or final address-confirmation text, even if another label looks safe.
    - Never store UPI IDs, card numbers, CVV, OTPs, or payment tokens.
    - Successful `zepo checkout --json` output must keep payment/order placement explicitly unconfirmed and include `orderStatusCommand: "zepo track"` so agents know what to run after Zepto-side payment.

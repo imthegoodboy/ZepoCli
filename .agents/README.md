@@ -83,7 +83,7 @@ Implementation consequence:
 - The CLI must not collect or store payment credentials.
 - The CLI should reuse the user's own session and should not bypass platform controls.
 - Successful `zepo checkout --json` output must not imply payment or order placement succeeded; keep `paymentStatus` and `orderPlacement` explicitly unconfirmed, include `orderStatusCommand: "zepo track"`, and tell agents to run `zepo track` after Zepto payment.
-- Checkout handoff controls must be rejected when any visible or accessible label contains unsafe final-payment/order text, even if another label looks like a safe checkout handoff.
+- Checkout handoff controls must be rejected when any visible or accessible label contains unsafe payment-method/final-payment/order text, even if another label looks like a safe checkout handoff.
 - `zepo search` may use real product cards visible on Zepto's public homepage as a fallback when the search page is empty before location setup; never synthesize product results from search suggestions or popular-search text.
 - Search navigation should use a visible, enabled, editable search input or explicit enabled search-control labels. Search input discovery may use placeholder/title/description/referenced accessible labels, but must reject mixed-label search controls when any visible or accessible label points at popular-search, result-list, cart, account, address, phone/OTP, checkout, payment, coupon, or order actions.
 - `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.
