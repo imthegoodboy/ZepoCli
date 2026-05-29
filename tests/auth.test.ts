@@ -34,6 +34,8 @@ describe("login state inference", () => {
   it("detects logged-in account text when login text is absent", () => {
     expect(inferLoginStateFromText("Account My Orders Wallet")).toBe("logged-in");
     expect(inferLoginStateFromText("Profile Wallet")).toBe("logged-in");
+    expect(inferLoginStateFromText("Account My Orders Wallet Phone number")).toBe("logged-in");
+    expect(inferLoginStateFromText("Profile Wallet Mobile number")).toBe("logged-in");
     expect(inferLoginStateFromText("Log out")).toBe("logged-in");
   });
 
@@ -54,7 +56,7 @@ describe("login state inference", () => {
 
   it("does not treat logged-in account pages with phone fields as login-required", async () => {
     const page = createLoginStatePage({
-      bodyText: "Account My Orders Wallet Profile",
+      bodyText: "Account My Orders Wallet Profile Phone number",
       phoneInputVisible: true
     });
 

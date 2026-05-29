@@ -626,11 +626,13 @@ describe("browser automation helpers", () => {
     expect(isLoginRequiredText("Login Cart Your cart is empty")).toBe(true);
     expect(isLoginRequiredText("Search for milk Cart Account Profile")).toBe(false);
     expect(isLoginRequiredText("Account My Orders Wallet")).toBe(false);
+    expect(isLoginRequiredText("Account Profile My Orders Phone number")).toBe(false);
+    expect(isLoginRequiredText("Profile Wallet Mobile number")).toBe(false);
   });
 
   it("does not treat logged-in account pages with phone fields as expired auth", async () => {
     const page = createLoginStatePage({
-      bodyText: "Account My Orders Wallet Profile",
+      bodyText: "Account My Orders Wallet Profile Phone number",
       phoneInputVisible: true
     });
 

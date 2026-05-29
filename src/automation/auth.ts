@@ -23,8 +23,9 @@ export const ACCOUNT_SURFACE_CLICK_LABELS = [
   /^log in\s*\/\s*sign up$/i
 ] as const;
 const PHONE_PREFILL_TYPE_DELAY_MS = 45;
-const LOGIN_REQUIRED_TEXT_PATTERN =
-  /\b(enter mobile|mobile number|phone number|otp|verify otp|verify mobile|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
+const STRONG_LOGIN_REQUIRED_TEXT_PATTERN =
+  /\b(enter (?:mobile|phone)|otp|verify otp|verify mobile|verify phone|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
+const LOGIN_FIELD_LABEL_TEXT_PATTERN = /\b(mobile number|phone number)\b/i;
 
 export async function openLoginFlow(page: Page, phone?: string): Promise<void> {
   await openAccountSurface(page);
@@ -130,12 +131,16 @@ export function inferLoginStateFromText(text: string): LoginState {
     return "unknown";
   }
 
-  if (LOGIN_REQUIRED_TEXT_PATTERN.test(normalized)) {
+  if (STRONG_LOGIN_REQUIRED_TEXT_PATTERN.test(normalized)) {
     return "login-required";
   }
 
   if (hasLoggedInAccountEvidence(normalized) && !/\blogin\b/i.test(normalized)) {
     return "logged-in";
+  }
+
+  if (LOGIN_FIELD_LABEL_TEXT_PATTERN.test(normalized)) {
+    return "login-required";
   }
 
   if (/\blogin\b/i.test(normalized)) {

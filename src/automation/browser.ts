@@ -30,8 +30,9 @@ export const LAST_ACCESS_CHALLENGE_META_KEY = "last_access_challenge_at";
 const ACCESS_CHALLENGE_MESSAGE = "Zepto is asking for verification or blocking automated access.";
 const ACCESS_CHALLENGE_TEXT_PATTERN =
   /\b(captcha|cloudflare|security check|verify you are human|are you human|unusual traffic|automated traffic|access denied|access forbidden|request blocked|request forbidden|too many requests|too many attempts|rate limit|temporarily blocked|temporarily restricted|you have been blocked|checking if the site connection is secure|checking your browser|just a moment|enable javascript and cookies)\b|(?:\b(?:http|error|status)\s*(?:403|429)\b)|(?:\b(?:403|429)\s*(?:forbidden|too many requests)\b)/i;
-const LOGIN_REQUIRED_TEXT_PATTERN =
-  /\b(enter mobile|mobile number|phone number|otp|verify otp|verify mobile|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
+const STRONG_LOGIN_REQUIRED_TEXT_PATTERN =
+  /\b(enter (?:mobile|phone)|otp|verify otp|verify mobile|verify phone|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
+const LOGIN_FIELD_LABEL_TEXT_PATTERN = /\b(mobile number|phone number)\b/i;
 const PROCESS_CLEANUP_SIGNALS = ["SIGINT", "SIGTERM"] as const;
 const SIGNAL_EXIT_CODES: Record<(typeof PROCESS_CLEANUP_SIGNALS)[number], number> = {
   SIGINT: 130,
@@ -996,7 +997,15 @@ export function isLoginRequiredText(text: string): boolean {
     return false;
   }
 
-  if (LOGIN_REQUIRED_TEXT_PATTERN.test(normalized)) {
+  if (STRONG_LOGIN_REQUIRED_TEXT_PATTERN.test(normalized)) {
+    return true;
+  }
+
+  if (isLoggedInAccountText(normalized)) {
+    return false;
+  }
+
+  if (LOGIN_FIELD_LABEL_TEXT_PATTERN.test(normalized)) {
     return true;
   }
 
