@@ -57,7 +57,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Pace browser automation, keep headless burst limits conservative, and fail clearly if Zepto shows access challenges, rate limits, blocked-request pages, or suspicious empty Zepto responses.
    - Treat 403/429-style block pages, browser-check pages, temporary-restriction copy, and "enable JavaScript/cookies" checks as access challenges; stop or switch to a human-visible flow instead of trying to route around them.
    - Treat both `zepto.com` and legacy `zeptonow.com` origins as Zepto platform surfaces for access-challenge detection.
-   - Visible interactive runs may wait for the user to complete Zepto-controlled verification; headless runs must cool down after detected challenges instead of retrying.
+   - Visible interactive runs may wait for the user to complete Zepto-controlled verification, including Zepto 403/429 navigation challenges; headless runs must cool down after detected challenges instead of retrying.
    - Do not silently return fake cart/order/address data.
    - Product/cart/order parsers must ignore UI badges, generic image alt text, fee rows, and summary rows instead of treating them as real user data.
    - `zepo search` may fall back to real product cards visible on Zepto's public homepage when Zepto's search page is empty before location setup; never synthesize product results from search suggestions, popular-search text, or AI guesses.

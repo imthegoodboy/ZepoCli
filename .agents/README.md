@@ -56,7 +56,7 @@ Storage:
 
 ## Researched Zepto Facts
 
-Sources checked on 2026-05-28:
+Sources checked on 2026-05-29:
 
 - Official site: https://www.zepto.com/
 - Terms: https://www.zepto.com/s/terms-of-service
@@ -114,7 +114,7 @@ Implementation consequence:
 - Browser launch failures should be user-facing errors with `prepare:browsers` and `zepo doctor` recovery hints, not raw Playwright stack traces.
 - Runtime setup failures for blank, invalid, or unwritable `--data-dir` values should be user-facing errors, not raw filesystem or SQLite traces.
 - Disable debug HTML/screenshot capture for account-dependent browser flows such as live status, login, cart, address, checkout, orders, and reorder.
-- Do not add stealth automation, anti-detection bypasses, CAPTCHA bypasses, or aggressive retries. Serialize browser automation per data directory, pace runs, keep headless burst limits conservative, and fail clearly when Zepto shows access challenges, rate-limit style pages, or suspicious empty Zepto responses. Visible interactive runs may wait for the user to complete Zepto-controlled verification; after a detected challenge or headless burst throttle, agents should wait for the reported retry delay or use `--visible` instead of looping. Agents should treat `browserAutomation.ready: false` as a stop signal until the listed reasons clear.
+- Do not add stealth automation, anti-detection bypasses, CAPTCHA bypasses, or aggressive retries. Serialize browser automation per data directory, pace runs, keep headless burst limits conservative, and fail clearly when Zepto shows access challenges, rate-limit style pages, Zepto 403/429 navigation responses, or suspicious empty Zepto responses. Visible interactive runs may wait for the user to complete Zepto-controlled verification; after a detected challenge or headless burst throttle, agents should wait for the reported retry delay or use `--visible` instead of looping. Agents should treat `browserAutomation.ready: false` as a stop signal until the listed reasons clear.
 - Treat 403/429-style block pages, browser-check pages, temporary-restriction copy, and "enable JavaScript/cookies" checks as access challenges; stop or switch to a human-visible flow instead of trying to route around them.
 - Treat both `zepto.com` and legacy `zeptonow.com` origins as Zepto platform surfaces for access-challenge detection.
 - Do not hardcode stale browser identity such as fixed Chrome user agents. Let Playwright Chromium report its real browser identity while keeping locale, timezone, pacing, and visible handoffs explicit.

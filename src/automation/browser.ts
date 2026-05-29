@@ -775,8 +775,9 @@ export async function gotoZepto(page: Page, path = "/"): Promise<void> {
 }
 
 export async function gotoWithAccessProtection(page: Page, url: string | URL): Promise<void> {
-  const response = await page.goto(String(url), { waitUntil: "domcontentloaded" });
-  assertNoAccessChallengeResponse(response);
+  const targetUrl = String(url);
+  const response = await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+  await handleNavigationAccessChallengeResponse(page, response, targetUrl);
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
   await assertNoAccessChallenge(page);
 }
@@ -792,6 +793,51 @@ export function assertNoAccessChallengeResponse(response: Pick<Response, "status
     hint: `Zepto returned HTTP ${status}. Stop repeated automation, open the flow with \`--visible\`, and retry later. Do not bypass platform checks.`,
     retryAfterMs: ACCESS_CHALLENGE_COOLDOWN_MS
   });
+}
+
+async function handleNavigationAccessChallengeResponse(
+  page: Page,
+  response: Response | null,
+  fallbackUrl: string
+): Promise<void> {
+  const signal = navigationAccessChallengeSignal(response, fallbackUrl);
+  if (!signal) {
+    return;
+  }
+
+  const state = markPageAccessChallengeDetected(page);
+  if (state) {
+    state.accessChallengeResponse = signal;
+  }
+
+  if (state?.allowManualAccessChallengeResolution) {
+    const resolved = await waitForVisibleAccessChallengeResolution(page, state.manualAccessChallengeWaitMs);
+    if (resolved) {
+      state.accessChallengeResponse = undefined;
+      return;
+    }
+  }
+
+  throw accessChallengeResponseError(signal);
+}
+
+function navigationAccessChallengeSignal(
+  response: Response | null | undefined,
+  fallbackUrl: string
+): AccessChallengeResponseSignal | undefined {
+  if (!response) {
+    return undefined;
+  }
+
+  const status = response.status();
+  if (status !== 403 && status !== 429) {
+    return undefined;
+  }
+
+  return {
+    status,
+    url: urlWithoutQuery(response.url() || fallbackUrl)
+  };
 }
 
 export async function assertNoAccessChallenge(page: Page): Promise<void> {

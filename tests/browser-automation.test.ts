@@ -22,6 +22,7 @@ import {
   getBrowserAutomationReadiness,
   getBrowserRunLockStatus,
   getHeadlessBrowserThrottleStatus,
+  gotoWithAccessProtection,
   installProcessSignalCleanup,
   isAccessChallengeText,
   isAccessChallengeError,
@@ -445,6 +446,29 @@ describe("browser automation helpers", () => {
     clearPageAccessChallengeHandling(page as never);
   });
 
+  it("lets visible interactive navigation challenges resolve before failing the run", async () => {
+    const page = createNavigationChallengePage(429, "Search for milk");
+    configurePageAccessChallengeHandling(page as never, { allowManualResolution: true, waitMs: 90_000 });
+
+    await expect(gotoWithAccessProtection(page as never, "https://www.zepto.com/search?query=milk")).resolves.toBeUndefined();
+
+    expect(pageHadAccessChallenge(page as never)).toBe(true);
+    expect(page.waitForFunctionCalled).toBe(true);
+    clearPageAccessChallengeHandling(page as never);
+  });
+
+  it("still stops headless navigation challenges instead of retrying around Zepto blocks", async () => {
+    const page = createNavigationChallengePage(403, "Verify you are human before continuing");
+    configurePageAccessChallengeHandling(page as never, { allowManualResolution: false, waitMs: 90_000 });
+
+    await expect(gotoWithAccessProtection(page as never, "https://www.zepto.com/search?query=milk")).rejects.toThrow(
+      "Zepto is asking for verification or blocking automated access."
+    );
+
+    expect(pageHadAccessChallenge(page as never)).toBe(true);
+    clearPageAccessChallengeHandling(page as never);
+  });
+
   it("does not treat blocked non-Zepto or static asset responses as Zepto access challenges", async () => {
     const page = createResponseAwarePage();
     configurePageAccessChallengeHandling(page as never, { allowManualResolution: false, waitMs: 90_000 });
@@ -486,6 +510,26 @@ describe("browser automation helpers", () => {
         innerText: async () => "Search for milk"
       })
     };
+  }
+
+  function createNavigationChallengePage(status: number, bodyText: string) {
+    const page = {
+      waitForFunctionCalled: false,
+      goto: async (url: string | URL) => ({
+        status: () => status,
+        url: () => String(url)
+      }),
+      waitForFunction: async () => {
+        page.waitForFunctionCalled = true;
+      },
+      waitForLoadState: async () => undefined,
+      title: async () => "Zepto",
+      locator: () => ({
+        innerText: async () => bodyText
+      })
+    };
+
+    return page;
   }
 
   function createResponse(status: number, resourceType: string, url: string) {
