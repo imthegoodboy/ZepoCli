@@ -5,6 +5,7 @@ import {
   clickProductAdd,
   filterProductsForQuery,
   increaseProductQuantity,
+  isProductAddControlText,
   isLocationSetupRequiredText,
   isSearchTriggerClickText,
   isUnsafeSearchTriggerClickText,
@@ -102,6 +103,16 @@ describe("search automation helpers", () => {
       expect(SEARCH_TRIGGER_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isSearchTriggerClickText(label)).toBe(false);
       expect(isUnsafeSearchTriggerClickText(label)).toBe(label !== "Research products");
+    }
+  });
+
+  it("recognizes only explicit product add control labels", () => {
+    for (const label of ["ADD", "Add", "Add to Cart", " add to cart "]) {
+      expect(isProductAddControlText(label)).toBe(true);
+    }
+
+    for (const label of ["Add Address", "Add more", "Add coupon", "Added", ""]) {
+      expect(isProductAddControlText(label)).toBe(false);
     }
   });
 

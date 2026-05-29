@@ -14,6 +14,7 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
   /^search for products$/i,
   /^search for groceries$/i
 ] as const;
+const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = "^add(?:\\s+to\\s+cart)?$";
 const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
@@ -258,6 +259,15 @@ export function isUnsafeSearchTriggerClickText(text: string): boolean {
   );
 }
 
+export function isProductAddControlText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return new RegExp(PRODUCT_ADD_CONTROL_PATTERN_SOURCE, "i").test(normalized);
+}
+
 export function isLocationSetupRequiredText(text: string): boolean {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (!normalized) {
@@ -337,9 +347,17 @@ function readClosestProductAddCardText(element: Element): string {
 }
 
 async function extractProducts(page: Page, limit: number): Promise<Product[]> {
-  const rawCards = await page.evaluate((maxCards) => {
+  const rawCards = await page.evaluate(({ maxCards, addControlPatternSource }) => {
+    const addControlPattern = new RegExp(addControlPatternSource, "i");
+    const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
     const visibleText = (element: Element) =>
       element instanceof HTMLElement ? element.innerText : (element.textContent ?? "");
+    const controlLabels = (element: Element) =>
+      [element.textContent ?? "", element.getAttribute("aria-label") ?? "", element.getAttribute("title") ?? ""]
+        .map(normalize)
+        .filter(Boolean);
+    const isProductAddControl = (element: Element) =>
+      controlLabels(element).some((label) => addControlPattern.test(label));
     const isVisible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       const style = window.getComputedStyle(element);
@@ -396,7 +414,7 @@ async function extractProducts(page: Page, limit: number): Promise<Product[]> {
     };
 
     const buttons = Array.from(document.querySelectorAll("button, [role='button']"))
-      .filter((button) => /^add$/i.test((button.textContent ?? "").trim()) && isVisible(button) && isEnabledControl(button))
+      .filter((button) => isProductAddControl(button) && isVisible(button) && isEnabledControl(button))
       .slice(0, maxCards);
 
     const cards = buttons.map((button, index) => {
@@ -426,7 +444,10 @@ async function extractProducts(page: Page, limit: number): Promise<Product[]> {
           href: hrefFor(card)
         };
       });
-  }, Math.max(limit * 3, 12)) as RawProductCard[];
+  }, {
+    maxCards: Math.max(limit * 3, 12),
+    addControlPatternSource: PRODUCT_ADD_CONTROL_PATTERN_SOURCE
+  }) as RawProductCard[];
 
   const parsed: Product[] = [];
   for (const raw of rawCards) {
