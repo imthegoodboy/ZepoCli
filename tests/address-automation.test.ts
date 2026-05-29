@@ -205,8 +205,16 @@ describe("address automation helpers", () => {
       "Use my current location",
       "Allow browser location",
       "Share my location",
+      "Share current location",
       "Detect location",
       "Detect my location",
+      "Detect current location",
+      "Allow location access",
+      "Enable precise location",
+      "Use precise location",
+      "Grant location access",
+      "Turn on location",
+      "Use GPS",
       "Locate me",
       "Enter current location"
     ]) {
@@ -294,7 +302,10 @@ describe("address automation helpers", () => {
   it("does not click add-address controls when any label is unsafe", async () => {
     for (const page of [
       createMixedLabelAddAddressPage("Use current location", "Add Address"),
+      createMixedLabelAddAddressPage("Allow location access", "Add Address"),
+      createMixedLabelAddAddressPage("Use GPS", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Use current location"),
+      createMixedLabelAddAddressPage("Add Address", "Grant location access"),
       createMixedLabelAddAddressPage("Save Address", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Save Address" }),
       createMixedLabelAddAddressPage("Use this address", "Add Address")

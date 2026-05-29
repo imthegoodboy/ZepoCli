@@ -211,7 +211,7 @@ Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage
 - The CLI stops on Zepto verification, 403/429-style block pages, rate-limit text, browser checks, or suspicious empty pages instead of retrying aggressively.
 - Use ZepoCli only where permitted by Zepto and applicable law; do not use it for scraping, monitoring, resale, bulk ordering, or load generation.
 - The CLI does not store payment credentials.
-- Address automation may open the add-address UI through visible, enabled address controls, but must not click current-location sharing or final address-confirmation controls. Address manager/add-address controls are rejected when any visible or accessible label contains location-consent or final address-confirmation text.
+- Address automation may open the add-address UI through visible, enabled address controls, but must not click current-location sharing, browser location-access/GPS permission controls, or final address-confirmation controls. Address manager/add-address controls are rejected when any visible or accessible label contains location-consent or final address-confirmation text.
 - `zepo address use` selects a saved address only when the best matching row is unique; if multiple saved addresses match, rerun with more visible address text such as street, building, or pincode.
 - User-visible checkout/payment remains inside Zepto.
 - Checkout automation may open the checkout/payment handoff through enabled checkout controls, but must not click final order-placement or payment buttons.
