@@ -271,7 +271,7 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
     return true;
   }
 
-  return /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|cancel order)\b/i.test(
+  return /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
     normalized
   );
 }

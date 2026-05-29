@@ -165,7 +165,19 @@ describe("order automation helpers", () => {
       expect(isReorderActionClickText(label)).toBe(true);
     }
 
-    for (const label of ["No orders to reorder", "Order Summary", "Track Order", "Proceed to Pay"]) {
+    for (const label of [
+      "No orders to reorder",
+      "Order Summary",
+      "Track Order",
+      "Proceed to Pay",
+      "Refund",
+      "Return Order",
+      "Help",
+      "Support",
+      "Invoice",
+      "Receipt",
+      "Rate Order"
+    ]) {
       expect(REORDER_ACTION_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isReorderActionClickText(label)).toBe(false);
     }
@@ -173,6 +185,13 @@ describe("order automation helpers", () => {
     expect(isUnsafeReorderActionClickText("Reorder")).toBe(false);
     expect(isUnsafeReorderActionClickText("Proceed to Pay")).toBe(true);
     expect(isUnsafeReorderActionClickText("Cancel Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Order Summary")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Refund")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Return Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Support")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Invoice")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Receipt")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Rate Order")).toBe(true);
     expect(isUnsafeReorderActionClickText("Again")).toBe(true);
     expect(isUnsafeReorderActionClickText("Open")).toBe(true);
   });
@@ -282,7 +301,13 @@ describe("order automation helpers", () => {
       createMixedLabelReorderPage("Proceed to Pay", "Reorder"),
       createMixedLabelReorderPage("Again", "Reorder"),
       createMixedLabelReorderPage("Reorder", "Reorder", { title: "Cancel Order" }),
-      createMixedLabelReorderPage("Reorder", "Cancel Order")
+      createMixedLabelReorderPage("Reorder", "Cancel Order"),
+      createMixedLabelReorderPage("Reorder", "Reorder", { title: "Refund" }),
+      createMixedLabelReorderPage("Reorder", "Return Order"),
+      createMixedLabelReorderPage("Reorder", "Reorder", { title: "Support" }),
+      createMixedLabelReorderPage("Reorder", "Invoice"),
+      createMixedLabelReorderPage("Reorder", "Receipt"),
+      createMixedLabelReorderPage("Reorder", "Rate Order")
     ]) {
       await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
 
