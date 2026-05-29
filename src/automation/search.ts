@@ -16,6 +16,7 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
 ] as const;
 const PAYMENT_METHOD_LABEL_PATTERN_SOURCE =
   "\\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|credit\\s*(?:/|and)?\\s*debit|debit\\s*(?:/|and)?\\s*credit|credit card|debit card|wallet|net\\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\\b";
+const PAYMENT_METHOD_LABEL_PATTERN = new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i");
 const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = "^add(?:\\s+to\\s+cart)?$";
 const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
   `^(?:added|out\\s+of\\s+stock|sold\\s+out|unavailable|remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!to\\s+cart$).+|\\b(address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}`;
@@ -285,8 +286,10 @@ export function isUnsafeSearchInputText(text: string): boolean {
     return false;
   }
 
-  return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay|phone|mobile|otp|coupon)\b/i.test(
-    normalized
+  return (
+    /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay|phone|mobile|otp|coupon)\b/i.test(
+      normalized
+    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
   );
 }
 
@@ -296,8 +299,10 @@ export function isUnsafeSearchTriggerClickText(text: string): boolean {
     return false;
   }
 
-  return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay)\b/i.test(
-    normalized
+  return (
+    /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay)\b/i.test(
+      normalized
+    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
   );
 }
 
@@ -363,7 +368,7 @@ export function isUnsafeQuantityIncreaseControlText(text: string): boolean {
   return (
     /\b(decrease|decrement|remove|delete|minus|add more|add coupon|apply coupon|coupon|promo|voucher|address|location|checkout|payment|pay|place order|confirm order|continue|proceed)\b|^[-−]$|^(?:qty|quantity)\s*[-−]$/i.test(
       normalized
-    ) || new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i").test(normalized)
+    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
   );
 }
 

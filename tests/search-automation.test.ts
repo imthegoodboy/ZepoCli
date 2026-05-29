@@ -109,7 +109,10 @@ describe("search automation helpers", () => {
       "Go",
       "Submit",
       "Next",
-      "Continue"
+      "Continue",
+      "UPI",
+      "COD",
+      "Wallet"
     ]) {
       expect(SEARCH_TRIGGER_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isSearchTriggerClickText(label)).toBe(false);
@@ -123,7 +126,16 @@ describe("search automation helpers", () => {
       expect(isUnsafeSearchInputText(label)).toBe(false);
     }
 
-    for (const label of ["Search results", "Search address", "Search phone", "Search coupon", "Popular searches"]) {
+    for (const label of [
+      "Search results",
+      "Search address",
+      "Search phone",
+      "Search coupon",
+      "Search UPI",
+      "Search COD",
+      "Search wallet",
+      "Popular searches"
+    ]) {
       expect(isSearchInputText(label)).toBe(false);
       expect(isUnsafeSearchInputText(label)).toBe(true);
     }
@@ -155,6 +167,14 @@ describe("search automation helpers", () => {
       createSearchInputCandidate({
         type: "search",
         title: "Search phone"
+      }),
+      createSearchInputCandidate({
+        placeholder: "Search products",
+        "aria-description": "UPI"
+      }),
+      createSearchInputCandidate({
+        type: "search",
+        title: "Cash on Delivery"
       })
     ]);
     const readonlyPage = createSearchInputDiscoveryPage([
@@ -293,7 +313,9 @@ describe("search automation helpers", () => {
     for (const page of [
       createMixedLabelSearchTriggerPage("Cart", "Search"),
       createMixedLabelSearchTriggerPage("Go", "Search"),
+      createMixedLabelSearchTriggerPage("UPI", "Search"),
       createMixedLabelSearchTriggerPage("Search", "Search", { title: "Cart" }),
+      createMixedLabelSearchTriggerPage("Search", "Search", { "aria-description": "Cash on Delivery" }),
       createMixedLabelSearchTriggerPage("Search", "Search results for milk")
     ]) {
       await expect(clickSearchTrigger(page as never)).resolves.toBe(false);

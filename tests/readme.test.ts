@@ -40,7 +40,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");
     expect(readme).toContain("Search, account, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");
-    expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment, bill, or final order text");
+    expect(readme).toContain("payment-method/payment, coupon, or order actions");
+    expect(readme).toContain("checkout, payment-method/payment, or final-order action");
+    expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text");
     expect(readme).toContain(
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'
     );
