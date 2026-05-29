@@ -264,6 +264,7 @@ describe("address automation helpers", () => {
       createMixedLabelAddressManagerPage("Use current location", "Delivery Address"),
       createMixedLabelAddressManagerPage("Delivery Address", "Use current location"),
       createMixedLabelAddressManagerPage("Confirm Address", "Delivery Address"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Use current location" }),
       createMixedLabelAddressManagerPage("Continue", "Delivery Address")
     ]) {
       await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
@@ -295,6 +296,7 @@ describe("address automation helpers", () => {
       createMixedLabelAddAddressPage("Use current location", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Use current location"),
       createMixedLabelAddAddressPage("Save Address", "Add Address"),
+      createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Save Address" }),
       createMixedLabelAddAddressPage("Use this address", "Add Address")
     ]) {
       await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
@@ -397,14 +399,18 @@ describe("address automation helpers", () => {
   });
 });
 
-function createMixedLabelAddressManagerPage(text: string, ariaLabel: string) {
+function createMixedLabelAddressManagerPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     managerClicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
       if (role === "button" && (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))) {
         return createVisibleLocatorWithAria(text, ariaLabel, async () => {
           page.managerClicked = true;
-        });
+        }, attributes);
       }
 
       return createHiddenLocator();
@@ -415,14 +421,18 @@ function createMixedLabelAddressManagerPage(text: string, ariaLabel: string) {
   return page;
 }
 
-function createMixedLabelAddAddressPage(text: string, ariaLabel: string) {
+function createMixedLabelAddAddressPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     addAddressClicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
       if (role === "button" && (matchesLocatorName(options.name, text) || matchesLocatorName(options.name, ariaLabel))) {
         return createVisibleLocatorWithAria(text, ariaLabel, async () => {
           page.addAddressClicked = true;
-        });
+        }, attributes);
       }
 
       return createHiddenLocator();
@@ -593,7 +603,12 @@ function createTaggedAddressSelectionPage(
   return page;
 }
 
-function createVisibleLocatorWithAria(text: string, ariaLabel: string, click: () => Promise<void>) {
+function createVisibleLocatorWithAria(
+  text: string,
+  ariaLabel: string,
+  click: () => Promise<void>,
+  attributes: Record<string, string | null> = {}
+) {
   return {
     first() {
       return this;
@@ -603,7 +618,7 @@ function createVisibleLocatorWithAria(text: string, ariaLabel: string, click: ()
     },
     isVisible: async () => true,
     innerText: async () => text,
-    getAttribute: async (name: string) => (name === "aria-label" ? ariaLabel : null),
+    getAttribute: async (name: string) => (name === "aria-label" ? ariaLabel : attributes[name] ?? null),
     evaluate: async () => false,
     click
   };

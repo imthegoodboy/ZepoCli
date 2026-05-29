@@ -4,7 +4,7 @@ import type { Address } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { looksLikeUnit, normalizeText } from "../utils/format.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
-import { isDisabledControl } from "./control-state.js";
+import { isDisabledControl, readControlLabels } from "./control-state.js";
 
 const ADDRESS_DETAIL_PATTERN =
   "\\b(house|flat|road|street|sector|phase|apartment|building|floor|tower|block|pin|pincode|india|bengaluru|bangalore|mumbai|delhi|pune|hyderabad|chennai|kolkata|ahmedabad|gurugram|gurgaon|noida)\\b|\\d{3,}";
@@ -71,9 +71,7 @@ async function clickSafeAddressManagerControl(locator: Locator): Promise<boolean
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => normalizeText(label).length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeAddressAutomationClickText)) {
     return false;
   }
@@ -464,9 +462,7 @@ async function clickSafeAddAddressControl(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => normalizeText(label).length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeAddressAutomationClickText)) {
     return false;
   }

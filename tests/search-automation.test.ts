@@ -117,6 +117,7 @@ describe("search automation helpers", () => {
     for (const page of [
       createMixedLabelSearchTriggerPage("Cart", "Search"),
       createMixedLabelSearchTriggerPage("Go", "Search"),
+      createMixedLabelSearchTriggerPage("Search", "Search", { title: "Cart" }),
       createMixedLabelSearchTriggerPage("Search", "Search results for milk")
     ]) {
       await expect(clickSearchTrigger(page as never)).resolves.toBe(false);
@@ -497,7 +498,11 @@ function createDisabledSearchTriggerPage() {
   return page;
 }
 
-function createMixedLabelSearchTriggerPage(text: string, ariaLabel: string) {
+function createMixedLabelSearchTriggerPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -508,7 +513,7 @@ function createMixedLabelSearchTriggerPage(text: string, ariaLabel: string) {
         return {
           ...createVisibleLocator(text, async () => {
             page.clicked = true;
-          }, { "aria-label": ariaLabel }),
+          }, { "aria-label": ariaLabel, ...attributes }),
           filter() {
             return createHiddenLocator();
           }

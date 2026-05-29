@@ -230,6 +230,7 @@ describe("order automation helpers", () => {
     for (const page of [
       createMixedLabelOrdersNavigationPage("Checkout", "My Orders"),
       createMixedLabelOrdersNavigationPage("Open", "My Orders"),
+      createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { title: "Checkout" }),
       createMixedLabelOrdersNavigationPage("My Orders", "Track Order")
     ]) {
       await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(false);
@@ -242,6 +243,7 @@ describe("order automation helpers", () => {
     for (const page of [
       createMixedLabelAccountMenuPage("My Orders", "Account"),
       createMixedLabelAccountMenuPage("Open", "Account"),
+      createMixedLabelAccountMenuPage("Account", "Account", { title: "Cart" }),
       createMixedLabelAccountMenuPage("Account", "Cart")
     ]) {
       await expect(clickAccountMenuControl(page as never)).resolves.toBe(false);
@@ -262,6 +264,7 @@ describe("order automation helpers", () => {
     for (const page of [
       createMixedLabelReorderPage("Proceed to Pay", "Reorder"),
       createMixedLabelReorderPage("Again", "Reorder"),
+      createMixedLabelReorderPage("Reorder", "Reorder", { title: "Cancel Order" }),
       createMixedLabelReorderPage("Reorder", "Cancel Order")
     ]) {
       await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
@@ -330,7 +333,11 @@ function createDisabledOrdersNavigationPage() {
   return page;
 }
 
-function createMixedLabelOrdersNavigationPage(text: string, ariaLabel: string) {
+function createMixedLabelOrdersNavigationPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -340,7 +347,7 @@ function createMixedLabelOrdersNavigationPage(text: string, ariaLabel: string) {
       ) {
         return createVisibleLocator(text, async () => {
           page.clicked = true;
-        }, ariaLabel);
+        }, ariaLabel, text, attributes);
       }
 
       return createHiddenLocator();
@@ -351,7 +358,11 @@ function createMixedLabelOrdersNavigationPage(text: string, ariaLabel: string) {
   return page;
 }
 
-function createMixedLabelAccountMenuPage(text: string, ariaLabel: string) {
+function createMixedLabelAccountMenuPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -361,7 +372,7 @@ function createMixedLabelAccountMenuPage(text: string, ariaLabel: string) {
       ) {
         return createVisibleLocator(text, async () => {
           page.clicked = true;
-        }, ariaLabel);
+        }, ariaLabel, text, attributes);
       }
 
       return createHiddenLocator();
@@ -390,7 +401,11 @@ function createDisabledReorderPage() {
   return page;
 }
 
-function createMixedLabelReorderPage(text: string, ariaLabel: string) {
+function createMixedLabelReorderPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -400,7 +415,7 @@ function createMixedLabelReorderPage(text: string, ariaLabel: string) {
       ) {
         return createVisibleLocator(text, async () => {
           page.clicked = true;
-        }, ariaLabel, "Order #ZEP1234 Delivered Total ₹249 Reorder");
+        }, ariaLabel, "Order #ZEP1234 Delivered Total ₹249 Reorder", attributes);
       }
 
       return createHiddenLocator();

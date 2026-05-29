@@ -1,7 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
-import { isDisabledControl, isEditableTextInput } from "./control-state.js";
+import { isDisabledControl, isEditableTextInput, readControlLabels } from "./control-state.js";
 
 export type LoginState = "logged-in" | "login-required" | "unknown";
 export const ACCOUNT_SURFACE_CLICK_LABELS = [
@@ -75,9 +75,7 @@ async function clickSafeAccountSurfaceControl(locator: Locator): Promise<boolean
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeAccountSurfaceClickText)) {
     return false;
   }

@@ -5,7 +5,7 @@ import type { Product } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { textMatchesProductQuery } from "../utils/product-matching.js";
 import { ACCESS_CHALLENGE_COOLDOWN_MS, assertNoAccessChallenge, gotoWithAccessProtection } from "./browser.js";
-import { isDisabledControl, isEditableTextInput } from "./control-state.js";
+import { isDisabledControl, isEditableTextInput, readControlLabels } from "./control-state.js";
 import { dedupeProducts, parseProductCard, type RawProductCard } from "./extract.js";
 
 export const SEARCH_TRIGGER_CLICK_LABELS = [
@@ -213,9 +213,7 @@ async function clickSafeSearchTrigger(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeSearchTriggerClickText)) {
     return false;
   }

@@ -4,7 +4,7 @@ import type { CartSnapshot, OrderSnapshot } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { parseOrdersFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
-import { isDisabledControl } from "./control-state.js";
+import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { readCart } from "./cart.js";
 
 export const ORDERS_OPEN_CLICK_LABELS = [/^my orders$/i, /^orders$/i, /^order history$/i, /^past orders$/i] as const;
@@ -89,9 +89,7 @@ async function clickSafeLabeledControl(
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeText)) {
     return false;
   }
@@ -180,9 +178,7 @@ async function clickSafeReorderControl(locator: Locator, latestOrder: OrderSnaps
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeReorderActionClickText)) {
     return false;
   }

@@ -3,7 +3,7 @@ import type { Locator, Page } from "playwright";
 import { UserFacingError } from "../utils/errors.js";
 import { openCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
-import { isDisabledControl } from "./control-state.js";
+import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
 
 export const CHECKOUT_HANDOFF_CLICK_LABELS = [
@@ -63,9 +63,7 @@ async function clickSafeCheckoutButton(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => label.trim().length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeCheckoutAutomationClickText)) {
     return false;
   }

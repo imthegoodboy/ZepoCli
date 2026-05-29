@@ -101,6 +101,7 @@ describe("checkout handoff detection", () => {
       createMixedLabelCheckoutPage("Payment", "Proceed to Pay"),
       createMixedLabelCheckoutPage("Payment Method", "Proceed to Pay"),
       createMixedLabelCheckoutPage("UPI", "Proceed to Pay"),
+      createMixedLabelCheckoutPage("Checkout", "Proceed to Pay", { title: "Payment Method" }),
       createMixedLabelCheckoutPage("Checkout", "Pay Now")
     ]) {
       await expect(clickCheckoutHandoffButton(page as never)).resolves.toBe(false);
@@ -197,7 +198,11 @@ function createDisabledCheckoutPage() {
   return page;
 }
 
-function createMixedLabelCheckoutPage(text: string, ariaLabel: string) {
+function createMixedLabelCheckoutPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -207,7 +212,7 @@ function createMixedLabelCheckoutPage(text: string, ariaLabel: string) {
       ) {
         return createVisibleLocator(text, async () => {
           page.clicked = true;
-        }, ariaLabel);
+        }, ariaLabel, attributes);
       }
 
       return createHiddenLocator();

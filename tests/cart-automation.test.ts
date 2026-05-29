@@ -161,6 +161,7 @@ describe("cart automation helpers", () => {
     for (const page of [
       createMixedLabelCartOpenPage("Checkout", "Cart"),
       createMixedLabelCartOpenPage("Open", "Cart"),
+      createMixedLabelCartOpenPage("Cart", "Cart", { title: "Checkout" }),
       createMixedLabelCartOpenPage("Cart", "To Pay ₹249")
     ]) {
       await expect(clickCartOpenButton(page as never)).resolves.toBe(false);
@@ -255,7 +256,11 @@ function createDisabledCartOpenPage() {
   return page;
 }
 
-function createMixedLabelCartOpenPage(text: string, ariaLabel: string) {
+function createMixedLabelCartOpenPage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -265,7 +270,7 @@ function createMixedLabelCartOpenPage(text: string, ariaLabel: string) {
       ) {
         return createVisibleLocator(text, async () => {
           page.clicked = true;
-        }, { "aria-label": ariaLabel });
+        }, { "aria-label": ariaLabel, ...attributes });
       }
 
       return createHiddenLocator();

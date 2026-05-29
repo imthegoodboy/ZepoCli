@@ -1,5 +1,15 @@
 import type { Locator } from "playwright";
 
+export async function readControlLabels(locator: Locator): Promise<string[]> {
+  const [text, ariaLabel, title] = await Promise.all([
+    locator.innerText().catch(() => ""),
+    locator.getAttribute("aria-label").catch(() => ""),
+    locator.getAttribute("title").catch(() => "")
+  ]);
+
+  return [text, ariaLabel ?? "", title ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+}
+
 export async function isDisabledControl(locator: Locator): Promise<boolean> {
   const disabled = await locator.getAttribute("disabled").catch(() => null);
   const ariaDisabled = await locator.getAttribute("aria-disabled").catch(() => null);

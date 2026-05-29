@@ -6,7 +6,7 @@ import { extractPrices, normalizeText } from "../utils/format.js";
 import { textMatchesProductQuery } from "../utils/product-matching.js";
 import { parseCartItemsFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
-import { isDisabledControl } from "./control-state.js";
+import { isDisabledControl, readControlLabels } from "./control-state.js";
 
 export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
 
@@ -62,9 +62,7 @@ async function clickSafeCartOpenControl(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  const text = await locator.innerText().catch(() => "");
-  const ariaLabel = await locator.getAttribute("aria-label").catch(() => "");
-  const labels = [text, ariaLabel ?? ""].filter((label) => label.trim().length > 0);
+  const labels = await readControlLabels(locator);
   if (labels.some(isUnsafeCartOpenClickText)) {
     return false;
   }

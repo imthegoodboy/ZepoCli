@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isDisabledControl, isEditableTextInput } from "../src/automation/control-state.js";
+import { isDisabledControl, isEditableTextInput, readControlLabels } from "../src/automation/control-state.js";
 
 describe("automation control state", () => {
   afterEach(() => {
@@ -39,6 +39,17 @@ describe("automation control state", () => {
   it("treats non-text controls as not editable", async () => {
     await expect(isEditableTextInput(createTextInputLocator({}, false) as never)).resolves.toBe(false);
   });
+
+  it("reads visible, aria, and title labels for click safety checks", async () => {
+    await expect(
+      readControlLabels(
+        createLabelLocator(" Checkout ", {
+          "aria-label": "Proceed to Pay",
+          title: "Payment Method"
+        }) as never
+      )
+    ).resolves.toEqual([" Checkout ", "Proceed to Pay", "Payment Method"]);
+  });
 });
 
 function createLocator(attributes: Record<string, string | null>, domState: boolean | TestElement = false) {
@@ -57,6 +68,13 @@ function createTextInputLocator(attributes: Record<string, string | null> = {}, 
       evaluateCalls += 1;
       return evaluateCalls === 1 ? false : editableDomState;
     }
+  };
+}
+
+function createLabelLocator(text: string, attributes: Record<string, string | null> = {}) {
+  return {
+    innerText: async () => text,
+    getAttribute: async (name: string) => attributes[name] ?? null
   };
 }
 

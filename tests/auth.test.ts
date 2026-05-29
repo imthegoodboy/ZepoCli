@@ -103,6 +103,7 @@ describe("login state inference", () => {
     for (const page of [
       createMixedLabelAccountSurfacePage("Checkout", "Login"),
       createMixedLabelAccountSurfacePage("Continue", "Login"),
+      createMixedLabelAccountSurfacePage("Login", "Login", { title: "Checkout" }),
       createMixedLabelAccountSurfacePage("Account", "My Orders")
     ]) {
       await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);
@@ -265,7 +266,11 @@ function createDisabledAccountSurfacePage() {
   return page;
 }
 
-function createMixedLabelAccountSurfacePage(text: string, ariaLabel: string) {
+function createMixedLabelAccountSurfacePage(
+  text: string,
+  ariaLabel: string,
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
@@ -275,7 +280,7 @@ function createMixedLabelAccountSurfacePage(text: string, ariaLabel: string) {
       ) {
         return createVisibleLocator(text, async () => {
           page.clicked = true;
-        }, { "aria-label": ariaLabel });
+        }, { "aria-label": ariaLabel, ...attributes });
       }
 
       return createHiddenLocator();
