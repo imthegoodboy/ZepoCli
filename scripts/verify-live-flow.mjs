@@ -182,7 +182,7 @@ async function runStep(name, args) {
     exitCode: result.status,
     ok: result.status === 0,
     ...(payload ? { summary: summarizePayload(name, payload) } : {}),
-    ...(result.status !== 0 ? { error: summarizeCommandError(errorPayload, result.stderr) } : {})
+    ...(result.status !== 0 ? { error: summarizeCommandError(errorPayload, result.stderr, args) } : {})
   };
   report.steps.push(step);
 

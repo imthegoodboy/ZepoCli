@@ -83,6 +83,47 @@ describe("live verification runner", () => {
     });
   });
 
+  it("redacts workflow inputs from stored error messages and hints", () => {
+    const args = [
+      "--data-dir",
+      "C:\\Users\\parth\\.zepo-live",
+      "--visible",
+      "address",
+      "use",
+      "Home Tower 7",
+      "--json"
+    ];
+
+    expect(
+      summarizeCommandError(
+        {
+          code: "address_not_selected",
+          message: 'Zepto did not show a selected address matching "Home Tower 7" after the selection click.',
+          hint: "Rerun with C:\\Users\\parth\\.zepo-live and confirm Home Tower 7 is selected."
+        },
+        "",
+        args
+      )
+    ).toEqual({
+      code: "address_not_selected",
+      message: 'Zepto did not show a selected address matching "<redacted-address-query>" after the selection click.',
+      hint: "Rerun with <redacted-data-dir> and confirm <redacted-address-query> is selected."
+    });
+  });
+
+  it("redacts workflow inputs from fallback stderr summaries", () => {
+    expect(
+      summarizeCommandError(
+        undefined,
+        'Could not find a Zepto product matching "Amul Milk 500ml".\nMore details are omitted.',
+        ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"]
+      )
+    ).toEqual({
+      code: "command_failed",
+      message: 'Could not find a Zepto product matching "<redacted-query>".'
+    });
+  });
+
   it("redacts sensitive workflow arguments from stored report commands", () => {
     expect(
       redactArgsForLiveReport([

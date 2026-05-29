@@ -25,19 +25,21 @@ export function parseJsonFromOutput(text) {
   return undefined;
 }
 
-export function summarizeCommandError(error, stderr) {
+export function summarizeCommandError(error, stderr, args = []) {
+  const redactions = liveReportTextRedactions(args);
+
   if (error) {
     return {
       code: error.code,
-      message: error.message,
-      ...(error.hint ? { hint: error.hint } : {}),
+      message: redactText(error.message, redactions),
+      ...(error.hint ? { hint: redactText(error.hint, redactions) } : {}),
       ...(Number.isFinite(error.retryAfterMs) ? { retryAfterMs: error.retryAfterMs } : {})
     };
   }
 
   return {
     code: "command_failed",
-    message: firstLine(stderr) ?? "Command failed."
+    message: redactText(firstLine(stderr) ?? "Command failed.", redactions)
   };
 }
 
@@ -92,6 +94,59 @@ function redactOptionValues(args, redactions) {
   }
 
   return result;
+}
+
+function liveReportTextRedactions(args) {
+  const redactions = [];
+  collectOptionValueRedactions(args, redactions, {
+    "--data-dir": "<redacted-data-dir>",
+    "--phone": "<redacted-phone>",
+    "--report": "<redacted-report-path>"
+  });
+
+  const positionals = collectPositionals(args);
+  const command = positionals[0]?.value;
+  if (command === "search" || command === "add") {
+    addRedaction(redactions, positionals[1]?.value, "<redacted-query>");
+  } else if (command === "address" && positionals[1]?.value === "use") {
+    addRedaction(redactions, positionals[2]?.value, "<redacted-address-query>");
+  }
+
+  return redactions.sort((left, right) => right.value.length - left.value.length);
+}
+
+function collectOptionValueRedactions(args, redactions, replacements) {
+  for (let index = 0; index < args.length; index += 1) {
+    const replacement = replacements[args[index]];
+    if (replacement !== undefined) {
+      addRedaction(redactions, args[index + 1], replacement);
+      index += 1;
+    }
+  }
+}
+
+function addRedaction(redactions, value, replacement) {
+  if (!value || String(value).trim().length === 0 || String(value).startsWith("<redacted-")) {
+    return;
+  }
+
+  if (redactions.some((redaction) => redaction.value === value)) {
+    return;
+  }
+
+  redactions.push({
+    value: String(value),
+    replacement
+  });
+}
+
+function redactText(value, redactions) {
+  let redacted = String(value ?? "");
+  for (const redaction of redactions) {
+    redacted = redacted.split(redaction.value).join(redaction.replacement);
+  }
+
+  return redacted;
 }
 
 function collectPositionals(args) {
