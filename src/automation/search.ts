@@ -14,9 +14,11 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
   /^search for products$/i,
   /^search for groceries$/i
 ] as const;
+const PAYMENT_METHOD_LABEL_PATTERN_SOURCE =
+  "\\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|credit\\s*(?:/|and)?\\s*debit|debit\\s*(?:/|and)?\\s*credit|credit card|debit card|wallet|net\\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\\b";
 const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = "^add(?:\\s+to\\s+cart)?$";
 const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
-  "^(?:added|out\\s+of\\s+stock|sold\\s+out|unavailable|remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!to\\s+cart$).+|\\b(address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order)\\b";
+  `^(?:added|out\\s+of\\s+stock|sold\\s+out|unavailable|remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!to\\s+cart$).+|\\b(address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}`;
 const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
@@ -358,8 +360,10 @@ export function isUnsafeQuantityIncreaseControlText(text: string): boolean {
     return false;
   }
 
-  return /\b(decrease|decrement|remove|delete|minus|add more|add coupon|apply coupon|coupon|promo|voucher|address|location|checkout|payment|pay|place order|confirm order|continue|proceed)\b|^[-−]$|^(?:qty|quantity)\s*[-−]$/i.test(
-    normalized
+  return (
+    /\b(decrease|decrement|remove|delete|minus|add more|add coupon|apply coupon|coupon|promo|voucher|address|location|checkout|payment|pay|place order|confirm order|continue|proceed)\b|^[-−]$|^(?:qty|quantity)\s*[-−]$/i.test(
+      normalized
+    ) || new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i").test(normalized)
   );
 }
 

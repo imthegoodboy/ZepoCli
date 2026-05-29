@@ -174,7 +174,22 @@ describe("search automation helpers", () => {
       expect(isUnsafeProductAddControlText(label)).toBe(false);
     }
 
-    for (const label of ["Add Address", "Add more", "Add coupon", "Add one", "Added", "Out of stock", ""]) {
+    for (const label of [
+      "Add Address",
+      "Add more",
+      "Add coupon",
+      "Add one",
+      "Added",
+      "Out of stock",
+      "Payment Method",
+      "UPI",
+      "Credit Card",
+      "Debit Card",
+      "Wallet",
+      "Cash on Delivery",
+      "COD",
+      ""
+    ]) {
       expect(isProductAddControlText(label)).toBe(false);
       expect(isUnsafeProductAddControlText(label)).toBe(label !== "");
     }
@@ -205,17 +220,33 @@ describe("search automation helpers", () => {
   });
 
   it("does not map mixed-label product controls that expose unsafe add state", async () => {
-    const page = createProductExtractionPage({
-      buttonText: "Added",
-      buttonAttributes: {
-        "aria-labelledby": "add-label"
-      },
-      referencedLabels: {
-        "add-label": "Add to Cart"
-      }
-    });
-
-    await expect(extractProducts(page as never, 5)).resolves.toEqual([]);
+    for (const page of [
+      createProductExtractionPage({
+        buttonText: "Added",
+        buttonAttributes: {
+          "aria-labelledby": "add-label"
+        },
+        referencedLabels: {
+          "add-label": "Add to Cart"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add to Cart",
+          title: "UPI"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add to Cart",
+          "aria-description": "Cash on Delivery"
+        }
+      })
+    ]) {
+      await expect(extractProducts(page as never, 5)).resolves.toEqual([]);
+    }
   });
 
   it("recognizes explicit quantity increase controls without accepting broad add labels", () => {
@@ -229,7 +260,22 @@ describe("search automation helpers", () => {
       expect(isUnsafeQuantityIncreaseControlText(label)).toBe(false);
     }
 
-    for (const label of ["Decrease quantity", "Remove", "-", "Qty -", "Add more", "Add coupon", "Checkout", "Pay"]) {
+    for (const label of [
+      "Decrease quantity",
+      "Remove",
+      "-",
+      "Qty -",
+      "Add more",
+      "Add coupon",
+      "Checkout",
+      "Pay",
+      "Payment Method",
+      "UPI",
+      "Credit Card",
+      "Wallet",
+      "Cash on Delivery",
+      "COD"
+    ]) {
       expect(isQuantityIncreaseControlText(label)).toBe(false);
       expect(isUnsafeQuantityIncreaseControlText(label)).toBe(true);
     }
@@ -379,20 +425,29 @@ describe("search automation helpers", () => {
   });
 
   it("does not click tagged product controls when any label shows unsafe add state", async () => {
-    const page = createProductAddButtonPage("Added\nAmul Milk\n500 ml\n₹32", "Added", {
-      "aria-label": "Add to Cart"
-    });
-
-    await expect(
-      clickProductAdd(page as never, {
-        index: 0,
-        automationId: 4,
-        name: "Amul Milk",
-        unit: "500 ml"
+    for (const page of [
+      createProductAddButtonPage("Added\nAmul Milk\n500 ml\n₹32", "Added", {
+        "aria-label": "Add to Cart"
+      }),
+      createProductAddButtonPage("ADD\nAmul Milk\n500 ml\n₹32", "ADD", {
+        "aria-label": "Add to Cart",
+        title: "UPI"
+      }),
+      createProductAddButtonPage("ADD\nAmul Milk\n500 ml\n₹32", "ADD", {
+        "aria-description": "Cash on Delivery"
       })
-    ).rejects.toThrow("The ADD button no longer appears available for Amul Milk.");
+    ]) {
+      await expect(
+        clickProductAdd(page as never, {
+          index: 0,
+          automationId: 4,
+          name: "Amul Milk",
+          unit: "500 ml"
+        })
+      ).rejects.toThrow("The ADD button no longer appears available for Amul Milk.");
 
-    expect(page.clicked).toBe(false);
+      expect(page.clicked).toBe(false);
+    }
   });
 
   it("does not click stale product ADD controls that no longer match the product", async () => {
@@ -465,7 +520,14 @@ describe("search automation helpers", () => {
   });
 
   it("does not click quantity plus controls when any label is unsafe", async () => {
-    for (const attributes of [{ "aria-label": "Decrease quantity" }, { title: "Add coupon" }, { "aria-description": "Checkout" }]) {
+    for (const attributes of [
+      { "aria-label": "Decrease quantity" },
+      { title: "Add coupon" },
+      { "aria-description": "Checkout" },
+      { "aria-label": "UPI" },
+      { title: "Cash on Delivery" },
+      { "aria-description": "Credit Card" }
+    ]) {
       const page = createMixedLabelQuantityPage(attributes);
 
       await expect(
