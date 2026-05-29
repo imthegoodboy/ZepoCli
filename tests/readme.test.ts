@@ -40,6 +40,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");
     expect(readme).toContain("Search, account/login, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");
+    expect(readme).toContain("location-consent, final address-confirmation, or payment-method/payment surfaces");
     expect(readme).toContain("unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, or verification actions");
     expect(readme).toContain("payment-method/payment, coupon, or order actions");
     expect(readme).toContain("checkout, payment-method/payment, or final-order action");

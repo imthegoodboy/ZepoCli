@@ -14,8 +14,11 @@ const ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN =
   "\\b(use (?:my |your |device )?current location|use device location|allow (?:browser |precise )?location|allow location access|share (?:my |your |current |device )?location|detect (?:my |your |current |device )?location|get current location|find (?:my |your |current )?location|enable (?:browser |precise )?location|enable location services|use precise location|grant location access|turn on location|locate me|use gps|enter current location)\\b";
 const ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN =
   "\\b(confirm address|confirm location|save\\s+(?:&|and)\\s+(?:continue|proceed)|save address|use this address|deliver here|select this location)\\b";
+const PAYMENT_METHOD_LABEL_PATTERN_SOURCE =
+  "\\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|cards?|credit\\s*(?:/|and)?\\s*debit|debit\\s*(?:/|and)?\\s*credit|credit card|debit card|wallet|net\\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\\b";
+const PAYMENT_METHOD_LABEL_PATTERN = new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i");
 const NON_ADDRESS_SURFACE_PATTERN =
-  `\\b(add|cart|checkout|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}`;
+  `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}`;
 export const ADDRESS_MANAGER_CLICK_LABELS = [
   /^deliver(?:ing)? to\b.*$/i,
   /^select location$/i,
@@ -536,6 +539,7 @@ export function isUnsafeAddressAutomationClickText(text: string): boolean {
 
   return (
     isUserLocationConsentText(normalized) ||
+    PAYMENT_METHOD_LABEL_PATTERN.test(normalized) ||
     new RegExp(ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN, "i").test(normalized) ||
     /\b(save|confirm|continue|proceed|done|submit)\b/i.test(
       normalized

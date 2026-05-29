@@ -172,6 +172,20 @@ describe("address automation helpers", () => {
     expect(isLikelyAddressText("Popular picks delivered across India 500 g pack")).toBe(false);
   });
 
+  it("rejects payment-method copy as saved addresses", () => {
+    expect(isLikelyAddressText("UPI Home 221B Baker Street, Bengaluru, Karnataka 560001 India")).toBe(false);
+    expect(isLikelyAddressText("Cash on Delivery Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Payment Method Wallet Work Flat 42, Tower B, Bengaluru, India")).toBe(false);
+
+    expect(
+      filterAddressTexts([
+        "UPI Home 221B Baker Street, Bengaluru, India",
+        "Home 221B Baker Street, Bengaluru, India",
+        "Cash on Delivery Work Flat 42, Tower B, Bengaluru, India"
+      ])
+    ).toEqual(["Home 221B Baker Street, Bengaluru, India"]);
+  });
+
   it("rejects location-consent and final-confirmation copy as saved addresses", () => {
     expect(isLikelyAddressText("Use current location Bengaluru Karnataka 560001 India")).toBe(false);
     expect(isLikelyAddressText("Detect my location Bengaluru Karnataka 560001 India")).toBe(false);
@@ -274,6 +288,29 @@ describe("address automation helpers", () => {
     }
   });
 
+  it("treats payment-method labels as unsafe address automation clicks", () => {
+    for (const unsafeText of [
+      "Payment Method",
+      "Select Payment",
+      "UPI",
+      "UPI Apps",
+      "Cards",
+      "Credit Card",
+      "Debit Card",
+      "Wallet",
+      "Net Banking",
+      "Cash on Delivery",
+      "COD",
+      "PhonePe",
+      "Google Pay",
+      "BHIM"
+    ]) {
+      expect(isUnsafeAddressAutomationClickText(unsafeText)).toBe(true);
+      expect(isAddressManagerClickText(unsafeText)).toBe(false);
+      expect(isAddAddressClickText(unsafeText)).toBe(false);
+    }
+  });
+
   it("clicks only explicit address-manager labels", () => {
     for (const label of ["Delivering to Home", "Select Location", "Delivery Address", "Saved Addresses"]) {
       expect(isAddressManagerClickText(label)).toBe(true);
@@ -297,7 +334,11 @@ describe("address automation helpers", () => {
       createMixedLabelAddressManagerPage("Use current location", "Delivery Address"),
       createMixedLabelAddressManagerPage("Delivery Address", "Use current location"),
       createMixedLabelAddressManagerPage("Confirm Address", "Delivery Address"),
+      createMixedLabelAddressManagerPage("UPI", "Delivery Address"),
       createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Use current location" }),
+      createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", {
+        "aria-description": "Cash on Delivery"
+      }),
       createMixedLabelAddressManagerPage("Continue", "Delivery Address")
     ]) {
       await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
@@ -332,7 +373,9 @@ describe("address automation helpers", () => {
       createMixedLabelAddAddressPage("Add Address", "Use current location"),
       createMixedLabelAddAddressPage("Add Address", "Grant location access"),
       createMixedLabelAddAddressPage("Save Address", "Add Address"),
+      createMixedLabelAddAddressPage("UPI", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Save Address" }),
+      createMixedLabelAddAddressPage("Add Address", "Add Address", { "aria-description": "Cash on Delivery" }),
       createMixedLabelAddAddressPage("Use this address", "Add Address")
     ]) {
       await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
@@ -401,7 +444,9 @@ describe("address automation helpers", () => {
     for (const page of [
       createTaggedAddressSelectionPage({ "aria-label": "Confirm Address" }),
       createTaggedAddressSelectionPage({ title: "Use current location" }),
-      createTaggedAddressSelectionPage({ "aria-description": "Save Address" })
+      createTaggedAddressSelectionPage({ "aria-description": "Save Address" }),
+      createTaggedAddressSelectionPage({ "aria-label": "UPI" }),
+      createTaggedAddressSelectionPage({ title: "Cash on Delivery" })
     ]) {
       await expect(
         clickTaggedAddressSelection(page as never, {
