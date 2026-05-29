@@ -633,6 +633,28 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not include trailing order action labels in ETA text", () => {
+    expect(parseOrdersFromText("Track order Out for delivery ETA: 8 mins Reorder Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: 8 mins Reorder Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Track order Out for delivery ETA: Reorder Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: Reorder Total ₹249"
+      }
+    ]);
+  });
+
   it("extracts order totals only from explicit total labels", () => {
     expect(parseOrdersFromText("Order #ZEP1234 Delivered Milk ₹32 Delivery fee ₹25")).toEqual([
       {

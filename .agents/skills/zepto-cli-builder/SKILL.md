@@ -78,7 +78,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Reorder should click only visible, enabled, explicit reorder/order-again/repeat-order controls whose readable order-card text matches the latest detected order; when no order id is readable, all available status/ETA/total fields from the latest order must match. Never click generic text containing "reorder", standalone order summary copy, a mixed-label payment/cancel/track/order-placement control, or a reorder control for an older order.
    - `zepo cart` may return an empty cart only when Zepto exposes explicit empty-cart copy without non-empty cart signals such as item counts, bill/total, checkout, quantity, or remove controls. If the cart page opens but items are unreadable, fail clearly instead of treating the cart as empty.
    - `zepo history` may return an empty list only when Zepto exposes explicit empty-order-history copy without unreadable order signals such as reorder, order summary, track order, ETA, or status text. If the orders page opens but order cards are unreadable, fail clearly instead of treating history as empty.
-   - `zepo track` must require readable latest-order status or ETA; do not present a bare order id as a tracked order.
+   - `zepo track` must require readable latest-order status or ETA. ETA text must be a real time value, not trailing UI action copy such as reorder, support, payment, or invoice labels; do not present a bare order id as a tracked order.
 
 5. CLI output behavior.
    - Keep human output concise and readable.

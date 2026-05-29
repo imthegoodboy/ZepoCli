@@ -138,10 +138,25 @@ function extractOrderStatus(block: string): string | undefined {
 }
 
 function extractOrderEta(block: string): string | undefined {
-  return (
+  return cleanOrderEta(
     block.match(/\bETA[:\s]+(.+?)(?=\s+(?:Total|₹|Order|Delivered|Confirmed|Packed|Out|Cancelled)\b|$)/i)?.[1] ??
-    block.match(/\b(?:arriving|delivery)\s+in\s+(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b/i)?.[1]
+      block.match(/\b(?:arriving|delivery)\s+in\s+(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b/i)?.[1]
   );
+}
+
+function cleanOrderEta(value: string | undefined): string | undefined {
+  const cleaned = normalizeText(value ?? "")
+    .replace(
+      /\b(reorder|order again|repeat order|track order|order summary|rate order|help|support|invoice|receipt|cancel order|refund|refunded|payment|paid)\b.*$/i,
+      ""
+    )
+    .trim();
+
+  if (!cleaned || !/\b\d+\s*(?:mins?|minutes?|hrs?|hours?)\b/i.test(cleaned)) {
+    return undefined;
+  }
+
+  return cleaned;
 }
 
 function extractOrderTotal(block: string): string | undefined {

@@ -220,7 +220,7 @@ Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage
 - Parsed product-like rows count as cart data only when Zepto also exposes cart-surface evidence such as cart, quantity, bill, total, or remove controls.
 - `zepo cart` returns an empty cart only when Zepto shows explicit empty-cart copy without non-empty cart signals such as item counts, bill/total, checkout, quantity, or remove controls. If the cart page opens but items are unreadable, the CLI fails instead of treating the cart as empty.
 - `zepo history` returns an empty list only when Zepto shows explicit empty-history copy without unreadable order signals such as reorder, order summary, track order, ETA, or status text. If the orders page opens but order cards are unreadable, the CLI fails instead of treating history as empty.
-- `zepo track` reports only a latest order with readable status or ETA. If Zepto exposes only an order id or other incomplete tracking text, the CLI fails instead of presenting it as a tracked order.
+- `zepo track` reports only a latest order with readable status or ETA. ETA text must be a real time value, not trailing UI action copy such as reorder, support, payment, or invoice labels. If Zepto exposes only an order id or other incomplete tracking text, the CLI fails instead of presenting it as a tracked order.
 - `zepo reorder last` clicks only a visible, enabled, explicit reorder/order-again/repeat-order control whose readable order-card text matches the latest detected order. Order navigation also requires visible, enabled controls.
 - If Zepto changes its website and automation cannot confidently complete a task, the command fails with a direct error instead of pretending success.
 
