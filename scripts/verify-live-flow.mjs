@@ -3,6 +3,8 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
+import { parseJsonFromOutput, summarizeCommandError } from "./live-report-utils.mjs";
+
 const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
 
@@ -167,15 +169,15 @@ async function main() {
 async function runStep(name, args) {
   console.log(`> zepo ${redactArgs(args).join(" ")}`);
   const result = await runCli(args);
-  const payload = parseJson(result.stdout);
-  const errorPayload = parseJson(result.stderr)?.error;
+  const payload = parseJsonFromOutput(result.stdout);
+  const errorPayload = parseJsonFromOutput(result.stderr)?.error;
   const step = {
     name,
     command: `zepo ${redactArgs(args).join(" ")}`,
     exitCode: result.status,
     ok: result.status === 0,
     ...(payload ? { summary: summarizePayload(name, payload) } : {}),
-    ...(result.status !== 0 ? { error: summarizeError(errorPayload, result.stderr) } : {})
+    ...(result.status !== 0 ? { error: summarizeCommandError(errorPayload, result.stderr) } : {})
   };
   report.steps.push(step);
 
@@ -317,34 +319,6 @@ function summarizePayload(name, payload) {
   };
 }
 
-function summarizeError(error, stderr) {
-  if (error) {
-    return {
-      code: error.code,
-      message: error.message,
-      ...(error.hint ? { hint: error.hint } : {}),
-      ...(Number.isFinite(error.retryAfterMs) ? { retryAfterMs: error.retryAfterMs } : {})
-    };
-  }
-
-  return {
-    code: "command_failed",
-    message: firstLine(stderr) ?? "Command failed."
-  };
-}
-
-function parseJson(text) {
-  if (!text) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
-
 function parseArgs(args) {
   const parsed = {
     addressAdd: false,
@@ -421,13 +395,6 @@ function parseQuantity(value) {
 
 function redactArgs(args) {
   return args.map((arg, index) => (args[index - 1] === "--phone" ? "<redacted>" : arg));
-}
-
-function firstLine(value) {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean);
 }
 
 function printHelp() {

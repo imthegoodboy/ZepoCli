@@ -110,12 +110,14 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
 function verifyInstalledLiveVerifierContract(prefixDir) {
   const packageDir = join(prefixDir, "node_modules", packageJson.name);
   const installedPackageJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
+  const liveReportUtilsPath = join(packageDir, "scripts", "live-report-utils.mjs");
   const liveVerifierPath = join(packageDir, "scripts", "verify-live-flow.mjs");
 
   assert(
     installedPackageJson.scripts?.["verify:live"] === "node scripts/verify-live-flow.mjs",
     "expected installed verify:live package script"
   );
+  assert(existsSync(liveReportUtilsPath), "expected installed live-report-utils script");
   assert(existsSync(liveVerifierPath), "expected installed verify-live-flow script");
 
   const result = runNpm(["run", "--prefix", packageDir, "verify:live", "--", "--help"], { cwd: rootDir });

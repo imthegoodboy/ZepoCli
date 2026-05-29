@@ -8,6 +8,7 @@
   },
   "files": [
     "dist",
+    "scripts/live-report-utils.mjs",
     "scripts/verify-live-flow.mjs",
     "README.md",
     "LICENSE"
