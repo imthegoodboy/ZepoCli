@@ -131,7 +131,18 @@ describe("login state inference", () => {
       expect(isUnsafePhonePrefillInputText(label)).toBe(false);
     }
 
-    for (const label of ["Verify OTP", "One time code", "Search phone", "Payment phone"]) {
+    for (const label of [
+      "Verify OTP",
+      "One time code",
+      "Search phone",
+      "Payment phone",
+      "UPI phone",
+      "Phone UPI",
+      "Credit Card Phone",
+      "Cash on Delivery phone",
+      "COD phone",
+      "Wallet phone"
+    ]) {
       expect(isUnsafePhonePrefillInputText(label)).toBe(true);
     }
   });
@@ -174,6 +185,10 @@ describe("login state inference", () => {
       createPhoneInputLocator({
         type: "tel",
         "aria-label": "Verify OTP"
+      }),
+      createPhoneInputLocator({
+        type: "tel",
+        "aria-label": "Phone UPI"
       }),
       createPhoneInputLocator({
         type: "number"

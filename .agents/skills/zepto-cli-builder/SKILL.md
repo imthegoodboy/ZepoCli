@@ -42,7 +42,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - A failed re-login attempt must not invalidate a previously marked valid local session.
    - Failed re-login attempts must restore both Playwright auth state and persistent browser profile data when a confirmed session existed before the attempt.
    - Validate `zepo login --phone` before launching the browser; if an explicit phone/mobile/tel input is visible, enabled, and editable, prefill it with paced typing and leave OTP fully Zepto-controlled.
-   - Phone input discovery may use placeholder/title/description/referenced accessible labels, but must reject mixed-label controls that look like OTP, verification, payment, address, cart, order, or search controls.
+   - Phone input discovery may use placeholder/title/description/referenced accessible labels, but must reject mixed-label controls that look like OTP, verification, payment-method/payment, address, cart, order, or search controls.
    - Phone prefill must target explicit phone/mobile/tel fields only; never use bare numeric input selectors because those can match OTP fields.
 
 4. Automation behavior.
