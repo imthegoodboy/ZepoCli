@@ -289,6 +289,7 @@ function isIgnoredProductLine(line: string): boolean {
     /^added$/i.test(line) ||
     /^out of stock$/i.test(line) ||
     /^(sponsored|ad|advertisement|best\s?seller|popular|trending|recommended|featured)$/i.test(line) ||
+    /^(?:\d+\s*(?:mins?|minutes?)|delivery\s+in\s+\d+\s*(?:mins?|minutes?)|arrives?\s+in\s+\d+\s*(?:mins?|minutes?)|fast delivery|free delivery|super saver|lowest price|low price|deal|offer|new)$/i.test(line) ||
     isRecommendationHeaderLine(line) ||
     /^(limited time deal|deal of the day|only \d+ left|in stock)$/i.test(line) ||
     looksLikePrice(line) ||

@@ -176,6 +176,40 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("ignores delivery-speed and promo badges when choosing product names", () => {
+    expect(
+      parseProductCard(
+        {
+          automationId: 13,
+          text: "10 MINS\nSuper Saver\nADD\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32"
+        },
+        0
+      )
+    ).toMatchObject({
+      index: 0,
+      automationId: 13,
+      name: "Amul Taaza Toned Milk",
+      price: "₹32",
+      unit: "1 pack (500 ml)"
+    });
+
+    expect(
+      parseProductCard(
+        {
+          automationId: 14,
+          text: "Delivery in 8 minutes\nLowest Price\nADD\nWhole Farm Eggs\n6 pieces\n₹78"
+        },
+        0
+      )
+    ).toMatchObject({
+      index: 0,
+      automationId: 14,
+      name: "Whole Farm Eggs",
+      price: "₹78",
+      unit: "6 pieces"
+    });
+  });
+
   it("does not treat discount-only product badges as selling prices", () => {
     const product = parseProductCard(
       {
