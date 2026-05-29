@@ -503,7 +503,7 @@ export function isUserLocationConsentText(text: string): boolean {
     return false;
   }
 
-  return /\b(use (?:my )?current location|allow (?:browser )?location|allow location access|share (?:my |current )?location|detect (?:my |current )?location|enable (?:browser |precise )?location|use precise location|grant location access|turn on location|locate me|use gps|enter current location)\b/i.test(
+  return /\b(use (?:my |your |device )?current location|use device location|allow (?:browser |precise )?location|allow location access|share (?:my |your |current |device )?location|detect (?:my |your |current |device )?location|get current location|find (?:my |your |current )?location|enable (?:browser |precise )?location|enable location services|use precise location|grant location access|turn on location|locate me|use gps|enter current location)\b/i.test(
     normalized
   );
 }
