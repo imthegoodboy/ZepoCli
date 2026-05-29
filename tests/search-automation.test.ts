@@ -244,6 +244,21 @@ describe("search automation helpers", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("does not click tagged product controls that no longer expose an ADD label", async () => {
+    const page = createProductAddButtonPage("Added\nAmul Milk\n500 ml\n₹32", "Added");
+
+    await expect(
+      clickProductAdd(page as never, {
+        index: 0,
+        automationId: 4,
+        name: "Amul Milk",
+        unit: "500 ml"
+      })
+    ).rejects.toThrow("The ADD button no longer appears available for Amul Milk.");
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click stale product ADD controls that no longer match the product", async () => {
     const page = createProductAddButtonPage("ADD\nPotato Chips\n52 g\n₹20");
 
@@ -390,10 +405,10 @@ function createDisabledAddButtonPage() {
   return page;
 }
 
-function createProductAddButtonPage(cardText: string) {
+function createProductAddButtonPage(cardText: string, buttonText = "ADD") {
   const page = {
     clicked: false,
-    locator: () => createProductAddLocator(cardText, async () => {
+    locator: () => createProductAddLocator(cardText, buttonText, async () => {
       page.clicked = true;
     })
   };
@@ -401,13 +416,13 @@ function createProductAddButtonPage(cardText: string) {
   return page;
 }
 
-function createProductAddLocator(cardText: string, click: () => Promise<void>) {
+function createProductAddLocator(cardText: string, buttonText: string, click: () => Promise<void>) {
   return {
     first() {
       return this;
     },
     isVisible: async () => true,
-    innerText: async () => "ADD",
+    innerText: async () => buttonText,
     getAttribute: async () => null,
     evaluate: async (fn?: unknown) => {
       const source = String(fn ?? "");

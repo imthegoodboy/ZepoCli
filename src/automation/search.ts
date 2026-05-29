@@ -92,6 +92,7 @@ export async function clickProductAdd(page: Page, product: Product): Promise<voi
     });
   }
 
+  await assertTaggedProductControlIsStillAdd(button, product);
   await assertTaggedProductControlMatches(button, product, {
     code: "product_add_stale",
     message: `The ADD button no longer matches ${product.name}.`,
@@ -266,6 +267,18 @@ export function isProductAddControlText(text: string): boolean {
   }
 
   return new RegExp(PRODUCT_ADD_CONTROL_PATTERN_SOURCE, "i").test(normalized);
+}
+
+async function assertTaggedProductControlIsStillAdd(locator: Locator, product: Product): Promise<void> {
+  const labels = await readControlLabels(locator);
+  if (labels.some(isProductAddControlText)) {
+    return;
+  }
+
+  throw new UserFacingError(`The ADD button no longer appears available for ${product.name}.`, {
+    code: "product_add_stale",
+    hint: "Run the search again. Zepto may have re-rendered the product card or already changed its cart state."
+  });
 }
 
 export function isLocationSetupRequiredText(text: string): boolean {
