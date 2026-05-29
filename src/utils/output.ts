@@ -82,7 +82,7 @@ export function printCart(cart: CartSnapshot, json = false): void {
 
 export function printAddresses(addresses: Address[], json = false): void {
   if (json) {
-    printJson(addresses);
+    printJson(addresses.map(toPublicAddress));
     return;
   }
 
@@ -96,6 +96,10 @@ export function printAddresses(addresses: Address[], json = false): void {
     const label = address.label ? `${address.label}: ` : "";
     console.log(`${marker} ${index + 1}. ${label}${address.text}`);
   }
+}
+
+export function printAddress(address: Address): void {
+  printJson(toPublicAddress(address));
 }
 
 export function printOrders(orders: OrderSnapshot[], json = false): void {
@@ -134,6 +138,14 @@ function toPublicCartSnapshot(cart: CartSnapshot): Omit<CartSnapshot, "rawText">
   return {
     items: cart.items,
     ...(cart.total ? { total: cart.total } : {})
+  };
+}
+
+function toPublicAddress(address: Address): Address {
+  return {
+    ...(address.label ? { label: address.label } : {}),
+    text: address.text,
+    ...(address.selected !== undefined ? { selected: address.selected } : {})
   };
 }
 

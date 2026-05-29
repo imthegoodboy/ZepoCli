@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 
-import { printAddresses, printJson } from "../utils/output.js";
+import { printAddress, printAddresses } from "../utils/output.js";
 import { joinQuery, wantsJson, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerAddressCommand(program: Command): void {
@@ -42,7 +42,7 @@ export function registerAddressCommand(program: Command): void {
           ? await service.use(query)
           : await withCommandSpinner(`Selecting address "${query}"`, "Address selected.", () => service.use(query));
         if (json) {
-          printJson(selected);
+          printAddress(selected);
           return;
         }
 

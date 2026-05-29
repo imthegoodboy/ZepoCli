@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { printAddResult, printCart, printJsonError, printOrders, printProducts } from "../src/utils/output.js";
+import {
+  printAddResult,
+  printAddress,
+  printAddresses,
+  printCart,
+  printJsonError,
+  printOrders,
+  printProducts
+} from "../src/utils/output.js";
+import type { Address } from "../src/types.js";
 
 describe("command JSON output", () => {
   afterEach(() => {
@@ -167,5 +176,54 @@ describe("command JSON output", () => {
     ]);
     expect(JSON.stringify(payload)).not.toContain("221B Test Street");
     expect(payload[0]).not.toHaveProperty("rawText");
+  });
+
+  it("omits internal address fields from address list JSON output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printAddresses(
+      [
+        {
+          label: "Home",
+          text: "Home 221B Baker Street, Bengaluru, India",
+          selected: true,
+          rawText: "Saved Addresses Home 221B Baker Street, Bengaluru, India",
+          automationId: 9
+        }
+      ] as unknown as Address[],
+      true
+    );
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Array<Record<string, unknown>>;
+    expect(payload).toEqual([
+      {
+        label: "Home",
+        text: "Home 221B Baker Street, Bengaluru, India",
+        selected: true
+      }
+    ]);
+    expect(payload[0]).not.toHaveProperty("rawText");
+    expect(payload[0]).not.toHaveProperty("automationId");
+  });
+
+  it("omits internal address fields from selected address JSON output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printAddress({
+      label: "Work",
+      text: "Work Flat 42, Tower B, MG Road, Bengaluru, India",
+      selected: false,
+      rawText: "Address row Work Flat 42, Tower B, MG Road, Bengaluru, India",
+      automationId: 10
+    } as unknown as Address);
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload).toEqual({
+      label: "Work",
+      text: "Work Flat 42, Tower B, MG Road, Bengaluru, India",
+      selected: false
+    });
+    expect(payload).not.toHaveProperty("rawText");
+    expect(payload).not.toHaveProperty("automationId");
   });
 });
