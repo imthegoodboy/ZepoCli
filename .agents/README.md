@@ -38,7 +38,7 @@ Storage:
 - Metadata/cache: SQLite
 - Logs: local file under the configured data directory
 - Diagnostics: failure HTML/screenshot artifacts only for non-account browser automation when `--debug` is used
-- Cart and order caches persist parsed fields only. Do not store raw Zepto cart/order page text in SQLite snapshots because it can contain address or order copy.
+- Search cache stores redacted query text only. Cart and order caches persist parsed fields only. Do not store raw Zepto cart/order page text in SQLite snapshots because it can contain address or order copy.
 - `zepo logout` must clear auth state, browser profile data, and cached user metadata snapshots, but it must refuse while a non-stale browser automation lock is active for the configured data directory.
 - `zepo status --json` exposes `browserAutomation.ready`, `browserAutomation.reasons`, `browserAutomation.retryAfterMs`, local browser lock state, headless browser throttle state, Zepto access-challenge cooldown state, and cache counts for diagnostics only; never treat cache counts as proof that a live Zepto operation succeeded. Browser lock JSON should include `pid`, `createdAt`, and `staleReason` when available so agents can distinguish an active command from a dead-owner or expired stale lock.
 - `zepo doctor --json` exposes `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge` as structured fields; agents should branch on those fields instead of parsing human check messages.

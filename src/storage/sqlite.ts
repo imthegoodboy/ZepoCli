@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 
 import type { Address, CartSnapshot, OrderSnapshot, UserDataCacheStatus } from "../types.js";
 
+export const REDACTED_SEARCH_QUERY = "<redacted-query>";
+
 export interface SessionRecord {
   loggedIn: boolean;
   storageStatePath: string;
@@ -93,10 +95,11 @@ export class SqliteStore {
     };
   }
 
-  recordSearch(query: string, productCount: number): void {
+  recordSearch(_query: string, productCount: number): void {
+    // Search history is diagnostic-only; keep counts without retaining user query text.
     this.db
       .prepare("insert into searches (query, product_count, created_at) values (?, ?, datetime('now'))")
-      .run(query, productCount);
+      .run(REDACTED_SEARCH_QUERY, productCount);
   }
 
   saveCartSnapshot(snapshot: CartSnapshot): void {
@@ -213,6 +216,9 @@ export class SqliteStore {
       update cart_snapshots set raw_text = null where raw_text is not null;
       update orders set raw_text = '' where raw_text is not null and raw_text <> '';
     `);
+    this.db
+      .prepare("update searches set query = ? where query <> ?")
+      .run(REDACTED_SEARCH_QUERY, REDACTED_SEARCH_QUERY);
   }
 
   private countRows(table: "searches" | "cart_snapshots" | "addresses" | "orders"): number {

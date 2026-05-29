@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { resolveAppPaths } from "../src/config/paths.js";
 import { SessionStore } from "../src/storage/session.js";
-import { SqliteStore } from "../src/storage/sqlite.js";
+import { REDACTED_SEARCH_QUERY, SqliteStore } from "../src/storage/sqlite.js";
 
 const AUTH_STATE = JSON.stringify({
   cookies: [
@@ -273,11 +273,12 @@ describe("session storage", () => {
     });
   });
 
-  it("does not persist raw cart or order page text in SQLite snapshots", () => {
+  it("does not persist raw search query text or raw cart/order page text in SQLite snapshots", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-cache-privacy-"));
     const paths = resolveAppPaths(tempDir);
     const sqlite = new SqliteStore(paths.dbPath);
 
+    sqlite.recordSearch("private snacks 500", 4);
     sqlite.saveCartSnapshot({
       items: [
         {
@@ -299,20 +300,30 @@ describe("session storage", () => {
     ]);
     sqlite.close();
 
+    const searchQuery = readSingleColumn(paths.dbPath, "select query as raw_text from searches limit 1");
     const cartRawText = readSingleColumn(paths.dbPath, "select raw_text from cart_snapshots limit 1");
     const orderRawText = readSingleColumn(paths.dbPath, "select raw_text from orders where order_id = 'ZEP1234'");
 
+    expect(searchQuery).toBe(REDACTED_SEARCH_QUERY);
+    expect(String(searchQuery)).not.toContain("private snacks");
     expect(cartRawText).toBeNull();
     expect(orderRawText).toBe("");
     expect(String(cartRawText)).not.toContain("221B Test Street");
     expect(String(orderRawText)).not.toContain("221B Test Street");
   });
 
-  it("scrubs raw cart and order page text from existing SQLite caches during migration", () => {
+  it("scrubs raw search, cart, and order page text from existing SQLite caches during migration", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-cache-migration-"));
     const paths = resolveAppPaths(tempDir);
     const db = new Database(paths.dbPath);
     db.exec(`
+      create table searches (
+        id integer primary key autoincrement,
+        query text not null,
+        product_count integer not null,
+        created_at text not null
+      );
+
       create table cart_snapshots (
         id integer primary key autoincrement,
         items_json text not null,
@@ -331,6 +342,9 @@ describe("session storage", () => {
         updated_at text not null
       );
 
+      insert into searches (query, product_count, created_at)
+      values ('private snacks 500', 4, datetime('now'));
+
       insert into cart_snapshots (items_json, total, raw_text, created_at)
       values ('[]', '₹32', 'Cart Delivery address 221B Test Street', datetime('now'));
 
@@ -342,6 +356,9 @@ describe("session storage", () => {
     const sqlite = new SqliteStore(paths.dbPath);
     sqlite.close();
 
+    expect(readSingleColumn(paths.dbPath, "select query as raw_text from searches limit 1")).toBe(
+      REDACTED_SEARCH_QUERY
+    );
     expect(readSingleColumn(paths.dbPath, "select raw_text from cart_snapshots limit 1")).toBeNull();
     expect(readSingleColumn(paths.dbPath, "select raw_text from orders where order_id = 'ZEP1234'")).toBe("");
   });

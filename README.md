@@ -193,7 +193,7 @@ Stored data includes:
 
 - Playwright auth state
 - Persistent Chromium browser profile data for Zepto session continuity
-- SQLite metadata for sessions, searches, cart snapshots, addresses, and order snapshots. Cart and order caches persist parsed fields only; raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots.
+- SQLite metadata for sessions, search counts, cart snapshots, addresses, and order snapshots. Search cache stores redacted query text only. Cart and order caches persist parsed fields only; raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots.
 - Log file for debugging
 - Debug HTML/screenshot artifacts when `--debug` is used and non-account browser automation fails
 
