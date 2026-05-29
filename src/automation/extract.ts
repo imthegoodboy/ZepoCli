@@ -133,8 +133,20 @@ function extractOrderStatus(block: string): string | undefined {
     "Cancelled",
     "Refunded"
   ];
-  const matched = statuses.filter((status) => new RegExp(`\\b${status}\\b`, "i").test(block));
-  return matched[0];
+  for (const status of statuses) {
+    const match = block.match(new RegExp(`\\b${status}\\b`, "i"));
+    if (!match || match.index === undefined) {
+      continue;
+    }
+
+    if (status === "Delivered" && isDeliveryMarketingStatusMatch(block, match.index)) {
+      continue;
+    }
+
+    return status;
+  }
+
+  return undefined;
 }
 
 function extractOrderEta(block: string): string | undefined {
@@ -459,13 +471,30 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
     return false;
   }
 
-  if (/\b(track order|tracking|my orders|order history|past orders)\b/i.test(order.rawText)) {
+  if (hasExplicitOrderStatusPhrase(order.rawText)) {
     return true;
   }
 
-  return /\border\s+(?:confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/i.test(
-    order.rawText
+  if (/\b(track order|tracking)\b/i.test(order.rawText)) {
+    return true;
+  }
+
+  if (/\b(my orders|order history|past orders)\b/i.test(order.rawText)) {
+    return order.eta !== undefined || order.total !== undefined;
+  }
+
+  return false;
+}
+
+function hasExplicitOrderStatusPhrase(text: string): boolean {
+  return /\border\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/i.test(
+    text
   );
+}
+
+function isDeliveryMarketingStatusMatch(block: string, matchIndex: number): boolean {
+  const suffix = normalizeText(block.slice(matchIndex, matchIndex + 80));
+  return /^delivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/i.test(suffix);
 }
 
 function dedupeCartItems(items: CartItem[]): CartItem[] {

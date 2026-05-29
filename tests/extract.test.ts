@@ -784,6 +784,8 @@ describe("Zepto page extraction helpers", () => {
   it("does not parse order-marketing copy as an order", () => {
     expect(parseOrdersFromText("Order groceries delivered in minutes ETA: 8 mins Total ₹249")).toEqual([]);
     expect(parseOrdersFromText("Order fresh milk and get it delivered in 8 mins Total ₹249")).toEqual([]);
+    expect(parseOrdersFromText("My Orders No orders yet Groceries delivered in minutes")).toEqual([]);
+    expect(parseOrdersFromText("Past Orders No orders yet Get groceries delivered within 10 minutes")).toEqual([]);
   });
 
   it("does not parse bare order ids without readable order details", () => {
@@ -792,5 +794,29 @@ describe("Zepto page extraction helpers", () => {
 
   it("does not parse order ids with only totals as readable orders", () => {
     expect(parseOrdersFromText("Order #ZEP1234 Total ₹249")).toEqual([]);
+  });
+
+  it("requires stronger evidence before parsing no-id order-history statuses", () => {
+    expect(parseOrdersFromText("My Orders Delivered")).toEqual([]);
+
+    expect(parseOrdersFromText("My Orders Delivered Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "My Orders Delivered Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Track order Out for delivery")).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: undefined,
+        total: undefined,
+        rawText: "Track order Out for delivery"
+      }
+    ]);
   });
 });

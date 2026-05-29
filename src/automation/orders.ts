@@ -364,7 +364,7 @@ export function isEmptyOrdersText(text: string): boolean {
 }
 
 function hasUnreadableOrderHistoryEvidence(text: string): boolean {
-  const normalized = normalizeLabelText(text);
+  const normalized = stripOrderHistoryMarketingText(normalizeLabelText(text));
   if (!normalized) {
     return false;
   }
@@ -372,4 +372,8 @@ function hasUnreadableOrderHistoryEvidence(text: string): boolean {
   return /\b(reorder|order again|repeat order|track order|order summary|order\s?#|eta|delivered|confirmed|packed|out for delivery|on the way|arriving|cancelled|refunded)\b/i.test(
     normalized
   );
+}
+
+function stripOrderHistoryMarketingText(text: string): string {
+  return text.replace(/\bdelivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/gi, "");
 }
