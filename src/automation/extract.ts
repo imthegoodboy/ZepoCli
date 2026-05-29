@@ -76,7 +76,7 @@ export function parseCartItemsFromText(rawText: string): CartItem[] {
       continue;
     }
 
-    const price = window.flatMap(extractPrices)[0];
+    const price = firstNonDiscountOnlyPrice(window);
     const unit = window.find((candidate) => looksLikeUnit(candidate));
     const quantity = extractCartQuantityFromWindow(window);
 
@@ -150,7 +150,7 @@ function productPricesFrom(lines: string[]): { price?: string; mrp?: string } {
       line,
       prices: extractPrices(line)
     }))
-    .filter((item) => item.prices.length > 0);
+    .filter((item) => item.prices.length > 0 && !isDiscountOnlyPriceLine(item.line, item.prices));
 
   const labeledMrp = priceLines.find((item) => /\b(mrp|maximum retail price)\b/i.test(item.line))?.prices[0];
   const firstNonMrpPrice = priceLines.find((item) => !/\b(mrp|maximum retail price)\b/i.test(item.line))?.prices[0];
@@ -160,6 +160,24 @@ function productPricesFrom(lines: string[]): { price?: string; mrp?: string } {
     price: firstNonMrpPrice ?? allPrices[0],
     mrp: labeledMrp ?? allPrices.find((price) => price !== (firstNonMrpPrice ?? allPrices[0]))
   };
+}
+
+function firstNonDiscountOnlyPrice(lines: string[]): string | undefined {
+  return lines
+    .map((line) => ({
+      line,
+      prices: extractPrices(line)
+    }))
+    .filter((item) => item.prices.length > 0 && !isDiscountOnlyPriceLine(item.line, item.prices))
+    .flatMap((item) => item.prices)[0];
+}
+
+function isDiscountOnlyPriceLine(line: string, prices: string[]): boolean {
+  return (
+    prices.length === 1 &&
+    /\b(off|discount|save|savings?)\b/i.test(line) &&
+    !/\b(mrp|maximum retail price)\b/i.test(line)
+  );
 }
 
 function productNameFrom(imageAlt: string | undefined, lines: string[]): string | undefined {

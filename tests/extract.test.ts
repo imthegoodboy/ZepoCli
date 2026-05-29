@@ -176,6 +176,39 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("does not treat discount-only product badges as selling prices", () => {
+    const product = parseProductCard(
+      {
+        automationId: 11,
+        text: "ADD\n₹25 OFF\n₹120₹145\nProtein Bar\n50 g"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      name: "Protein Bar",
+      price: "₹120",
+      mrp: "₹145",
+      unit: "50 g"
+    });
+  });
+
+  it("keeps product units when only discount pricing is visible", () => {
+    const product = parseProductCard(
+      {
+        automationId: 12,
+        text: "ADD\n₹25 OFF\nProtein Bar\n50 g"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      name: "Protein Bar",
+      price: undefined,
+      unit: "50 g"
+    });
+  });
+
   it("ignores product section headers when choosing product names", () => {
     const product = parseProductCard(
       {
@@ -392,6 +425,27 @@ describe("Zepto page extraction helpers", () => {
     `);
 
     expect(items).toEqual([]);
+  });
+
+  it("does not treat discount-only cart badges as item prices", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Protein Bar
+      50 g
+      ₹20 OFF
+      ₹120
+      Qty 1
+      Grand Total ₹120
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Protein Bar",
+        price: "₹120",
+        unit: "50 g",
+        quantity: "1"
+      }
+    ]);
   });
 
   it("does not borrow fee prices for products without readable item details", () => {
