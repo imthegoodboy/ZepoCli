@@ -6,6 +6,7 @@ import {
   filterProductsForQuery,
   increaseProductQuantity,
   isProductAddControlText,
+  isQuantityIncreaseControlText,
   isLocationSetupRequiredText,
   isSearchTriggerClickText,
   isUnsafeSearchTriggerClickText,
@@ -113,6 +114,16 @@ describe("search automation helpers", () => {
 
     for (const label of ["Add Address", "Add more", "Add coupon", "Added", ""]) {
       expect(isProductAddControlText(label)).toBe(false);
+    }
+  });
+
+  it("recognizes explicit quantity increase controls without accepting broad add labels", () => {
+    for (const label of ["+", "Increase quantity", "Increment qty", "Add one", "Qty +"]) {
+      expect(isQuantityIncreaseControlText(label)).toBe(true);
+    }
+
+    for (const label of ["Add", "Add to Cart", "Add more", "Continue", ""]) {
+      expect(isQuantityIncreaseControlText(label)).toBe(false);
     }
   });
 
@@ -292,6 +303,24 @@ describe("search automation helpers", () => {
     expect(page.plusClicked).toBe(true);
   });
 
+  it("clicks accessible quantity increase controls without visible plus text", async () => {
+    const page = createAccessibleQuantityPage();
+
+    await expect(
+      increaseProductQuantity(
+        page as never,
+        {
+          index: 0,
+          automationId: 1,
+          name: "Amul Milk"
+        },
+        2
+      )
+    ).resolves.toBeUndefined();
+
+    expect(page.plusClicked).toBe(true);
+  });
+
   it("does not click disabled quantity plus controls", async () => {
     const page = createDisabledQuantityPage();
 
@@ -358,6 +387,7 @@ function createQuantityChallengePage() {
       return this;
     },
     isVisible: async () => true,
+    innerText: async () => "+",
     getAttribute: async () => null,
     evaluate: async () => false,
     click: async () => {
@@ -388,6 +418,56 @@ function createQuantityChallengePage() {
     waitForTimeout: async () => undefined,
     waitForLoadState: async () => undefined,
     title: async () => (challenge ? "Security check" : "Zepto")
+  };
+
+  return page;
+}
+
+function createAccessibleQuantityPage() {
+  const hiddenTextPlus = {
+    last() {
+      return this;
+    },
+    isVisible: async () => false,
+    innerText: async () => "",
+    getAttribute: async () => null,
+    evaluate: async () => false
+  };
+  const accessiblePlus = {
+    isVisible: async () => true,
+    innerText: async () => "",
+    getAttribute: async (name: string) => (name === "aria-label" ? "Increase quantity" : null),
+    evaluate: async () => false,
+    click: async () => {
+      page.plusClicked = true;
+    }
+  };
+  const controls = {
+    filter: () => hiddenTextPlus,
+    count: async () => 1,
+    nth: () => accessiblePlus
+  };
+  const cardLocator = {
+    locator: () => controls
+  };
+  const addButtonLocator = {
+    first() {
+      return this;
+    },
+    evaluate: async () => "Amul Milk 500 ml ₹32",
+    locator: () => cardLocator
+  };
+  const page = {
+    plusClicked: false,
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => "Product added"
+          }
+        : addButtonLocator,
+    waitForTimeout: async () => undefined,
+    waitForLoadState: async () => undefined,
+    title: async () => "Zepto"
   };
 
   return page;
@@ -443,6 +523,7 @@ function createDisabledQuantityPage() {
       return this;
     },
     isVisible: async () => true,
+    innerText: async () => "+",
     getAttribute: async (name: string) => (name === "aria-disabled" ? "true" : null),
     evaluate: async () => false,
     click: async () => {
@@ -475,6 +556,7 @@ function createStaleQuantityPage() {
       return this;
     },
     isVisible: async () => true,
+    innerText: async () => "+",
     getAttribute: async () => null,
     evaluate: async () => false,
     click: async () => {

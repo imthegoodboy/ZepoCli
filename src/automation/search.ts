@@ -129,12 +129,9 @@ export async function increaseProductQuantity(page: Page, product: Product, quan
     });
 
     const card = button.locator("xpath=ancestor::*[contains(., '₹')][1]");
-    const plus = card
-      .locator("button, [role='button']")
-      .filter({ hasText: /^\+$/ })
-      .last();
+    const plus = await findQuantityIncreaseControl(card);
 
-    if (!(await plus.isVisible().catch(() => false))) {
+    if (!plus) {
       throw new UserFacingError(`Could not increase ${product.name} to quantity ${quantity}.`, {
         code: "product_quantity_unavailable",
         hint: "Zepto did not expose a plus control after adding the item. Open the cart with `zepo cart` and retry with a lower quantity."
@@ -269,6 +266,20 @@ export function isProductAddControlText(text: string): boolean {
   return new RegExp(PRODUCT_ADD_CONTROL_PATTERN_SOURCE, "i").test(normalized);
 }
 
+export function isQuantityIncreaseControlText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    /^\+$/.test(normalized) ||
+    /^(increase|increment)(?:\s+(?:qty|quantity|item|items?))?$/i.test(normalized) ||
+    /^add\s+(?:one|1)$/i.test(normalized) ||
+    /^(?:qty|quantity)\s*\+$/i.test(normalized)
+  );
+}
+
 async function assertTaggedProductControlIsStillAdd(locator: Locator, product: Product): Promise<void> {
   const labels = await readControlLabels(locator);
   if (labels.some(isProductAddControlText)) {
@@ -279,6 +290,36 @@ async function assertTaggedProductControlIsStillAdd(locator: Locator, product: P
     code: "product_add_stale",
     hint: "Run the search again. Zepto may have re-rendered the product card or already changed its cart state."
   });
+}
+
+async function findQuantityIncreaseControl(card: Locator): Promise<Locator | undefined> {
+  const textPlus = card
+    .locator("button, [role='button']")
+    .filter({ hasText: /^\+$/ })
+    .last();
+  if (await isQuantityIncreaseControlCandidate(textPlus)) {
+    return textPlus;
+  }
+
+  const controls = card.locator("button, [role='button']");
+  const count = await controls.count().catch(() => 0);
+  for (let index = 0; index < Math.min(count, 20); index += 1) {
+    const candidate = controls.nth(index);
+    if (await isQuantityIncreaseControlCandidate(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
+async function isQuantityIncreaseControlCandidate(locator: Locator): Promise<boolean> {
+  if (!(await locator.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  const labels = await readControlLabels(locator);
+  return labels.some(isQuantityIncreaseControlText);
 }
 
 export function isLocationSetupRequiredText(text: string): boolean {
