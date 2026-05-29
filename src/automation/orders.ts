@@ -237,6 +237,10 @@ export function isUnsafeOrdersOpenClickText(text: string): boolean {
     return false;
   }
 
+  if (/^(go|open|next|continue|submit)$/i.test(normalized)) {
+    return true;
+  }
+
   return /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order|cancel order)\b/i.test(
     normalized
   );
@@ -248,6 +252,10 @@ export function isUnsafeAccountMenuClickText(text: string): boolean {
     return false;
   }
 
+  if (/^(go|open|menu|next|continue|submit)$/i.test(normalized)) {
+    return true;
+  }
+
   return /\b(wallet|cart|my cart|search results?|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
     normalized
   );
@@ -257,6 +265,10 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
   const normalized = normalizeLabelText(text);
   if (!normalized) {
     return false;
+  }
+
+  if (/^(again|repeat|go|open|next|continue|submit)$/i.test(normalized)) {
+    return true;
   }
 
   return /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|cancel order)\b/i.test(

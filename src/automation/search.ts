@@ -255,7 +255,7 @@ export function isUnsafeSearchTriggerClickText(text: string): boolean {
     return false;
   }
 
-  return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
+  return /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay)\b/i.test(
     normalized
   );
 }

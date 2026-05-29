@@ -89,7 +89,16 @@ describe("search automation helpers", () => {
       expect(isSearchTriggerClickText(label)).toBe(true);
     }
 
-    for (const label of ["Search milk Cart Account", "Popular Searches", "Research products", "Search results for milk"]) {
+    for (const label of [
+      "Search milk Cart Account",
+      "Popular Searches",
+      "Research products",
+      "Search results for milk",
+      "Go",
+      "Submit",
+      "Next",
+      "Continue"
+    ]) {
       expect(SEARCH_TRIGGER_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isSearchTriggerClickText(label)).toBe(false);
       expect(isUnsafeSearchTriggerClickText(label)).toBe(label !== "Research products");
@@ -105,7 +114,11 @@ describe("search automation helpers", () => {
   });
 
   it("does not click search controls when any visible or accessible label is unsafe", async () => {
-    for (const page of [createMixedLabelSearchTriggerPage("Cart", "Search"), createMixedLabelSearchTriggerPage("Search", "Search results for milk")]) {
+    for (const page of [
+      createMixedLabelSearchTriggerPage("Cart", "Search"),
+      createMixedLabelSearchTriggerPage("Go", "Search"),
+      createMixedLabelSearchTriggerPage("Search", "Search results for milk")
+    ]) {
       await expect(clickSearchTrigger(page as never)).resolves.toBe(false);
 
       expect(page.clicked).toBe(false);

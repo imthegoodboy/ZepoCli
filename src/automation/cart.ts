@@ -234,6 +234,10 @@ export function isUnsafeCartOpenClickText(text: string): boolean {
     return false;
   }
 
+  if (/^(go|open|next|submit)$/i.test(normalized)) {
+    return true;
+  }
+
   return /\b(checkout|proceed|continue|payment|pay|make payment|place order|confirm order|view bill|bill summary|item total|grand total|to pay)\b/i.test(
     normalized
   );

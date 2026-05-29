@@ -143,6 +143,8 @@ describe("order automation helpers", () => {
     expect(isUnsafeOrdersOpenClickText("My Orders")).toBe(false);
     expect(isOrdersOpenClickText("Account My Orders Wallet")).toBe(false);
     expect(isUnsafeOrdersOpenClickText("Account My Orders Wallet")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Open")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Continue")).toBe(true);
     expect(isOrdersOpenClickText("Track Order")).toBe(false);
     expect(isUnsafeOrdersOpenClickText("Track Order")).toBe(true);
     expect(isAccountMenuClickText("Account")).toBe(true);
@@ -150,6 +152,8 @@ describe("order automation helpers", () => {
     expect(isAccountMenuClickText("Account settings are secure")).toBe(false);
     expect(isAccountMenuClickText("My Orders")).toBe(false);
     expect(isUnsafeAccountMenuClickText("My Orders")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Menu")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Open")).toBe(true);
   });
 
   it("clicks only explicit reorder action labels", () => {
@@ -166,6 +170,8 @@ describe("order automation helpers", () => {
     expect(isUnsafeReorderActionClickText("Reorder")).toBe(false);
     expect(isUnsafeReorderActionClickText("Proceed to Pay")).toBe(true);
     expect(isUnsafeReorderActionClickText("Cancel Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Again")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Open")).toBe(true);
   });
 
   it("requires reorder controls to be inside readable order text", () => {
@@ -221,7 +227,11 @@ describe("order automation helpers", () => {
   });
 
   it("does not click order navigation controls when any visible or accessible label is unsafe", async () => {
-    for (const page of [createMixedLabelOrdersNavigationPage("Checkout", "My Orders"), createMixedLabelOrdersNavigationPage("My Orders", "Track Order")]) {
+    for (const page of [
+      createMixedLabelOrdersNavigationPage("Checkout", "My Orders"),
+      createMixedLabelOrdersNavigationPage("Open", "My Orders"),
+      createMixedLabelOrdersNavigationPage("My Orders", "Track Order")
+    ]) {
       await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(false);
 
       expect(page.clicked).toBe(false);
@@ -229,7 +239,11 @@ describe("order automation helpers", () => {
   });
 
   it("does not click account menu controls when any visible or accessible label is unsafe", async () => {
-    for (const page of [createMixedLabelAccountMenuPage("My Orders", "Account"), createMixedLabelAccountMenuPage("Account", "Cart")]) {
+    for (const page of [
+      createMixedLabelAccountMenuPage("My Orders", "Account"),
+      createMixedLabelAccountMenuPage("Open", "Account"),
+      createMixedLabelAccountMenuPage("Account", "Cart")
+    ]) {
       await expect(clickAccountMenuControl(page as never)).resolves.toBe(false);
 
       expect(page.clicked).toBe(false);
@@ -245,7 +259,11 @@ describe("order automation helpers", () => {
   });
 
   it("does not click reorder controls when any visible or accessible label is unsafe", async () => {
-    for (const page of [createMixedLabelReorderPage("Proceed to Pay", "Reorder"), createMixedLabelReorderPage("Reorder", "Cancel Order")]) {
+    for (const page of [
+      createMixedLabelReorderPage("Proceed to Pay", "Reorder"),
+      createMixedLabelReorderPage("Again", "Reorder"),
+      createMixedLabelReorderPage("Reorder", "Cancel Order")
+    ]) {
       await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
 
       expect(page.clicked).toBe(false);

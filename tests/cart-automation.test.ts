@@ -139,9 +139,10 @@ describe("cart automation helpers", () => {
     for (const label of ["Cart", "My Cart", "View Cart", "Go to Cart"]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(true);
       expect(isCartOpenClickText(label)).toBe(true);
+      expect(isUnsafeCartOpenClickText(label)).toBe(false);
     }
 
-    for (const label of ["Checkout", "Proceed", "Continue", "Proceed to Pay", "Pay Now", "Pay ₹249"]) {
+    for (const label of ["Checkout", "Proceed", "Continue", "Proceed to Pay", "Pay Now", "Pay ₹249", "Go", "Open", "Next", "Submit"]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isCartOpenClickText(label)).toBe(false);
       expect(isUnsafeCartOpenClickText(label)).toBe(true);
@@ -157,7 +158,11 @@ describe("cart automation helpers", () => {
   });
 
   it("does not click cart navigation controls when any visible or accessible label is unsafe", async () => {
-    for (const page of [createMixedLabelCartOpenPage("Checkout", "Cart"), createMixedLabelCartOpenPage("Cart", "To Pay ₹249")]) {
+    for (const page of [
+      createMixedLabelCartOpenPage("Checkout", "Cart"),
+      createMixedLabelCartOpenPage("Open", "Cart"),
+      createMixedLabelCartOpenPage("Cart", "To Pay ₹249")
+    ]) {
       await expect(clickCartOpenButton(page as never)).resolves.toBe(false);
 
       expect(page.clicked).toBe(false);
