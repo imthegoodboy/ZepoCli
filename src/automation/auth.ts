@@ -26,6 +26,8 @@ const PHONE_PREFILL_TYPE_DELAY_MS = 45;
 const STRONG_LOGIN_REQUIRED_TEXT_PATTERN =
   /\b(enter (?:mobile|phone)|otp|verify otp|verify mobile|verify phone|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
 const LOGIN_FIELD_LABEL_TEXT_PATTERN = /\b(mobile number|phone number)\b/i;
+const PAYMENT_METHOD_LABEL_PATTERN =
+  /\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|cards?|credit\s*(?:\/|and)?\s*debit|debit\s*(?:\/|and)?\s*credit|credit card|debit card|wallet|net\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\b/i;
 
 export async function openLoginFlow(page: Page, phone?: string): Promise<void> {
   await openAccountSurface(page);
@@ -119,8 +121,10 @@ export function isUnsafeAccountSurfaceClickText(text: string): boolean {
     return false;
   }
 
-  return /\b(search results?|cart|my cart|checkout|proceed|continue|next|submit|verify|otp|mobile number|phone number|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
-    normalized
+  return (
+    /\b(search results?|cart|my cart|checkout|proceed|continue|next|submit|verify|otp|mobile number|phone number|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
+      normalized
+    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
   );
 }
 

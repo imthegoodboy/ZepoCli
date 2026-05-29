@@ -91,7 +91,15 @@ describe("login state inference", () => {
       "Submit",
       "My Orders",
       "Cart",
-      "Delivering to Home"
+      "Delivering to Home",
+      "UPI",
+      "Credit Card",
+      "Cash on Delivery",
+      "COD",
+      "PhonePe",
+      "Google Pay",
+      "BHIM",
+      "Wallet"
     ]) {
       expect(isUnsafeAccountSurfaceClickText(label)).toBe(true);
     }
@@ -109,7 +117,9 @@ describe("login state inference", () => {
     for (const page of [
       createMixedLabelAccountSurfacePage("Checkout", "Login"),
       createMixedLabelAccountSurfacePage("Continue", "Login"),
+      createMixedLabelAccountSurfacePage("UPI", "Login"),
       createMixedLabelAccountSurfacePage("Login", "Login", { title: "Checkout" }),
+      createMixedLabelAccountSurfacePage("Account", "Account", { "aria-description": "Cash on Delivery" }),
       createMixedLabelAccountSurfacePage("Account", "My Orders")
     ]) {
       await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);

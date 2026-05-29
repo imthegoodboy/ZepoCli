@@ -38,8 +38,9 @@ describe("README package guidance", () => {
       "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, or final-order text"
     );
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");
-    expect(readme).toContain("Search, account, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
+    expect(readme).toContain("Search, account/login, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");
+    expect(readme).toContain("unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, or verification actions");
     expect(readme).toContain("payment-method/payment, coupon, or order actions");
     expect(readme).toContain("checkout, payment-method/payment, or final-order action");
     expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text");
