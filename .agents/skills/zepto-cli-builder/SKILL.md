@@ -137,6 +137,8 @@ Keep package verification checking that `package.json` maps `zepo` to `./dist/in
 
 Use `npm run verify:live -- --data-dir <dedicated-dir> ...` only for opt-in human-account verification. Keep it out of CI and normal `npm run check` because it requires a real Zepto account, visible browser handoffs, delivery context, cart mutation choices, and optional Zepto-side checkout/payment decisions. It can cover cart cleanup with `--remove <query>` and `--clear` when the test cart can be safely changed. Its report must stay sanitized and omit raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
 
+Do not combine `verify:live --clear` with `--checkout`; `--clear` empties the cart, so run it as a separate cleanup verification pass.
+
 For browser-facing changes, also run a live command with a disposable `--data-dir` and document whether it required manual login/location setup. Use `--visible` when diagnosing Zepto rendering or blocking behavior.
 
 ## GitHub Workflow

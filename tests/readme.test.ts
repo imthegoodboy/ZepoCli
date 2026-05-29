@@ -67,6 +67,7 @@ describe("README package guidance", () => {
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("npm run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain("live-verification-report.json");
+    expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
       "omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
     );

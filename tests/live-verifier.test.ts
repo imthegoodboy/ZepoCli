@@ -37,6 +37,28 @@ describe("live verification runner", () => {
     expect(result.stderr).toContain("Missing required --data-dir <path>.");
   });
 
+  it("rejects live verification option combinations that cannot produce useful evidence", () => {
+    const clearCheckout = spawnSync(
+      process.execPath,
+      [scriptPath, "--data-dir", ".zepo-live", "--clear", "--checkout"],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(clearCheckout.status).toBe(1);
+    expect(clearCheckout.stderr).toContain("--clear cannot be combined with --checkout");
+
+    const phoneWithoutLogin = spawnSync(process.execPath, [scriptPath, "--data-dir", ".zepo-live", "--phone", "9999999999"], {
+      cwd: rootDir,
+      encoding: "utf8"
+    });
+
+    expect(phoneWithoutLogin.status).toBe(1);
+    expect(phoneWithoutLogin.stderr).toContain("--phone can only be used with --login.");
+  });
+
   it("parses final JSON after prompt output on stderr", () => {
     const mixedStderr = [
       "? Press enter after the Zepto-side flow is complete.",

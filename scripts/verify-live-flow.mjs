@@ -20,6 +20,8 @@ if (options.help) {
   process.exit(0);
 }
 
+validateOptions(options);
+
 if (!options.dataDir) {
   console.error("Missing required --data-dir <path>.");
   console.error("Use a dedicated persistent data directory, for example: npm run verify:live -- --data-dir ./.zepo-live --login");
@@ -433,6 +435,19 @@ function parseQuantity(value) {
   return quantity;
 }
 
+function validateOptions(parsed) {
+  if (parsed.phone && !parsed.login) {
+    console.error("--phone can only be used with --login.");
+    process.exit(1);
+  }
+
+  if (parsed.clear && parsed.checkout) {
+    console.error("--clear cannot be combined with --checkout because it empties the cart before checkout verification.");
+    console.error("Run clear verification separately, or omit --clear for a checkout handoff run.");
+    process.exit(1);
+  }
+}
+
 function printHelp() {
   console.log(`Usage: npm run verify:live -- --data-dir <path> [options]
 
@@ -452,7 +467,7 @@ Options:
   --quantity <number>   Quantity for --add, 1 to 12
   --cart                Read the cart
   --remove <query>      Remove a matching cart item
-  --clear               Remove all detected cart items
+  --clear               Remove all detected cart items; cannot be combined with --checkout
   --checkout            Open checkout/payment handoff in a visible Zepto browser
   --track               Read latest order status
   --history             Read order history
@@ -463,8 +478,9 @@ Example:
   npm run build
   npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 
-For cart cleanup verification, run remove or clear before checkout:
+For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
+  npm run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
 The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.`);
 }

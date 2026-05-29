@@ -136,6 +136,7 @@ Before claiming production readiness:
 - `node dist/index.js --help` shows the intended command surface.
 - `npm pack --dry-run` passes before publishing or claiming package readiness.
 - `npm run verify:live -- --data-dir <dedicated-dir> ...` is the opt-in human-account verification runner. Use it only with a human-controlled Zepto session; it can cover history, `--reorder-last`, `--remove <query>`, and `--clear` when the test cart/order history can be safely mutated, writes a sanitized report, and must not be added to CI or unattended release gates. The report must not store raw page text, addresses, cart item names, order ids, payment credentials, phone input, local filesystem paths, or unredacted search/add/remove/address-use query arguments.
+- Do not combine `verify:live --clear` with `--checkout`; `--clear` empties the cart, so it is a separate cleanup verification pass.
 - At least one browser smoke test is run against Zepto for search or login handoff when Chromium is available.
 - Commands that depend on a real Zepto account are marked verified only after a human-controlled session exercises them.
 
