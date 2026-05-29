@@ -383,6 +383,38 @@ describe("address automation helpers", () => {
     expect(page.clicked).toBe(false);
   });
 
+  it("does not click a changed tagged saved-address row", async () => {
+    const page = createTaggedAddressSelectionPage({}, { text: "Work Flat 42, Tower B, Bengaluru, India" });
+
+    await expect(
+      clickTaggedAddressSelection(page as never, {
+        index: 4,
+        label: "Home",
+        text: "Home 221B Baker Street, Bengaluru, India"
+      })
+    ).rejects.toThrow("Zepto address list changed before the selected address could be clicked.");
+
+    expect(page.clicked).toBe(false);
+  });
+
+  it("does not click a tagged saved-address row when any label is unsafe", async () => {
+    for (const page of [
+      createTaggedAddressSelectionPage({ "aria-label": "Confirm Address" }),
+      createTaggedAddressSelectionPage({ title: "Use current location" }),
+      createTaggedAddressSelectionPage({ "aria-description": "Save Address" })
+    ]) {
+      await expect(
+        clickTaggedAddressSelection(page as never, {
+          index: 4,
+          label: "Home",
+          text: "Home 221B Baker Street, Bengaluru, India"
+        })
+      ).rejects.toThrow("Zepto address selection control points at an unsafe address action.");
+
+      expect(page.clicked).toBe(false);
+    }
+  });
+
   it("does not click a disabled tagged saved-address row", async () => {
     const page = createTaggedAddressSelectionPage({ "aria-disabled": "true" });
 
@@ -620,14 +652,15 @@ function createDisabledAddAddressPage() {
 
 function createTaggedAddressSelectionPage(
   attributes: Record<string, string | null> = {},
-  options: { tagged?: boolean; visible?: boolean } = {}
+  options: { tagged?: boolean; visible?: boolean; text?: string } = {}
 ) {
+  const text = options.text ?? "Home 221B Baker Street, Bengaluru, India";
   const page = {
     clicked: false,
     evaluate: async () => options.tagged ?? true,
     locator: () =>
       createVisibleLocator(
-        "Home 221B Baker Street, Bengaluru, India",
+        text,
         async () => {
           page.clicked = true;
         },

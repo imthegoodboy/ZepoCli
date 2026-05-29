@@ -249,6 +249,22 @@ export async function clickTaggedAddressSelection(
     });
   }
 
+  const currentText = normalizeText(await locator.innerText().catch(() => ""));
+  if (currentText !== normalizeText(candidate.text)) {
+    throw new UserFacingError("Zepto address list changed before the selected address could be clicked.", {
+      code: "address_selection_stale",
+      hint: "Rerun `zepo address use` after checking the current saved addresses with `zepo address list`."
+    });
+  }
+
+  const labels = await readControlLabels(locator);
+  if (labels.some(isUnsafeAddressAutomationClickText)) {
+    throw new UserFacingError("Zepto address selection control points at an unsafe address action.", {
+      code: "address_selection_control_unsafe",
+      hint: "Select the address manually in the visible browser, then rerun the command."
+    });
+  }
+
   if (await isDisabledControl(locator)) {
     throw new UserFacingError("Zepto address selection control is disabled.", {
       code: "address_selection_control_disabled",
