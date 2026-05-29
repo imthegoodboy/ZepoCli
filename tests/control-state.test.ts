@@ -50,6 +50,18 @@ describe("automation control state", () => {
       )
     ).resolves.toEqual([" Checkout ", "Proceed to Pay", "Payment Method"]);
   });
+
+  it("reads aria description and referenced labels for click safety checks", async () => {
+    await expect(
+      readControlLabels(
+        createReferencedLabelLocator("Checkout", {
+          "aria-description": "Checkout handoff",
+          "aria-labelledby": "safe-label",
+          "aria-describedby": "unsafe-label"
+        })
+      )
+    ).resolves.toEqual(["Checkout", "Checkout handoff", "Proceed to Checkout", "Pay Now"]);
+  });
 });
 
 function createLocator(attributes: Record<string, string | null>, domState: boolean | TestElement = false) {
@@ -75,6 +87,27 @@ function createLabelLocator(text: string, attributes: Record<string, string | nu
   return {
     innerText: async () => text,
     getAttribute: async (name: string) => attributes[name] ?? null
+  };
+}
+
+function createReferencedLabelLocator(text: string, attributes: Record<string, string | null> = {}) {
+  const labels: Record<string, string> = {
+    "safe-label": "Proceed to Checkout",
+    "unsafe-label": "Pay Now"
+  };
+  const element = {
+    getAttribute: (name: string) => attributes[name] ?? null,
+    ownerDocument: {
+      getElementById: (id: string) => ({
+        textContent: labels[id] ?? ""
+      })
+    }
+  };
+
+  return {
+    innerText: async () => text,
+    getAttribute: async (name: string) => attributes[name] ?? null,
+    evaluate: async (callback: (target: Element) => string[]) => callback(element as unknown as Element)
   };
 }
 

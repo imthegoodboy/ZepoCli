@@ -1,13 +1,45 @@
 import type { Locator } from "playwright";
 
 export async function readControlLabels(locator: Locator): Promise<string[]> {
-  const [text, ariaLabel, title] = await Promise.all([
+  const [text, ariaLabel, title, ariaDescription, referencedLabels] = await Promise.all([
     locator.innerText().catch(() => ""),
     locator.getAttribute("aria-label").catch(() => ""),
-    locator.getAttribute("title").catch(() => "")
+    locator.getAttribute("title").catch(() => ""),
+    locator.getAttribute("aria-description").catch(() => ""),
+    readReferencedControlLabels(locator)
   ]);
 
-  return [text, ariaLabel ?? "", title ?? ""].filter((label) => label.replace(/\s+/g, " ").trim().length > 0);
+  return [text, ariaLabel ?? "", title ?? "", ariaDescription ?? "", ...referencedLabels].filter(
+    (label) => label.replace(/\s+/g, " ").trim().length > 0
+  );
+}
+
+async function readReferencedControlLabels(locator: Locator): Promise<string[]> {
+  const evaluatable = locator as {
+    evaluate?: (callback: (element: Element) => string[]) => Promise<unknown>;
+  };
+  if (typeof evaluatable.evaluate !== "function") {
+    return [];
+  }
+
+  const labels = await evaluatable
+    .evaluate((element) => {
+      const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+      const ids = `${element.getAttribute("aria-labelledby") ?? ""} ${
+        element.getAttribute("aria-describedby") ?? ""
+      }`
+        .split(/\s+/)
+        .map((id) => id.trim())
+        .filter(Boolean);
+
+      return ids
+        .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? "")
+        .map(normalize)
+        .filter(Boolean);
+    })
+    .catch(() => []);
+
+  return Array.isArray(labels) ? labels.filter((label): label is string => typeof label === "string") : [];
 }
 
 export async function isDisabledControl(locator: Locator): Promise<boolean> {

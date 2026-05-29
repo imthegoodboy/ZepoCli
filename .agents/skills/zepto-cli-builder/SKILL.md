@@ -51,6 +51,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Do not add stealth automation, anti-detection bypasses, CAPTCHA bypasses, or aggressive retry loops.
    - Use the CLI only where permitted by Zepto and applicable law; do not use it for scraping, monitoring, resale, bulk ordering, bypassing protections, or load generation.
    - Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls, not generic page copy containing those words.
+   - Safe-click checks must inspect visible text, `aria-label`, `title`, `aria-description`, and `aria-labelledby`/`aria-describedby` referenced text before clicking; reject the control if any label points at an unsafe action.
    - Do not run concurrent browser commands against the same persistent profile; serialize browser automation per data directory.
    - Do not parallelize multiple data directories to bypass pacing or throttle signals.
    - Do not hardcode stale browser identity such as fixed Chrome user agents; let Playwright Chromium report its real browser identity while keeping locale/timezone/user pacing human-controlled.

@@ -53,6 +53,7 @@ Storage:
 - Empty Zepto origin storage is not auth proof. Local auth state should require Zepto cookies or auth/session-like Zepto localStorage keys before contributing to confirmed session status.
 - Session auth-state validation should treat both `zepto.com` and legacy `zeptonow.com` storage as Zepto platform session evidence.
 - Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls, not generic page copy containing those words.
+- Safe-click checks must inspect visible text, `aria-label`, `title`, `aria-description`, and `aria-labelledby`/`aria-describedby` referenced text before clicking. Reject a control when any label points at an unsafe action for that command.
 
 ## Researched Zepto Facts
 
