@@ -105,7 +105,7 @@ export function parseOrdersFromText(rawText: string): OrderSnapshot[] {
     const status = extractOrderStatus(block);
     const eta = extractOrderEta(block);
     const id = block.match(/\bOrder\s?#?\s?((?=[A-Z0-9-]*\d)[A-Z0-9-]{4,})\b/i)?.[1];
-    const total = extractPrices(block).at(-1);
+    const total = extractOrderTotal(block);
 
     return {
       id,
@@ -141,6 +141,65 @@ function extractOrderEta(block: string): string | undefined {
   return (
     block.match(/\bETA[:\s]+(.+?)(?=\s+(?:Total|₹|Order|Delivered|Confirmed|Packed|Out|Cancelled)\b|$)/i)?.[1] ??
     block.match(/\b(?:arriving|delivery)\s+in\s+(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b/i)?.[1]
+  );
+}
+
+function extractOrderTotal(block: string): string | undefined {
+  const lines = splitVisibleLines(block);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    const labelEndIndex = findOrderTotalLabelEndIndex(line);
+    if (labelEndIndex === undefined) {
+      continue;
+    }
+
+    const sameLineTotal = extractPrices(line.slice(labelEndIndex))[0];
+    if (sameLineTotal) {
+      return sameLineTotal;
+    }
+
+    for (let offset = 1; offset <= 2; offset += 1) {
+      const candidate = lines[index + offset] ?? "";
+      if (!candidate || isOrderTotalStopLine(candidate)) {
+        break;
+      }
+
+      const prices = extractPrices(candidate);
+      if (prices.length > 0) {
+        return prices.at(-1);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function findOrderTotalLabelEndIndex(line: string): number | undefined {
+  const labelPattern = /\b(grand total|order total|amount paid|paid|to pay|payable|bill total|total)\b/gi;
+  for (const match of line.matchAll(labelPattern)) {
+    if (match.index === undefined) {
+      continue;
+    }
+
+    const before = line.slice(Math.max(0, match.index - 16), match.index);
+    if (/\b(item|subtotal)\s*$/i.test(before)) {
+      continue;
+    }
+
+    const after = line.slice(match.index + match[0].length, match.index + match[0].length + 24);
+    if (/^\s*(saving|savings|discount|coupon|refund|cashback)\b/i.test(after)) {
+      continue;
+    }
+
+    return match.index + match[0].length;
+  }
+
+  return undefined;
+}
+
+function isOrderTotalStopLine(line: string): boolean {
+  return /\b(order|track order|status|eta|confirmed|packed|out for delivery|on the way|arriving|delivered|cancelled|refunded|item|delivery|handling|platform|fee|charge|discount|coupon|tax|address|reorder|order again)\b/i.test(
+    line
   );
 }
 

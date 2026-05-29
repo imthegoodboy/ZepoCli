@@ -483,16 +483,68 @@ async function readVisibleCart(page: Page): Promise<CartSnapshot> {
 
 function extractCartTotal(rawText: string): string | undefined {
   const lines = rawText.split(/\r?\n/).map((line) => line.trim());
-  for (const line of lines) {
-    if (/to pay|grand total|total/i.test(line)) {
-      const prices = extractPrices(line);
+  return extractLabeledCartTotal(lines, isPrimaryCartTotalLine) ?? extractLabeledCartTotal(lines, isSecondaryCartTotalLine);
+}
+
+function extractLabeledCartTotal(lines: string[], matchesTotalLabel: (line: string) => boolean): string | undefined {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    if (!matchesTotalLabel(line)) {
+      continue;
+    }
+
+    const sameLineTotal = extractCartTotalPriceAfterLabel(line, matchesTotalLabel);
+    if (sameLineTotal) {
+      return sameLineTotal;
+    }
+
+    for (let offset = 1; offset <= 2; offset += 1) {
+      const candidate = lines[index + offset] ?? "";
+      if (!candidate || isCartTotalStopLine(candidate)) {
+        break;
+      }
+
+      const prices = extractPrices(candidate);
       if (prices.length > 0) {
         return prices.at(-1);
       }
     }
   }
 
-  return extractPrices(rawText).at(-1);
+  return undefined;
+}
+
+function extractCartTotalPriceAfterLabel(line: string, matchesTotalLabel: (line: string) => boolean): string | undefined {
+  const words = line.split(/\s+/);
+  for (let start = 0; start < words.length; start += 1) {
+    for (let end = start + 1; end <= words.length; end += 1) {
+      const candidateLabel = words.slice(start, end).join(" ");
+      if (!matchesTotalLabel(candidateLabel)) {
+        continue;
+      }
+
+      const price = extractPrices(words.slice(end).join(" "))[0];
+      if (price) {
+        return price;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function isPrimaryCartTotalLine(line: string): boolean {
+  return /\b(to pay|grand total|payable|bill total|amount payable|order total)\b/i.test(line);
+}
+
+function isSecondaryCartTotalLine(line: string): boolean {
+  return /\b(item total|subtotal|total)\b/i.test(line) && !/\b(discount|saving|coupon|fee|charge|tax|tip|donation)\b/i.test(line);
+}
+
+function isCartTotalStopLine(line: string): boolean {
+  return /\b(delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|address|cart|qty|quantity|remove|delete|item total|subtotal|to pay|grand total|payable|bill total)\b/i.test(
+    line
+  );
 }
 
 function isCartSummaryOrFeeText(text: string): boolean {

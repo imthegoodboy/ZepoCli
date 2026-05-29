@@ -633,6 +633,48 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("extracts order totals only from explicit total labels", () => {
+    expect(parseOrdersFromText("Order #ZEP1234 Delivered Milk ₹32 Delivery fee ₹25")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: undefined,
+        rawText: "Order #ZEP1234 Delivered Milk ₹32 Delivery fee ₹25"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Order #ZEP1234 Delivered Total savings ₹25")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: undefined,
+        rawText: "Order #ZEP1234 Delivered Total savings ₹25"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Order #ZEP1234 Delivered Item total ₹32 Delivery fee ₹25 Total ₹57")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: "₹57",
+        rawText: "Order #ZEP1234 Delivered Item total ₹32 Delivery fee ₹25 Total ₹57"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Order #ZEP1234 Delivered Total\n₹57")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: "₹57",
+        rawText: "Order #ZEP1234 Delivered Total ₹57"
+      }
+    ]);
+  });
+
   it("does not parse generic delivery copy as an order", () => {
     expect(parseOrdersFromText("Groceries delivered in minutes ETA: 8 mins Total ₹249")).toEqual([]);
   });

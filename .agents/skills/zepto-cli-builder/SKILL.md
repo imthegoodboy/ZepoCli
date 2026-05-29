@@ -62,6 +62,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Visible interactive runs may wait for the user to complete Zepto-controlled verification, including Zepto 403/429 navigation challenges; headless runs must cool down after detected challenges instead of retrying.
    - Do not silently return fake cart/order/address data.
    - Product/cart/order parsers must ignore UI badges, generic image alt text, fee rows, and summary rows instead of treating them as real user data.
+   - Cart and order totals must come from explicit total/payable labels; never infer totals from arbitrary product, fee, discount, or badge prices.
    - `zepo search` may fall back to real product cards visible on Zepto's public homepage when Zepto's search page is empty before location setup; never synthesize product results from search suggestions, popular-search text, or AI guesses.
    - Search navigation should use a visible, enabled, editable search input or explicit enabled search-control labels; search input discovery may use placeholder/title/description/referenced accessible labels, but must reject mixed-label search controls when any visible or accessible label points at popular-search, result-list, cart, account, address, phone/OTP, checkout, payment, coupon, or order actions.
    - Search should avoid retry loops: use at most one homepage search attempt, at most one direct `/search?query=` attempt, then one public-homepage product-card fallback.

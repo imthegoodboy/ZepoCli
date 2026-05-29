@@ -97,6 +97,7 @@ Implementation consequence:
 - State-changing commands should keep machine-readable `--json` output aligned with their human output.
 - Keep JSON-mode error payloads stable and structured enough for agents to branch on `error.code`, `error.type`, `error.message`, `error.hint`, and `error.exitCode`.
 - Product, cart, and order JSON output should omit internal automation IDs and raw Zepto page text; keep those values internal for automation, parsing, and cache only.
+- Cart and order totals should be parsed only from explicit total/payable labels. Do not infer totals from arbitrary product, fee, discount, or badge prices.
 - Prompting commands must reject `--no-input` before opening browsers or waiting for user input.
 - Logout must remove cached user data such as searches, cart snapshots, addresses, and order snapshots.
 - `zepo cart` may return an empty cart only when Zepto exposes explicit empty-cart copy. If the cart page opens but items are unreadable, fail clearly instead of treating the cart as empty.

@@ -100,11 +100,56 @@ describe("cart automation helpers", () => {
           quantity: "1"
         }
       ],
-      total: "₹32"
+      total: undefined
     });
     expect(() => requireReadableCartSnapshot("Cart 2 items View bill To pay Rs 120")).toThrow(
       "Zepto cart page did not expose readable cart items."
     );
+  });
+
+  it("extracts cart totals only from explicit total labels", () => {
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Item total ₹32
+        Delivery fee ₹25
+        Grand Total ₹57
+      `)
+    ).toMatchObject({
+      total: "₹57"
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        To Pay
+        ₹57
+      `)
+    ).toMatchObject({
+      total: "₹57"
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Delivery fee
+        ₹25
+      `)
+    ).toMatchObject({
+      total: undefined
+    });
   });
 
   it("rejects generic navigation text as cart page proof", () => {
