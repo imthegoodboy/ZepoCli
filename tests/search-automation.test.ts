@@ -1,14 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   clickSearchTrigger,
   clickProductAdd,
+  extractProducts,
   filterProductsForQuery,
   increaseProductQuantity,
   isProductAddControlText,
   isQuantityIncreaseControlText,
   isLocationSetupRequiredText,
   isSearchTriggerClickText,
+  isUnsafeProductAddControlText,
   isUnsafeSearchTriggerClickText,
   searchProducts,
   SEARCH_TRIGGER_CLICK_LABELS,
@@ -18,6 +20,10 @@ import { ACCESS_CHALLENGE_COOLDOWN_MS } from "../src/automation/browser.js";
 import { UserFacingError } from "../src/utils/errors.js";
 
 describe("search automation helpers", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("filters public homepage products by query terms before returning fallback results", () => {
     const products = [
       {
@@ -110,11 +116,51 @@ describe("search automation helpers", () => {
   it("recognizes only explicit product add control labels", () => {
     for (const label of ["ADD", "Add", "Add to Cart", " add to cart "]) {
       expect(isProductAddControlText(label)).toBe(true);
+      expect(isUnsafeProductAddControlText(label)).toBe(false);
     }
 
-    for (const label of ["Add Address", "Add more", "Add coupon", "Added", ""]) {
+    for (const label of ["Add Address", "Add more", "Add coupon", "Add one", "Added", "Out of stock", ""]) {
       expect(isProductAddControlText(label)).toBe(false);
+      expect(isUnsafeProductAddControlText(label)).toBe(label !== "");
     }
+  });
+
+  it("extracts product ADD controls from referenced accessible labels", async () => {
+    const page = createProductExtractionPage({
+      buttonText: "",
+      buttonAttributes: {
+        "aria-labelledby": "add-label",
+        "aria-description": "Product add action"
+      },
+      referencedLabels: {
+        "add-label": "Add to Cart"
+      }
+    });
+
+    await expect(extractProducts(page as never, 5)).resolves.toMatchObject([
+      {
+        automationId: 0,
+        name: "Amul Milk",
+        price: "₹32",
+        unit: "500 ml"
+      }
+    ]);
+
+    expect(page.button.getAttribute("data-zepo-add-id")).toBe("0");
+  });
+
+  it("does not map mixed-label product controls that expose unsafe add state", async () => {
+    const page = createProductExtractionPage({
+      buttonText: "Added",
+      buttonAttributes: {
+        "aria-labelledby": "add-label"
+      },
+      referencedLabels: {
+        "add-label": "Add to Cart"
+      }
+    });
+
+    await expect(extractProducts(page as never, 5)).resolves.toEqual([]);
   });
 
   it("recognizes explicit quantity increase controls without accepting broad add labels", () => {
@@ -257,6 +303,23 @@ describe("search automation helpers", () => {
 
   it("does not click tagged product controls that no longer expose an ADD label", async () => {
     const page = createProductAddButtonPage("Added\nAmul Milk\n500 ml\n₹32", "Added");
+
+    await expect(
+      clickProductAdd(page as never, {
+        index: 0,
+        automationId: 4,
+        name: "Amul Milk",
+        unit: "500 ml"
+      })
+    ).rejects.toThrow("The ADD button no longer appears available for Amul Milk.");
+
+    expect(page.clicked).toBe(false);
+  });
+
+  it("does not click tagged product controls when any label shows unsafe add state", async () => {
+    const page = createProductAddButtonPage("Added\nAmul Milk\n500 ml\n₹32", "Added", {
+      "aria-label": "Add to Cart"
+    });
 
     await expect(
       clickProductAdd(page as never, {
@@ -485,10 +548,14 @@ function createDisabledAddButtonPage() {
   return page;
 }
 
-function createProductAddButtonPage(cardText: string, buttonText = "ADD") {
+function createProductAddButtonPage(
+  cardText: string,
+  buttonText = "ADD",
+  attributes: Record<string, string | null> = {}
+) {
   const page = {
     clicked: false,
-    locator: () => createProductAddLocator(cardText, buttonText, async () => {
+    locator: () => createProductAddLocator(cardText, buttonText, attributes, async () => {
       page.clicked = true;
     })
   };
@@ -496,14 +563,19 @@ function createProductAddButtonPage(cardText: string, buttonText = "ADD") {
   return page;
 }
 
-function createProductAddLocator(cardText: string, buttonText: string, click: () => Promise<void>) {
+function createProductAddLocator(
+  cardText: string,
+  buttonText: string,
+  attributes: Record<string, string | null>,
+  click: () => Promise<void>
+) {
   return {
     first() {
       return this;
     },
     isVisible: async () => true,
     innerText: async () => buttonText,
-    getAttribute: async () => null,
+    getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async (fn?: unknown) => {
       const source = String(fn ?? "");
       if (source.includes("hasDisabledState") || source.includes("HTMLButtonElement")) {
@@ -515,6 +587,107 @@ function createProductAddLocator(cardText: string, buttonText: string, click: ()
     scrollIntoViewIfNeeded: async () => undefined,
     click
   };
+}
+
+function createProductExtractionPage(options: {
+  buttonText: string;
+  buttonAttributes?: Record<string, string>;
+  referencedLabels?: Record<string, string>;
+}) {
+  const labels = Object.fromEntries(
+    Object.entries(options.referencedLabels ?? {}).map(([id, text]) => [id, new FakeElement(text)])
+  );
+  const document = {
+    buttons: [] as FakeElement[],
+    querySelectorAll: (selector: string) => (selector === "button, [role='button']" ? document.buttons : []),
+    getElementById: (id: string) => labels[id] ?? null
+  };
+  const card = new FakeElement("Amul Milk\n500 ml\n₹32", {}, document);
+  const button = new FakeElement(options.buttonText, options.buttonAttributes ?? {}, document);
+  card.appendChild(button);
+  document.buttons = [button];
+
+  return {
+    button,
+    evaluate: async (callback: (input: unknown) => unknown, input: unknown) => {
+      installFakeDomGlobals(document);
+      return callback(input);
+    }
+  };
+}
+
+class FakeElement {
+  parentElement: FakeElement | null = null;
+  readonly children: FakeElement[] = [];
+  disabled = false;
+
+  constructor(
+    public textContent: string,
+    private readonly attributes: Record<string, string> = {},
+    public readonly ownerDocument: { getElementById(id: string): FakeElement | null } = {
+      getElementById: () => null
+    }
+  ) {}
+
+  get innerText(): string {
+    return this.textContent;
+  }
+
+  appendChild(child: FakeElement): void {
+    child.parentElement = this;
+    this.children.push(child);
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes[name] ?? null;
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes[name] = value;
+  }
+
+  hasAttribute(name: string): boolean {
+    return this.attributes[name] !== undefined;
+  }
+
+  getBoundingClientRect(): { width: number; height: number } {
+    return {
+      width: 24,
+      height: 24
+    };
+  }
+
+  querySelector(selector: string): FakeElement | null {
+    return this.querySelectorAll(selector)[0] ?? null;
+  }
+
+  querySelectorAll(selector: string): FakeElement[] {
+    if (selector !== "img[alt]") {
+      return [];
+    }
+
+    return this.children.filter((child) => child.getAttribute("alt") !== null);
+  }
+
+  closest(): FakeElement | null {
+    return null;
+  }
+}
+
+function installFakeDomGlobals(document: { querySelectorAll(selector: string): FakeElement[] }): void {
+  vi.stubGlobal("document", document);
+  vi.stubGlobal("window", {
+    getComputedStyle: () => ({
+      display: "block",
+      visibility: "visible"
+    })
+  });
+  vi.stubGlobal("HTMLElement", FakeElement);
+  vi.stubGlobal("HTMLButtonElement", FakeElement);
+  vi.stubGlobal("HTMLInputElement", FakeElement);
+  vi.stubGlobal("HTMLSelectElement", FakeElement);
+  vi.stubGlobal("HTMLTextAreaElement", FakeElement);
+  vi.stubGlobal("HTMLAnchorElement", FakeElement);
 }
 
 function createDisabledQuantityPage() {

@@ -15,6 +15,8 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
   /^search for groceries$/i
 ] as const;
 const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = "^add(?:\\s+to\\s+cart)?$";
+const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
+  "^(?:added|out\\s+of\\s+stock|sold\\s+out|unavailable|remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!to\\s+cart$).+|\\b(address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order)\\b";
 const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
@@ -266,6 +268,15 @@ export function isProductAddControlText(text: string): boolean {
   return new RegExp(PRODUCT_ADD_CONTROL_PATTERN_SOURCE, "i").test(normalized);
 }
 
+export function isUnsafeProductAddControlText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized || isProductAddControlText(normalized)) {
+    return false;
+  }
+
+  return new RegExp(PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE, "i").test(normalized);
+}
+
 export function isQuantityIncreaseControlText(text: string): boolean {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (!normalized) {
@@ -282,7 +293,7 @@ export function isQuantityIncreaseControlText(text: string): boolean {
 
 async function assertTaggedProductControlIsStillAdd(locator: Locator, product: Product): Promise<void> {
   const labels = await readControlLabels(locator);
-  if (labels.some(isProductAddControlText)) {
+  if (labels.some(isProductAddControlText) && !labels.some(isUnsafeProductAddControlText)) {
     return;
   }
 
@@ -400,18 +411,33 @@ function readClosestProductAddCardText(element: Element): string {
   return normalize(`${visibleText(element)} ${imageAltText(element)}`);
 }
 
-async function extractProducts(page: Page, limit: number): Promise<Product[]> {
-  const rawCards = await page.evaluate(({ maxCards, addControlPatternSource }) => {
+export async function extractProducts(page: Page, limit: number): Promise<Product[]> {
+  const rawCards = await page.evaluate(({ maxCards, addControlPatternSource, unsafeAddControlPatternSource }) => {
     const addControlPattern = new RegExp(addControlPatternSource, "i");
+    const unsafeAddControlPattern = new RegExp(unsafeAddControlPatternSource, "i");
     const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
     const visibleText = (element: Element) =>
       element instanceof HTMLElement ? element.innerText : (element.textContent ?? "");
+    const referencedLabelText = (element: Element) =>
+      `${element.getAttribute("aria-labelledby") ?? ""} ${element.getAttribute("aria-describedby") ?? ""}`
+        .split(/\s+/)
+        .map((id) => id.trim())
+        .filter(Boolean)
+        .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? "");
     const controlLabels = (element: Element) =>
-      [element.textContent ?? "", element.getAttribute("aria-label") ?? "", element.getAttribute("title") ?? ""]
+      [
+        element.textContent ?? "",
+        element.getAttribute("aria-label") ?? "",
+        element.getAttribute("title") ?? "",
+        element.getAttribute("aria-description") ?? "",
+        ...referencedLabelText(element)
+      ]
         .map(normalize)
         .filter(Boolean);
-    const isProductAddControl = (element: Element) =>
-      controlLabels(element).some((label) => addControlPattern.test(label));
+    const isProductAddControl = (element: Element) => {
+      const labels = controlLabels(element);
+      return labels.some((label) => addControlPattern.test(label)) && !labels.some((label) => unsafeAddControlPattern.test(label));
+    };
     const isVisible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       const style = window.getComputedStyle(element);
@@ -500,7 +526,8 @@ async function extractProducts(page: Page, limit: number): Promise<Product[]> {
       });
   }, {
     maxCards: Math.max(limit * 3, 12),
-    addControlPatternSource: PRODUCT_ADD_CONTROL_PATTERN_SOURCE
+    addControlPatternSource: PRODUCT_ADD_CONTROL_PATTERN_SOURCE,
+    unsafeAddControlPatternSource: PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE
   }) as RawProductCard[];
 
   const parsed: Product[] = [];

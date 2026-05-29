@@ -187,7 +187,7 @@ zepo --no-input login --json
 
 Interactive flows such as `login`, `address add`, `checkout`, and `add --choose` fail early with a structured error when `--no-input` is set.
 `zepo login` opens the account/login surface through visible, enabled account/profile/login controls only. `zepo login --phone` only pre-fills visible, enabled, editable phone/mobile/tel input fields. It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.
-Product ADD and quantity plus controls must be visible and enabled before automation clicks them. Tagged ADD/quantity controls must still match the selected product card immediately before click. Automated `zepo add --quantity` is capped at 12 and paced between quantity-control clicks so scripts do not hammer Zepto controls.
+Product ADD and quantity plus controls must be visible and enabled before automation clicks them. Tagged ADD/quantity controls must still match the selected product card immediately before click. Product ADD discovery/revalidation accepts referenced accessible labels but rejects mixed unsafe labels such as `Added`, `Add more`, `Add coupon`, address/location, checkout, or payment labels. Automated `zepo add --quantity` is capped at 12 and paced between quantity-control clicks so scripts do not hammer Zepto controls.
 
 Stored data includes:
 
