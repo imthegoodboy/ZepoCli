@@ -78,7 +78,7 @@ export function parseCartItemsFromText(rawText: string): CartItem[] {
 
     const price = window.flatMap(extractPrices)[0];
     const unit = window.find((candidate) => looksLikeUnit(candidate));
-    const quantity = window.map(extractCartQuantity).find((candidate) => candidate !== undefined);
+    const quantity = extractCartQuantityFromWindow(window);
 
     if (price || unit) {
       items.push({
@@ -305,12 +305,40 @@ function isCartSummaryLine(line: string): boolean {
   );
 }
 
-function extractCartQuantity(line: string): string | undefined {
+function extractCartQuantityFromWindow(lines: string[]): string | undefined {
+  for (const line of lines) {
+    const quantity = extractExplicitCartQuantity(line);
+    if (quantity !== undefined) {
+      return quantity;
+    }
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const quantity = lines[index]?.match(/^(\d{1,2})$/)?.[1];
+    if (quantity && hasAdjacentQuantityStepper(lines, index)) {
+      return quantity;
+    }
+  }
+
+  return undefined;
+}
+
+function extractExplicitCartQuantity(line: string): string | undefined {
   return (
     line.match(/^(?:qty|quantity)\s*:?\s*(\d+)$/i)?.[1] ??
     line.match(/^x\s*(\d+)$/i)?.[1] ??
     line.match(/^(\d+)\s*x$/i)?.[1]
   );
+}
+
+function hasAdjacentQuantityStepper(lines: string[], index: number): boolean {
+  const previous = normalizeText(lines[index - 1] ?? "");
+  const next = normalizeText(lines[index + 1] ?? "");
+  return isQuantityStepperControl(previous) || isQuantityStepperControl(next);
+}
+
+function isQuantityStepperControl(line: string): boolean {
+  return /^([+\-−]|remove|delete|decrease|increase)$/i.test(line);
 }
 
 function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {

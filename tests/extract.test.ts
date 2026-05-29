@@ -326,6 +326,26 @@ describe("Zepto page extraction helpers", () => {
         quantity: "3"
       }
     ]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        -
+        2
+        +
+        To Pay ₹64
+      `)
+    ).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "2"
+      }
+    ]);
   });
 
   it("does not parse item-count summary text as a cart product", () => {
@@ -337,6 +357,26 @@ describe("Zepto page extraction helpers", () => {
         To Pay ₹110
       `)
     ).toEqual([]);
+  });
+
+  it("does not treat bare numbers as cart quantities without stepper context", () => {
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Protein Bar
+        50 g
+        ₹120
+        2
+        To Pay ₹120
+      `)
+    ).toEqual([
+      {
+        name: "Protein Bar",
+        price: "₹120",
+        unit: "50 g",
+        quantity: undefined
+      }
+    ]);
   });
 
   it("does not parse cart fee rows as products", () => {
