@@ -138,6 +138,10 @@ async function isVisibleLoginFormInput(locator: Locator): Promise<boolean> {
     return false;
   }
 
+  if (labels.some(isUnsafeLoginFormInputText)) {
+    return false;
+  }
+
   if (hasExplicitPhonePrefillAttributeValue(attributes)) {
     return true;
   }
@@ -217,6 +221,19 @@ function hasOtpInputAttributeValue(attributes: Record<string, string>): boolean 
 function isOtpInputText(text: string): boolean {
   return /\b(otp|one[-\s]*time code|verification code|verify mobile|verify phone)\b/i.test(
     text.replace(/\s+/g, " ").trim()
+  );
+}
+
+function isUnsafeLoginFormInputText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    /\b(password|passcode|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
+      normalized
+    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
   );
 }
 

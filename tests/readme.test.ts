@@ -54,6 +54,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("legacy `zeptonow.com` responses");
     expect(readme).toContain("Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage");
     expect(readme).toContain("It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.");
+    expect(readme).toContain("unsafe phone-like payment/cart/address/search fields");
     expect(readme).toContain("visible, enabled account/profile/login controls");
     expect(readme).toContain("Search cache stores redacted query text only");
     expect(readme).toContain("raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots");

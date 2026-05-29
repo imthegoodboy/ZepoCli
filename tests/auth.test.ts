@@ -225,6 +225,32 @@ describe("login state inference", () => {
     await expect(hasVisibleLoginFormInput(bareNumeric as never)).resolves.toBe(false);
   });
 
+  it("does not treat unsafe phone-like fields as login form evidence", async () => {
+    for (const page of [
+      createLoginInputDiscoveryPage([
+        createPhoneInputLocator({
+          type: "tel",
+          "aria-label": "Phone UPI"
+        })
+      ]),
+      createLoginInputDiscoveryPage([
+        createPhoneInputLocator({
+          type: "tel",
+          "aria-label": "Checkout phone"
+        })
+      ]),
+      createLoginInputDiscoveryPage([
+        createPhoneInputLocator({
+          type: "text",
+          placeholder: "Phone number",
+          "aria-description": "Cash on Delivery"
+        })
+      ])
+    ]) {
+      await expect(hasVisibleLoginFormInput(page as never)).resolves.toBe(false);
+    }
+  });
+
   it("preserves a previously marked valid session when a re-login attempt fails", () => {
     expect(
       shouldPreserveExistingSessionAfterLoginFailure({
