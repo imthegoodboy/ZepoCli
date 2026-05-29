@@ -3,7 +3,12 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { parseJsonFromOutput, summarizeCommandError } from "./live-report-utils.mjs";
+import {
+  parseJsonFromOutput,
+  redactArgsForLiveConsole,
+  redactArgsForLiveReport,
+  summarizeCommandError
+} from "./live-report-utils.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
@@ -167,13 +172,13 @@ async function main() {
 }
 
 async function runStep(name, args) {
-  console.log(`> zepo ${redactArgs(args).join(" ")}`);
+  console.log(`> zepo ${redactArgsForLiveConsole(args).join(" ")}`);
   const result = await runCli(args);
   const payload = parseJsonFromOutput(result.stdout);
   const errorPayload = parseJsonFromOutput(result.stderr)?.error;
   const step = {
     name,
-    command: `zepo ${redactArgs(args).join(" ")}`,
+    command: `zepo ${redactArgsForLiveReport(args).join(" ")}`,
     exitCode: result.status,
     ok: result.status === 0,
     ...(payload ? { summary: summarizePayload(name, payload) } : {}),
@@ -391,10 +396,6 @@ function parseQuantity(value) {
   }
 
   return quantity;
-}
-
-function redactArgs(args) {
-  return args.map((arg, index) => (args[index - 1] === "--phone" ? "<redacted>" : arg));
 }
 
 function printHelp() {

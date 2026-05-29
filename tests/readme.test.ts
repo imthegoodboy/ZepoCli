@@ -54,6 +54,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("npm run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain("live-verification-report.json");
     expect(readme).toContain("omits raw Zepto page text, addresses, cart item names, payment credentials, and order ids");
+    expect(readme).toContain("Stored report command strings redact phone input plus search, add, and address-use query text");
     expect(readme).toContain("not part of `npm run check` or CI");
   });
 });

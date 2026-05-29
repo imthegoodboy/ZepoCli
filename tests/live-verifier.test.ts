@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const scriptPath = resolve(rootDir, "scripts", "verify-live-flow.mjs");
-const { parseJsonFromOutput, summarizeCommandError } = await import("../scripts/live-report-utils.mjs");
+const { parseJsonFromOutput, redactArgsForLiveConsole, redactArgsForLiveReport, summarizeCommandError } = await import(
+  "../scripts/live-report-utils.mjs"
+);
 
 describe("live verification runner", () => {
   it("documents the opt-in human-controlled flow", () => {
@@ -77,5 +79,54 @@ describe("live verification runner", () => {
       message: "No confirmed Zepto session found.",
       hint: "Run `zepo login` first."
     });
+  });
+
+  it("redacts sensitive workflow arguments from stored report commands", () => {
+    expect(
+      redactArgsForLiveReport([
+        "--data-dir",
+        ".zepo-live",
+        "--visible",
+        "add",
+        "Amul Milk 500ml",
+        "--quantity",
+        "2",
+        "--json"
+      ])
+    ).toEqual(["--data-dir", ".zepo-live", "--visible", "add", "<redacted-query>", "--quantity", "2", "--json"]);
+
+    expect(
+      redactArgsForLiveReport(["--data-dir", ".zepo-live", "--visible", "address", "use", "Home Tower 7", "--json"])
+    ).toEqual([
+      "--data-dir",
+      ".zepo-live",
+      "--visible",
+      "address",
+      "use",
+      "<redacted-address-query>",
+      "--json"
+    ]);
+
+    expect(
+      redactArgsForLiveReport(["--data-dir", ".zepo-live", "--visible", "search", "protein bars", "--json"])
+    ).toEqual(["--data-dir", ".zepo-live", "--visible", "search", "<redacted-query>", "--json"]);
+  });
+
+  it("keeps console command output useful while redacting phone input", () => {
+    expect(
+      redactArgsForLiveConsole([
+        "--data-dir",
+        ".zepo-live",
+        "--visible",
+        "login",
+        "--phone",
+        "9999999999",
+        "--json"
+      ])
+    ).toEqual(["--data-dir", ".zepo-live", "--visible", "login", "--phone", "<redacted-phone>", "--json"]);
+
+    expect(
+      redactArgsForLiveConsole(["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"])
+    ).toEqual(["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"]);
   });
 });
