@@ -172,6 +172,19 @@ describe("order automation helpers", () => {
       "Order Summary",
       "Track Order",
       "Proceed to Pay",
+      "Payment Method",
+      "Select Payment",
+      "UPI",
+      "Credit Card",
+      "Debit Card",
+      "Debit/Credit Card",
+      "Wallet",
+      "Net Banking",
+      "Cash on Delivery",
+      "COD",
+      "PhonePe",
+      "Google Pay",
+      "BHIM",
       "Refund",
       "Return Order",
       "Help",
@@ -186,6 +199,11 @@ describe("order automation helpers", () => {
 
     expect(isUnsafeReorderActionClickText("Reorder")).toBe(false);
     expect(isUnsafeReorderActionClickText("Proceed to Pay")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Payment Method")).toBe(true);
+    expect(isUnsafeReorderActionClickText("UPI")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Credit Card")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Cash on Delivery")).toBe(true);
+    expect(isUnsafeReorderActionClickText("COD")).toBe(true);
     expect(isUnsafeReorderActionClickText("Cancel Order")).toBe(true);
     expect(isUnsafeReorderActionClickText("Order Summary")).toBe(true);
     expect(isUnsafeReorderActionClickText("Refund")).toBe(true);
@@ -301,6 +319,10 @@ describe("order automation helpers", () => {
   it("does not click reorder controls when any visible or accessible label is unsafe", async () => {
     for (const page of [
       createMixedLabelReorderPage("Proceed to Pay", "Reorder"),
+      createMixedLabelReorderPage("UPI", "Reorder"),
+      createMixedLabelReorderPage("Cash on Delivery", "Reorder"),
+      createMixedLabelReorderPage("Reorder", "Credit Card"),
+      createMixedLabelReorderPage("Reorder", "Reorder", { title: "Payment Method" }),
       createMixedLabelReorderPage("Again", "Reorder"),
       createMixedLabelReorderPage("Reorder", "Reorder", { title: "Cancel Order" }),
       createMixedLabelReorderPage("Reorder", "Cancel Order"),

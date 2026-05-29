@@ -271,8 +271,14 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
     return true;
   }
 
-  return /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
-    normalized
+  return (
+    /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
+      normalized
+    ) ||
+    /\b(payment methods?|payment options?|payment mode|select payment|choose payment)\b/i.test(normalized) ||
+    /\b(upi|credit\s*(?:\/|and)?\s*debit|debit\s*(?:\/|and)?\s*credit|credit card|debit card|wallet|net\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\b/i.test(
+      normalized
+    )
   );
 }
 
