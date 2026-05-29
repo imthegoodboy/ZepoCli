@@ -130,6 +130,19 @@ describe("checkout handoff detection", () => {
     expect(isCheckoutHandoffText("Cart View Bill To Pay ₹249 Checkout")).toBe(false);
   });
 
+  it("rejects ordinary cart text with payment-method promo copy", () => {
+    expect(
+      isCheckoutHandoffText(
+        "Cart Bill Summary Item Total ₹249 To Pay ₹249 Checkout Pay using UPI and save on this order"
+      )
+    ).toBe(false);
+    expect(
+      isCheckoutHandoffText(
+        "Cart Add more items Apply Coupon View Bill Checkout UPI Credit Card Wallet Cash on Delivery"
+      )
+    ).toBe(false);
+  });
+
   it("rejects cart text with delivery address and totals but no payment handoff", () => {
     expect(isCheckoutHandoffText("Cart Delivery Address Home Bill Summary Item Total ₹249 To Pay ₹249 Checkout")).toBe(
       false

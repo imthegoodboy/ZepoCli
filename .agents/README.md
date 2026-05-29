@@ -11,7 +11,7 @@ Build and maintain `zepo` like a normal production CLI:
 - Payment, OTP, address confirmation, age checks, prescription checks, and delivery verification stay in Zepto-controlled browser UI.
 - Address automation may open the add-address UI only; never click current/device/precise-location sharing, browser location-access/GPS permission, or final address-confirmation controls. Reject address manager/add-address controls and saved-address extraction when any visible or accessible label contains location-consent or final address-confirmation text, even if another label looks safe.
 - Checkout automation may open checkout/payment handoff only; never click `Place Order`, `Pay Now`, `Confirm Order`, or equivalent order-placement/payment controls.
-- Checkout handoff clicks should target enabled, explicit checkout/proceed-to-checkout/proceed-to-pay style button controls; avoid generic `continue` or bare `proceed` text that can match unrelated page actions.
+- Checkout handoff clicks should target enabled, explicit checkout/proceed-to-checkout/proceed-to-pay style button controls; avoid generic `continue` or bare `proceed` text that can match unrelated page actions. Checkout handoff verification requires explicit payment-selection or final checkout-page labels; payment method names or UPI promo copy on an ordinary cart page are not proof of handoff.
 - Do not add fake "AI agent" features, autonomous purchasing, background ordering, or placeholder commands.
 - Use ZepoCli only where permitted by Zepto and applicable law; do not use it for scraping, monitoring, resale, bulk ordering, bypassing protections, or load generation.
 - If a command cannot really complete or hand off to Zepto, fail clearly with an actionable message.
@@ -83,7 +83,7 @@ Implementation consequence:
 - The CLI must not collect or store payment credentials.
 - The CLI should reuse the user's own session and should not bypass platform controls.
 - Successful `zepo checkout --json` output must not imply payment or order placement succeeded; keep `paymentStatus` and `orderPlacement` explicitly unconfirmed, include `orderStatusCommand: "zepo track"`, and tell agents to run `zepo track` after Zepto payment.
-- Checkout handoff controls must be rejected when any visible or accessible label contains unsafe payment-method/final-payment/order text, even if another label looks like a safe checkout handoff.
+- Checkout handoff controls must be rejected when any visible or accessible label contains unsafe payment-method/final-payment/order text, even if another label looks like a safe checkout handoff. Payment method names or UPI/cart-promo copy alone must not be treated as proof that checkout handoff is already open.
 - `zepo search` may use real product cards visible on Zepto's public homepage as a fallback when the search page is empty before location setup; never synthesize product results from search suggestions or popular-search text.
 - Search navigation should use a visible, enabled, editable search input or explicit enabled search-control labels. Search input discovery may use placeholder/title/description/referenced accessible labels, but must reject mixed-label search controls when any visible or accessible label points at popular-search, result-list, cart, account, address, phone/OTP, checkout, payment, coupon, or order actions.
 - `zepo login` must not mark a local session logged in while Zepto still exposes obvious login/OTP prompts.

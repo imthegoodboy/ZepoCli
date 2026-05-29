@@ -139,23 +139,20 @@ export function isCheckoutHandoffText(text: string): boolean {
     return false;
   }
 
-  if (
-    /\b(select payment|payment method|upi|credit card|debit card|wallet|cash on delivery|cod|place order)\b/i.test(
-      normalized
-    )
-  ) {
-    return true;
-  }
-
-  return false;
+  return isStrongCheckoutHandoffSurfaceText(normalized);
 }
 
 function isOrdinaryCartSurfaceText(text: string): boolean {
   return (
     /\bcart\b/i.test(text) &&
     /\b(add more|apply coupon|view bill|bill summary|item total|grand total|checkout)\b/i.test(text) &&
-    !/\b(select payment|payment method|upi|credit card|debit card|wallet|cash on delivery|cod|place order|order summary)\b/i.test(
-      text
-    )
+    !isStrongCheckoutHandoffSurfaceText(text)
+  );
+}
+
+function isStrongCheckoutHandoffSurfaceText(text: string): boolean {
+  return (
+    /\b(select payment|choose payment|payment methods?|payment options?|payment mode)\b/i.test(text) ||
+    /\b(place order|confirm order|pay now|make payment|complete payment|confirm payment)\b/i.test(text)
   );
 }
