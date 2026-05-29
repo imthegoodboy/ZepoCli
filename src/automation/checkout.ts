@@ -105,6 +105,10 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
 
   return (
     /\b(place order|confirm order|pay now|make payment)\b/i.test(normalized) ||
+    /\b(complete payment|confirm payment|pay securely|pay with|pay using|pay via|pay by|order now|review order)\b/i.test(
+      normalized
+    ) ||
+    /\b(pay|order)\b/i.test(normalized) ||
     /^continue\s+to\s+pay$/i.test(normalized) ||
     /\bcheckout\s+(?:and|&)\s+pay\b/i.test(normalized) ||
     /\bpay\s*(?:₹|rs\.?\s*\d|\d)/i.test(normalized)

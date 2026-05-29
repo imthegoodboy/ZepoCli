@@ -520,7 +520,7 @@ export function isUnsafeAddressAutomationClickText(text: string): boolean {
 
   return (
     isUserLocationConsentText(normalized) ||
-    /\b(save address|confirm address|confirm location|save\s+(?:&|and)\s+continue|deliver here|select this location)\b/i.test(
+    /\b(save|confirm|confirm address|confirm location|save\s+(?:&|and)\s+(?:continue|proceed)|continue|proceed|done|submit|use this address|deliver here|select this location)\b/i.test(
       normalized
     )
   );

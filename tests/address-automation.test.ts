@@ -227,6 +227,11 @@ describe("address automation helpers", () => {
       "Confirm Address",
       "Confirm Location",
       "Save and Continue",
+      "Continue",
+      "Proceed",
+      "Done",
+      "Submit",
+      "Use this address",
       "Deliver Here",
       "Select this location"
     ]) {
@@ -258,7 +263,8 @@ describe("address automation helpers", () => {
     for (const page of [
       createMixedLabelAddressManagerPage("Use current location", "Delivery Address"),
       createMixedLabelAddressManagerPage("Delivery Address", "Use current location"),
-      createMixedLabelAddressManagerPage("Confirm Address", "Delivery Address")
+      createMixedLabelAddressManagerPage("Confirm Address", "Delivery Address"),
+      createMixedLabelAddressManagerPage("Continue", "Delivery Address")
     ]) {
       await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
 
@@ -288,7 +294,8 @@ describe("address automation helpers", () => {
     for (const page of [
       createMixedLabelAddAddressPage("Use current location", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Use current location"),
-      createMixedLabelAddAddressPage("Save Address", "Add Address")
+      createMixedLabelAddAddressPage("Save Address", "Add Address"),
+      createMixedLabelAddAddressPage("Use this address", "Add Address")
     ]) {
       await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
 
