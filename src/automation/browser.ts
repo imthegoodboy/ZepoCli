@@ -915,6 +915,7 @@ function isZeptoOrigin(value: string): boolean {
     return (
       hostname === baseHostname ||
       hostname.endsWith(`.${baseHostname}`) ||
+      hostname === "zepto.com" ||
       hostname === "zeptonow.com" ||
       hostname.endsWith(".zeptonow.com") ||
       hostname.endsWith(".zepto.com")

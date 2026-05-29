@@ -434,6 +434,20 @@ describe("browser automation helpers", () => {
     clearPageAccessChallengeHandling(page as never);
   });
 
+  it("detects blocked bare zepto.com responses as Zepto access challenges", async () => {
+    const page = createResponseAwarePage();
+    configurePageAccessChallengeHandling(page as never, { allowManualResolution: false, waitMs: 90_000 });
+
+    page.responseListener?.(createResponse(403, "xhr", "https://zepto.com/api/cart"));
+
+    expect(pageHadAccessChallenge(page as never)).toBe(true);
+    await expect(assertNoAccessChallenge(page as never)).rejects.toThrow(
+      "Zepto is asking for verification or blocking automated access."
+    );
+
+    clearPageAccessChallengeHandling(page as never);
+  });
+
   it("lets visible interactive runs continue after Zepto-controlled verification is resolved", async () => {
     const page = createResponseAwarePage();
     configurePageAccessChallengeHandling(page as never, { allowManualResolution: true, waitMs: 90_000 });
