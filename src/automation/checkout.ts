@@ -105,12 +105,16 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
 
   return (
     /\b(place order|confirm order|pay now|make payment)\b/i.test(normalized) ||
+    /\b(payment method|payment methods|select payment|choose payment|payment option|payment options|payment mode)\b/i.test(
+      normalized
+    ) ||
+    /^(payment|payments|upi|cards?|credit card|debit card|wallet|cash on delivery|cod)$/i.test(normalized) ||
     /\b(complete payment|confirm payment|pay securely|pay with|pay using|pay via|pay by|order now|review order)\b/i.test(
       normalized
     ) ||
     /\b(pay|order)\b/i.test(normalized) ||
     /^continue\s+to\s+pay$/i.test(normalized) ||
-    /\bcheckout\s+(?:and|&)\s+pay\b/i.test(normalized) ||
+    /\bcheckout\b.*\b(pay|payment|order)\b/i.test(normalized) ||
     /\bpay\s*(?:₹|rs\.?\s*\d|\d)/i.test(normalized)
   );
 }

@@ -41,11 +41,22 @@ describe("checkout handoff detection", () => {
       "Make Payment",
       "Complete Payment",
       "Confirm Payment",
+      "Payment",
+      "Payment Method",
+      "Select Payment",
+      "Choose Payment",
+      "UPI",
+      "Credit Card",
+      "Debit Card",
+      "Wallet",
+      "Cash on Delivery",
+      "COD",
       "Order Now",
       "Review Order",
       "Continue to Pay",
       "Pay ₹249",
       "Checkout and Pay",
+      "Checkout Payment",
       "Checkout & Pay ₹249"
     ]) {
       expect(isUnsafeCheckoutAutomationClickText(unsafeText)).toBe(true);
@@ -87,6 +98,9 @@ describe("checkout handoff detection", () => {
     for (const page of [
       createMixedLabelCheckoutPage("Pay Now", "Proceed to Checkout"),
       createMixedLabelCheckoutPage("Pay Securely", "Proceed to Pay"),
+      createMixedLabelCheckoutPage("Payment", "Proceed to Pay"),
+      createMixedLabelCheckoutPage("Payment Method", "Proceed to Pay"),
+      createMixedLabelCheckoutPage("UPI", "Proceed to Pay"),
       createMixedLabelCheckoutPage("Checkout", "Pay Now")
     ]) {
       await expect(clickCheckoutHandoffButton(page as never)).resolves.toBe(false);
