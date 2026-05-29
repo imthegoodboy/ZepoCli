@@ -8,9 +8,11 @@ import {
   hasCartSurfaceEvidence,
   isCartOpenClickText,
   isCartPageText,
+  isCartRemoveControlText,
   isEmptyCartText,
   isLikelyRemovableCartItemText,
   isUnsafeCartOpenClickText,
+  isUnsafeCartRemoveControlText,
   requireReadableCartSnapshot
 } from "../src/automation/cart.js";
 
@@ -266,6 +268,18 @@ describe("cart automation helpers", () => {
     expect(page.clicked).toBe(false);
   });
 
+  it("recognizes only item remove controls without unrelated unsafe labels", () => {
+    for (const label of ["-", "−", "Remove", "Delete", "Decrease", "Decrease quantity", "Remove item"]) {
+      expect(isCartRemoveControlText(label)).toBe(true);
+      expect(isUnsafeCartRemoveControlText(label)).toBe(false);
+    }
+
+    for (const label of ["Add coupon", "Apply coupon", "Checkout", "Pay", "Payment", "Confirm order", "Address", "Clear cart", "+", "Qty +"]) {
+      expect(isCartRemoveControlText(label)).toBe(false);
+      expect(isUnsafeCartRemoveControlText(label)).toBe(true);
+    }
+  });
+
   it("clicks tagged cart remove controls only when the row still matches the requested item", async () => {
     const page = createTaggedCartRemovePage({}, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
 
@@ -282,6 +296,18 @@ describe("cart automation helpers", () => {
     );
 
     expect(page.clicked).toBe(false);
+  });
+
+  it("does not click tagged cart remove controls when any label is unsafe", async () => {
+    for (const attributes of [{ "aria-label": "Checkout" }, { title: "Add coupon" }, { "aria-description": "Payment" }]) {
+      const page = createTaggedCartRemovePage(attributes, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
+
+      await expect(clickTaggedCartRemoveButton(page as never, 3, "milk")).rejects.toThrow(
+        "Zepto cart remove control no longer appears to be a safe item remove action."
+      );
+
+      expect(page.clicked).toBe(false);
+    }
   });
 
   it("does not click tagged cart remove controls inside cart summary rows", async () => {

@@ -9,6 +9,9 @@ import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 
 export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
+const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
+const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
+  "\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|address|location|save for later|saved for later|clear cart)\\b|^\\+$|^(?:qty|quantity)\\s*\\+$";
 
 export async function openCart(page: Page): Promise<void> {
   await gotoZepto(page, "/cart");
@@ -245,6 +248,24 @@ export function isUnsafeCartOpenClickText(text: string): boolean {
   );
 }
 
+export function isCartRemoveControlText(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return new RegExp(CART_REMOVE_CONTROL_PATTERN_SOURCE, "i").test(normalized);
+}
+
+export function isUnsafeCartRemoveControlText(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return new RegExp(CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE, "i").test(normalized);
+}
+
 export function hasCartSurfaceEvidence(text: string): boolean {
   const normalized = normalizeText(text);
   if (!normalized) {
@@ -282,7 +303,9 @@ export function isLikelyRemovableCartItemText(text: string, query?: string): boo
 }
 
 async function findRemoveButtonId(page: Page, query?: string): Promise<number | undefined> {
-  return page.evaluate((itemQuery) => {
+  return page.evaluate(({ itemQuery, removeControlPatternSource, unsafeRemoveControlPatternSource }) => {
+    const removeControlPattern = new RegExp(removeControlPatternSource, "i");
+    const unsafeRemoveControlPattern = new RegExp(unsafeRemoveControlPatternSource, "i");
     const sizeUnitPattern =
       "ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules";
     const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
@@ -349,18 +372,25 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
       !isNonCartProductSurfaceText(text) &&
       hasCartMutationSignal(text) &&
       (!itemQuery || textMatchesProductQuery(text, itemQuery));
+    const referencedLabelText = (element: Element) =>
+      `${element.getAttribute("aria-labelledby") ?? ""} ${element.getAttribute("aria-describedby") ?? ""}`
+        .split(/\s+/)
+        .map((id) => id.trim())
+        .filter(Boolean)
+        .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? "");
+    const controlLabels = (element: Element) =>
+      [
+        element.textContent ?? "",
+        element.getAttribute("aria-label") ?? "",
+        element.getAttribute("title") ?? "",
+        element.getAttribute("aria-description") ?? "",
+        ...referencedLabelText(element)
+      ]
+        .map(normalize)
+        .filter(Boolean);
     const isRemoveButton = (element: Element) => {
-      const text = normalize(element.textContent ?? "");
-      const aria = normalize(element.getAttribute("aria-label") ?? "");
-      return (
-        text === "-" ||
-        text === "−" ||
-        text === "remove" ||
-        text === "delete" ||
-        aria.includes("remove") ||
-        aria.includes("delete") ||
-        aria.includes("decrease")
-      );
+      const labels = controlLabels(element);
+      return labels.some((label) => removeControlPattern.test(label)) && !labels.some((label) => unsafeRemoveControlPattern.test(label));
     };
     const hasDisabledState = (element: Element) => {
       const dataDisabled = element.getAttribute("data-disabled");
@@ -416,9 +446,7 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
       (button) => isClickableElement(button) && isRemoveButton(button)
     );
     for (const [index, button] of candidates.entries()) {
-      const controlText = normalize(
-        `${button.textContent ?? ""} ${button.getAttribute("aria-label") ?? ""} ${button.getAttribute("title") ?? ""}`
-      );
+      const controlText = normalize(controlLabels(button).join(" "));
       const cardText = normalize(`${cardFor(button).textContent ?? ""} ${controlText}`);
       if (isLikelyRemovableItemText(cardText)) {
         button.setAttribute("data-zepo-remove-id", String(index));
@@ -427,7 +455,11 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
     }
 
     return undefined;
-  }, query);
+  }, {
+    itemQuery: query,
+    removeControlPatternSource: CART_REMOVE_CONTROL_PATTERN_SOURCE,
+    unsafeRemoveControlPatternSource: CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE
+  });
 }
 
 export async function clickTaggedCartRemoveButton(page: Page, removeId: number, query?: string): Promise<void> {
@@ -446,6 +478,14 @@ export async function clickTaggedCartRemoveButton(page: Page, removeId: number, 
     });
   }
 
+  const labels = await readControlLabels(button);
+  if (!labels.some(isCartRemoveControlText) || labels.some(isUnsafeCartRemoveControlText)) {
+    throw new UserFacingError("Zepto cart remove control no longer appears to be a safe item remove action.", {
+      code: "cart_remove_control_stale",
+      hint: "Rerun `zepo cart` or inspect with `--visible`; Zepto may have re-rendered or changed the cart controls."
+    });
+  }
+
   const cardText = String(await button.evaluate(readClosestCartRemoveCardText).catch(() => ""));
   if (!isLikelyRemovableCartItemText(cardText, query)) {
     throw new UserFacingError("Zepto cart remove control no longer matches a removable cart item.", {
@@ -461,8 +501,15 @@ function readClosestCartRemoveCardText(element: Element): string {
   const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
   const visibleText = (target: Element) =>
     target instanceof HTMLElement ? normalize(target.innerText) : normalize(target.textContent ?? "");
+  const referencedLabelText = (target: Element) =>
+    `${target.getAttribute("aria-labelledby") ?? ""} ${target.getAttribute("aria-describedby") ?? ""}`
+      .split(/\s+/)
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .map((id) => target.ownerDocument.getElementById(id)?.textContent ?? "")
+      .join(" ");
   const controlText = normalize(
-    `${element.textContent ?? ""} ${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""}`
+    `${element.textContent ?? ""} ${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""} ${element.getAttribute("aria-description") ?? ""} ${referencedLabelText(element)}`
   );
 
   let current: Element | null = element;
