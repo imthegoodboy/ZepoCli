@@ -191,7 +191,7 @@ describe("order automation helpers", () => {
     expect(isReorderControlInReadableLatestOrderText("Order #ZEP9999 Delivered Total ₹249 Reorder", latest)).toBe(false);
   });
 
-  it("matches latest-order reorder controls without an order id using status plus ETA or total", () => {
+  it("matches no-id latest-order reorder controls only when every readable identifying field matches", () => {
     const latest = {
       status: "Out for delivery",
       eta: "8 mins",
@@ -203,11 +203,25 @@ describe("order automation helpers", () => {
       isReorderControlInReadableLatestOrderText("Track order Out for delivery ETA: 8 mins Total ₹249 Reorder", latest)
     ).toBe(true);
     expect(isReorderControlInReadableLatestOrderText("Track order Out for delivery ETA: 9 mins Total ₹249 Reorder", latest)).toBe(
-      true
+      false
+    );
+    expect(isReorderControlInReadableLatestOrderText("Track order Out for delivery ETA: 8 mins Total ₹259 Reorder", latest)).toBe(
+      false
     );
     expect(isReorderControlInReadableLatestOrderText("Track order Delivered ETA: 8 mins Total ₹249 Reorder", latest)).toBe(
       false
     );
+  });
+
+  it("allows no-id latest-order reorder matches with status plus total when ETA is not readable", () => {
+    const latest = {
+      status: "Delivered",
+      total: "₹249",
+      rawText: "Track order Delivered Total ₹249"
+    };
+
+    expect(isReorderControlInReadableLatestOrderText("Track order Delivered Total ₹249 Reorder", latest)).toBe(true);
+    expect(isReorderControlInReadableLatestOrderText("Track order Delivered Total ₹259 Reorder", latest)).toBe(false);
   });
 
   it("uses role and aria-label reorder controls before generic text matching", async () => {

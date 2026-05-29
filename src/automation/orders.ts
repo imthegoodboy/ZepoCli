@@ -286,10 +286,19 @@ function orderSnapshotsMatch(candidate: OrderSnapshot, expected: OrderSnapshot):
   }
 
   const statusMatches = expected.status !== undefined && candidate.status === expected.status;
-  const etaMatches = expected.eta !== undefined && candidate.eta === expected.eta;
-  const totalMatches = expected.total !== undefined && candidate.total === expected.total;
+  if (!statusMatches) {
+    return false;
+  }
 
-  return statusMatches && (etaMatches || totalMatches);
+  if (expected.eta !== undefined && candidate.eta !== expected.eta) {
+    return false;
+  }
+
+  if (expected.total !== undefined && candidate.total !== expected.total) {
+    return false;
+  }
+
+  return expected.eta !== undefined || expected.total !== undefined;
 }
 
 function readClosestOrderCardText(element: Element): string {
