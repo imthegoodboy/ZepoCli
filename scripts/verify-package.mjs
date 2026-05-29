@@ -122,6 +122,7 @@ function verifyInstalledLiveVerifierContract(prefixDir) {
 
   const result = runNpm(["run", "--prefix", packageDir, "verify:live", "--", "--help"], { cwd: rootDir });
   assert(result.stdout.includes("human-controlled live verification"), "expected installed verify:live help output");
+  assert(result.stdout.includes("--reorder-last"), "expected installed verify:live reorder option");
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
   console.log("pass installed live verifier contract");
 }

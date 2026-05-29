@@ -19,6 +19,7 @@ describe("live verification runner", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("human-controlled live verification");
     expect(result.stdout).toContain("--checkout");
+    expect(result.stdout).toContain("--reorder-last");
     expect(result.stdout).toContain(
       "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths"
     );

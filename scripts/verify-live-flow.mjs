@@ -145,7 +145,16 @@ async function main() {
     }
   }
 
-  if (options.cart || options.add) {
+  if (options.reorderLast) {
+    console.error(
+      "\nReorder verification clicks Zepto's explicit reorder/order-again control for the latest readable order and may add those items back to the cart. Review the visible browser before checkout."
+    );
+    if (!(await runStep("reorder", ["--data-dir", options.dataDir, "--visible", "reorder", "last", "--json"])).ok) {
+      return;
+    }
+  }
+
+  if (options.cart || options.add || options.reorderLast) {
     if (!(await runStep("cart", ["--data-dir", options.dataDir, "--visible", "cart", "--json"])).ok) {
       return;
     }
@@ -334,6 +343,7 @@ function parseArgs(args) {
     history: false,
     login: false,
     quantity: 1,
+    reorderLast: false,
     track: false
   };
 
@@ -369,6 +379,8 @@ function parseArgs(args) {
       parsed.track = true;
     } else if (arg === "--history") {
       parsed.history = true;
+    } else if (arg === "--reorder-last") {
+      parsed.reorderLast = true;
     } else {
       console.error(`Unknown option: ${arg}`);
       process.exit(1);
@@ -419,6 +431,7 @@ Options:
   --checkout            Open checkout/payment handoff in a visible Zepto browser
   --track               Read latest order status
   --history             Read order history
+  --reorder-last        Reorder the latest readable order and read the cart
   --report <path>       Write sanitized report to this path
 
 Example:
