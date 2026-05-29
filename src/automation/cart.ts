@@ -7,11 +7,10 @@ import { textMatchesProductQuery } from "../utils/product-matching.js";
 import { parseCartItemsFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
+import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
-const PAYMENT_METHOD_LABEL_PATTERN_SOURCE =
-  "\\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|credit\\s*(?:/|and)?\\s*debit|debit\\s*(?:/|and)?\\s*credit|credit card|debit card|wallet|net\\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\\b";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|address|location|save for later|saved for later|clear cart)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
 
@@ -248,7 +247,7 @@ export function isUnsafeCartOpenClickText(text: string): boolean {
   return (
     /\b(checkout|proceed|continue|payment|pay|make payment|place order|confirm order|view bill|bill summary|item total|grand total|to pay)\b/i.test(
       normalized
-    ) || new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i").test(normalized)
+    ) || isPaymentMethodLabelText(normalized)
   );
 }
 

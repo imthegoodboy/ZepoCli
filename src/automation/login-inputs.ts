@@ -1,6 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { isEditableTextInput, readControlLabels } from "./control-state.js";
+import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const PHONE_PREFILL_INPUT_SELECTOR = [
   "input[type='tel']",
@@ -45,8 +46,6 @@ const LOGIN_FORM_FALLBACK_INPUT_SELECTOR = [
 
 const DIRECT_INPUT_SCAN_LIMIT = 10;
 const FALLBACK_INPUT_SCAN_LIMIT = 20;
-const PAYMENT_METHOD_LABEL_PATTERN =
-  /\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|cards?|credit\s*(?:\/|and)?\s*debit|debit\s*(?:\/|and)?\s*credit|credit card|debit card|wallet|net\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\b/i;
 
 export async function findPhonePrefillInput(page: Page): Promise<Locator | undefined> {
   const directInput = await findSafePhonePrefillInput(page.locator(PHONE_PREFILL_INPUT_SELECTOR), DIRECT_INPUT_SCAN_LIMIT);
@@ -104,7 +103,7 @@ export function isUnsafePhonePrefillInputText(text: string): boolean {
   return (
     /\b(otp|one[-\s]*time|verification code|verify|pin|passcode|password|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
-    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
+    ) || isPaymentMethodLabelText(normalized)
   );
 }
 
@@ -233,7 +232,7 @@ function isUnsafeLoginFormInputText(text: string): boolean {
   return (
     /\b(password|passcode|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
-    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
+    ) || isPaymentMethodLabelText(normalized)
   );
 }
 

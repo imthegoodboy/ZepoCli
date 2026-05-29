@@ -6,12 +6,11 @@ import { parseOrdersFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { readCart } from "./cart.js";
+import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const ORDERS_OPEN_CLICK_LABELS = [/^my orders$/i, /^orders$/i, /^order history$/i, /^past orders$/i] as const;
 export const ACCOUNT_MENU_CLICK_LABELS = [/^account$/i, /^profile$/i] as const;
 export const REORDER_ACTION_CLICK_LABELS = [/^reorder$/i, /^order again$/i, /^repeat order$/i] as const;
-const PAYMENT_METHOD_LABEL_PATTERN =
-  /\b(payment methods?|payment options?|payment mode|select payment|choose payment|upi|credit\s*(?:\/|and)?\s*debit|debit\s*(?:\/|and)?\s*credit|credit card|debit card|wallet|net\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\b/i;
 
 export async function openOrders(page: Page): Promise<void> {
   await gotoZepto(page, "/orders");
@@ -246,7 +245,7 @@ export function isUnsafeOrdersOpenClickText(text: string): boolean {
   return (
     /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order|cancel order)\b/i.test(
       normalized
-    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
+    ) || isPaymentMethodLabelText(normalized)
   );
 }
 
@@ -263,7 +262,7 @@ export function isUnsafeAccountMenuClickText(text: string): boolean {
   return (
     /\b(wallet|cart|my cart|search results?|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
       normalized
-    ) || PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
+    ) || isPaymentMethodLabelText(normalized)
   );
 }
 
@@ -281,7 +280,7 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
     /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
       normalized
     ) ||
-    PAYMENT_METHOD_LABEL_PATTERN.test(normalized)
+    isPaymentMethodLabelText(normalized)
   );
 }
 

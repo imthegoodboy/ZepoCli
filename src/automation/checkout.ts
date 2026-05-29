@@ -5,6 +5,7 @@ import { openCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
+import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const CHECKOUT_HANDOFF_CLICK_LABELS = [
   /^checkout\b.*$/i,
@@ -103,12 +104,7 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
 
   return (
     /\b(place order|confirm order|pay now|make payment)\b/i.test(normalized) ||
-    /\b(payment method|payment methods|select payment|choose payment|payment option|payment options|payment mode)\b/i.test(
-      normalized
-    ) ||
-    /\b(upi|cards?|credit\s*(?:\/|and)?\s*debit|debit\s*(?:\/|and)?\s*credit|credit card|debit card|wallet|net\s*banking|netbanking|cash on delivery|cod|pay on delivery|phonepe|google pay|gpay|paytm|bhim)\b/i.test(
-      normalized
-    ) ||
+    isPaymentMethodLabelText(normalized) ||
     /^(payment|payments)$/i.test(normalized) ||
     /\b(complete payment|confirm payment|pay securely|pay with|pay using|pay via|pay by|order now|review order)\b/i.test(
       normalized
