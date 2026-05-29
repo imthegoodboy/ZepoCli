@@ -38,7 +38,7 @@ const report = {
   dataDir: "<redacted-data-dir>",
   reportPath: "<redacted-report-path>",
   note:
-    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths.",
+    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.",
   steps: []
 };
 
@@ -154,7 +154,25 @@ async function main() {
     }
   }
 
-  if (options.cart || options.add || options.reorderLast) {
+  if (options.remove) {
+    console.error(
+      "\nRemove verification changes the Zepto cart by clicking a matching removable item row. Review the visible browser before checkout."
+    );
+    if (!(await runStep("remove", ["--data-dir", options.dataDir, "--visible", "remove", options.remove, "--json"])).ok) {
+      return;
+    }
+  }
+
+  if (options.clear) {
+    console.error(
+      "\nClear verification removes all detected Zepto cart items. Run it only when this test cart can be emptied."
+    );
+    if (!(await runStep("clear", ["--data-dir", options.dataDir, "--visible", "clear", "--json"])).ok) {
+      return;
+    }
+  }
+
+  if (options.cart || options.add || options.reorderLast || options.remove || options.clear) {
     if (!(await runStep("cart", ["--data-dir", options.dataDir, "--visible", "cart", "--json"])).ok) {
       return;
     }
@@ -303,7 +321,7 @@ function summarizePayload(name, payload) {
     };
   }
 
-  if (name === "cart" || name === "reorder") {
+  if (name === "cart" || name === "reorder" || name === "remove" || name === "clear") {
     return {
       cartItemCount: Array.isArray(payload.items) ? payload.items.length : 0,
       hasTotal: typeof payload.total === "string"
@@ -344,6 +362,7 @@ function parseArgs(args) {
     login: false,
     quantity: 1,
     reorderLast: false,
+    clear: false,
     track: false
   };
 
@@ -373,6 +392,10 @@ function parseArgs(args) {
       parsed.quantity = parseQuantity(requireValue(args, ++index, arg));
     } else if (arg === "--cart") {
       parsed.cart = true;
+    } else if (arg === "--remove") {
+      parsed.remove = requireValue(args, ++index, arg);
+    } else if (arg === "--clear") {
+      parsed.clear = true;
     } else if (arg === "--checkout") {
       parsed.checkout = true;
     } else if (arg === "--track") {
@@ -428,6 +451,8 @@ Options:
   --add <query>         Add a product to cart
   --quantity <number>   Quantity for --add, 1 to 12
   --cart                Read the cart
+  --remove <query>      Remove a matching cart item
+  --clear               Remove all detected cart items
   --checkout            Open checkout/payment handoff in a visible Zepto browser
   --track               Read latest order status
   --history             Read order history
@@ -438,5 +463,8 @@ Example:
   npm run build
   npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 
-The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths.`);
+For cart cleanup verification, run remove or clear before checkout:
+  npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
+
+The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.`);
 }

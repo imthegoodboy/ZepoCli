@@ -19,9 +19,11 @@ describe("live verification runner", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("human-controlled live verification");
     expect(result.stdout).toContain("--checkout");
+    expect(result.stdout).toContain("--remove <query>");
+    expect(result.stdout).toContain("--clear");
     expect(result.stdout).toContain("--reorder-last");
     expect(result.stdout).toContain(
-      "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, and local filesystem paths"
+      "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
     );
   });
 
@@ -110,6 +112,22 @@ describe("live verification runner", () => {
       message: 'Zepto did not show a selected address matching "<redacted-address-query>" after the selection click.',
       hint: "Rerun with <redacted-data-dir> and confirm <redacted-address-query> is selected."
     });
+
+    expect(
+      summarizeCommandError(
+        {
+          code: "cart_item_not_found",
+          message: 'Could not find a removable cart item matching "Amul Milk 500ml".',
+          hint: "Run `zepo cart` and remove Amul Milk 500ml manually if needed."
+        },
+        "",
+        ["--data-dir", ".zepo-live", "--visible", "remove", "Amul Milk 500ml", "--json"]
+      )
+    ).toEqual({
+      code: "cart_item_not_found",
+      message: 'Could not find a removable cart item matching "<redacted-cart-query>".',
+      hint: "Run `zepo cart` and remove <redacted-cart-query> manually if needed."
+    });
   });
 
   it("redacts workflow inputs from fallback stderr summaries", () => {
@@ -187,6 +205,24 @@ describe("live verification runner", () => {
       "<redacted-query>",
       "--report",
       "<redacted-report-path>",
+      "--json"
+    ]);
+
+    expect(
+      redactArgsForLiveReport([
+        "--data-dir",
+        ".zepo-live",
+        "--visible",
+        "remove",
+        "Amul Milk 500ml",
+        "--json"
+      ])
+    ).toEqual([
+      "--data-dir",
+      "<redacted-data-dir>",
+      "--visible",
+      "remove",
+      "<redacted-cart-query>",
       "--json"
     ]);
   });

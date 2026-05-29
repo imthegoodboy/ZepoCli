@@ -130,7 +130,7 @@ npm pack --dry-run
 
 Keep package verification checking that `package.json` maps `zepo` to `./dist/index.js` and that the compiled entry keeps the `#!/usr/bin/env node` shebang.
 
-Use `npm run verify:live -- --data-dir <dedicated-dir> ...` only for opt-in human-account verification. Keep it out of CI and normal `npm run check` because it requires a real Zepto account, visible browser handoffs, delivery context, and optional Zepto-side checkout/payment decisions. Its report must stay sanitized and omit raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
+Use `npm run verify:live -- --data-dir <dedicated-dir> ...` only for opt-in human-account verification. Keep it out of CI and normal `npm run check` because it requires a real Zepto account, visible browser handoffs, delivery context, cart mutation choices, and optional Zepto-side checkout/payment decisions. It can cover cart cleanup with `--remove <query>` and `--clear` when the test cart can be safely changed. Its report must stay sanitized and omit raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
 
 For browser-facing changes, also run a live command with a disposable `--data-dir` and document whether it required manual login/location setup. Use `--visible` when diagnosing Zepto rendering or blocking behavior.
 

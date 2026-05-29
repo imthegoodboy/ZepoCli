@@ -61,6 +61,8 @@ export function redactArgsForLiveReport(args) {
 
   if (command === "search" || command === "add") {
     redactPositional(redacted, positionals[1], "<redacted-query>");
+  } else if (command === "remove") {
+    redactPositional(redacted, positionals[1], "<redacted-cart-query>");
   } else if (command === "address" && positionals[1]?.value === "use") {
     redactPositional(redacted, positionals[2], "<redacted-address-query>");
   }
@@ -108,6 +110,8 @@ function liveReportTextRedactions(args) {
   const command = positionals[0]?.value;
   if (command === "search" || command === "add") {
     addRedaction(redactions, positionals[1]?.value, "<redacted-query>");
+  } else if (command === "remove") {
+    addRedaction(redactions, positionals[1]?.value, "<redacted-cart-query>");
   } else if (command === "address" && positionals[1]?.value === "use") {
     addRedaction(redactions, positionals[2]?.value, "<redacted-address-query>");
   }
