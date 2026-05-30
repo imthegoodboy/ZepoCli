@@ -10,6 +10,7 @@ import {
   createLiveConsoleTextRedactor,
   hasLiveReportMissingCoverage,
   redactArgsForLiveConsole,
+  redactLiveConsoleText,
   summarizeLiveReportAttempts,
   summarizeLiveReportCoverage,
   summarizeLiveReportMissingCoverage,
@@ -646,12 +647,35 @@ function parseArgs(args) {
     } else if (arg === "--reorder-last") {
       parsed.reorderLast = true;
     } else {
-      console.error(`Unknown option: ${arg}`);
-      process.exit(1);
+      failUnknownArgument(arg);
     }
   }
 
   return parsed;
+}
+
+function failUnknownArgument(arg) {
+  const option = formatUnknownOptionName(arg);
+  if (option) {
+    console.error(`Unknown option: ${option}.`);
+  } else {
+    console.error("Unexpected positional argument.");
+  }
+
+  if (String(arg ?? "").includes("=")) {
+    console.error("Use a space between a live verifier option and its value.");
+  }
+  console.error("Run `npm --silent run verify:live -- --help` for supported options.");
+  process.exit(1);
+}
+
+function formatUnknownOptionName(arg) {
+  const text = String(arg ?? "");
+  if (!text.startsWith("-")) {
+    return undefined;
+  }
+
+  return redactLiveConsoleText(text.split("=", 1)[0]);
 }
 
 function requireValue(args, index, option) {

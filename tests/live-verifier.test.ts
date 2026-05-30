@@ -365,6 +365,48 @@ describe("live verification runner", () => {
     expect(result.stderr).toContain("Missing required --data-dir <path>.");
   });
 
+  it("redacts unknown live verification arguments before touching the compiled CLI", () => {
+    const fakeNpmToken = `npm_${"A".repeat(24)}`;
+    const cases = [
+      {
+        args: [`--bad-${fakeNpmToken}`],
+        expected: "Unknown option: --bad-<redacted-npm-token>.",
+        hidden: [fakeNpmToken]
+      },
+      {
+        args: ["--search=Amul Milk 500ml"],
+        expected: "Unknown option: --search.",
+        hidden: ["Amul Milk 500ml"]
+      },
+      {
+        args: ["--report=C:\\Users\\parth\\.zepo-live\\secret-report.json"],
+        expected: "Unknown option: --report.",
+        hidden: ["C:\\Users\\parth", "secret-report.json"]
+      },
+      {
+        args: ["protein bars"],
+        expected: "Unexpected positional argument.",
+        hidden: ["protein bars"]
+      }
+    ];
+
+    for (const testCase of cases) {
+      const result = spawnSync(process.execPath, [scriptPath, ...testCase.args], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+      const output = `${result.stdout}\n${result.stderr}`;
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(testCase.expected);
+      expect(result.stderr).toContain("Run `npm --silent run verify:live -- --help` for supported options.");
+      expect(result.stderr).not.toContain("Compiled CLI was not found");
+      for (const hidden of testCase.hidden) {
+        expect(output).not.toContain(hidden);
+      }
+    }
+  });
+
   it("rejects live verification option combinations that cannot produce useful evidence", () => {
     const clearCheckout = spawnSync(
       process.execPath,

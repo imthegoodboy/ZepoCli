@@ -236,6 +236,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(verifier).toContain("expected installed verify:live usage to use silent npm");
     expect(verifier).toContain("expected installed verify:live step-timeout option");
+    expect(verifier).toContain("expected installed verify:live unknown option output to omit npm-token-shaped value");
+    expect(verifier).toContain("expected installed verify:live unknown assignment output to omit workflow query");
+    expect(verifier).toContain("expected installed verify:live unknown assignment output to omit local temp paths");
     expect(verifier).toContain("expected installed verify:live command-timeout code guidance");
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");
     expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
