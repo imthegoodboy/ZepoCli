@@ -284,6 +284,13 @@ export function validateLiveReportAcceptance(report, options = {}) {
     });
   }
 
+  if (containsSensitiveLiveReportText(report)) {
+    issues.push({
+      code: "live_report_sensitive_text",
+      message: "Live report contains sensitive-looking text that should have been redacted."
+    });
+  }
+
   if (!isObject(requested) || !isObject(attempted) || !isObject(coverage) || !isObject(missingCoverage)) {
     issues.push({
       code: "live_report_contract_mismatch",
@@ -374,6 +381,23 @@ export function validateLiveReportAcceptance(report, options = {}) {
     accepted: issues.length === 0,
     issues
   };
+}
+
+function containsSensitiveLiveReportText(value, seen = new Set()) {
+  if (typeof value === "string") {
+    return redactLiveReportText(value, []) !== value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => containsSensitiveLiveReportText(item, seen));
+  }
+
+  if (!isObject(value) || seen.has(value)) {
+    return false;
+  }
+
+  seen.add(value);
+  return Object.values(value).some((item) => containsSensitiveLiveReportText(item, seen));
 }
 
 export function summarizeLiveReportRequests(options = {}) {

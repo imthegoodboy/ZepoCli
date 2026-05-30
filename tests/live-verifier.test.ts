@@ -450,6 +450,19 @@ describe("live verification runner", () => {
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_coverage_mismatch");
 
+    const sensitiveReport = acceptedLiveReport({
+      dataDir: "C:\\Users\\parth\\.zepo-live",
+      note: `raw token npm_${"A".repeat(24)} should not be accepted`
+    });
+    const sensitiveResult = validateLiveReportAcceptance(sensitiveReport, {
+      expectedVersion: packageJson.version
+    });
+
+    expect(sensitiveResult.accepted).toBe(false);
+    expect(sensitiveResult.issues.map((issue) => issue.code)).toContain("live_report_sensitive_text");
+    expect(JSON.stringify(sensitiveResult.issues)).not.toContain("Users");
+    expect(JSON.stringify(sensitiveResult.issues)).not.toContain("npm_");
+
     const weakDoctor = acceptedLiveReport({
       steps: [
         {
@@ -510,6 +523,27 @@ describe("live verification runner", () => {
       expect(fail.stderr).toContain("live_report_not_ok");
       expect(fail.stderr).toContain("live_report_version_mismatch");
       expect(`${fail.stdout}\n${fail.stderr}`).not.toContain(tempDir);
+
+      const sensitiveReportPath = join(tempDir, "sensitive-live-verification-report.json");
+      writeFileSync(
+        sensitiveReportPath,
+        `${JSON.stringify(
+          acceptedLiveReport({
+            reportPath: join(tempDir, "live-verification-report.json")
+          }),
+          null,
+          2
+        )}\n`
+      );
+
+      const sensitiveFail = spawnSync(process.execPath, [reportScriptPath, sensitiveReportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(sensitiveFail.status).toBe(1);
+      expect(sensitiveFail.stderr).toContain("live_report_sensitive_text");
+      expect(`${sensitiveFail.stdout}\n${sensitiveFail.stderr}`).not.toContain(tempDir);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }

@@ -200,6 +200,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "`attempted`/`coverage` consistency with `steps`",
+    "sensitive-looking text redaction",
     "Live report failures use stable `error.code` values.",
     "live_verification_incomplete",
     "npm run verify:secrets",
@@ -792,6 +793,40 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to reject coverage summaries that do not match steps"
   );
   console.log("pass installed live report summary consistency");
+  const sensitiveLiveReport = {
+    ...acceptedLiveReport,
+    reportPath: join(tempRoot, "raw-live-verification-report.json"),
+    note: `raw phone 9876543210 and token ${FAKE_NPM_TOKEN} should not be acceptable`
+  };
+  const sensitiveLiveReportIssues = validateLiveReportAcceptance(sensitiveLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    sensitiveLiveReportIssues.some((issue) => issue.code === "live_report_sensitive_text"),
+    "expected installed live report acceptance helper to reject sensitive-looking report text"
+  );
+  assert(
+    !JSON.stringify(sensitiveLiveReportIssues).includes(tempRoot) &&
+      !JSON.stringify(sensitiveLiveReportIssues).includes(FAKE_NPM_TOKEN),
+    "expected installed live report sensitive text rejection to avoid echoing raw sensitive values"
+  );
+  const sensitiveLiveReportPath = join(tempRoot, "sensitive-live-verification-report.json");
+  writeFileSync(sensitiveLiveReportPath, `${JSON.stringify(sensitiveLiveReport, null, 2)}\n`);
+  const sensitiveLiveReportResult = runNpmResult(
+    ["--silent", "run", "--prefix", packageDir, "verify:live:report", "--", sensitiveLiveReportPath],
+    { cwd: rootDir }
+  );
+  assert(sensitiveLiveReportResult.status === 1, "expected installed live report validator to reject sensitive reports");
+  assert(
+    sensitiveLiveReportResult.stderr.includes("live_report_sensitive_text"),
+    "expected installed live report validator to explain sensitive report rejection with stable code"
+  );
+  assert(
+    !`${sensitiveLiveReportResult.stdout}\n${sensitiveLiveReportResult.stderr}`.includes(tempRoot) &&
+      !`${sensitiveLiveReportResult.stdout}\n${sensitiveLiveReportResult.stderr}`.includes(FAKE_NPM_TOKEN),
+    "expected installed live report validator sensitive rejection output to omit raw sensitive values"
+  );
+  console.log("pass installed live report sensitive text rejection");
   const acceptedLiveReportPath = join(tempRoot, "accepted-live-verification-report.json");
   writeFileSync(acceptedLiveReportPath, `${JSON.stringify(acceptedLiveReport, null, 2)}\n`);
   const acceptedLiveReportResult = runNpm(
