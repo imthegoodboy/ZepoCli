@@ -294,6 +294,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live console stderr redaction to omit Windows forward-slash local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded workflow queries");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded sensitive values");
+    expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded sensitive blobs");
     expect(verifier).toContain("expected installed live console stderr redaction to omit npm-token-shaped values");
     expect(verifier).toContain("expected installed live console stderr stream redaction to handle split workflow queries");
     expect(verifier).toContain("live_verification_incomplete");

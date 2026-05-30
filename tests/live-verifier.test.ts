@@ -1529,12 +1529,14 @@ describe("live verification runner", () => {
   it("redacts URL-encoded sensitive values from live report errors and console stderr", () => {
     const encodedUrl =
       "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt";
+    const encodedBlob =
+      "https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26otp%3D123456%26card%3D4111%201111%201111%201111%26upi%3Dabc%40upi%26token%3Draw-token-123%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Freport.json";
 
     expect(
       summarizeCommandError(
         {
           code: "checkout_handoff_unverified",
-          message: `Zepto redirect contained ${encodedUrl}.`
+          message: `Zepto redirect contained ${encodedUrl} and ${encodedBlob}.`
         },
         "",
         []
@@ -1542,10 +1544,10 @@ describe("live verification runner", () => {
     ).toEqual({
       code: "checkout_handoff_unverified",
       message:
-        "Zepto redirect contained https://example.test/callback?phone=<redacted-phone>&otp=<redacted-verification-code>&card=<redacted-payment-number>&upi=<redacted-payment-handle>&token=<redacted-auth-token>&access_token=<redacted-auth-token>&file=<redacted-local-path>."
+        "Zepto redirect contained https://example.test/callback?phone=<redacted-phone>&otp=<redacted-verification-code>&card=<redacted-payment-number>&upi=<redacted-payment-handle>&token=<redacted-auth-token>&access_token=<redacted-auth-token>&file=<redacted-local-path> and https://example.test/callback?phone=<redacted-phone>&otp=<redacted-verification-code>&card=<redacted-payment-number>&upi=<redacted-payment-handle>&token=<redacted-auth-token>&file=<redacted-local-path>."
     });
 
-    const redacted = redactLiveConsoleText(`Live stderr included ${encodedUrl}`, []);
+    const redacted = redactLiveConsoleText(`Live stderr included ${encodedUrl} and ${encodedBlob}`, []);
     expect(redacted).toContain("phone=<redacted-phone>");
     expect(redacted).toContain("otp=<redacted-verification-code>");
     expect(redacted).toContain("card=<redacted-payment-number>");
@@ -1560,6 +1562,8 @@ describe("live verification runner", () => {
     expect(redacted).not.toContain("raw-token-123");
     expect(redacted).not.toContain("abc.def.ghi");
     expect(redacted).not.toContain("C%3A%2FUsers");
+    expect(redacted).not.toContain("https%3A%2F%2Fexample.test");
+    expect(redacted).not.toContain("report.json");
   });
 
   it("redacts workflow inputs and sensitive values from streamed live console stderr", () => {

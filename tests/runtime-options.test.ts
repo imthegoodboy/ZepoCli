@@ -109,7 +109,9 @@ describe("global runtime options", () => {
           nested: {
             payment: "card 4111 1111 1111 1111 and handle abc@upi",
             encoded:
-              "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt"
+              "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt",
+            encodedBlob:
+              "https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26card%3D4111%201111%201111%201111%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt"
           },
           values: ["CVV 123", "./local-report.json and rerun `zepo doctor`."]
         },
@@ -131,7 +133,7 @@ describe("global runtime options", () => {
         error: string;
         browserProfileDir: string;
         msg: string;
-        nested: { payment: string; encoded: string };
+        nested: { payment: string; encoded: string; encodedBlob: string };
         values: string[];
         err?: { message?: string; stack?: string };
       }>;
@@ -163,6 +165,7 @@ describe("global runtime options", () => {
       expect(serialized).not.toContain("raw-token-123");
       expect(serialized).not.toContain("abc.def.ghi");
       expect(serialized).not.toContain("C%3A%2FUsers");
+      expect(serialized).not.toContain("https%3A%2F%2Fexample.test");
       expect(serialized).not.toContain("file:///");
       expect(serialized).not.toContain("Users");
       expect(serialized).not.toContain("local-report.json");

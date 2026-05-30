@@ -851,7 +851,7 @@ function redactLiveReportText(value, redactions) {
 }
 
 function redactGenericSensitiveText(value) {
-  return redactGenericPlainSensitiveText(redactEncodedSensitiveParameterValues(value));
+  return redactGenericPlainSensitiveText(redactEncodedSensitiveParameterValues(redactEncodedSensitiveFragments(value)));
 }
 
 function redactGenericPlainSensitiveText(value) {
@@ -900,6 +900,18 @@ function redactEncodedSensitiveParameterValues(value) {
       return redacted === decoded ? match : `${prefix}${redacted}`;
     }
   );
+}
+
+function redactEncodedSensitiveFragments(value) {
+  return String(value ?? "").replace(/[^\s"',;<>]*%[0-9A-Fa-f]{2}[^\s"',;<>]*/g, (match) => {
+    const decoded = decodeQueryValue(match);
+    if (!decoded || decoded === match) {
+      return match;
+    }
+
+    const redacted = redactGenericPlainSensitiveText(redactEncodedSensitiveParameterValues(decoded));
+    return redacted === decoded ? match : redacted;
+  });
 }
 
 function decodeQueryValue(value) {
