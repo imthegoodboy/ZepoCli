@@ -266,8 +266,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject attempted summaries that do not match steps");
     expect(verifier).toContain("expected installed live report acceptance helper to reject coverage summaries that do not match steps");
     expect(verifier).toContain("pass installed live report summary consistency");
-    expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report text");
-    expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive values");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
+    expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");
     expect(verifier).toContain("pass installed live report sensitive text rejection");
     expect(verifier).toContain("expected installed live report confirmed-session adjustment to make --login conditional");
     expect(verifier).toContain("expected installed live report confirmed-session adjustment to avoid skipped login missing coverage");
