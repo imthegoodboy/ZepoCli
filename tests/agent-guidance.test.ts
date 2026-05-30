@@ -64,6 +64,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("package `version`");
       expect(guidance).toContain("top-level `requested`, `attempted`, `coverage`, and `missingCoverage`");
       expect(guidance).toContain("capabilities that were requested, ran, actually passed, and remain requested-but-unverified");
+      expect(guidance).toContain("when `--login` is supplied but the data directory already has a confirmed session");
+      expect(guidance).toContain("must not claim login coverage and must require `liveSession` coverage instead");
       for (const code of [
         "live_doctor_contract_mismatch",
         "live_login_contract_mismatch",
@@ -108,6 +110,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");
     expect(liveVerifierSkill).toContain("`missingCoverage` shows requested capabilities that did not pass");
+    expect(liveVerifierSkill).toContain("`--login` is conditional");
+    expect(liveVerifierSkill).toContain("Existing confirmed sessions with `--login` leave `requested.login` false");
     expect(liveVerifierSkill).toContain("do not treat omitted or false coverage fields as verified");
     expect(liveVerifierSkill).toContain("npm run check");
     expect(liveVerifierSkill).toContain("live_verification_incomplete");

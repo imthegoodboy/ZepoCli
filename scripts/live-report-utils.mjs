@@ -285,6 +285,18 @@ export function summarizeLiveReportRequests(options = {}) {
   return summary;
 }
 
+export function adjustLiveReportRequestsForConfirmedSession(requested = {}, statusPayload = {}) {
+  if (requested?.login !== true || statusPayload?.confirmedSession !== true) {
+    return requested;
+  }
+
+  return {
+    ...requested,
+    login: false,
+    liveSession: true
+  };
+}
+
 function summarizeLiveReportStepBooleans(steps, includeStep) {
   const summary = createLiveReportCapabilitySummary();
 

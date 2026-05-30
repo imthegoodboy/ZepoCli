@@ -10,6 +10,7 @@ const rootDir = resolve(import.meta.dirname, "..");
 const scriptPath = resolve(rootDir, "scripts", "verify-live-flow.mjs");
 const LIVE_VERIFIER_TEST_TIMEOUT_MS = 15_000;
 const {
+  adjustLiveReportRequestsForConfirmedSession,
   buildLiveCommandLaunchFailureStep,
   buildLiveCommandTimeoutStep,
   buildLiveReportStep,
@@ -81,6 +82,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("command_failed");
     expect(result.stdout).toContain("--step-timeout <ms>");
     expect(result.stdout).toContain("npm --silent run verify:live");
+    expect(result.stdout).toContain(
+      "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
+    );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
 
@@ -133,6 +137,7 @@ describe("live verification runner", () => {
     expect(script).toContain('readFileSync(resolve(rootDir, "package.json"), "utf8")');
     expect(script).toContain("const requestedCoverage = summarizeLiveReportRequests(options)");
     expect(script).toContain("requested: requestedCoverage");
+    expect(script).toContain("report.requested = adjustLiveReportRequestsForConfirmedSession(report.requested, status.payload)");
     expect(script).toContain("attempted: summarizeLiveReportAttempts([])");
     expect(script).toContain("const initialCoverage = summarizeLiveReportCoverage([])");
     expect(script).toContain("coverage: initialCoverage");
@@ -279,6 +284,50 @@ describe("live verification runner", () => {
       history: false,
       reorder: false
     });
+  });
+
+  it("treats --login as conditional when the data directory already has a confirmed session", () => {
+    const requested = summarizeLiveReportRequests({
+      login: true
+    });
+
+    const adjusted = adjustLiveReportRequestsForConfirmedSession(requested, {
+      confirmedSession: true
+    });
+
+    expect(adjusted).toEqual({
+      browserPreflight: true,
+      localStatus: true,
+      login: false,
+      liveSession: true,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: false,
+      track: false,
+      history: false,
+      reorder: false
+    });
+    expect(requested.login).toBe(true);
+
+    const missingCoverage = summarizeLiveReportMissingCoverage(
+      adjusted,
+      summarizeLiveReportCoverage([
+        { name: "doctor", ok: true },
+        { name: "status", ok: true },
+        { name: "status live", ok: true }
+      ])
+    );
+
+    expect(missingCoverage.login).toBe(false);
+    expect(missingCoverage.liveSession).toBe(false);
+    expect(hasLiveReportMissingCoverage(missingCoverage)).toBe(false);
+    expect(adjustLiveReportRequestsForConfirmedSession(requested, { confirmedSession: false })).toBe(requested);
   });
 
   it("summarizes requested but uncovered live report capabilities", () => {

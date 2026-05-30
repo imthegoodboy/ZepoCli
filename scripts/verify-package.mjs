@@ -186,6 +186,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
+    "`--login` is conditional: if the dedicated data directory already has a confirmed session",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -605,6 +606,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   console.log("pass installed verify live requested checkout missing coverage");
 
   const {
+    adjustLiveReportRequestsForConfirmedSession,
     buildLiveCommandLaunchFailureStep,
     buildLiveCommandTimeoutStep,
     buildLiveReportStep,
@@ -650,6 +652,35 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     "expected installed live report requests to include requested workflow scope without sensitive values"
   );
+  const installedConditionalLoginRequest = summarizeLiveReportRequests({
+    login: true
+  });
+  const installedConfirmedSessionRequest = adjustLiveReportRequestsForConfirmedSession(
+    installedConditionalLoginRequest,
+    {
+      confirmedSession: true
+    }
+  );
+  assert(
+    installedConditionalLoginRequest.login === true &&
+      installedConfirmedSessionRequest.login === false &&
+      installedConfirmedSessionRequest.liveSession === true,
+    "expected installed live report confirmed-session adjustment to make --login conditional"
+  );
+  const installedConfirmedSessionMissingCoverage = summarizeLiveReportMissingCoverage(
+    installedConfirmedSessionRequest,
+    summarizeLiveReportCoverage([
+      { name: "doctor", ok: true },
+      { name: "status", ok: true },
+      { name: "status live", ok: true }
+    ])
+  );
+  assert(
+    installedConfirmedSessionMissingCoverage.login === false &&
+      installedConfirmedSessionMissingCoverage.liveSession === false,
+    "expected installed live report confirmed-session adjustment to avoid skipped login missing coverage"
+  );
+  console.log("pass installed live report conditional login request");
   assertDeepEqual(
     summarizeLiveReportAttempts([
       { name: "doctor", ok: true },
