@@ -237,6 +237,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live command-timeout code guidance");
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");
     expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
+    expect(verifier).toContain("function installedVerifyLiveArgs");
+    expect(verifier).toContain('"--silent", "run", "--prefix", packageDir, "verify:live"');
+    expect(verifier).toContain("expected installed verify:live invalid phone output to omit raw phone input");
+    expect(verifier).toContain("expected installed verify:live no-session console output to omit local temp paths");
+    expect(verifier).toContain("expected installed verify:live requested-checkout console output to omit local temp paths");
     expect(verifier).toContain("expected installed live verifier to sanitize report write failures");
     expect(verifier).toContain("expected installed live verifier to write sanitized partial reports on interrupts");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
