@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +7,8 @@ import { pathToFileURL } from "node:url";
 const rootDir = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
 const npmExecPath = process.env.npm_execpath;
+const INSTALLED_CLI_COMMAND_TIMEOUT_MS = 120_000;
+const NPM_COMMAND_TIMEOUT_MS = 180_000;
 
 const tempRoot = mkdtempSync(join(tmpdir(), "zepo-package-smoke-"));
 const packDir = join(tempRoot, "pack");
@@ -77,11 +79,14 @@ try {
   const zepoBin = resolveInstalledBin(installDir, "zepo");
   assert(existsSync(zepoBin), `expected installed zepo binary at ${zepoBin}`);
 
-  verifyInstalledCliEntryContract(installDir);
+  const installedCliPath = verifyInstalledCliEntryContract(installDir);
+  verifyInstalledBinShim(zepoBin);
+  verifyInstalledReadmeContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
-  verifyInstalledLiveVerifierContract(installDir);
-  const runtimeModules = await loadRootRuntimeModules();
-  verifyInstalledCli(zepoBin, runtimeModules);
+  await verifyInstalledAddressAutomationContract(installDir);
+  await verifyInstalledLiveVerifierContract(installDir);
+  const runtimeModules = await loadInstalledRuntimeModules(installDir);
+  verifyInstalledCli(installedCliPath, runtimeModules);
 } finally {
   removeTree(tempRoot);
 }
@@ -90,24 +95,155 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const packageDir = join(prefixDir, "node_modules", packageJson.name);
   const installedPackageJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
   const installedCliPath = join(packageDir, "dist", "index.js");
+  const installedCleanDistPath = join(packageDir, "scripts", "clean-dist.mjs");
+  const installedNormalizeCliEntryPath = join(packageDir, "scripts", "normalize-cli-entry.mjs");
 
   assert(installedPackageJson.bin?.zepo === "./dist/index.js", "expected installed package bin zepo entry");
+  assert(
+    installedPackageJson.scripts?.build?.includes("node scripts/clean-dist.mjs"),
+    "expected installed build script to clean dist"
+  );
+  assert(
+    installedPackageJson.scripts?.build?.includes("node scripts/normalize-cli-entry.mjs"),
+    "expected installed build script to normalize the CLI entry"
+  );
   assert(existsSync(installedCliPath), "expected installed dist/index.js");
+  assert(existsSync(installedCleanDistPath), "expected installed clean-dist script");
+  assert(existsSync(installedNormalizeCliEntryPath), "expected installed normalize-cli-entry script");
   assert(
     readFileSync(installedCliPath, "utf8").startsWith("#!/usr/bin/env node\n"),
     "expected installed CLI entry to keep node shebang"
   );
   console.log("pass installed CLI entry contract");
+  return installedCliPath;
+}
+
+function verifyInstalledBinShim(zepoBin) {
+  const result = spawnInstalledBin(zepoBin, ["--version"], {
+    cwd: rootDir,
+    encoding: "utf8",
+    killSignal: "SIGTERM",
+    timeout: INSTALLED_CLI_COMMAND_TIMEOUT_MS,
+    env: {
+      ...process.env,
+      FORCE_COLOR: "0",
+      NO_COLOR: "1"
+    }
+  });
+
+  if (result.error) {
+    throwSpawnError(result.error, zepoBin, ["--version"], INSTALLED_CLI_COMMAND_TIMEOUT_MS);
+  }
+
+  const normalized = normalizeResult(result);
+  assert(normalized.status === 0, "expected installed zepo shim version to succeed");
+  assert(normalized.stderr === "", "expected installed zepo shim version stderr to be empty");
+  assert(normalized.stdout === packageJson.version, "expected installed zepo shim version to match package.json");
+  console.log("pass installed CLI shim contract");
+}
+
+function verifyInstalledReadmeContract(prefixDir) {
+  const readmePath = join(prefixDir, "node_modules", packageJson.name, "README.md");
+  assert(existsSync(readmePath), "expected installed package README");
+
+  const readme = readFileSync(readmePath, "utf8");
+  for (const text of [
+    "Requires Node.js 20.19 or newer.",
+    "zepo login",
+    "zepo checkout",
+    "paymentStatus: \"not_observed_by_zepocli\"",
+    "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
+    "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
+    "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
+    "Privacy Notice version 1.1",
+    "Last updated: 17th June 2025",
+    "passwords and payment instrument details as sensitive personal information",
+    "Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
+    "auth/session/token URL parameters, and local-path values",
+    "including URL/query-string encoded forms of those values",
+    "Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
+    "auth/session/token URL-parameter, and local-path rules",
+    "npm run verify:live -- --data-dir ./.zepo-live",
+    "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
+    "`--choose-add` with `--add`",
+    "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
+    "Live report failures use stable `error.code` values.",
+    "live_verification_incomplete"
+  ]) {
+    assert(readme.includes(text), `expected installed README to document: ${text}`);
+  }
+
+  console.log("pass installed README contract");
 }
 
 async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   const checkoutModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "commands", "checkout.js");
+  const checkoutAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "checkout.js"
+  );
   const { checkoutHandoffOutput } = await import(pathToFileURL(checkoutModulePath).href);
+  const { isCheckoutHandoffClickText, isUnsafeCheckoutAutomationClickText } = await import(
+    pathToFileURL(checkoutAutomationModulePath).href
+  );
   assertCheckoutHandoffContract(checkoutHandoffOutput());
+  assert(isCheckoutHandoffClickText("Checkout") === true, "expected installed checkout label to be accepted");
+  assert(
+    isCheckoutHandoffClickText("Checkout 2 items") === true,
+    "expected installed checkout item-count label to be accepted"
+  );
+  assert(
+    isCheckoutHandoffClickText("Checkout these offers") === false,
+    "expected installed promotional checkout label to be rejected"
+  );
+  assert(
+    isCheckoutHandoffClickText("Checkout and Pay") === false,
+    "expected installed checkout-and-pay label to be rejected"
+  );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Continue to Pay") === true,
+    "expected installed continue-to-pay label to be unsafe"
+  );
   console.log("pass installed checkout handoff contract");
 }
 
-function verifyInstalledLiveVerifierContract(prefixDir) {
+async function verifyInstalledAddressAutomationContract(prefixDir) {
+  const addressAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "address.js"
+  );
+  const { isAddAddressClickText, isAddressManagerClickText, isUnsafeAddressAutomationClickText } = await import(
+    pathToFileURL(addressAutomationModulePath).href
+  );
+
+  assert(isAddressManagerClickText("Delivery Address") === true, "expected installed address-manager label to be accepted");
+  assert(isAddAddressClickText("Add Address") === true, "expected installed add-address label to be accepted");
+  for (const unsafeText of ["Checkout", "Pay Now", "Order Summary", "Bill Summary", "Cart"]) {
+    assert(
+      isUnsafeAddressAutomationClickText(unsafeText) === true,
+      `expected installed address automation label to be unsafe: ${unsafeText}`
+    );
+    assert(
+      isAddressManagerClickText(unsafeText) === false,
+      `expected installed address manager label to be rejected: ${unsafeText}`
+    );
+    assert(
+      isAddAddressClickText(unsafeText) === false,
+      `expected installed add-address label to be rejected: ${unsafeText}`
+    );
+  }
+  console.log("pass installed address automation contract");
+}
+
+async function verifyInstalledLiveVerifierContract(prefixDir) {
   const packageDir = join(prefixDir, "node_modules", packageJson.name);
   const installedPackageJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
   const liveReportUtilsPath = join(packageDir, "scripts", "live-report-utils.mjs");
@@ -119,30 +255,564 @@ function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(existsSync(liveReportUtilsPath), "expected installed live-report-utils script");
   assert(existsSync(liveVerifierPath), "expected installed verify-live-flow script");
+  const liveVerifierSource = readFileSync(liveVerifierPath, "utf8");
+  assert(
+    liveVerifierSource.includes("version: packageJson.version"),
+    "expected installed live verifier report to include package version"
+  );
+  assert(
+    liveVerifierSource.includes("summarizeLiveRunnerFailure(error)") &&
+      liveVerifierSource.includes('name: "live runner"'),
+    "expected installed live verifier to record sanitized internal runner failures"
+  );
+  assert(
+    liveVerifierSource.includes("const reportWriteError = writeLiveReport(reportPath, report)") &&
+      liveVerifierSource.includes("Could not write live verification report.") &&
+      liveVerifierSource.includes("Choose a writable report file path and rerun with --report <path>.") &&
+      !liveVerifierSource.includes("console.error(error.message)"),
+    "expected installed live verifier to sanitize report write failures"
+  );
+  assert(
+    liveVerifierSource.includes('process.once("SIGINT", () => handleInterrupt("SIGINT"))') &&
+      liveVerifierSource.includes('process.once("SIGTERM", () => handleInterrupt("SIGTERM"))') &&
+      liveVerifierSource.includes("Live verification interrupted by the user.") &&
+      liveVerifierSource.includes("Review the visible Zepto browser state, then rerun verify:live when ready.") &&
+      liveVerifierSource.includes("finishInterruptedRun(signal, exitCode)") &&
+      liveVerifierSource.includes("writeLiveReport(reportPath, report)"),
+    "expected installed live verifier to write sanitized partial reports on interrupts"
+  );
 
   const result = runNpm(["run", "--prefix", packageDir, "verify:live", "--", "--help"], { cwd: rootDir });
   assert(result.stdout.includes("human-controlled live verification"), "expected installed verify:live help output");
   assert(result.stdout.includes("--reorder-last"), "expected installed verify:live reorder option");
+  assert(result.stdout.includes("--choose-add"), "expected installed verify:live choose-add option");
   assert(result.stdout.includes("--remove <query>"), "expected installed verify:live remove option");
   assert(result.stdout.includes("--clear"), "expected installed verify:live clear option");
+  assert(result.stdout.includes("--step-timeout <ms>"), "expected installed verify:live step-timeout option");
+  assert(
+    result.stdout.includes("npm --silent run verify:live"),
+    "expected installed verify:live help to mention silent npm invocation for shared logs"
+  );
+  assert(
+    result.stdout.includes("accepts 10-digit, +91, or leading-0 Indian mobile formats"),
+    "expected installed verify:live login phone format guidance"
+  );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
+  assert(result.stdout.includes("Stable report failure codes include"), "expected installed verify:live stable-code guidance");
+  assert(
+    result.stdout.includes("live_verification_incomplete"),
+    "expected installed verify:live manual-precondition code guidance"
+  );
+  assert(result.stdout.includes("live_command_launch_failed"), "expected installed verify:live command-launch code guidance");
+  assert(result.stdout.includes("live_command_timeout"), "expected installed verify:live command-timeout code guidance");
+  assert(result.stdout.includes("live_summary_failed"), "expected installed verify:live summary-failure code guidance");
+  assert(result.stdout.includes("command_failed"), "expected installed verify:live fallback code guidance");
+
+  const invalidPhoneResult = runNpmResult(
+    [
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live",
+      "--",
+      "--data-dir",
+      join(tempRoot, "live-invalid-phone-data"),
+      "--login",
+      "--phone",
+      "phone 9876543210"
+    ],
+    { cwd: rootDir }
+  );
+  assert(invalidPhoneResult.status === 1, "expected installed verify:live invalid phone to fail");
+  assert(
+    invalidPhoneResult.stderr.includes("--phone must be a valid Indian mobile number."),
+    "expected installed verify:live invalid phone message"
+  );
+  assert(
+    !invalidPhoneResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live invalid phone to fail before compiled CLI checks"
+  );
+
+  const compatiblePhoneResult = runNpmResult(
+    [
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live",
+      "--",
+      "--data-dir",
+      join(tempRoot, "live-compatible-phone-data"),
+      "--login",
+      "--phone",
+      "+91 98765 43210",
+      "--quantity",
+      "2"
+    ],
+    { cwd: rootDir }
+  );
+  assert(compatiblePhoneResult.status === 1, "expected installed verify:live compatible phone guard to fail on quantity");
+  assert(
+    compatiblePhoneResult.stderr.includes("--quantity can only be used with --add."),
+    "expected installed verify:live compatible phone to pass phone parsing before quantity validation"
+  );
+  assert(
+    !compatiblePhoneResult.stderr.includes("--phone must be a valid"),
+    "expected installed verify:live to accept CLI-compatible phone formats"
+  );
+  assert(
+    !compatiblePhoneResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live compatible phone guard to fail before compiled CLI checks"
+  );
+
+  const chooseAddWithoutAddResult = runNpmResult(
+    [
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live",
+      "--",
+      "--data-dir",
+      join(tempRoot, "live-choose-add-without-add-data"),
+      "--choose-add"
+    ],
+    { cwd: rootDir }
+  );
+  assert(chooseAddWithoutAddResult.status === 1, "expected installed verify:live choose-add without add to fail");
+  assert(
+    chooseAddWithoutAddResult.stderr.includes("--choose-add can only be used with --add."),
+    "expected installed verify:live choose-add guard"
+  );
+  assert(
+    !chooseAddWithoutAddResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live choose-add guard to fail before compiled CLI checks"
+  );
+
+  const noSessionDataDir = join(tempRoot, "live-no-session-data");
+  const noSessionReportPath = join(tempRoot, "live-no-session-report.json");
+  const noSessionResult = runNpmResult(
+    [
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live",
+      "--",
+      "--data-dir",
+      noSessionDataDir,
+      "--report",
+      noSessionReportPath
+    ],
+    {
+      cwd: rootDir,
+      env: {
+        ...process.env,
+        FORCE_COLOR: "0",
+        NO_COLOR: "1"
+      }
+    }
+  );
+  assert(noSessionResult.status === 1, "expected installed verify:live no-session run to fail intentionally");
+  assert(existsSync(noSessionReportPath), "expected installed verify:live no-session report");
+  const noSessionReport = JSON.parse(readFileSync(noSessionReportPath, "utf8"));
+  assert(noSessionReport.version === packageJson.version, "expected installed verify:live report version");
+  assert(noSessionReport.ok === false, "expected installed verify:live no-session report to fail");
+  assert(noSessionReport.dataDir === "<redacted-data-dir>", "expected installed verify:live report data dir redaction");
+  assert(
+    noSessionReport.reportPath === "<redacted-report-path>",
+    "expected installed verify:live report path redaction"
+  );
+  assert(
+    noSessionReport.steps?.some((step) => step.name === "login" && step.error?.code === "live_verification_incomplete"),
+    "expected installed verify:live no-session report to explain login evidence is incomplete"
+  );
+  assert(
+    !JSON.stringify(noSessionReport).includes(tempRoot),
+    "expected installed verify:live report to omit local temp paths"
+  );
+
+  const {
+    buildLiveCommandLaunchFailureStep,
+    buildLiveCommandTimeoutStep,
+    buildLiveReportStep,
+    createLiveConsoleTextRedactor,
+    redactArgsForLiveConsole,
+    redactArgsForLiveReport,
+    redactLiveConsoleText,
+    summarizeCommandError,
+    summarizeLiveRunnerFailure
+  } = await import(pathToFileURL(liveReportUtilsPath).href);
+  assertDeepEqual(
+    redactArgsForLiveConsole([
+      "--data-dir",
+      ".zepo-live",
+      "--visible",
+      "login",
+      "--phone",
+      "9999999999",
+      "--report",
+      "C:\\Users\\parth\\report.json",
+      "--json"
+    ]),
+    [
+      "--data-dir",
+      "<redacted-data-dir>",
+      "--visible",
+      "login",
+      "--phone",
+      "<redacted-phone>",
+      "--report",
+      "<redacted-report-path>",
+      "--json"
+    ],
+    "expected installed live console command redaction to omit local paths and phone input"
+  );
+  assertDeepEqual(
+    redactArgsForLiveConsole([
+      "--data-dir",
+      ".zepo-live",
+      "--visible",
+      "add",
+      "Amul Milk 500ml",
+      "--report",
+      "C:\\Users\\parth\\report.json",
+      "--json"
+    ]),
+    [
+      "--data-dir",
+      "<redacted-data-dir>",
+      "--visible",
+      "add",
+      "<redacted-query>",
+      "--report",
+      "<redacted-report-path>",
+      "--json"
+    ],
+    "expected installed live console command redaction to omit workflow queries"
+  );
+  assertDeepEqual(
+    redactArgsForLiveReport([
+      "--data-dir",
+      ".zepo-live",
+      "--timeout",
+      "45000",
+      "--visible",
+      "search",
+      "Amul Milk 500ml",
+      "--json"
+    ]),
+    [
+      "--data-dir",
+      "<redacted-data-dir>",
+      "--timeout",
+      "45000",
+      "--visible",
+      "search",
+      "<redacted-query>",
+      "--json"
+    ],
+    "expected installed live report command redaction to handle global timeout before workflow commands"
+  );
+  const redactedLiveStderr = redactLiveConsoleText(
+    'Could not find a Zepto product matching "Amul Milk 500ml" near C:\\Users\\parth\\.zepo-live\\trace.txt.',
+    ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"]
+  );
+  assert(
+    redactedLiveStderr.includes("<redacted-query>") &&
+      redactedLiveStderr.includes("<redacted-local-path>") &&
+      !redactedLiveStderr.includes("Amul Milk 500ml") &&
+      !redactedLiveStderr.includes("Users"),
+    "expected installed live console stderr redaction to omit workflow queries and local paths"
+  );
+  const encodedLiveStderr = redactLiveConsoleText(
+    "Debug URL: https://www.zepto.com/search?query=Amul%20Milk%20500ml&fallback=Amul+Milk+500ml",
+    ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"]
+  );
+  assert(
+    encodedLiveStderr.includes("query=<redacted-query>") &&
+      encodedLiveStderr.includes("fallback=<redacted-query>") &&
+      !encodedLiveStderr.includes("Amul%20Milk%20500ml") &&
+      !encodedLiveStderr.includes("Amul+Milk+500ml"),
+    "expected installed live console stderr redaction to omit URL-encoded workflow queries"
+  );
+  const encodedSensitiveLiveStderr = redactLiveConsoleText(
+    "Debug URL: https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%5CUsers%5Cparth%5C.zepo-live%5Ctrace.txt",
+    []
+  );
+  assert(
+    encodedSensitiveLiveStderr.includes("phone=<redacted-phone>") &&
+      encodedSensitiveLiveStderr.includes("otp=<redacted-verification-code>") &&
+      encodedSensitiveLiveStderr.includes("card=<redacted-payment-number>") &&
+      encodedSensitiveLiveStderr.includes("upi=<redacted-payment-handle>") &&
+      encodedSensitiveLiveStderr.includes("token=<redacted-auth-token>") &&
+      encodedSensitiveLiveStderr.includes("access_token=<redacted-auth-token>") &&
+      encodedSensitiveLiveStderr.includes("file=<redacted-local-path>") &&
+      !encodedSensitiveLiveStderr.includes("%2B91") &&
+      !encodedSensitiveLiveStderr.includes("4111%201111") &&
+      !encodedSensitiveLiveStderr.includes("abc%40upi") &&
+      !encodedSensitiveLiveStderr.includes("raw-token-123") &&
+      !encodedSensitiveLiveStderr.includes("abc.def.ghi") &&
+      !encodedSensitiveLiveStderr.includes("C%3A%5CUsers"),
+    "expected installed live console stderr redaction to omit URL-encoded sensitive values"
+  );
+  const streamedLiveStderrChunks = [];
+  const streamedLiveStderrRedactor = createLiveConsoleTextRedactor(
+    ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"],
+    (chunk) => streamedLiveStderrChunks.push(chunk)
+  );
+  streamedLiveStderrRedactor.write('Could not find "Amul ');
+  streamedLiveStderrRedactor.write('Milk 500ml" near C:\\Users\\parth\\.zepo-live\\trace.txt.\n');
+  streamedLiveStderrRedactor.flush();
+  const streamedLiveStderr = streamedLiveStderrChunks.join("");
+  assert(
+    streamedLiveStderr.includes("<redacted-query>") &&
+      streamedLiveStderr.includes("<redacted-local-path>") &&
+      !streamedLiveStderr.includes("Amul Milk 500ml") &&
+      !streamedLiveStderr.includes("Users"),
+    "expected installed live console stderr stream redaction to handle split workflow queries"
+  );
+  assertDeepEqual(
+    redactArgsForLiveReport([
+      "--data-dir",
+      ".zepo-live",
+      "--visible",
+      "login",
+      "--phone",
+      "9999999999",
+      "--json"
+    ]),
+    ["--data-dir", "<redacted-data-dir>", "--visible", "login", "--phone", "<redacted-phone>", "--json"],
+    "expected installed live report command redaction to omit phone input"
+  );
+  const { step: doctorWithoutChromiumStep } = buildLiveReportStep({
+    name: "doctor",
+    args: ["--data-dir", ".zepo-live", "doctor", "--skip-browser", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      ok: true,
+      checks: [],
+      ...installedLiveStatusDiagnosticsPayload()
+    }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(doctorWithoutChromiumStep.ok === false, "expected installed doctor live report contract to require Chromium check");
+  assert(
+    doctorWithoutChromiumStep.error?.code === "live_doctor_contract_mismatch",
+    "expected installed doctor mismatch code"
+  );
+
+  const { step: doctorNotReadyStep } = buildLiveReportStep({
+    name: "doctor",
+    args: ["--data-dir", ".zepo-live", "doctor", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      ok: true,
+      checks: [{ name: "Playwright Chromium", status: "pass" }],
+      ...installedLiveStatusDiagnosticsPayload(),
+      browserAutomation: {
+        ready: false,
+        reasons: ["browser_lock_active"],
+        retryAfterMs: 0
+      }
+    }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(
+    doctorNotReadyStep.ok === false,
+    "expected installed doctor live report contract to require browser automation readiness"
+  );
+  assert(
+    doctorNotReadyStep.error?.code === "live_doctor_contract_mismatch",
+    "expected installed doctor readiness mismatch code"
+  );
+
+  const { step: doctorWithChromiumStep } = buildLiveReportStep({
+    name: "doctor",
+    args: ["--data-dir", ".zepo-live", "doctor", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      ok: true,
+      checks: [{ name: "Playwright Chromium", status: "pass" }],
+      ...installedLiveStatusDiagnosticsPayload()
+    }),
+    stderr: "",
+    summarizePayload: () => ({ browserChecked: true })
+  });
+  assert(doctorWithChromiumStep.ok === true, "expected installed doctor live report contract to accept Chromium check");
+
+  const { step: checkoutStep } = buildLiveReportStep({
+    name: "checkout",
+    args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      status: "checkout_handoff_returned",
+      payment: "handled_by_zepto",
+      paymentStatus: "paid",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track"
+    }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(checkoutStep.ok === false, "expected installed checkout live report contract to fail unsafe payment status");
+  assert(
+    checkoutStep.error?.code === "live_checkout_contract_mismatch",
+    "expected installed checkout mismatch code"
+  );
+
+  const { step: clearStep } = buildLiveReportStep({
+    name: "clear",
+    args: ["--data-dir", ".zepo-live", "--visible", "clear", "--json"],
+    status: 0,
+    stdout: JSON.stringify({ items: [{ name: "Milk" }] }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(clearStep.ok === false, "expected installed clear live report contract to fail non-empty cart");
+  assert(clearStep.error?.code === "live_clear_contract_mismatch", "expected installed clear mismatch code");
+
+  const { step: statusLiveStep } = buildLiveReportStep({
+    name: "status live",
+    args: ["--data-dir", ".zepo-live", "--visible", "status", "--live", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      confirmedSession: true,
+      ...installedLiveStatusDiagnosticsPayload(),
+      liveSession: { checked: true, state: "logged-in" }
+    }),
+    stderr: "",
+    summarizePayload: () => ({ liveSessionState: "logged-in" })
+  });
+  assert(statusLiveStep.ok === true, "expected installed status live report contract to pass logged-in session");
+
+  const { step: summaryFailureStep } = buildLiveReportStep({
+    name: "cart",
+    args: ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "cart", "--json"],
+    status: 0,
+    stdout: JSON.stringify({ items: [] }),
+    stderr: "",
+    summarizePayload: () => {
+      throw new Error("Summary failed near C:\\Users\\parth\\.zepo-live\\trace.txt with OTP 123456.");
+    }
+  });
+  assert(summaryFailureStep.ok === false, "expected installed live report summary failures to fail the step");
+  assert(
+    summaryFailureStep.error?.code === "live_summary_failed",
+    "expected installed live report summary failure code"
+  );
+  assert(
+    String(summaryFailureStep.error?.message).includes("<redacted-verification-code>"),
+    "expected installed live report summary failure to redact OTP-like values"
+  );
+  assert(
+    !JSON.stringify(summaryFailureStep).includes("123456") && !JSON.stringify(summaryFailureStep).includes("parth"),
+    "expected installed live report summary failure to omit raw secrets and local paths"
+  );
+  const runnerFailure = summarizeLiveRunnerFailure(
+    new Error("Runner failed at C:\\Users\\parth\\.zepo-live\\trace.txt with OTP 123456.")
+  );
+  assert(runnerFailure.code === "live_runner_failed", "expected installed live runner failure code");
+  assert(
+    String(runnerFailure.message).includes("<redacted-verification-code>") &&
+      !String(runnerFailure.message).includes("123456") &&
+      !String(runnerFailure.message).includes("parth"),
+    "expected installed live runner failure redaction"
+  );
+  const commandLaunchFailure = buildLiveCommandLaunchFailureStep(
+    "add",
+    ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"],
+    new Error("spawn failed near C:\\Users\\parth\\.zepo-live\\trace.txt with OTP 123456.")
+  );
+  assert(commandLaunchFailure.ok === false, "expected installed live command launch failure to fail the step");
+  assert(
+    commandLaunchFailure.command === "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --json",
+    "expected installed live command launch failure to redact command arguments"
+  );
+  assert(
+    commandLaunchFailure.error?.code === "live_command_launch_failed" &&
+      String(commandLaunchFailure.error?.message).includes("<redacted-verification-code>") &&
+      !JSON.stringify(commandLaunchFailure).includes("123456") &&
+      !JSON.stringify(commandLaunchFailure).includes("parth"),
+    "expected installed live command launch failure redaction"
+  );
+  const commandTimeoutFailure = buildLiveCommandTimeoutStep(
+    "checkout",
+    ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "checkout", "--json"],
+    1_000
+  );
+  assert(commandTimeoutFailure.ok === false, "expected installed live command timeout to fail the step");
+  assert(
+    commandTimeoutFailure.command === "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+    "expected installed live command timeout to redact command arguments"
+  );
+  assert(
+    commandTimeoutFailure.error?.code === "live_command_timeout" &&
+      String(commandTimeoutFailure.error?.message).includes("1000 ms") &&
+      !JSON.stringify(commandTimeoutFailure).includes("parth"),
+    "expected installed live command timeout redaction"
+  );
+  const malformedCodeFailure = summarizeCommandError(
+    {
+      code: "Order ZEP1234 at C:\\Users\\parth\\.zepo-live",
+      message: "Malformed code should be normalized."
+    },
+    "",
+    []
+  );
+  assert(malformedCodeFailure.code === "command_failed", "expected installed malformed live error code fallback");
+  assert(
+    !JSON.stringify(malformedCodeFailure).includes("ZEP1234") && !JSON.stringify(malformedCodeFailure).includes("parth"),
+    "expected installed malformed live error code to omit raw sensitive values"
+  );
+  const lowercaseMalformedCodeFailure = summarizeCommandError(
+    {
+      code: "order_zep1234",
+      message: "Lowercase malformed code should be normalized."
+    },
+    "",
+    []
+  );
+  assert(
+    lowercaseMalformedCodeFailure.code === "command_failed",
+    "expected installed lowercase malformed live error code fallback"
+  );
+  const accessChallengeFailureStep = buildLiveReportStep({
+    name: "search",
+    args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
+    status: 1,
+    stdout: "",
+    stderr: JSON.stringify({
+      ok: false,
+      error: {
+        code: "zepto_access_challenge",
+        message: "Zepto returned HTTP 429 from https://www.zepto.com/api/search?query=milk.",
+        hint: "Stop repeated automation and retry milk later.",
+        retryAfterMs: 900_000
+      }
+    }),
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(accessChallengeFailureStep.ok === false, "expected installed access-challenge report step to fail");
+  assert(
+    accessChallengeFailureStep.error?.code === "zepto_access_challenge" &&
+      accessChallengeFailureStep.error?.retryAfterMs === 900_000,
+    "expected installed access-challenge report step to preserve retry timing"
+  );
+  assert(
+    !JSON.stringify(accessChallengeFailureStep).includes("query=milk") &&
+      !JSON.stringify(accessChallengeFailureStep).includes("retry milk"),
+    "expected installed access-challenge report step to redact workflow query text"
+  );
   console.log("pass installed live verifier contract");
 }
 
-async function loadRootRuntimeModules() {
-  const browser = await import(pathToFileURL(resolve(rootDir, "dist", "automation", "browser.js")).href);
-  const paths = await import(pathToFileURL(resolve(rootDir, "dist", "config", "paths.js")).href);
-  const sqlite = await import(pathToFileURL(resolve(rootDir, "dist", "storage", "sqlite.js")).href);
-
+async function loadInstalledRuntimeModules(prefixDir) {
   return {
-    headlessBrowserRunHistoryMetaKey: browser.HEADLESS_BROWSER_RUN_HISTORY_META_KEY,
-    lastAccessChallengeMetaKey: browser.LAST_ACCESS_CHALLENGE_META_KEY,
-    resolveAppPaths: paths.resolveAppPaths,
-    SqliteStore: sqlite.SqliteStore
+    packageDir: join(prefixDir, "node_modules", packageJson.name)
   };
 }
 
-function verifyInstalledCli(zepoBin, runtimeModules) {
+function verifyInstalledCli(installedCliPath, runtimeModules) {
   const checks = [
     {
       name: "installed version",
@@ -151,6 +821,29 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
         assert(status === 0, "expected exit code 0");
         assert(stderr === "", "expected empty stderr");
         assert(stdout === packageJson.version, "expected installed CLI version to match package.json");
+      }
+    },
+    {
+      name: "installed status human",
+      args: ["--data-dir", dataDir, "status"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes(`Version: ${packageJson.version}`), "expected installed status to print package version");
+        assert(stdout.includes("Confirmed session:"), "expected installed status readiness output");
+      }
+    },
+    {
+      name: "installed doctor skip browser human",
+      args: ["--data-dir", dataDir, "doctor", "--skip-browser"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("ZepoCli doctor"), "expected installed doctor heading");
+        assert(
+          stdout.includes(`Version: ${packageJson.version}`),
+          "expected installed doctor to print package version"
+        );
       }
     },
     {
@@ -365,6 +1058,20 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
       }
     },
     {
+      name: "installed global json no session cart",
+      args: ["--data-dir", dataDir, "--json", "cart"],
+      expect: (result) => {
+        expectJsonError(result, "user_error", "No confirmed Zepto session found.", "no_confirmed_session");
+      }
+    },
+    {
+      name: "installed global json no session nested address list",
+      args: ["--data-dir", dataDir, "--json", "address", "list"],
+      expect: (result) => {
+        expectJsonError(result, "user_error", "No confirmed Zepto session found.", "no_confirmed_session");
+      }
+    },
+    {
       name: "installed status live skipped json",
       args: ["--data-dir", dataDir, "status", "--live", "--json"],
       expect: ({ status, stdout, stderr }) => {
@@ -411,12 +1118,45 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
       }
     },
     {
+      name: "installed status malformed stale browser lock json",
+      args: () => {
+        const lockPath = join(dataDir, "browser.lock");
+        writeFileSync(lockPath, "{}");
+        utimesSync(lockPath, new Date(10_000), new Date(10_000));
+        return ["--data-dir", dataDir, "status", "--json"];
+      },
+      expect: ({ status, stdout }) => {
+        assert(status === 0, "expected exit code 0");
+        const payload = parseJson(stdout, "stdout");
+        assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected installed malformed lock path");
+        assert(payload.browserLock?.present === true, "expected installed malformed lock present");
+        assert(payload.browserLock?.stale === true, "expected installed malformed lock to be stale");
+        assert(payload.browserLock?.staleReason === "expired", "expected installed malformed lock expired stale reason");
+        assert(typeof payload.browserLock?.createdAt === "string", "expected installed malformed lock createdAt from mtime");
+        assert(payload.browserAutomation?.ready === true, "expected installed stale malformed lock not to block automation");
+        assert(
+          !payload.browserAutomation?.reasons?.includes("browser_lock_active"),
+          "expected installed stale malformed lock not to report active lock reason"
+        );
+        rmSync(join(dataDir, "browser.lock"), { force: true });
+      }
+    },
+    {
       name: "installed doctor skip browser json",
       args: ["--data-dir", dataDir, "doctor", "--skip-browser", "--json"],
       expect: ({ status, stdout }) => {
         assert(status === 0, "expected exit code 0");
         const payload = parseJson(stdout, "stdout");
         assertDoctorReport(payload, dataDir);
+      }
+    },
+    {
+      name: "installed doctor browser json",
+      args: ["--data-dir", dataDir, "doctor", "--json"],
+      expect: ({ status, stdout }) => {
+        assert(status === 0, "expected exit code 0");
+        const payload = parseJson(stdout, "stdout");
+        assertDoctorReport(payload, dataDir, { browser: true });
       }
     },
     {
@@ -481,15 +1221,60 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
       expect: (result) => {
         assert(result.status === 1, "expected exit code 1");
         assert(result.stdout === "", "expected empty stdout");
-      const payload = parseJson(result.stderr, "stderr");
-      assert(payload.ok === false, "expected ok false");
-      assert(payload.error?.type === "user_error", "expected user error type");
-      assert(payload.error?.code === "runtime_setup_failed", "expected runtime setup error code");
-      assert(
-        String(payload.error?.message).startsWith("Could not initialize local ZepoCli storage"),
+        const payload = parseJson(result.stderr, "stderr");
+        assert(payload.ok === false, "expected ok false");
+        assert(payload.error?.type === "user_error", "expected user error type");
+        assert(payload.error?.code === "runtime_setup_failed", "expected runtime setup error code");
+        assert(
+          String(payload.error?.message).startsWith("Could not initialize local ZepoCli storage"),
           "expected runtime setup message"
         );
+        assert(String(payload.error?.message).includes("<redacted-local-path>"), "expected redacted data-dir path");
+        assert(!result.stderr.includes(join(tempRoot, "blocked-data-dir")), "expected runtime error to omit raw data-dir path");
         assert(String(payload.error?.hint).includes("zepo --data-dir <path> doctor"), "expected data-dir doctor hint");
+      }
+    },
+    {
+      name: "installed human runtime setup redaction",
+      args: () => {
+        const blockedPath = join(tempRoot, "blocked-human-data-dir");
+        writeFileSync(blockedPath, "not a directory");
+        return ["--data-dir", blockedPath, "status"];
+      },
+      expect: (result) => {
+        assert(result.status === 1, "expected exit code 1");
+        assert(result.stdout === "", "expected empty stdout");
+        assert(result.stderr.includes("Could not initialize local ZepoCli storage"), "expected runtime setup message");
+        assert(result.stderr.includes("<redacted-local-path>"), "expected installed human redacted data-dir path");
+        assert(
+          !result.stderr.includes(join(tempRoot, "blocked-human-data-dir")),
+          "expected installed human runtime error to omit raw data-dir path"
+        );
+        assert(result.stderr.includes("zepo --data-dir <path> doctor"), "expected data-dir doctor hint");
+      }
+    },
+    {
+      name: "installed json invalid timeout format",
+      args: ["--timeout", "1e3", "status", "--json"],
+      expect: (result) => {
+        const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+        assert(payload.error?.issues?.[0]?.path === "timeout", "expected installed timeout validation issue");
+        assert(
+          payload.error?.issues?.[0]?.message === "must be a decimal integer number of milliseconds",
+          "expected installed timeout format message"
+        );
+      }
+    },
+    {
+      name: "installed json invalid timeout range",
+      args: ["--timeout", "300001", "status", "--json"],
+      expect: (result) => {
+        const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+        assert(payload.error?.issues?.[0]?.path === "timeout", "expected installed timeout validation issue");
+        assert(
+          payload.error?.issues?.[0]?.message === "must be at most 300000 ms",
+          "expected installed timeout maximum message"
+        );
       }
     },
     {
@@ -508,11 +1293,57 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
         assert(payload.error?.issues?.[0]?.message === "must not be blank", "expected installed blank data dir message");
       }
     },
+    ...[
+      {
+        name: "search",
+        args: ["search", "   ", "--json"],
+        message: "Search query is required."
+      },
+      {
+        name: "add",
+        args: ["add", "   ", "--json"],
+        message: "Product query is required."
+      },
+      {
+        name: "remove",
+        args: ["remove", "   ", "--json"],
+        message: "Cart item query is required."
+      },
+      {
+        name: "address use",
+        args: ["address", "use", "   ", "--json"],
+        message: "Address query is required."
+      }
+    ].map((testCase) => ({
+      name: `installed blank ${testCase.name} query`,
+      args: ["--data-dir", join(tempRoot, `data-blank-${testCase.name.replaceAll(" ", "-")}`), ...testCase.args],
+      expect: (result) => {
+        expectJsonError(result, "user_error", testCase.message, "invalid_input");
+        assert(!result.stderr.includes("No confirmed Zepto session found."), "expected blank query to fail before session work");
+      }
+    })),
     {
       name: "installed json unknown option",
       args: ["--json", "status", "--bad-option"],
       expect: (result) => {
         expectJsonError(result, "invalid_input", "error: unknown option '--bad-option'", "invalid_input");
+      }
+    },
+    {
+      name: "installed json encoded sensitive unknown option redaction",
+      args: ["--json", "status", "--phone=%2B91+98765+43210"],
+      expect: (result) => {
+        expectJsonError(
+          result,
+          "invalid_input",
+          "error: unknown option '--phone=<redacted-phone>'",
+          "invalid_input"
+        );
+        assert(!result.stderr.includes("%2B91"), "expected installed JSON parser error to omit encoded phone value");
+        assert(
+          !result.stderr.includes("98765+43210"),
+          "expected installed JSON parser error to omit plus-encoded phone value"
+        );
       }
     },
     {
@@ -551,10 +1382,55 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
       }
     },
     {
-      name: "installed invalid phone prefill",
-      args: ["--data-dir", dataDir, "login", "--phone", "abc", "--json"],
+      name: "installed no-input address add",
+      args: ["--data-dir", dataDir, "--no-input", "address", "add", "--json"],
       expect: (result) => {
-        expectJsonError(result, "user_error", "Phone number must be a valid 10-digit Indian mobile number.", "invalid_input");
+        expectJsonError(result, "user_error", "Zepto address add requires interactive input.", "interactive_input_required");
+      }
+    },
+    {
+      name: "installed no-input checkout",
+      args: ["--data-dir", dataDir, "--no-input", "checkout", "--json"],
+      expect: (result) => {
+        expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+      }
+    },
+    {
+      name: "installed no-input choose",
+      args: ["--data-dir", dataDir, "--no-input", "add", "milk", "--choose", "--json"],
+      expect: (result) => {
+        expectJsonError(result, "user_error", "Interactive product selection requires input.", "interactive_input_required");
+      }
+    },
+    {
+      name: "installed invalid phone prefill",
+      args: ["--data-dir", dataDir, "login", "--phone", "phone 9876543210", "--json"],
+      expect: (result) => {
+        const payload = expectJsonError(
+          result,
+          "user_error",
+          "Phone number must be a valid 10-digit Indian mobile number.",
+          "invalid_input"
+        );
+        assert(String(payload.error?.hint).includes("<redacted-phone>"), "expected installed redacted phone hint");
+        assert(!result.stderr.includes("9876543210"), "expected installed JSON phone error to omit raw phone-shaped value");
+      }
+    },
+    {
+      name: "installed human invalid phone prefill redaction",
+      args: ["--data-dir", dataDir, "login", "--phone", "phone 9876543210"],
+      expect: (result) => {
+        assert(result.status === 1, "expected exit code 1");
+        assert(result.stdout === "", "expected empty stdout");
+        assert(
+          result.stderr.includes("Phone number must be a valid 10-digit Indian mobile number."),
+          "expected installed human phone message"
+        );
+        assert(result.stderr.includes("<redacted-phone>"), "expected installed human redacted phone hint");
+        assert(
+          !result.stderr.includes("9876543210"),
+          "expected installed human phone error to omit raw phone-shaped value"
+        );
       }
     },
     {
@@ -565,10 +1441,17 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
       }
     },
     {
+      name: "installed invalid search limit format json",
+      args: ["--data-dir", dataDir, "search", "milk", "--limit", "1e1", "--json"],
+      expect: (result) => {
+        expectJsonError(result, "user_error", "Search limit must be an integer from 1 to 50.", "invalid_input");
+      }
+    },
+    {
       name: "installed access cooldown before browser",
       args: () => {
         const cooldownDataDir = join(tempRoot, "data-access-cooldown");
-        setRuntimeMeta(runtimeModules, cooldownDataDir, runtimeModules.lastAccessChallengeMetaKey, String(Date.now()));
+        setRuntimeMeta(runtimeModules, cooldownDataDir, "LAST_ACCESS_CHALLENGE_META_KEY", String(Date.now()));
         return ["--data-dir", cooldownDataDir, "search", "milk", "--json"];
       },
       expect: (result) => {
@@ -587,7 +1470,7 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
         setRuntimeMeta(
           runtimeModules,
           throttleDataDir,
-          runtimeModules.headlessBrowserRunHistoryMetaKey,
+          "HEADLESS_BROWSER_RUN_HISTORY_META_KEY",
           JSON.stringify(Array.from({ length: 8 }, (_, index) => Date.now() - index))
         );
         return ["--data-dir", throttleDataDir, "search", "milk", "--json"];
@@ -607,12 +1490,19 @@ function verifyInstalledCli(zepoBin, runtimeModules) {
       expect: (result) => {
         expectJsonError(result, "user_error", "Quantity must be an integer from 1 to 12.", "invalid_input");
       }
+    },
+    {
+      name: "installed invalid add quantity format",
+      args: ["--data-dir", dataDir, "add", "milk", "--quantity", "0x2", "--json"],
+      expect: (result) => {
+        expectJsonError(result, "user_error", "Quantity must be an integer from 1 to 12.", "invalid_input");
+      }
     }
   ];
 
   for (const check of checks) {
     const args = typeof check.args === "function" ? check.args() : check.args;
-    const result = runInstalledCli(zepoBin, args);
+    const result = runInstalledCli(installedCliPath, args);
     check.expect(result);
     console.log(`pass ${check.name}`);
   }
@@ -623,10 +1513,13 @@ function resolveInstalledBin(prefixDir, commandName) {
   return join(prefixDir, "node_modules", ".bin", binName);
 }
 
-function runInstalledCli(zepoBin, args) {
-  const result = spawnInstalledBin(zepoBin, args, {
+function runInstalledCli(installedCliPath, args) {
+  const commandArgs = [installedCliPath, ...args];
+  const result = spawnSync(process.execPath, commandArgs, {
     cwd: rootDir,
     encoding: "utf8",
+    killSignal: "SIGTERM",
+    timeout: INSTALLED_CLI_COMMAND_TIMEOUT_MS,
     env: {
       ...process.env,
       FORCE_COLOR: "0",
@@ -635,7 +1528,7 @@ function runInstalledCli(zepoBin, args) {
   });
 
   if (result.error) {
-    throw result.error;
+    throwSpawnError(result.error, process.execPath, commandArgs, INSTALLED_CLI_COMMAND_TIMEOUT_MS);
   }
 
   return normalizeResult(result);
@@ -646,14 +1539,34 @@ function runNpm(args, options) {
   return run(process.execPath, [npmExecPath, ...args], options);
 }
 
-function run(command, args, options) {
-  const result = spawnSync(command, args, {
+function runNpmResult(args, options) {
+  assert(npmExecPath, "expected npm_execpath to run npm package verification");
+  const timeoutMs = options?.timeout ?? NPM_COMMAND_TIMEOUT_MS;
+  const result = spawnSync(process.execPath, [npmExecPath, ...args], {
     ...options,
-    encoding: "utf8"
+    encoding: "utf8",
+    killSignal: options?.killSignal ?? "SIGTERM",
+    timeout: timeoutMs
   });
 
   if (result.error) {
-    throw result.error;
+    throwSpawnError(result.error, process.execPath, [npmExecPath, ...args], timeoutMs);
+  }
+
+  return normalizeResult(result);
+}
+
+function run(command, args, options) {
+  const timeoutMs = options?.timeout ?? NPM_COMMAND_TIMEOUT_MS;
+  const result = spawnSync(command, args, {
+    ...options,
+    encoding: "utf8",
+    killSignal: options?.killSignal ?? "SIGTERM",
+    timeout: timeoutMs
+  });
+
+  if (result.error) {
+    throwSpawnError(result.error, command, args, timeoutMs);
   }
 
   if (result.status !== 0) {
@@ -672,6 +1585,14 @@ function run(command, args, options) {
   }
 
   return normalizeResult(result);
+}
+
+function throwSpawnError(error, command, args, timeoutMs) {
+  if (error && error.code === "ETIMEDOUT") {
+    throw new Error(`Command timed out after ${timeoutMs} ms: ${command} ${args.join(" ")}`);
+  }
+
+  throw error;
 }
 
 function spawnInstalledBin(command, args, options) {
@@ -720,13 +1641,31 @@ function expectJsonErrorWithRetry(result, type, message, code) {
   );
 }
 
-function setRuntimeMeta(runtimeModules, targetDataDir, key, value) {
-  const sqlite = new runtimeModules.SqliteStore(runtimeModules.resolveAppPaths(targetDataDir).dbPath);
-  try {
-    sqlite.setMeta(key, value);
-  } finally {
-    sqlite.close();
-  }
+function setRuntimeMeta(runtimeModules, targetDataDir, keyExportName, value) {
+  const browserModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "automation", "browser.js")).href;
+  const pathsModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "config", "paths.js")).href;
+  const sqliteModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "storage", "sqlite.js")).href;
+  const script = `
+    import { ${keyExportName} as metaKey } from ${JSON.stringify(browserModuleUrl)};
+    import { resolveAppPaths } from ${JSON.stringify(pathsModuleUrl)};
+    import { SqliteStore } from ${JSON.stringify(sqliteModuleUrl)};
+
+    const sqlite = new SqliteStore(resolveAppPaths(${JSON.stringify(targetDataDir)}).dbPath);
+    try {
+      sqlite.setMeta(metaKey, ${JSON.stringify(value)});
+    } finally {
+      sqlite.close();
+    }
+  `;
+
+  run(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: rootDir,
+    env: {
+      ...process.env,
+      FORCE_COLOR: "0",
+      NO_COLOR: "1"
+    }
+  });
 }
 
 function assertFreshCache(cache) {
@@ -738,6 +1677,7 @@ function assertFreshCache(cache) {
 
 function assertFreshStatus(payload, expectedDataDir) {
   assertFreshCache(payload.cache);
+  assert(payload.version === packageJson.version, "expected installed status version to match package.json");
   assert(payload.dataDir === expectedDataDir, "expected status to use disposable data dir");
   assert(payload.confirmedSession === false, "expected fresh data dir to be logged out");
   assert(payload.browserLock?.path === join(expectedDataDir, "browser.lock"), "expected browser lock path");
@@ -757,8 +1697,9 @@ function assertFreshStatus(payload, expectedDataDir) {
   assert(payload.accessChallenge?.retryAfterMs === 0, "expected zero Zepto access challenge retry delay");
 }
 
-function assertDoctorReport(payload, expectedDataDir) {
+function assertDoctorReport(payload, expectedDataDir, options = { browser: false }) {
   assert(payload.ok === true, "expected doctor ok true");
+  assert(payload.version === packageJson.version, "expected installed doctor version to match package.json");
   assert(payload.dataDir === expectedDataDir, "expected doctor data dir");
   assert(payload.browserLock?.path === join(expectedDataDir, "browser.lock"), "expected doctor browser lock path");
   assert(payload.browserLock?.present === false, "expected doctor no browser lock");
@@ -783,7 +1724,14 @@ function assertDoctorReport(payload, expectedDataDir) {
   assert(checkNames.includes("Browser automation lock"), "expected browser automation lock doctor check");
   assert(checkNames.includes("Headless browser throttle"), "expected headless browser throttle doctor check");
   assert(checkNames.includes("Zepto access challenge"), "expected Zepto access challenge doctor check");
-  assert(!checkNames.includes("Playwright Chromium"), "expected browser check to be skipped");
+  if (options.browser) {
+    assert(checkNames.includes("Playwright Chromium"), "expected Playwright Chromium doctor check");
+    const chromiumCheck = payload.checks.find((check) => check.name === "Playwright Chromium");
+    assert(chromiumCheck?.status === "pass", "expected Playwright Chromium doctor check to pass");
+    assert(chromiumCheck?.message === "Chromium launches successfully.", "expected Playwright Chromium pass message");
+  } else {
+    assert(!checkNames.includes("Playwright Chromium"), "expected browser check to be skipped");
+  }
 }
 
 function assertCheckoutHandoffContract(payload) {
@@ -793,6 +1741,23 @@ function assertCheckoutHandoffContract(payload) {
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected installed track next command");
   assert(String(payload.next).includes("Complete payment in Zepto"), "expected installed checkout next-step guidance");
+}
+
+function installedLiveStatusDiagnosticsPayload() {
+  return {
+    version: packageJson.version,
+    browserAutomation: { ready: true, reasons: [], retryAfterMs: 0 },
+    browserLock: { present: false, stale: false },
+    headlessBrowserThrottle: {
+      windowMs: 600_000,
+      limit: 8,
+      recentRuns: 0,
+      throttleActive: false,
+      retryAfterMs: 0
+    },
+    accessChallenge: { detected: false, cooldownActive: false, retryAfterMs: 0 },
+    cache: { searches: 0, cartSnapshots: 0, addresses: 0, orders: 0 }
+  };
 }
 
 function parseJson(text, streamName) {
@@ -824,4 +1789,8 @@ function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function assertDeepEqual(actual, expected, message) {
+  assert(JSON.stringify(actual) === JSON.stringify(expected), message);
 }

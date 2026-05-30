@@ -432,6 +432,8 @@ export function installProcessSignalCleanup(
     cleaningUp = true;
     try {
       await cleanup();
+    } catch {
+      // Signal cleanup is best-effort; still exit with the signal code.
     } finally {
       dispose();
       exit(signalExitCode(signal));
@@ -558,21 +560,18 @@ function readBrowserRunLockDetails(lockPath: string): BrowserRunLockDetails {
       pid?: unknown;
       createdAt?: unknown;
     };
+    const createdAt =
+      typeof lock.createdAt === "number" && isValidLockTimestamp(lock.createdAt)
+        ? lock.createdAt
+        : readBrowserRunLockMtime(lockPath);
     return {
       ...(typeof lock.token === "string" ? { token: lock.token } : {}),
       ...(typeof lock.pid === "number" && Number.isInteger(lock.pid) ? { pid: lock.pid } : {}),
-      ...(typeof lock.createdAt === "number" && isValidLockTimestamp(lock.createdAt)
-        ? { createdAt: lock.createdAt }
-        : {})
+      ...(createdAt !== undefined ? { createdAt } : {})
     };
   } catch {
-    try {
-      return {
-        createdAt: statSync(lockPath).mtimeMs
-      };
-    } catch {
-      return {};
-    }
+    const createdAt = readBrowserRunLockMtime(lockPath);
+    return createdAt !== undefined ? { createdAt } : {};
   }
 }
 
@@ -582,6 +581,15 @@ function readBrowserRunLockToken(lockPath: string): string | undefined {
 
 function isValidLockTimestamp(value: number): boolean {
   return Number.isFinite(value) && value >= 0 && value <= 8.64e15;
+}
+
+function readBrowserRunLockMtime(lockPath: string): number | undefined {
+  try {
+    const mtimeMs = statSync(lockPath).mtimeMs;
+    return isValidLockTimestamp(mtimeMs) ? mtimeMs : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function isProcessAlive(pid: number): boolean {
@@ -938,6 +946,10 @@ function urlWithoutQuery(value: string): string {
 }
 
 async function waitForVisibleAccessChallengeResolution(page: Page, timeoutMs: number): Promise<boolean> {
+  if (!(await pageShowsAccessChallenge(page))) {
+    return false;
+  }
+
   await page
     .waitForFunction(
       (patternSource) => {
@@ -956,6 +968,12 @@ async function waitForVisibleAccessChallengeResolution(page: Page, timeoutMs: nu
   const title = await page.title().catch(() => "");
   const bodyText = await page.locator("body").innerText().catch(() => "");
   return !isAccessChallengeText(`${title}\n${bodyText}`);
+}
+
+async function pageShowsAccessChallenge(page: Page): Promise<boolean> {
+  const title = await page.title().catch(() => "");
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  return isAccessChallengeText(`${title}\n${bodyText}`);
 }
 
 export function isAccessChallengeError(error: unknown): boolean {

@@ -8,24 +8,27 @@
   },
   "files": [
     "dist",
+    "scripts/clean-dist.mjs",
+    "scripts/normalize-cli-entry.mjs",
     "scripts/live-report-utils.mjs",
     "scripts/verify-live-flow.mjs",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/normalize-cli-entry.mjs",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.json && node scripts/normalize-cli-entry.mjs",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "verify:cli": "node scripts/verify-cli.mjs",
     "verify:package": "node scripts/verify-package.mjs",
+    "verify:audit": "npm audit --omit=dev",
     "verify:live": "node scripts/verify-live-flow.mjs",
-    "check": "npm run build && npm test && npm run verify:cli && npm run verify:package && node dist/index.js --help && npm pack --dry-run",
+    "check": "npm run build && npm test && npm run verify:cli && npm run verify:package && node dist/index.js --help && npm run verify:audit && npm pack --dry-run",
     "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"
   },
   "engines": {
-    "node": ">=20.11"
+    "node": ">=20.19"
   },
   "keywords": [
     "zepto",

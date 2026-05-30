@@ -71,17 +71,34 @@ describe("checkout handoff detection", () => {
       expect(isCheckoutHandoffClickText(unsafeText)).toBe(false);
     }
 
-    for (const unsafeText of ["Place Order", "Confirm Order", "Pay Now", "Make Payment", "Pay ₹249"]) {
+    for (const unsafeText of ["Place Order", "Confirm Order", "Pay Now", "Make Payment", "Pay ₹249", "Continue to Pay"]) {
       expect(CHECKOUT_HANDOFF_CLICK_LABELS.some((label) => label.test(unsafeText))).toBe(false);
     }
   });
 
   it("allows only explicit checkout handoff button text", () => {
-    for (const handoffText of ["Checkout", "Checkout 2 items", "Proceed to Checkout", "Proceed to Pay", "Continue to Payment"]) {
+    for (const handoffText of [
+      "Checkout",
+      "Checkout 2 items",
+      "Checkout 1 product",
+      "Proceed to Checkout",
+      "Proceed to Pay",
+      "Continue to Payment"
+    ]) {
       expect(isCheckoutHandoffClickText(handoffText)).toBe(true);
     }
 
-    for (const nonHandoffText of ["Proceed", "Continue", "Continue to Pay", "Continue Shopping", "View Bill", "Apply Coupon"]) {
+    for (const nonHandoffText of [
+      "Proceed",
+      "Continue",
+      "Continue to Pay",
+      "Continue Shopping",
+      "Checkout these offers",
+      "Checkout deals",
+      "Checkout and save",
+      "View Bill",
+      "Apply Coupon"
+    ]) {
       expect(isCheckoutHandoffClickText(nonHandoffText)).toBe(false);
     }
   });
@@ -120,6 +137,14 @@ describe("checkout handoff detection", () => {
 
       expect(page.clicked).toBe(false);
     }
+  });
+
+  it("skips unsafe checkout handoff matches before clicking a later safe control", async () => {
+    const page = createCheckoutCollectionPage();
+
+    await expect(clickCheckoutHandoffButton(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
   });
 
   it("rejects ordinary cart text", () => {
@@ -173,6 +198,19 @@ describe("checkout handoff detection", () => {
     expect(() => assertReadableCheckoutCart("Cart Add more items Apply coupon Checkout")).toThrow(
       "Zepto cart does not show any readable items for checkout."
     );
+  });
+
+  it("rejects product listing rows as checkout cart proof", () => {
+    expect(() =>
+      assertReadableCheckoutCart(`
+        Search results
+        Add to Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Checkout these offers
+      `)
+    ).toThrow("Zepto cart does not show any readable items for checkout.");
   });
 
   it("reports checkout handoff without claiming payment or order placement", () => {
@@ -248,6 +286,26 @@ function createMixedLabelCheckoutPage(
   return page;
 }
 
+function createCheckoutCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("Pay Now", async () => {
+      clicks.push("unsafe");
+    }, "Checkout"),
+    createVisibleLocator("Checkout", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Checkout") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createVisibleLocator(
   text: string,
   click: () => Promise<void>,
@@ -283,6 +341,31 @@ function createHiddenLocator() {
     evaluate: async () => false,
     click: async () => undefined
   };
+}
+
+function createLocatorCollection(
+  locators: Array<ReturnType<typeof createVisibleLocator> | ReturnType<typeof createHiddenLocator>>
+) {
+  const hidden = createHiddenLocator();
+  const collection = {
+    first() {
+      return locators[0] ?? hidden;
+    },
+    nth(index: number) {
+      return locators[index] ?? hidden;
+    },
+    count: async () => locators.length,
+    filter() {
+      return collection;
+    },
+    isVisible: async () => collection.first().isVisible(),
+    innerText: async () => collection.first().innerText(),
+    getAttribute: async (name: string) => collection.first().getAttribute(name),
+    evaluate: async () => false,
+    click: async () => collection.first().click()
+  };
+
+  return collection;
 }
 
 function matchesLocatorName(name: RegExp | string | undefined, text: string): boolean {

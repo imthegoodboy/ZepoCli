@@ -1,6 +1,5 @@
 import Fuse from "fuse.js";
 import { select } from "@inquirer/prompts";
-import { z } from "zod";
 
 import type { AppRuntime } from "../config/runtime.js";
 import type { CartItem, CartSnapshot, Product } from "../types.js";
@@ -11,9 +10,9 @@ import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
 import { requireInteractiveInput } from "../utils/interactive.js";
 import { queryHasSpecificSizeTerm, textMatchesProductQuery } from "../utils/product-matching.js";
 import { promptContext } from "../utils/prompts.js";
+import { parseDecimalInteger } from "../utils/validation.js";
 
 const MAX_ADD_QUANTITY = 12;
-const QuantitySchema = z.coerce.number().int().min(1).max(MAX_ADD_QUANTITY);
 
 export interface AddOptions {
   quantity?: unknown;
@@ -91,9 +90,9 @@ export class CartService {
 }
 
 export function parseAddQuantity(quantityInput: unknown): number {
-  const result = QuantitySchema.safeParse(quantityInput);
-  if (result.success) {
-    return result.data;
+  const quantity = parseDecimalInteger(quantityInput);
+  if (quantity !== undefined && quantity >= 1 && quantity <= MAX_ADD_QUANTITY) {
+    return quantity;
   }
 
   throw new UserFacingError(`Quantity must be an integer from 1 to ${MAX_ADD_QUANTITY}.`, {

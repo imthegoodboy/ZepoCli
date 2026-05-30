@@ -10,12 +10,20 @@ export function textMatchesProductQuery(text: string, query: string): boolean {
 
   const compactSearchable = compactProductMatchText(searchable);
   const compactQuery = compactProductMatchText(queryText);
-  if (searchable.includes(queryText) || (compactQuery.length > 1 && compactSearchable.includes(compactQuery))) {
+  const searchableTerms = productMatchTerms(searchable);
+  if (queryText.includes(" ") && productMatchPhraseMatches(searchable, queryText)) {
+    return true;
+  }
+
+  if (compactQuery.length > 1 && /\d/.test(compactQuery) && compactSearchable.includes(compactQuery)) {
     return true;
   }
 
   const terms = productMatchTerms(queryText);
-  return terms.length > 0 && terms.every((term) => productMatchTermMatches(searchable, compactSearchable, term));
+  return (
+    terms.length > 0 &&
+    terms.every((term) => productMatchTermMatches(searchableTerms, compactSearchable, term))
+  );
 }
 
 export function queryHasSpecificSizeTerm(query: string): boolean {
@@ -42,10 +50,24 @@ function productMatchTerms(value: string): string[] {
     .filter((term) => term.length > 1);
 }
 
-function productMatchTermMatches(searchable: string, compactSearchable: string, term: string): boolean {
+function productMatchTermMatches(searchableTerms: string[], compactSearchable: string, term: string): boolean {
   return productMatchTermVariants(term).some(
-    (variant) => searchable.includes(variant) || compactSearchable.includes(variant)
+    (variant) => productMatchTermVariantMatches(searchableTerms, compactSearchable, variant)
   );
+}
+
+function productMatchTermVariantMatches(
+  searchableTerms: string[],
+  compactSearchable: string,
+  variant: string
+): boolean {
+  if (/^[a-z]+$/i.test(variant)) {
+    return searchableTerms.some(
+      (term) => term === variant || (variant.length >= 3 && term.startsWith(variant))
+    );
+  }
+
+  return searchableTerms.includes(variant) || (/\d/.test(variant) && compactSearchable.includes(variant));
 }
 
 function productMatchTermVariants(term: string): string[] {
@@ -62,4 +84,9 @@ function productMatchTermVariants(term: string): string[] {
 
 function compactProductMatchText(value: string): string {
   return value.replace(/[^a-z0-9.]+/gi, "");
+}
+
+function productMatchPhraseMatches(searchable: string, queryText: string): boolean {
+  const escaped = queryText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return new RegExp(`(^|[^a-z0-9.])${escaped}(?=$|[^a-z0-9.])`, "i").test(searchable);
 }

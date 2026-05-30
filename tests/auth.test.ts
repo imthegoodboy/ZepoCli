@@ -39,6 +39,11 @@ describe("login state inference", () => {
     expect(inferLoginStateFromText("Log out")).toBe("logged-in");
   });
 
+  it("keeps logged-in account evidence when harmless login settings text is visible", () => {
+    expect(inferLoginStateFromText("Account My Orders Wallet Login & security")).toBe("logged-in");
+    expect(inferLoginStateFromText("Profile Wallet Login details")).toBe("logged-in");
+  });
+
   it("returns unknown for ambiguous page text", () => {
     expect(inferLoginStateFromText("Search for milk Cart")).toBe("unknown");
   });
@@ -126,6 +131,14 @@ describe("login state inference", () => {
 
       expect(page.clicked).toBe(false);
     }
+  });
+
+  it("skips unsafe account or login matches before clicking a later safe control", async () => {
+    const page = createAccountSurfaceCollectionPage();
+
+    await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
   });
 
   it("prefills phone only into explicit phone or mobile fields", () => {
@@ -347,6 +360,7 @@ describe("login state inference", () => {
     expect(normalizeLoginPhone(undefined)).toBeUndefined();
     expect(normalizeLoginPhone("9876543210")).toBe("9876543210");
     expect(normalizeLoginPhone("+91 98765 43210")).toBe("9876543210");
+    expect(normalizeLoginPhone("+91-98765-43210")).toBe("9876543210");
     expect(normalizeLoginPhone("09876543210")).toBe("9876543210");
   });
 
@@ -354,6 +368,12 @@ describe("login state inference", () => {
     expect(() => normalizeLoginPhone("12345")).toThrow("Phone number must be a valid 10-digit Indian mobile number.");
     expect(() => normalizeLoginPhone("5555555555")).toThrow("Phone number must be a valid 10-digit Indian mobile number.");
     expect(() => normalizeLoginPhone("not a phone")).toThrow(
+      "Phone number must be a valid 10-digit Indian mobile number."
+    );
+    expect(() => normalizeLoginPhone("phone 9876543210")).toThrow(
+      "Phone number must be a valid 10-digit Indian mobile number."
+    );
+    expect(() => normalizeLoginPhone("9876543210 ext 1")).toThrow(
       "Phone number must be a valid 10-digit Indian mobile number."
     );
   });
@@ -396,6 +416,26 @@ function createMixedLabelAccountSurfacePage(
 
       return createHiddenLocator();
     },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createAccountSurfaceCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("Checkout", async () => {
+      clicks.push("unsafe");
+    }, { "aria-label": "Login" }),
+    createVisibleLocator("Login", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Login") ? locators : createHiddenLocator(),
     locator: () => createHiddenLocator()
   };
 

@@ -290,6 +290,8 @@ describe("address automation helpers", () => {
 
   it("treats payment-method labels as unsafe address automation clicks", () => {
     for (const unsafeText of [
+      "Payment",
+      "Payments",
       "Payment Method",
       "Select Payment",
       "UPI",
@@ -304,6 +306,34 @@ describe("address automation helpers", () => {
       "PhonePe",
       "Google Pay",
       "BHIM"
+    ]) {
+      expect(isUnsafeAddressAutomationClickText(unsafeText)).toBe(true);
+      expect(isAddressManagerClickText(unsafeText)).toBe(false);
+      expect(isAddAddressClickText(unsafeText)).toBe(false);
+    }
+  });
+
+  it("treats cart, checkout, bill, and order labels as unsafe address automation clicks", () => {
+    for (const unsafeText of [
+      "Cart",
+      "My Cart",
+      "Checkout",
+      "Proceed to Checkout",
+      "Pay",
+      "Pay Now",
+      "Make Payment",
+      "Place Order",
+      "Order Summary",
+      "Bill Summary",
+      "View Bill",
+      "Item Total",
+      "Grand Total",
+      "To Pay",
+      "Coupon",
+      "Promo",
+      "Order History",
+      "Track Order",
+      "Reorder"
     ]) {
       expect(isUnsafeAddressAutomationClickText(unsafeText)).toBe(true);
       expect(isAddressManagerClickText(unsafeText)).toBe(false);
@@ -335,16 +365,28 @@ describe("address automation helpers", () => {
       createMixedLabelAddressManagerPage("Delivery Address", "Use current location"),
       createMixedLabelAddressManagerPage("Confirm Address", "Delivery Address"),
       createMixedLabelAddressManagerPage("UPI", "Delivery Address"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Checkout"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Pay"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Order Summary"),
       createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Use current location" }),
       createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", {
         "aria-description": "Cash on Delivery"
       }),
+      createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Bill Summary" }),
       createMixedLabelAddressManagerPage("Continue", "Delivery Address")
     ]) {
       await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
 
       expect(page.managerClicked).toBe(false);
     }
+  });
+
+  it("skips unsafe address-manager matches before clicking a later safe control", async () => {
+    const page = createAddressManagerCollectionPage();
+
+    await expect(clickAddressManagerButton(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
   });
 
   it("clicks only explicit add-address action labels", () => {
@@ -374,14 +416,26 @@ describe("address automation helpers", () => {
       createMixedLabelAddAddressPage("Add Address", "Grant location access"),
       createMixedLabelAddAddressPage("Save Address", "Add Address"),
       createMixedLabelAddAddressPage("UPI", "Add Address"),
+      createMixedLabelAddAddressPage("Checkout", "Add Address"),
+      createMixedLabelAddAddressPage("Add Address", "Pay Now"),
+      createMixedLabelAddAddressPage("Add Address", "Order History"),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Save Address" }),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { "aria-description": "Cash on Delivery" }),
+      createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Checkout" }),
       createMixedLabelAddAddressPage("Use this address", "Add Address")
     ]) {
       await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
 
       expect(page.addAddressClicked).toBe(false);
     }
+  });
+
+  it("skips unsafe add-address matches before clicking a later safe control", async () => {
+    const page = createAddAddressCollectionPage();
+
+    await expect(clickAddAddressButton(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
   });
 
   it("clicks a tagged saved-address row only after it is revalidated", async () => {
@@ -446,7 +500,10 @@ describe("address automation helpers", () => {
       createTaggedAddressSelectionPage({ title: "Use current location" }),
       createTaggedAddressSelectionPage({ "aria-description": "Save Address" }),
       createTaggedAddressSelectionPage({ "aria-label": "UPI" }),
-      createTaggedAddressSelectionPage({ title: "Cash on Delivery" })
+      createTaggedAddressSelectionPage({ title: "Cash on Delivery" }),
+      createTaggedAddressSelectionPage({ "aria-label": "Checkout" }),
+      createTaggedAddressSelectionPage({ title: "Pay Now" }),
+      createTaggedAddressSelectionPage({ "aria-description": "Order Summary" })
     ]) {
       await expect(
         clickTaggedAddressSelection(page as never, {
@@ -478,6 +535,9 @@ describe("address automation helpers", () => {
     expect(isAddAddressFlowText("Enter complete address House / Flat Floor Receiver Name Save Address")).toBe(true);
     expect(isAddAddressFlowText("Pin your location Add new address Mark as Home")).toBe(true);
     expect(isAddAddressFlowText("Use current location Detect my location Select location")).toBe(false);
+    expect(isAddAddressFlowText("Save Address")).toBe(false);
+    expect(isAddAddressFlowText("Confirm Address")).toBe(false);
+    expect(isAddAddressFlowText("Confirm Address Use this address Deliver Here")).toBe(false);
     expect(isAddAddressFlowText("Saved Addresses Home 221B Baker Street Bengaluru")).toBe(false);
   });
 
@@ -550,6 +610,46 @@ function createMixedLabelAddAddressPage(
 
       return createHiddenLocator();
     },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createAddressManagerCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocatorWithAria("Delivery Address", "Use current location", async () => {
+      clicks.push("unsafe");
+    }),
+    createVisibleLocatorWithAria("Delivery Address", "Delivery Address", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Delivery Address") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createAddAddressCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocatorWithAria("Add Address", "Use current location", async () => {
+      clicks.push("unsafe");
+    }),
+    createVisibleLocatorWithAria("Add Address", "Add Address", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Add Address") ? locators : createHiddenLocator(),
     locator: () => createHiddenLocator()
   };
 
@@ -773,6 +873,29 @@ function createHiddenLocator() {
     evaluate: async () => false,
     click: async () => undefined
   };
+}
+
+function createLocatorCollection(locators: Array<ReturnType<typeof createHiddenLocator>>) {
+  const hidden = createHiddenLocator();
+  const collection = {
+    first() {
+      return locators[0] ?? hidden;
+    },
+    nth(index: number) {
+      return locators[index] ?? hidden;
+    },
+    count: async () => locators.length,
+    filter() {
+      return collection;
+    },
+    isVisible: async () => collection.first().isVisible(),
+    innerText: async () => collection.first().innerText(),
+    getAttribute: async (name: string) => collection.first().getAttribute(name),
+    evaluate: async () => false,
+    click: async () => collection.first().click()
+  };
+
+  return collection;
 }
 
 function matchesLocatorName(name: RegExp | string | undefined, text: string): boolean {

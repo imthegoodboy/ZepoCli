@@ -6,6 +6,7 @@ import { PreferencesStore } from "../storage/preferences.js";
 import { SessionStore } from "../storage/session.js";
 import { SqliteStore } from "../storage/sqlite.js";
 import type { RuntimeOptions } from "../types.js";
+import { redactSensitiveValue } from "../utils/redaction.js";
 
 export interface AppRuntime {
   paths: AppPaths;
@@ -34,7 +35,17 @@ export function createRuntime(options: Partial<RuntimeOptions> = {}): AppRuntime
   const logger = pino(
     {
       level: runtimeOptions.debug ? "debug" : "info",
-      base: undefined
+      base: undefined,
+      formatters: {
+        log(object) {
+          return redactSensitiveValue(object) as Record<string, unknown>;
+        }
+      },
+      hooks: {
+        logMethod(args, method) {
+          method.apply(this, args.map(redactSensitiveValue) as Parameters<typeof method>);
+        }
+      }
     },
     logDestination
   );

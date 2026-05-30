@@ -19,14 +19,16 @@ const sensitiveBrowserFlowFiles = [
 ];
 
 describe("sensitive browser diagnostics", () => {
-  it("disables debug HTML and screenshot capture for account-dependent browser flows", () => {
+  it("disables debug HTML and screenshot capture for sensitive service browser flows", () => {
     for (const file of sensitiveServiceFiles) {
       const source = readFileSync(resolve(rootDir, file), "utf8");
-      const accountBrowserCalls = source.match(/withPage\s*\(\s*\{[^}]*requireSession:\s*true[^}]*\}/g) ?? [];
+      const browserCalls = source.match(/withPage\s*\(\s*\{[^}]*\}/g) ?? [];
 
-      expect(accountBrowserCalls.length, `${file} should have account-dependent browser calls`).toBeGreaterThan(0);
-      for (const call of accountBrowserCalls) {
-        expect(call, `${file} account browser call should disable failure capture`).toMatch(/captureFailures:\s*false/);
+      expect(browserCalls.length, `${file} should have sensitive browser calls`).toBeGreaterThan(0);
+      for (const call of browserCalls) {
+        expect(call, `${file} sensitive browser call should disable failure capture`).toMatch(
+          /captureFailures:\s*false/
+        );
       }
     }
   });

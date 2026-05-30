@@ -5,6 +5,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 
+import packageJson from "../package.json" with { type: "json" };
 import { resolveAppPaths } from "../src/config/paths.js";
 import { SessionStore } from "../src/storage/session.js";
 import { REDACTED_SEARCH_QUERY, SqliteStore } from "../src/storage/sqlite.js";
@@ -199,6 +200,7 @@ describe("session storage", () => {
     sqlite.close();
 
     expect(status).toMatchObject({
+      version: packageJson.version,
       dataDir: paths.dataDir,
       authStatePath: paths.authStatePath,
       browserProfileDir: paths.browserProfileDir,
@@ -437,6 +439,53 @@ describe("session storage", () => {
     sqlite.close();
   });
 
+  it("accepts strong Zepto auth keys even when they include delivery or location wording", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-strong-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "deliverySessionToken",
+            value: "redacted",
+            domain: "www.zepto.com",
+            path: "/"
+          }
+        ],
+        origins: []
+      })
+    );
+
+    expect(session.hasStorageState()).toBe(true);
+    expect(session.status().hasAuthState).toBe(true);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [],
+        origins: [
+          {
+            origin: "https://www.zepto.com",
+            localStorage: [
+              {
+                name: "selectedLocationAuthToken",
+                value: "redacted"
+              }
+            ]
+          }
+        ]
+      })
+    );
+
+    expect(session.hasStorageState()).toBe(true);
+    expect(session.status().hasAuthState).toBe(true);
+    sqlite.close();
+  });
+
   it("does not treat empty Zepto origin storage as saved auth state", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-origin-auth-"));
     const paths = resolveAppPaths(tempDir);
@@ -467,6 +516,108 @@ describe("session storage", () => {
               {
                 name: "selectedLocation",
                 value: "Bengaluru"
+              },
+              {
+                name: "userLocation",
+                value: "Bengaluru"
+              },
+              {
+                name: "customer_preferred_store",
+                value: "store-1"
+              },
+              {
+                name: "profileDeliveryAddress",
+                value: "Bengaluru"
+              }
+            ]
+          }
+        ]
+      })
+    );
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
+  it("does not treat public Zepto cookies as saved auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-public-cookie-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "selectedLocation",
+            value: "Bengaluru",
+            domain: "www.zepto.com",
+            path: "/"
+          },
+          {
+            name: "pincode",
+            value: "560001",
+            domain: ".zeptonow.com",
+            path: "/"
+          },
+          {
+            name: "userLocation",
+            value: "Bengaluru",
+            domain: "www.zepto.com",
+            path: "/"
+          },
+          {
+            name: "customer_preferred_store",
+            value: "store-1",
+            domain: ".zeptonow.com",
+            path: "/"
+          },
+          {
+            name: "profileDeliveryAddress",
+            value: "Bengaluru",
+            domain: "www.zepto.com",
+            path: "/"
+          }
+        ],
+        origins: []
+      })
+    );
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
+  it("does not treat empty auth-like Zepto cookie or localStorage values as saved auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-auth-values-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "sid",
+            value: "   ",
+            domain: "www.zepto.com",
+            path: "/"
+          }
+        ],
+        origins: [
+          {
+            origin: "https://www.zepto.com",
+            localStorage: [
+              {
+                name: "authToken",
+                value: ""
+              },
+              {
+                name: "sessionToken",
+                value: "   "
               }
             ]
           }

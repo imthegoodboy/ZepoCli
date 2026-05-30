@@ -10,6 +10,7 @@ import {
   LAST_ACCESS_CHALLENGE_META_KEY
 } from "../automation/browser.js";
 import { BASE_URL } from "../config/constants.js";
+import { PACKAGE_VERSION } from "../config/package.js";
 import type { AppPaths } from "../config/paths.js";
 import type { SessionStatus } from "../types.js";
 import type { SqliteStore } from "./sqlite.js";
@@ -116,6 +117,7 @@ export class SessionStore {
     const accessChallenge = getAccessChallengeCooldownStatus(this.sqlite.getMeta(LAST_ACCESS_CHALLENGE_META_KEY));
 
     return {
+      version: PACKAGE_VERSION,
       dataDir: this.paths.dataDir,
       authStatePath: this.paths.authStatePath,
       browserProfileDir: this.paths.browserProfileDir,
@@ -185,8 +187,13 @@ function isZeptoCookie(value: unknown): boolean {
     return false;
   }
 
-  const domain = (value as { domain?: unknown }).domain;
-  return typeof domain === "string" && isZeptoHost(domain);
+  const cookie = value as { domain?: unknown; name?: unknown; value?: unknown };
+  return (
+    typeof cookie.domain === "string" &&
+    isZeptoHost(cookie.domain) &&
+    isAuthLikeStorageKey(cookie.name) &&
+    hasReadableStorageValue(cookie.value)
+  );
 }
 
 function isZeptoOriginWithAuthStorage(value: unknown): boolean {
@@ -218,8 +225,43 @@ function hasAuthLikeLocalStorage(value: unknown): boolean {
     }
 
     const name = (entry as { name?: unknown; key?: unknown }).name ?? (entry as { key?: unknown }).key;
-    return typeof name === "string" && /(auth|session|token|jwt|user|customer|profile|phone|mobile)/i.test(name);
+    return isAuthLikeStorageKey(name) && hasReadableStorageValue((entry as { value?: unknown }).value);
   });
+}
+
+function isAuthLikeStorageKey(value: unknown): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalizedKey = normalizeStorageKey(value);
+  if (hasStrongAuthStorageSignal(normalizedKey)) {
+    return true;
+  }
+
+  if (isPublicPreferenceStorageKey(normalizedKey)) {
+    return false;
+  }
+
+  return /\b(user|customer|profile|phone|mobile|identity)\b/i.test(normalizedKey);
+}
+
+function hasStrongAuthStorageSignal(normalizedKey: string): boolean {
+  return /\b(auth|session|token|jwt|sid|access|refresh|login|logged)\b/i.test(normalizedKey);
+}
+
+function isPublicPreferenceStorageKey(normalizedKey: string): boolean {
+  return /\b(location|pincode|pin\s?code|pin_code|latitude|longitude|lat|lng|geo|address|preference|preferred|selected|store|city|serviceable|delivery)\b/i.test(
+    normalizedKey
+  );
+}
+
+function normalizeStorageKey(value: string): string {
+  return value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_\-.]+/g, " ");
+}
+
+function hasReadableStorageValue(value: unknown): boolean {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function isZeptoHost(host: string): boolean {

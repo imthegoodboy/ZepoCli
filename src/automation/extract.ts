@@ -167,12 +167,13 @@ function cleanOrderEta(value: string | undefined): string | undefined {
       ""
     )
     .trim();
+  const timeValue = cleaned.match(/\b\d+\s*(?:mins?|minutes?|hrs?|hours?)\b/i)?.[0];
 
-  if (!cleaned || !/\b\d+\s*(?:mins?|minutes?|hrs?|hours?)\b/i.test(cleaned)) {
+  if (!timeValue) {
     return undefined;
   }
 
-  return cleaned;
+  return timeValue;
 }
 
 function extractOrderTotal(block: string): string | undefined {
@@ -254,13 +255,14 @@ function productPricesFrom(lines: string[]): { price?: string; mrp?: string } {
     }))
     .filter((item) => item.prices.length > 0 && !isDiscountOnlyPriceLine(item.line, item.prices));
 
-  const labeledMrp = priceLines.find((item) => /\b(mrp|maximum retail price)\b/i.test(item.line))?.prices[0];
-  const firstNonMrpPrice = priceLines.find((item) => !/\b(mrp|maximum retail price)\b/i.test(item.line))?.prices[0];
+  const labeledMrp = priceLines.find((item) => isLabeledMrpLine(item.line))?.prices[0];
+  const firstNonMrpPrice = priceLines.find((item) => !isLabeledMrpLine(item.line))?.prices[0];
   const allPrices = priceLines.flatMap((item) => item.prices);
+  const sellingPrice = firstNonMrpPrice ?? (labeledMrp ? undefined : allPrices[0]);
 
   return {
-    price: firstNonMrpPrice ?? allPrices[0],
-    mrp: labeledMrp ?? allPrices.find((price) => price !== (firstNonMrpPrice ?? allPrices[0]))
+    price: sellingPrice,
+    mrp: labeledMrp ?? allPrices.find((price) => price !== sellingPrice)
   };
 }
 
@@ -270,15 +272,19 @@ function firstNonDiscountOnlyPrice(lines: string[]): string | undefined {
       line,
       prices: extractPrices(line)
     }))
-    .filter((item) => item.prices.length > 0 && !isDiscountOnlyPriceLine(item.line, item.prices))
+    .filter((item) => item.prices.length > 0 && !isDiscountOnlyPriceLine(item.line, item.prices) && !isLabeledMrpLine(item.line))
     .flatMap((item) => item.prices)[0];
+}
+
+function isLabeledMrpLine(line: string): boolean {
+  return /\b(mrp|maximum retail price)\b/i.test(line);
 }
 
 function isDiscountOnlyPriceLine(line: string, prices: string[]): boolean {
   return (
     prices.length === 1 &&
     /\b(off|discount|save|savings?)\b/i.test(line) &&
-    !/\b(mrp|maximum retail price)\b/i.test(line)
+    !isLabeledMrpLine(line)
   );
 }
 
@@ -302,6 +308,7 @@ function isGenericImageAlt(value: string): boolean {
 function isIgnoredProductLine(line: string): boolean {
   return (
     /^add$/i.test(line) ||
+    /^add\s+to\s+cart$/i.test(line) ||
     /^added$/i.test(line) ||
     /^out of stock$/i.test(line) ||
     /^(sponsored|ad|advertisement|best\s?seller|popular|trending|recommended|featured)$/i.test(line) ||
@@ -325,7 +332,7 @@ function isLikelyCartProductName(line: string): boolean {
   }
 
   if (
-    /^(cart|checkout|view bill|apply coupon|add|added|add more|out of stock|saved|address)$/i.test(line) ||
+    /^(cart|checkout|view bill|apply coupon|add|add to cart|added|add more|out of stock|saved|address)$/i.test(line) ||
     isCartSummaryLine(line) ||
     isRecommendationHeaderLine(line)
   ) {
@@ -393,7 +400,7 @@ function isCartRecommendationContextLine(lines: string[], index: number): boolea
 }
 
 function isCartSuggestedProductWindow(lines: string[]): boolean {
-  return lines.some((line) => /^(add|added|out of stock)$/i.test(normalizeText(line)));
+  return lines.some((line) => /^(add|add to cart|added|out of stock)$/i.test(normalizeText(line)));
 }
 
 function isRecommendationHeaderLine(line: string): boolean {
@@ -467,6 +474,10 @@ function isQuantityStepperControl(line: string): boolean {
 }
 
 function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
+  if (!order.status && hasDeliveryMarketingCopy(order.rawText)) {
+    return false;
+  }
+
   if (order.id && (order.status || order.eta)) {
     return true;
   }
@@ -502,7 +513,7 @@ function isDeliveryMarketingStatusMatch(block: string, matchIndex: number): bool
 }
 
 function isArrivingMarketingStatusMatch(block: string, matchIndex: number): boolean {
-  if (hasOrderTrackingContext(block)) {
+  if (hasLocalOrderTrackingContext(block, matchIndex)) {
     return false;
   }
 
@@ -510,11 +521,25 @@ function isArrivingMarketingStatusMatch(block: string, matchIndex: number): bool
   return /^arriving\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/i.test(suffix);
 }
 
-function hasOrderTrackingContext(text: string): boolean {
+function hasDeliveryMarketingCopy(text: string): boolean {
   return (
-    /\btrack order|tracking\b/i.test(text) ||
-    /\bOrder\s?#?\s?(?=[A-Z0-9-]*\d)[A-Z0-9-]{4,}\b/i.test(text) ||
-    hasExplicitOrderStatusPhrase(text)
+    /\bdelivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/i.test(text) ||
+    /\b(?:groceries|snacks|daily essentials|essentials|items?|products?)\s+arriving\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/i.test(
+      text
+    )
+  );
+}
+
+function hasLocalOrderTrackingContext(text: string, matchIndex: number): boolean {
+  const prefix = normalizeText(text.slice(Math.max(0, matchIndex - 140), matchIndex));
+  return (
+    /\b(?:track order|tracking)\b(?:\s+(?:status|confirmed|packed|out for delivery|on the way|preparing|processing|placed))*\s*$/i.test(
+      prefix
+    ) ||
+    /\bOrder\s?#?\s?(?=[A-Z0-9-]*\d)[A-Z0-9-]{4,}\b(?:\s+(?:status|confirmed|packed|out for delivery|on the way|preparing|processing|placed))*\s*$/i.test(
+      prefix
+    ) ||
+    /\border\s+(?:status|is)\s*$/i.test(prefix)
   );
 }
 

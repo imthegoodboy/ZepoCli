@@ -1,17 +1,19 @@
 import type { Locator, Page } from "playwright";
 
 import { UserFacingError } from "../utils/errors.js";
-import { openCart } from "./cart.js";
+import { hasCartSurfaceEvidence, openCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const CHECKOUT_HANDOFF_CLICK_LABELS = [
-  /^checkout\b.*$/i,
+  /^checkout$/i,
+  /^checkout\s+\d+\s*(?:items?|products?)$/i,
   /^proceed\s+to\s+(?:checkout|payment|pay)$/i,
-  /^continue\s+to\s+(?:checkout|payment|pay)$/i
+  /^continue\s+to\s+(?:checkout|payment)$/i
 ] as const;
+const CHECKOUT_HANDOFF_CONTROL_SCAN_LIMIT = 8;
 
 export async function openCheckout(page: Page): Promise<void> {
   await openCart(page);
@@ -44,15 +46,25 @@ export async function clickCheckoutHandoffButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of CHECKOUT_HANDOFF_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeCheckoutButton(candidate)) {
+      if (await clickFirstSafeCheckoutButton(candidate)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeCheckoutButton(locator: Locator): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, CHECKOUT_HANDOFF_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeCheckoutButton(candidate)) {
+      return true;
     }
   }
 
@@ -82,7 +94,7 @@ async function clickSafeCheckoutButton(locator: Locator): Promise<boolean> {
 }
 
 export function assertReadableCheckoutCart(text: string): void {
-  if (parseCartItemsFromText(text).length > 0) {
+  if (parseCartItemsFromText(text).length > 0 && hasCartSurfaceEvidence(text)) {
     return;
   }
 
@@ -151,4 +163,29 @@ function isStrongCheckoutHandoffSurfaceText(text: string): boolean {
     /\b(select payment|choose payment|payment methods?|payment options?|payment mode)\b/i.test(text) ||
     /\b(place order|confirm order|pay now|make payment|complete payment|confirm payment)\b/i.test(text)
   );
+}
+
+async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {
+  const count = Math.min(await locatorCount(locator), limit);
+  for (let index = 0; index < count; index += 1) {
+    yield locatorAt(locator, index);
+  }
+}
+
+async function locatorCount(locator: Locator): Promise<number> {
+  const countable = locator as { count?: () => Promise<number> };
+  if (typeof countable.count === "function") {
+    return countable.count().catch(() => 0);
+  }
+
+  return (await locator.first().isVisible().catch(() => false)) ? 1 : 0;
+}
+
+function locatorAt(locator: Locator, index: number): Locator {
+  const indexable = locator as { nth?: (index: number) => Locator };
+  if (typeof indexable.nth === "function") {
+    return indexable.nth(index);
+  }
+
+  return index === 0 ? locator.first() : locator;
 }

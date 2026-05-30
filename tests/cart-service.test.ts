@@ -1,16 +1,36 @@
 import { describe, expect, it } from "vitest";
 
-import { assertCartContainsProduct, parseAddQuantity, requireAddableProducts, requireBestMatch } from "../src/services/cart.js";
+import {
+  CartService,
+  assertCartContainsProduct,
+  parseAddQuantity,
+  requireAddableProducts,
+  requireBestMatch
+} from "../src/services/cart.js";
 
 describe("cart service verification helpers", () => {
   it("parses valid add quantities", () => {
     expect(parseAddQuantity("2")).toBe(2);
+    expect(parseAddQuantity(" 2 ")).toBe(2);
   });
 
   it("rejects invalid add quantities with a user-facing error", () => {
-    expect(() => parseAddQuantity("abc")).toThrow("Quantity must be an integer from 1 to 12.");
-    expect(() => parseAddQuantity("0")).toThrow("Quantity must be an integer from 1 to 12.");
-    expect(() => parseAddQuantity("13")).toThrow("Quantity must be an integer from 1 to 12.");
+    for (const quantity of ["abc", "0", "13", "2.5", "1e1", "0x2", ""]) {
+      expect(() => parseAddQuantity(quantity)).toThrow("Quantity must be an integer from 1 to 12.");
+    }
+  });
+
+  it("rejects blank add and remove queries before browser work", async () => {
+    const service = new CartService(createNoBrowserRuntime());
+
+    await expect(service.add("   ")).rejects.toMatchObject({
+      code: "invalid_input",
+      message: "Product query is required."
+    });
+    await expect(service.remove("   ")).rejects.toMatchObject({
+      code: "invalid_input",
+      message: "Cart item query is required."
+    });
   });
 
   it("returns a confident product match for auto-add", () => {
@@ -272,3 +292,16 @@ describe("cart service verification helpers", () => {
     ).toThrow("did not show an item matching");
   });
 });
+
+function createNoBrowserRuntime() {
+  return {
+    options: {
+      input: false
+    },
+    sqlite: {
+      saveCartSnapshot: () => {
+        throw new Error("browser work should not reach cache writes");
+      }
+    }
+  } as never;
+}

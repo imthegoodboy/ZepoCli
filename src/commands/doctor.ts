@@ -34,6 +34,7 @@ export function registerDoctorCommand(program: Command): void {
 
 function printDoctorReport(report: DoctorReport): void {
   console.log(chalk.bold("ZepoCli doctor"));
+  console.log(`${chalk.bold("Version:")} ${report.version}`);
   for (const check of report.checks) {
     console.log(`${statusLabel(check)} ${chalk.bold(check.name)}: ${check.message}`);
     if (check.hint) {

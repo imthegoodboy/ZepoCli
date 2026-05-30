@@ -14,6 +14,9 @@ export interface GlobalOptions {
   timeout?: string;
 }
 
+const MIN_TIMEOUT_MS = 1_000;
+const MAX_TIMEOUT_MS = 300_000;
+
 const RuntimeOptionsSchema = z.object({
   dataDir: z
     .string()
@@ -24,9 +27,15 @@ const RuntimeOptionsSchema = z.object({
   visible: z.boolean().default(false),
   timeout: z
     .string()
-    .regex(/^\d+$/, "must be a positive integer number of milliseconds")
+    .regex(/^\d+$/, "must be a decimal integer number of milliseconds")
     .transform(Number)
-    .pipe(z.number().int().min(1_000).max(300_000))
+    .pipe(
+      z
+        .number()
+        .int()
+        .min(MIN_TIMEOUT_MS, `must be at least ${MIN_TIMEOUT_MS} ms`)
+        .max(MAX_TIMEOUT_MS, `must be at most ${MAX_TIMEOUT_MS} ms`)
+    )
     .optional()
 });
 

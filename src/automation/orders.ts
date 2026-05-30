@@ -11,6 +11,7 @@ import { isPaymentMethodLabelText } from "./payment-labels.js";
 export const ORDERS_OPEN_CLICK_LABELS = [/^my orders$/i, /^orders$/i, /^order history$/i, /^past orders$/i] as const;
 export const ACCOUNT_MENU_CLICK_LABELS = [/^account$/i, /^profile$/i] as const;
 export const REORDER_ACTION_CLICK_LABELS = [/^reorder$/i, /^order again$/i, /^repeat order$/i] as const;
+const ORDER_CONTROL_SCAN_LIMIT = 8;
 
 export async function openOrders(page: Page): Promise<void> {
   await gotoZepto(page, "/orders");
@@ -66,15 +67,29 @@ async function clickLabeledControl(
   const controls = page.locator("button, [role='button'], a");
   for (const label of labels) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeLabeledControl(candidate, isSafeText, isUnsafeText)) {
+      if (await clickFirstSafeLabeledControl(candidate, isSafeText, isUnsafeText)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeLabeledControl(
+  locator: Locator,
+  isSafeText: (text: string) => boolean,
+  isUnsafeText: (text: string) => boolean
+): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, ORDER_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeLabeledControl(candidate, isSafeText, isUnsafeText)) {
+      return true;
     }
   }
 
@@ -163,15 +178,28 @@ export async function clickReorderActionButton(page: Page, latestOrder?: OrderSn
   const controls = page.locator("button, [role='button'], a");
   for (const label of REORDER_ACTION_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeReorderControl(candidate, latestOrder)) {
+      if (await clickFirstSafeReorderControl(candidate, latestOrder)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeReorderControl(
+  locator: Locator,
+  latestOrder: OrderSnapshot | undefined
+): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, ORDER_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeReorderControl(candidate, latestOrder)) {
+      return true;
     }
   }
 
@@ -386,4 +414,29 @@ function stripOrderHistoryMarketingText(text: string): string {
   return text
     .replace(/\bdelivered\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/gi, "")
     .replace(/\barriving\s+(?:in|within)\s+(?:\d+\s*)?(?:mins?|minutes?|hrs?|hours?)\b/gi, "");
+}
+
+async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {
+  const count = Math.min(await locatorCount(locator), limit);
+  for (let index = 0; index < count; index += 1) {
+    yield locatorAt(locator, index);
+  }
+}
+
+async function locatorCount(locator: Locator): Promise<number> {
+  const countable = locator as { count?: () => Promise<number> };
+  if (typeof countable.count === "function") {
+    return countable.count().catch(() => 0);
+  }
+
+  return (await locator.first().isVisible().catch(() => false)) ? 1 : 0;
+}
+
+function locatorAt(locator: Locator, index: number): Locator {
+  const indexable = locator as { nth?: (index: number) => Locator };
+  if (typeof indexable.nth === "function") {
+    return indexable.nth(index);
+  }
+
+  return index === 0 ? locator.first() : locator;
 }

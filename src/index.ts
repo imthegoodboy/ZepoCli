@@ -16,6 +16,7 @@ import { registerSearchCommand } from "./commands/search.js";
 import { registerStatusCommand } from "./commands/status.js";
 import { isUserFacingError } from "./utils/errors.js";
 import { printJsonError } from "./utils/output.js";
+import { redactSensitiveText } from "./utils/redaction.js";
 
 const program = new Command();
 
@@ -65,7 +66,7 @@ program.parseAsync(process.argv).catch((error: unknown) => {
       return;
     }
 
-    console.error(chalk.red(error.message));
+    console.error(chalk.red(redactSensitiveText(error.message)));
     process.exitCode = error.exitCode;
     return;
   }
@@ -84,9 +85,9 @@ program.parseAsync(process.argv).catch((error: unknown) => {
       return;
     }
 
-    console.error(chalk.red(error.message));
+    console.error(chalk.red(redactSensitiveText(error.message)));
     if (error.hint) {
-      console.error(chalk.gray(error.hint));
+      console.error(chalk.gray(redactSensitiveText(error.hint)));
     }
     process.exitCode = error.exitCode;
     return;
@@ -110,7 +111,7 @@ program.parseAsync(process.argv).catch((error: unknown) => {
 
     console.error(chalk.red("Invalid input."));
     for (const issue of error.issues) {
-      console.error(chalk.gray(`- ${issue.path.join(".") || "value"}: ${issue.message}`));
+      console.error(chalk.gray(redactSensitiveText(`- ${issue.path.join(".") || "value"}: ${issue.message}`)));
     }
     process.exitCode = 1;
     return;
@@ -128,7 +129,7 @@ program.parseAsync(process.argv).catch((error: unknown) => {
     return;
   }
 
-  console.error(chalk.red(message));
+  console.error(chalk.red(redactSensitiveText(message)));
   process.exitCode = 1;
 });
 

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -449,7 +449,7 @@ describe("browser automation helpers", () => {
   });
 
   it("lets visible interactive runs continue after Zepto-controlled verification is resolved", async () => {
-    const page = createResponseAwarePage();
+    const page = createResolvableChallengePage("Verify you are human before continuing", "Search for milk");
     configurePageAccessChallengeHandling(page as never, { allowManualResolution: true, waitMs: 90_000 });
 
     page.responseListener?.(createResponse(429, "document", "https://www.zepto.com/security-check"));
@@ -460,8 +460,22 @@ describe("browser automation helpers", () => {
     clearPageAccessChallengeHandling(page as never);
   });
 
+  it("does not ignore hidden Zepto API throttles in visible interactive runs", async () => {
+    const page = createResponseAwarePage();
+    configurePageAccessChallengeHandling(page as never, { allowManualResolution: true, waitMs: 90_000 });
+
+    page.responseListener?.(createResponse(429, "fetch", "https://www.zepto.com/api/search?query=milk"));
+
+    expect(pageHadAccessChallenge(page as never)).toBe(true);
+    await expect(assertNoAccessChallenge(page as never)).rejects.toThrow(
+      "Zepto is asking for verification or blocking automated access."
+    );
+
+    clearPageAccessChallengeHandling(page as never);
+  });
+
   it("lets visible interactive navigation challenges resolve before failing the run", async () => {
-    const page = createNavigationChallengePage(429, "Search for milk");
+    const page = createNavigationChallengePage(429, "Verify you are human before continuing", "Search for milk");
     configurePageAccessChallengeHandling(page as never, { allowManualResolution: true, waitMs: 90_000 });
 
     await expect(gotoWithAccessProtection(page as never, "https://www.zepto.com/search?query=milk")).resolves.toBeUndefined();
@@ -526,8 +540,40 @@ describe("browser automation helpers", () => {
     };
   }
 
-  function createNavigationChallengePage(status: number, bodyText: string) {
+  function createResolvableChallengePage(initialBodyText: string, resolvedBodyText: string) {
     const page = {
+      bodyText: initialBodyText,
+      responseListener: undefined as ((response: ReturnType<typeof createResponse>) => void) | undefined,
+      offCalled: false,
+      waitForFunctionCalled: false,
+      on(event: string, listener: (response: ReturnType<typeof createResponse>) => void) {
+        if (event === "response") {
+          this.responseListener = listener;
+        }
+      },
+      off(event: string, listener: (response: ReturnType<typeof createResponse>) => void) {
+        if (event === "response" && this.responseListener === listener) {
+          this.offCalled = true;
+          this.responseListener = undefined;
+        }
+      },
+      waitForFunction: async () => {
+        page.waitForFunctionCalled = true;
+        page.bodyText = resolvedBodyText;
+      },
+      waitForLoadState: async () => undefined,
+      title: async () => "Zepto",
+      locator: () => ({
+        innerText: async () => page.bodyText
+      })
+    };
+
+    return page;
+  }
+
+  function createNavigationChallengePage(status: number, initialBodyText: string, resolvedBodyText?: string) {
+    const page = {
+      bodyText: initialBodyText,
       waitForFunctionCalled: false,
       goto: async (url: string | URL) => ({
         status: () => status,
@@ -535,11 +581,14 @@ describe("browser automation helpers", () => {
       }),
       waitForFunction: async () => {
         page.waitForFunctionCalled = true;
+        if (resolvedBodyText !== undefined) {
+          page.bodyText = resolvedBodyText;
+        }
       },
       waitForLoadState: async () => undefined,
       title: async () => "Zepto",
       locator: () => ({
-        innerText: async () => bodyText
+        innerText: async () => page.bodyText
       })
     };
 
@@ -781,6 +830,30 @@ describe("browser automation helpers", () => {
     expect(existsSync(lockPath)).toBe(false);
   });
 
+  it("recovers stale malformed browser automation locks using file modified time", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-browser-malformed-lock-"));
+    const lockPath = join(tempDir, "browser.lock");
+    writeFileSync(lockPath, "{}");
+    utimesSync(lockPath, new Date(10_000), new Date(10_000));
+
+    expect(isStaleBrowserRunLock(lockPath, 20 * 60 * 1_000)).toBe(true);
+    expect(getBrowserRunLockStatus(lockPath, 20 * 60 * 1_000)).toEqual({
+      path: lockPath,
+      present: true,
+      stale: true,
+      createdAt: new Date(10_000).toISOString(),
+      staleReason: "expired"
+    });
+
+    const release = acquireBrowserRunLock(lockPath, 20 * 60 * 1_000);
+    const lock = JSON.parse(readFileSync(lockPath, "utf8")) as { token: string; pid: number; createdAt: number };
+    expect(lock.pid).toBe(process.pid);
+    expect(lock.createdAt).toBe(20 * 60 * 1_000);
+
+    release();
+    expect(existsSync(lockPath)).toBe(false);
+  });
+
   it("recovers browser automation locks whose owner process has exited", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-browser-dead-lock-"));
     const lockPath = join(tempDir, "browser.lock");
@@ -836,6 +909,25 @@ describe("browser automation helpers", () => {
     expect(signalProcess.listenerCount()).toBe(0);
 
     dispose();
+    expect(signalProcess.listenerCount()).toBe(0);
+  });
+
+  it("still exits and removes signal handlers when signal cleanup fails", async () => {
+    const signalProcess = createSignalProcess();
+    const exitCodes: number[] = [];
+    installProcessSignalCleanup(
+      async () => {
+        throw new Error("cleanup failed");
+      },
+      signalProcess.process,
+      (code) => {
+        exitCodes.push(code);
+      }
+    );
+
+    await expect(signalProcess.emit("SIGTERM")).resolves.toBeUndefined();
+
+    expect(exitCodes).toEqual([143]);
     expect(signalProcess.listenerCount()).toBe(0);
   });
 

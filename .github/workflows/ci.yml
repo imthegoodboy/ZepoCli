@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version:
+          - 20.19
           - 22
           - 24
 
@@ -31,20 +32,8 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
-      - name: Test
-        run: npm test
-
-      - name: Verify compiled CLI
-        run: npm run verify:cli
-
-      - name: Verify installed package
-        run: npm run verify:package
-
-      - name: Remove build output before package test
-        run: rm -rf dist
-
-      - name: Package dry-run
-        run: npm pack --dry-run
+      - name: Check
+        run: npm run check
