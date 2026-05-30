@@ -416,6 +416,57 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live choose-add guard to fail before compiled CLI checks"
   );
 
+  const unknownTokenOptionResult = runNpmResult(
+    installedVerifyLiveArgs(packageDir, `--bad-${FAKE_NPM_TOKEN}`),
+    { cwd: rootDir }
+  );
+  assert(unknownTokenOptionResult.status === 1, "expected installed verify:live unknown option to fail");
+  assert(
+    unknownTokenOptionResult.stderr.includes("Unknown option: --bad-<redacted-npm-token>."),
+    "expected installed verify:live unknown option to redact npm-token-shaped values"
+  );
+  assert(
+    !unknownTokenOptionResult.stderr.includes(FAKE_NPM_TOKEN),
+    "expected installed verify:live unknown option output to omit npm-token-shaped value"
+  );
+  assert(
+    !unknownTokenOptionResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live unknown option to fail before compiled CLI checks"
+  );
+
+  const unknownSearchAssignmentResult = runNpmResult(
+    installedVerifyLiveArgs(packageDir, "--search=Amul Milk 500ml"),
+    { cwd: rootDir }
+  );
+  assert(unknownSearchAssignmentResult.status === 1, "expected installed verify:live unknown assignment to fail");
+  assert(
+    unknownSearchAssignmentResult.stderr.includes("Unknown option: --search."),
+    "expected installed verify:live unknown assignment to keep only the option name"
+  );
+  assert(
+    unknownSearchAssignmentResult.stderr.includes("Use a space between a live verifier option and its value."),
+    "expected installed verify:live unknown assignment to explain option value syntax"
+  );
+  assert(
+    !`${unknownSearchAssignmentResult.stdout}\n${unknownSearchAssignmentResult.stderr}`.includes("Amul Milk 500ml"),
+    "expected installed verify:live unknown assignment output to omit workflow query"
+  );
+
+  const unknownReportAssignmentPath = join(tempRoot, "live-secret-report.json");
+  const unknownReportAssignmentResult = runNpmResult(
+    installedVerifyLiveArgs(packageDir, `--report=${unknownReportAssignmentPath}`),
+    { cwd: rootDir }
+  );
+  assert(unknownReportAssignmentResult.status === 1, "expected installed verify:live unknown report assignment to fail");
+  assert(
+    unknownReportAssignmentResult.stderr.includes("Unknown option: --report."),
+    "expected installed verify:live unknown report assignment to keep only the option name"
+  );
+  assert(
+    !`${unknownReportAssignmentResult.stdout}\n${unknownReportAssignmentResult.stderr}`.includes(tempRoot),
+    "expected installed verify:live unknown assignment output to omit local temp paths"
+  );
+
   const noSessionDataDir = join(tempRoot, "live-no-session-data");
   const noSessionReportPath = join(tempRoot, "live-no-session-report.json");
   const noSessionResult = runNpmResult(
