@@ -9,6 +9,7 @@ import {
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
   redactArgsForLiveConsole,
+  summarizeLiveReportCoverage,
   summarizeLiveRunnerFailure
 } from "./live-report-utils.mjs";
 
@@ -53,6 +54,7 @@ const report = {
   reportPath: "<redacted-report-path>",
   note:
     "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.",
+  coverage: summarizeLiveReportCoverage([]),
   steps: []
 };
 let activeChild;
@@ -75,6 +77,7 @@ try {
   console.error("Live verification runner failed before completing all requested steps.");
 }
 
+updateReportCoverage();
 const reportWriteError = writeLiveReport(reportPath, report);
 console.log("\nLive verification report: <redacted-report-path>");
 if (reportWriteError) {
@@ -423,6 +426,7 @@ function handleInterrupt(signal) {
 }
 
 function finishInterruptedRun(signal, exitCode) {
+  updateReportCoverage();
   const reportWriteError = writeLiveReport(reportPath, report);
   console.error(`Live verification interrupted by ${signal}.`);
   console.log("\nLive verification report: <redacted-report-path>");
@@ -431,6 +435,10 @@ function finishInterruptedRun(signal, exitCode) {
     console.error("Choose a writable report file path and rerun with --report <path>.");
   }
   process.exit(exitCode);
+}
+
+function updateReportCoverage() {
+  report.coverage = summarizeLiveReportCoverage(report.steps);
 }
 
 function clearActiveChild(child) {

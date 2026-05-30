@@ -184,6 +184,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token URL-parameter, and local-path rules",
     "npm run verify:live -- --data-dir ./.zepo-live",
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
+    "top-level `coverage` object showing which workflow capabilities actually passed",
+    "`checkoutHandoff`",
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "Live report failures use stable `error.code` values.",
@@ -456,6 +458,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live no-session report to show passing Playwright Chromium evidence"
   );
   assert(
+    noSessionReport.coverage?.browserPreflight === true &&
+      noSessionReport.coverage?.localStatus === true &&
+      noSessionReport.coverage?.login === false &&
+      noSessionReport.coverage?.checkoutHandoff === false,
+    "expected installed verify:live no-session report coverage to distinguish preflight from account workflow"
+  );
+  assert(
     !JSON.stringify(noSessionReport).includes(tempRoot),
     "expected installed verify:live report to omit local temp paths"
   );
@@ -469,8 +478,37 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     redactArgsForLiveReport,
     redactLiveConsoleText,
     summarizeCommandError,
+    summarizeLiveReportCoverage,
     summarizeLiveRunnerFailure
   } = await import(pathToFileURL(liveReportUtilsPath).href);
+  assertDeepEqual(
+    summarizeLiveReportCoverage([
+      { name: "doctor", ok: true },
+      { name: "status", ok: true },
+      { name: "login", ok: false },
+      { name: "checkout", ok: true },
+      { name: "history", ok: false }
+    ]),
+    {
+      browserPreflight: true,
+      localStatus: true,
+      login: false,
+      liveSession: false,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: true,
+      track: false,
+      history: false,
+      reorder: false
+    },
+    "expected installed live report coverage to include only successful workflow steps"
+  );
   assertDeepEqual(
     redactArgsForLiveConsole([
       "--data-dir",
