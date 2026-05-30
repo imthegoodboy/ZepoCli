@@ -781,6 +781,7 @@ For cart cleanup verification, run remove before checkout only when other test c
   npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
   npm run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
+The report includes top-level requested, attempted, and coverage booleans so partial runs cannot be mistaken for full verification.
 The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
 
 Stable report failure codes include live_*_contract_mismatch, live_verification_incomplete, live_runner_failed, live_command_launch_failed, live_command_timeout, live_summary_failed, live_json_unreadable, live_json_unexpected, and command_failed.`);

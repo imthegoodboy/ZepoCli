@@ -63,6 +63,8 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--reorder-last");
     expect(result.stdout).toContain("--choose-add");
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
+    expect(result.stdout).toContain("requested, attempted, and coverage booleans");
+    expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
     expect(result.stdout).toContain(
       "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
     );
