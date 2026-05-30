@@ -486,8 +486,11 @@ function addManualFailure(name, message, hint) {
 function summarizePayload(name, payload) {
   if (name === "doctor") {
     const checks = Array.isArray(payload.checks) ? payload.checks : [];
+    const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium");
     return {
       ok: payload.ok === true,
+      browserAutomationReady: payload.browserAutomation?.ready === true,
+      playwrightChromiumPassed: playwrightChromiumCheck?.status === "pass",
       warnings: checks.filter((check) => check.status === "warn").map((check) => check.name),
       failures: checks.filter((check) => check.status === "fail").map((check) => check.name)
     };

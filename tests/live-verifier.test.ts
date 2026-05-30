@@ -104,6 +104,9 @@ describe("live verification runner", () => {
 
     expect(script).toContain('runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--json"])');
     expect(script).not.toContain('runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--skip-browser", "--json"])');
+    expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
+    expect(script).toContain('const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium")');
+    expect(script).toContain('playwrightChromiumPassed: playwrightChromiumCheck?.status === "pass"');
   });
 
   it("can forward human product selection to zepo add during live verification", () => {

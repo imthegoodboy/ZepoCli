@@ -446,6 +446,15 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     noSessionReport.steps?.some((step) => step.name === "login" && step.error?.code === "live_verification_incomplete"),
     "expected installed verify:live no-session report to explain login evidence is incomplete"
   );
+  const noSessionDoctorStep = noSessionReport.steps?.find((step) => step.name === "doctor");
+  assert(
+    noSessionDoctorStep?.summary?.browserAutomationReady === true,
+    "expected installed verify:live no-session report to show browser automation readiness"
+  );
+  assert(
+    noSessionDoctorStep?.summary?.playwrightChromiumPassed === true,
+    "expected installed verify:live no-session report to show passing Playwright Chromium evidence"
+  );
   assert(
     !JSON.stringify(noSessionReport).includes(tempRoot),
     "expected installed verify:live report to omit local temp paths"
