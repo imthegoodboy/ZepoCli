@@ -181,7 +181,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL parameters, and local-path values",
     "npm-token-shaped values",
-    "including URL/query-string encoded forms of those values",
+    "including URL/query-string encoded forms and standalone percent-encoded fragments of those values",
     "Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
@@ -331,6 +331,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
   assert(result.stdout.includes("npm-token-shaped values"), "expected installed verify:live npm-token redaction guidance");
+  assert(
+    result.stdout.includes("standalone percent-encoded sensitive fragments"),
+    "expected installed verify:live percent-encoded fragment redaction guidance"
+  );
   assert(result.stdout.includes("Stable report failure codes include"), "expected installed verify:live stable-code guidance");
   assert(
     result.stdout.includes("live_verification_incomplete"),

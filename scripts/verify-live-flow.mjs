@@ -62,7 +62,7 @@ const report = {
   dataDir: "<redacted-data-dir>",
   reportPath: "<redacted-report-path>",
   note:
-    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments. It also redacts npm-token-shaped values.",
+    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.",
   requested: requestedCoverage,
   attempted: summarizeLiveReportAttempts([]),
   coverage: initialCoverage,
@@ -817,8 +817,8 @@ For cart cleanup verification, run remove before checkout only when other test c
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
 The report includes top-level requested, attempted, coverage, and missingCoverage booleans so partial runs cannot be mistaken for full verification.
-The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
-It also redacts npm-token-shaped values.
+The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments.
+It also redacts npm-token-shaped values and standalone percent-encoded sensitive fragments.
 
 Stable report failure codes include live_*_contract_mismatch, live_verification_incomplete, live_runner_failed, live_command_launch_failed, live_command_timeout, live_summary_failed, live_json_unreadable, live_json_unexpected, and command_failed.`);
 }

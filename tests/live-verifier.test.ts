@@ -69,7 +69,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
     expect(result.stdout).toContain(
-      "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
+      "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments"
     );
     expect(result.stdout).toContain("npm-token-shaped values");
     expect(result.stdout).toContain("Stable report failure codes include");

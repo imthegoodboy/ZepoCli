@@ -60,12 +60,12 @@ describe("README package guidance", () => {
     expect(readme).toContain("Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token URL parameters, and local-path values");
     expect(readme).toContain("auth/session/token URL parameters");
-    expect(readme).toContain("including URL/query-string encoded forms of those values");
+    expect(readme).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
     expect(readme).toContain("npm-token-shaped values");
     expect(readme).toContain("Use ZepoCli only where permitted by Zepto and applicable law");
     expect(readme).toContain("https://www.zepto.com/s/terms-of-service");
     expect(readme).toContain("Terms of Use version 1.4");
-    expect(readme).toContain("were checked on 2026-05-30");
+    expect(readme).toContain("were checked on 2026-05-31");
     expect(readme).toContain("Last updated: 1 st November 2025");
     expect(readme).toContain("Privacy Notice version 1.1");
     expect(readme).toContain("https://staticweb.zepto.com/privacy-policy/");
@@ -120,7 +120,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token URL-parameter, and local-path rules");
     expect(readme).toContain("auth/session/token URL-parameter");
-    expect(readme).toContain("including URL/query-string encoded forms of those values");
+    expect(readme).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
     expect(readme).toContain("They also redact npm-token-shaped values");
     expect(readme).toContain("It refuses to run while another ZepoCli browser command owns the current data directory lock");
     expect(readme).toContain("configured data directory is blank");
@@ -141,8 +141,9 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("`checkoutHandoff`");
     expect(readme).toContain(
-      "omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
+      "omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, unredacted workflow query arguments, and standalone percent-encoded sensitive fragments"
     );
+    expect(readme).toContain("standalone percent-encoded sensitive fragments");
     expect(readme).toContain("live-verification-report.json` with the package `version`");
     expect(readme).toContain(
       "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, search/add/remove/address-use query text, and npm-token-shaped values"
