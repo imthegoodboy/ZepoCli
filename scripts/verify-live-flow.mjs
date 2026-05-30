@@ -8,9 +8,11 @@ import {
   buildLiveCommandTimeoutStep,
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
+  hasLiveReportMissingCoverage,
   redactArgsForLiveConsole,
   summarizeLiveReportAttempts,
   summarizeLiveReportCoverage,
+  summarizeLiveReportMissingCoverage,
   summarizeLiveReportRequests,
   summarizeLiveRunnerFailure
 } from "./live-report-utils.mjs";
@@ -48,6 +50,8 @@ if (!existsSync(cliPath)) {
 }
 
 const reportPath = options.report ?? resolve(options.dataDir, "live-verification-report.json");
+const requestedCoverage = summarizeLiveReportRequests(options);
+const initialCoverage = summarizeLiveReportCoverage([]);
 const report = {
   ok: true,
   version: packageJson.version,
@@ -56,9 +60,10 @@ const report = {
   reportPath: "<redacted-report-path>",
   note:
     "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.",
-  requested: summarizeLiveReportRequests(options),
+  requested: requestedCoverage,
   attempted: summarizeLiveReportAttempts([]),
-  coverage: summarizeLiveReportCoverage([]),
+  coverage: initialCoverage,
+  missingCoverage: summarizeLiveReportMissingCoverage(requestedCoverage, initialCoverage),
   steps: []
 };
 let activeChild;
@@ -444,6 +449,10 @@ function finishInterruptedRun(signal, exitCode) {
 function updateReportCoverage() {
   report.attempted = summarizeLiveReportAttempts(report.steps);
   report.coverage = summarizeLiveReportCoverage(report.steps);
+  report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+  if (hasLiveReportMissingCoverage(report.missingCoverage)) {
+    report.ok = false;
+  }
 }
 
 function clearActiveChild(child) {
@@ -781,7 +790,7 @@ For cart cleanup verification, run remove before checkout only when other test c
   npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
   npm run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
-The report includes top-level requested, attempted, and coverage booleans so partial runs cannot be mistaken for full verification.
+The report includes top-level requested, attempted, coverage, and missingCoverage booleans so partial runs cannot be mistaken for full verification.
 The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
 
 Stable report failure codes include live_*_contract_mismatch, live_verification_incomplete, live_runner_failed, live_command_launch_failed, live_command_timeout, live_summary_failed, live_json_unreadable, live_json_unexpected, and command_failed.`);

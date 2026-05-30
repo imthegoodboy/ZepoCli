@@ -73,6 +73,7 @@ The live report is acceptable only when:
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.
+- `missingCoverage` shows requested capabilities that did not pass; all values must be false before treating a requested scope as verified.
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.
 - `login` confirms `sessionSaved: true` and `confirmedSession: true`.
 - `status live` reports `liveSession.state: "logged-in"`.

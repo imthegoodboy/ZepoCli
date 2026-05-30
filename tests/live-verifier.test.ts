@@ -14,6 +14,7 @@ const {
   buildLiveCommandTimeoutStep,
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
+  hasLiveReportMissingCoverage,
   parseJsonFromOutput,
   redactArgsForLiveConsole,
   redactArgsForLiveReport,
@@ -21,6 +22,7 @@ const {
   summarizeCommandError,
   summarizeLiveReportAttempts,
   summarizeLiveReportCoverage,
+  summarizeLiveReportMissingCoverage,
   summarizeLiveReportRequests,
   summarizeLiveRunnerFailure
 } = await import("../scripts/live-report-utils.mjs");
@@ -63,7 +65,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--reorder-last");
     expect(result.stdout).toContain("--choose-add");
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
-    expect(result.stdout).toContain("requested, attempted, and coverage booleans");
+    expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
     expect(result.stdout).toContain(
       "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
@@ -126,9 +128,13 @@ describe("live verification runner", () => {
 
     expect(script).toContain("version: packageJson.version");
     expect(script).toContain('readFileSync(resolve(rootDir, "package.json"), "utf8")');
-    expect(script).toContain("requested: summarizeLiveReportRequests(options)");
+    expect(script).toContain("const requestedCoverage = summarizeLiveReportRequests(options)");
+    expect(script).toContain("requested: requestedCoverage");
     expect(script).toContain("attempted: summarizeLiveReportAttempts([])");
-    expect(script).toContain("coverage: summarizeLiveReportCoverage([])");
+    expect(script).toContain("const initialCoverage = summarizeLiveReportCoverage([])");
+    expect(script).toContain("coverage: initialCoverage");
+    expect(script).toContain("missingCoverage: summarizeLiveReportMissingCoverage");
+    expect(script).toContain("hasLiveReportMissingCoverage(report.missingCoverage)");
     expect(script).toContain("updateReportCoverage()");
   });
 
@@ -270,6 +276,45 @@ describe("live verification runner", () => {
       history: false,
       reorder: false
     });
+  });
+
+  it("summarizes requested but uncovered live report capabilities", () => {
+    const requested = summarizeLiveReportRequests({
+      login: true,
+      search: "milk",
+      checkout: true,
+      history: true
+    });
+    const coverage = summarizeLiveReportCoverage([
+      { name: "doctor", ok: true },
+      { name: "status", ok: true },
+      { name: "login", ok: false },
+      { name: "search", ok: true },
+      { name: "checkout", ok: true }
+    ]);
+
+    const missingCoverage = summarizeLiveReportMissingCoverage(requested, coverage);
+
+    expect(missingCoverage).toEqual({
+      browserPreflight: false,
+      localStatus: false,
+      login: true,
+      liveSession: true,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: false,
+      track: false,
+      history: true,
+      reorder: false
+    });
+    expect(hasLiveReportMissingCoverage(missingCoverage)).toBe(true);
+    expect(hasLiveReportMissingCoverage(summarizeLiveReportMissingCoverage(requested, requested))).toBe(false);
   });
 
   it("redacts the final live report path in runner console output", () => {

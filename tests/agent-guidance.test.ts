@@ -61,8 +61,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Playwright Chromium launches");
       expect(guidance).toContain("require `browserAutomation.ready === true` and a passing `Playwright Chromium` check");
       expect(guidance).toContain("package `version`");
-      expect(guidance).toContain("top-level `requested`, `attempted`, and `coverage`");
-      expect(guidance).toContain("capabilities that were requested, ran, and actually passed");
+      expect(guidance).toContain("top-level `requested`, `attempted`, `coverage`, and `missingCoverage`");
+      expect(guidance).toContain("capabilities that were requested, ran, actually passed, and remain requested-but-unverified");
       for (const code of [
         "live_doctor_contract_mismatch",
         "live_login_contract_mismatch",
@@ -106,6 +106,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`requested` shows the explicit verification scope without workflow query values");
     expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");
+    expect(liveVerifierSkill).toContain("`missingCoverage` shows requested capabilities that did not pass");
     expect(liveVerifierSkill).toContain("do not treat omitted or false coverage fields as verified");
     expect(liveVerifierSkill).toContain("npm run check");
     expect(liveVerifierSkill).toContain("live_verification_incomplete");
