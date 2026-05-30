@@ -237,12 +237,28 @@ Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage
 ## Verification
 
 ```bash
+npm run verify:secrets
 npm run check
 npm run verify:cli
 npm run verify:package
 ```
 
-`npm run check` builds, runs tests, verifies compiled CLI smoke behavior including the executable entry contract, runs both `doctor --skip-browser --json` and normal `doctor --json` browser-launch checks, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary through the same doctor checks, checks `node dist/index.js --help`, runs `npm audit --omit=dev`, and runs `npm pack --dry-run`.
+`npm run verify:secrets` scans tracked and unignored project text for npm-token-shaped values without printing the raw token. `npm run check` runs that secret gate first, then builds, runs tests, verifies compiled CLI smoke behavior including the executable entry contract, runs both `doctor --skip-browser --json` and normal `doctor --json` browser-launch checks, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary through the same doctor checks, checks `node dist/index.js --help`, runs `npm audit --omit=dev`, and runs `npm pack --dry-run`.
+
+## Release
+
+Release publishing is tag-driven. Before creating a release tag, run the local gate and keep issue #1 open unless a fresh human-controlled `verify:live` report proves the Zepto account workflow in the current website UI.
+
+```bash
+npm run check
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The GitHub release workflow runs `npm ci`, installs Playwright Chromium, runs `npm run check`, then publishes the package with `npm publish --provenance --access public` using `NPM_TOKEN`. It does not run `verify:live`; that remains a manual human-account gate because it can require OTP, location, cart mutation, checkout handoff, and Zepto-side payment decisions.
+
+Never put npm tokens in the app, README, tests, or committed config. Use a local environment variable for manual publishing, or store the token as the GitHub Actions secret named `NPM_TOKEN` for the release workflow.
+For manual publishing, copy `.npmrc.example` to ignored `.npmrc` and set `NPM_TOKEN` in your shell; keep the token value out of the file.
 
 For real human-account verification, use the opt-in live runner after building:
 

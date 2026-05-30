@@ -143,6 +143,7 @@ Before claiming production readiness:
 
 - `npm run build` passes.
 - `npm test` passes.
+- `npm run verify:secrets` passes against tracked and unignored project text and does not print raw tokens.
 - `npm run verify:cli` passes against the compiled `dist/index.js`.
 - `npm run verify:package` passes after packing the npm tarball, installing it into a disposable prefix, and running the installed `zepo` binary.
 - The verify scripts keep checking the `zepo` package bin entry and compiled shebang so the installed CLI works as a normal executable, not only through `node dist/index.js`.
@@ -152,6 +153,8 @@ Before claiming production readiness:
 - `node dist/index.js --help` shows the intended command surface.
 - `npm audit --omit=dev` passes before publishing or claiming package readiness.
 - `npm pack --dry-run` passes before publishing or claiming package readiness.
+- Release publishing is tag-driven through `.github/workflows/release.yml`; it must run `npm run check` before `npm publish --provenance --access public` and must not include `verify:live` because live Zepto account verification is a manual human-controlled gate.
+- Never store npm tokens in source, tests, README, `.npmrc`, or agent guidance. Keep local `.npmrc` and `.env*` files ignored; use the GitHub Actions secret name `NPM_TOKEN` or a local environment variable only. `.npmrc.example` and `.env.example` may contain placeholder names only. `verify:secrets` must fail on npm-token-shaped values without printing the raw token.
 - `npm run verify:live -- --data-dir <dedicated-dir> ...` is the opt-in human-account verification runner. Use it only with a human-controlled Zepto session; it can cover history, `--reorder-last`, `--choose-add`, `--remove <query>`, and `--clear` when the test cart/order history can be safely mutated, writes a sanitized report with the package `version`, and must not be added to CI or unattended release gates. The report, live runner command echoes, and final report-path line must not store or print raw page text, addresses, cart item names, order ids, payment credentials, phone input, local filesystem paths, or unredacted search/add/remove/address-use query arguments. Use `--add <query> --choose-add --cart` when the exact test product should be picked by a human from Zepto results. Use `--step-timeout <ms>` only when a human-controlled Zepto step legitimately needs more than the default per-command timeout.
 - When terminal logs may be shared, prefer `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 - If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
