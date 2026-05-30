@@ -863,6 +863,21 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !encodedSensitiveLiveStderr.includes("C%3A%5CUsers"),
     "expected installed live console stderr redaction to omit URL-encoded sensitive values"
   );
+  const encodedSensitiveBlobLiveStderr = redactLiveConsoleText(
+    "Encoded callback https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26card%3D4111%201111%201111%201111%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt and C%3A%2FUsers%2Fparth%2F.zepo-live%2Freport.json",
+    []
+  );
+  assert(
+    encodedSensitiveBlobLiveStderr.includes("phone=<redacted-phone>") &&
+      encodedSensitiveBlobLiveStderr.includes("card=<redacted-payment-number>") &&
+      encodedSensitiveBlobLiveStderr.includes("file=<redacted-local-path>") &&
+      encodedSensitiveBlobLiveStderr.includes("<redacted-local-path>") &&
+      !encodedSensitiveBlobLiveStderr.includes("https%3A%2F%2Fexample.test") &&
+      !encodedSensitiveBlobLiveStderr.includes("C%3A%2FUsers") &&
+      !encodedSensitiveBlobLiveStderr.includes("report.json") &&
+      !encodedSensitiveBlobLiveStderr.includes("trace.txt"),
+    "expected installed live console stderr redaction to omit URL-encoded sensitive blobs"
+  );
   const fakeNpmToken = `npm_${"A".repeat(24)}`;
   const npmTokenLiveStderr = redactLiveConsoleText(`Live stderr included ${fakeNpmToken}.`, []);
   assert(

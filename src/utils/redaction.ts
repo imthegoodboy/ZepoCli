@@ -1,5 +1,5 @@
 export function redactSensitiveText(value: string): string {
-  return redactSensitivePlainText(redactEncodedSensitiveParameterValues(value));
+  return redactSensitivePlainText(redactEncodedSensitiveParameterValues(redactEncodedSensitiveFragments(value)));
 }
 
 function redactSensitivePlainText(value: string): string {
@@ -48,6 +48,18 @@ function redactEncodedSensitiveParameterValues(value: string): string {
       return redacted === decoded ? match : `${prefix}${redacted}`;
     }
   );
+}
+
+function redactEncodedSensitiveFragments(value: string): string {
+  return value.replace(/[^\s"',;<>]*%[0-9A-Fa-f]{2}[^\s"',;<>]*/g, (match) => {
+    const decoded = decodeQueryValue(match);
+    if (!decoded || decoded === match) {
+      return match;
+    }
+
+    const redacted = redactSensitivePlainText(redactEncodedSensitiveParameterValues(decoded));
+    return redacted === decoded ? match : redacted;
+  });
 }
 
 function decodeQueryValue(value: string): string | undefined {
