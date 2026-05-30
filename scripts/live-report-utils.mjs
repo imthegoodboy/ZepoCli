@@ -229,7 +229,15 @@ export function buildLiveReportStep({ name, args, status, stdout, stderr, summar
 }
 
 export function summarizeLiveReportCoverage(steps = []) {
-  const coverage = {
+  return summarizeLiveReportStepBooleans(steps, (step) => step.ok === true);
+}
+
+export function summarizeLiveReportAttempts(steps = []) {
+  return summarizeLiveReportStepBooleans(steps, () => true);
+}
+
+function summarizeLiveReportStepBooleans(steps, includeStep) {
+  const summary = {
     browserPreflight: false,
     localStatus: false,
     login: false,
@@ -249,20 +257,20 @@ export function summarizeLiveReportCoverage(steps = []) {
   };
 
   for (const step of steps) {
-    if (!isObject(step) || step.ok !== true) {
+    if (!isObject(step) || !includeStep(step)) {
       continue;
     }
 
-    const key = LIVE_REPORT_COVERAGE_BY_STEP_NAME.get(step.name);
+    const key = LIVE_REPORT_CAPABILITY_BY_STEP_NAME.get(step.name);
     if (key) {
-      coverage[key] = true;
+      summary[key] = true;
     }
   }
 
-  return coverage;
+  return summary;
 }
 
-const LIVE_REPORT_COVERAGE_BY_STEP_NAME = new Map([
+const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
   ["doctor", "browserPreflight"],
   ["status", "localStatus"],
   ["login", "login"],

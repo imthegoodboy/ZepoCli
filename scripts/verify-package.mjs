@@ -184,7 +184,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token URL-parameter, and local-path rules",
     "npm run verify:live -- --data-dir ./.zepo-live",
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
-    "top-level `coverage` object showing which workflow capabilities actually passed",
+    "top-level `attempted` and `coverage` objects showing which workflow capabilities ran and which actually passed",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
@@ -465,6 +465,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live no-session report coverage to distinguish preflight from account workflow"
   );
   assert(
+    noSessionReport.attempted?.browserPreflight === true &&
+      noSessionReport.attempted?.localStatus === true &&
+      noSessionReport.attempted?.login === true &&
+      noSessionReport.attempted?.checkoutHandoff === false,
+    "expected installed verify:live no-session report attempts to distinguish failed preconditions from skipped workflow"
+  );
+  assert(
     !JSON.stringify(noSessionReport).includes(tempRoot),
     "expected installed verify:live report to omit local temp paths"
   );
@@ -478,9 +485,38 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     redactArgsForLiveReport,
     redactLiveConsoleText,
     summarizeCommandError,
+    summarizeLiveReportAttempts,
     summarizeLiveReportCoverage,
     summarizeLiveRunnerFailure
   } = await import(pathToFileURL(liveReportUtilsPath).href);
+  assertDeepEqual(
+    summarizeLiveReportAttempts([
+      { name: "doctor", ok: true },
+      { name: "status", ok: true },
+      { name: "login", ok: false },
+      { name: "checkout", ok: true },
+      { name: "history", ok: false }
+    ]),
+    {
+      browserPreflight: true,
+      localStatus: true,
+      login: true,
+      liveSession: false,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: true,
+      track: false,
+      history: true,
+      reorder: false
+    },
+    "expected installed live report attempts to include failed and successful workflow steps"
+  );
   assertDeepEqual(
     summarizeLiveReportCoverage([
       { name: "doctor", ok: true },
