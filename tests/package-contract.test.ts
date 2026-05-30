@@ -219,7 +219,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token URL parameters, and local-path values");
     expect(verifier).toContain("npm-token-shaped values");
-    expect(verifier).toContain("including URL/query-string encoded forms of those values");
+    expect(verifier).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
     expect(verifier).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token URL-parameter, and local-path rules");
     expect(verifier).toContain("`checkout and pay`, or amount-bearing pay text");
@@ -243,6 +243,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");
     expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
     expect(verifier).toContain("expected installed verify:live npm-token redaction guidance");
+    expect(verifier).toContain("expected installed verify:live percent-encoded fragment redaction guidance");
     expect(verifier).toContain("function installedVerifyLiveArgs");
     expect(verifier).toContain('"--silent", "run", "--prefix", packageDir, "verify:live"');
     expect(verifier).toContain("expected installed verify:live invalid phone output to omit raw phone input");

@@ -40,10 +40,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain("auth/session/token URL parameters, and local-path values");
       expect(guidance).toContain("Persistent runtime log object values, Error messages/stacks, and message strings should use the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
       expect(guidance).toContain("auth/session/token URL-parameter, and local-path redaction rules");
-      expect(guidance).toContain("including URL/query-string encoded forms of those values");
+      expect(guidance).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
       expect(guidance).toContain("npm-token-shaped values");
       expect(guidance).toContain("doctor --json");
-      expect(guidance).toContain("2026-05-30");
+      expect(guidance).toContain("2026-05-31");
       expect(guidance).toContain("Privacy Notice version 1.1");
       expect(guidance).toContain("Last updated: 17th June 2025");
       expect(guidance).toContain("passwords and payment instrument details as sensitive personal information");
@@ -115,6 +115,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("--step-timeout <ms>");
     expect(liveVerifierSkill).toContain("The report, live runner command echoes, and final report-path line redact data directory");
     expect(liveVerifierSkill).toContain("npm-token-shaped values");
+    expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
     expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --search milk --address home --add");
