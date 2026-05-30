@@ -164,6 +164,9 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("scripts/normalize-cli-entry.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
+    expect(packageJson.files).toContain("scripts/verify-secrets.mjs");
+    expect(packageJson.files).toContain(".env.example");
+    expect(packageJson.files).toContain(".npmrc.example");
   });
 
   it("keeps secret verification redacted and scoped to project text", () => {

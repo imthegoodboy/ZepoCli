@@ -12,6 +12,9 @@
     "scripts/normalize-cli-entry.mjs",
     "scripts/live-report-utils.mjs",
     "scripts/verify-live-flow.mjs",
+    "scripts/verify-secrets.mjs",
+    ".env.example",
+    ".npmrc.example",
     "README.md",
     "LICENSE"
   ],
