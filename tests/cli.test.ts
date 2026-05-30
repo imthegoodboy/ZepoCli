@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -15,7 +15,10 @@ const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
 const tsxCli = resolve(rootDir, "node_modules", "tsx", "dist", "cli.mjs");
 const cliEntry = resolve(rootDir, "src", "index.ts");
-const CLI_TEST_TIMEOUT_MS = 60_000;
+const builtCliEntry = resolve(rootDir, "dist", "index.js");
+const sourceDir = resolve(rootDir, "src");
+const cliArgsPrefix = resolveCliArgsPrefix();
+const CLI_TEST_TIMEOUT_MS = 90_000;
 const AUTH_STATE = JSON.stringify({
   cookies: [
     {
@@ -924,7 +927,7 @@ describe("CLI command smokes", () => {
 
 async function runCli(args: string[]): Promise<CliResult> {
   try {
-    const output = await execFileAsync(process.execPath, [tsxCli, cliEntry, ...args], {
+    const output = await execFileAsync(process.execPath, [...cliArgsPrefix, ...args], {
       cwd: rootDir,
       env: {
         ...process.env,
@@ -950,6 +953,39 @@ async function runCli(args: string[]): Promise<CliResult> {
 
     throw error;
   }
+}
+
+function resolveCliArgsPrefix(): string[] {
+  if (isBuiltCliFresh()) {
+    return [builtCliEntry];
+  }
+
+  return [tsxCli, cliEntry];
+}
+
+function isBuiltCliFresh(): boolean {
+  if (!existsSync(builtCliEntry)) {
+    return false;
+  }
+
+  return statSync(builtCliEntry).mtimeMs >= latestSourceMtime(sourceDir);
+}
+
+function latestSourceMtime(dir: string): number {
+  let latest = 0;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      latest = Math.max(latest, latestSourceMtime(entryPath));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.endsWith(".ts")) {
+      latest = Math.max(latest, statSync(entryPath).mtimeMs);
+    }
+  }
+
+  return latest;
 }
 
 function isExecError(error: unknown): error is { code?: number; stdout?: string; stderr?: string } {

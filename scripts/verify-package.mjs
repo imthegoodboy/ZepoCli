@@ -306,7 +306,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live verifier to write sanitized partial reports on interrupts"
   );
 
-  const result = runNpm(["run", "--prefix", packageDir, "verify:live", "--", "--help"], { cwd: rootDir });
+  const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("human-controlled live verification"), "expected installed verify:live help output");
   assert(result.stdout.includes("--reorder-last"), "expected installed verify:live reorder option");
   assert(result.stdout.includes("--choose-add"), "expected installed verify:live choose-add option");
@@ -338,18 +338,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(result.stdout.includes("command_failed"), "expected installed verify:live fallback code guidance");
 
   const invalidPhoneResult = runNpmResult(
-    [
-      "run",
-      "--prefix",
+    installedVerifyLiveArgs(
       packageDir,
-      "verify:live",
-      "--",
       "--data-dir",
       join(tempRoot, "live-invalid-phone-data"),
       "--login",
       "--phone",
       "phone 9876543210"
-    ],
+    ),
     { cwd: rootDir }
   );
   assert(invalidPhoneResult.status === 1, "expected installed verify:live invalid phone to fail");
@@ -361,14 +357,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     !invalidPhoneResult.stderr.includes("Compiled CLI was not found"),
     "expected installed verify:live invalid phone to fail before compiled CLI checks"
   );
+  assert(
+    !`${invalidPhoneResult.stdout}\n${invalidPhoneResult.stderr}`.includes("9876543210"),
+    "expected installed verify:live invalid phone output to omit raw phone input"
+  );
 
   const compatiblePhoneResult = runNpmResult(
-    [
-      "run",
-      "--prefix",
+    installedVerifyLiveArgs(
       packageDir,
-      "verify:live",
-      "--",
       "--data-dir",
       join(tempRoot, "live-compatible-phone-data"),
       "--login",
@@ -376,7 +372,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "+91 98765 43210",
       "--quantity",
       "2"
-    ],
+    ),
     { cwd: rootDir }
   );
   assert(compatiblePhoneResult.status === 1, "expected installed verify:live compatible phone guard to fail on quantity");
@@ -392,18 +388,18 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     !compatiblePhoneResult.stderr.includes("Compiled CLI was not found"),
     "expected installed verify:live compatible phone guard to fail before compiled CLI checks"
   );
+  assert(
+    !`${compatiblePhoneResult.stdout}\n${compatiblePhoneResult.stderr}`.includes("98765 43210"),
+    "expected installed verify:live compatible phone output to omit raw phone input"
+  );
 
   const chooseAddWithoutAddResult = runNpmResult(
-    [
-      "run",
-      "--prefix",
+    installedVerifyLiveArgs(
       packageDir,
-      "verify:live",
-      "--",
       "--data-dir",
       join(tempRoot, "live-choose-add-without-add-data"),
       "--choose-add"
-    ],
+    ),
     { cwd: rootDir }
   );
   assert(chooseAddWithoutAddResult.status === 1, "expected installed verify:live choose-add without add to fail");
@@ -419,17 +415,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const noSessionDataDir = join(tempRoot, "live-no-session-data");
   const noSessionReportPath = join(tempRoot, "live-no-session-report.json");
   const noSessionResult = runNpmResult(
-    [
-      "run",
-      "--prefix",
+    installedVerifyLiveArgs(
       packageDir,
-      "verify:live",
-      "--",
       "--data-dir",
       noSessionDataDir,
       "--report",
       noSessionReportPath
-    ],
+    ),
     {
       cwd: rootDir,
       env: {
@@ -440,6 +432,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }
   );
   assert(noSessionResult.status === 1, "expected installed verify:live no-session run to fail intentionally");
+  assert(
+    !`${noSessionResult.stdout}\n${noSessionResult.stderr}`.includes(tempRoot),
+    "expected installed verify:live no-session console output to omit local temp paths"
+  );
   assert(existsSync(noSessionReportPath), "expected installed verify:live no-session report");
   const noSessionReport = JSON.parse(readFileSync(noSessionReportPath, "utf8"));
   assert(noSessionReport.version === packageJson.version, "expected installed verify:live report version");
@@ -498,18 +494,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const requestedCheckoutDataDir = join(tempRoot, "live-requested-checkout-data");
   const requestedCheckoutReportPath = join(tempRoot, "live-requested-checkout-report.json");
   const requestedCheckoutResult = runNpmResult(
-    [
-      "run",
-      "--prefix",
+    installedVerifyLiveArgs(
       packageDir,
-      "verify:live",
-      "--",
       "--data-dir",
       requestedCheckoutDataDir,
       "--report",
       requestedCheckoutReportPath,
       "--checkout"
-    ],
+    ),
     {
       cwd: rootDir,
       env: {
@@ -522,6 +514,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     requestedCheckoutResult.status === 1,
     "expected installed verify:live requested-checkout no-session run to fail intentionally"
+  );
+  assert(
+    !`${requestedCheckoutResult.stdout}\n${requestedCheckoutResult.stderr}`.includes(tempRoot),
+    "expected installed verify:live requested-checkout console output to omit local temp paths"
   );
   assert(
     existsSync(requestedCheckoutReportPath),
@@ -1784,6 +1780,10 @@ function runInstalledCli(installedCliPath, args) {
 function runNpm(args, options) {
   assert(npmExecPath, "expected npm_execpath to run npm package verification");
   return run(process.execPath, [npmExecPath, ...args], options);
+}
+
+function installedVerifyLiveArgs(packageDir, ...args) {
+  return ["--silent", "run", "--prefix", packageDir, "verify:live", "--", ...args];
 }
 
 function runNpmResult(args, options) {
