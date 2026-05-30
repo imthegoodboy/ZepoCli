@@ -228,6 +228,59 @@ export function buildLiveReportStep({ name, args, status, stdout, stderr, summar
   };
 }
 
+export function summarizeLiveReportCoverage(steps = []) {
+  const coverage = {
+    browserPreflight: false,
+    localStatus: false,
+    login: false,
+    liveSession: false,
+    search: false,
+    addressAdd: false,
+    addressList: false,
+    addressUse: false,
+    add: false,
+    cart: false,
+    remove: false,
+    clear: false,
+    checkoutHandoff: false,
+    track: false,
+    history: false,
+    reorder: false
+  };
+
+  for (const step of steps) {
+    if (!isObject(step) || step.ok !== true) {
+      continue;
+    }
+
+    const key = LIVE_REPORT_COVERAGE_BY_STEP_NAME.get(step.name);
+    if (key) {
+      coverage[key] = true;
+    }
+  }
+
+  return coverage;
+}
+
+const LIVE_REPORT_COVERAGE_BY_STEP_NAME = new Map([
+  ["doctor", "browserPreflight"],
+  ["status", "localStatus"],
+  ["login", "login"],
+  ["status live", "liveSession"],
+  ["search", "search"],
+  ["address add", "addressAdd"],
+  ["address list", "addressList"],
+  ["address use", "addressUse"],
+  ["add", "add"],
+  ["cart", "cart"],
+  ["remove", "remove"],
+  ["clear", "clear"],
+  ["checkout", "checkoutHandoff"],
+  ["track", "track"],
+  ["history", "history"],
+  ["reorder", "reorder"]
+]);
+
 function summarizeStepPayload(name, payload, args, summarizePayload) {
   try {
     return {

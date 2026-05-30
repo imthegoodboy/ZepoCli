@@ -19,6 +19,7 @@ const {
   redactArgsForLiveReport,
   redactLiveConsoleText,
   summarizeCommandError,
+  summarizeLiveReportCoverage,
   summarizeLiveRunnerFailure
 } = await import("../scripts/live-report-utils.mjs");
 
@@ -121,6 +122,45 @@ describe("live verification runner", () => {
 
     expect(script).toContain("version: packageJson.version");
     expect(script).toContain('readFileSync(resolve(rootDir, "package.json"), "utf8")');
+    expect(script).toContain("coverage: summarizeLiveReportCoverage([])");
+    expect(script).toContain("updateReportCoverage()");
+  });
+
+  it("summarizes successful live report coverage without sensitive workflow data", () => {
+    expect(
+      summarizeLiveReportCoverage([
+        { name: "doctor", ok: true },
+        { name: "status", ok: true },
+        { name: "login", ok: false },
+        { name: "status live", ok: true },
+        { name: "search", ok: true },
+        { name: "address use", ok: true },
+        { name: "add", ok: true },
+        { name: "cart", ok: true },
+        { name: "checkout", ok: true },
+        { name: "track", ok: true },
+        { name: "history", ok: false },
+        { name: "reorder", ok: true },
+        { name: "unknown", ok: true }
+      ])
+    ).toEqual({
+      browserPreflight: true,
+      localStatus: true,
+      login: false,
+      liveSession: true,
+      search: true,
+      addressAdd: false,
+      addressList: false,
+      addressUse: true,
+      add: true,
+      cart: true,
+      remove: false,
+      clear: false,
+      checkoutHandoff: true,
+      track: true,
+      history: false,
+      reorder: true
+    });
   });
 
   it("redacts the final live report path in runner console output", () => {

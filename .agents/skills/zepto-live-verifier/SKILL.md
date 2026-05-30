@@ -70,6 +70,7 @@ The live report is acceptable only when:
 
 - `ok` is true.
 - `version` matches `package.json`.
+- `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.
 - `login` confirms `sessionSaved: true` and `confirmedSession: true`.
 - `status live` reports `liveSession.state: "logged-in"`.

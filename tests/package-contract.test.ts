@@ -241,6 +241,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
     expect(verifier).toContain("expected installed verify:live no-session report to show browser automation readiness");
     expect(verifier).toContain("expected installed verify:live no-session report to show passing Playwright Chromium evidence");
+    expect(verifier).toContain("expected installed verify:live no-session report coverage to distinguish preflight from account workflow");
+    expect(verifier).toContain("expected installed live report coverage to include only successful workflow steps");
     expect(verifier).toContain("installed status malformed stale browser lock json");
     expect(verifier).toContain("expected installed stale malformed lock not to block automation");
     expect(verifier).toContain("installed global json no session nested address list");
