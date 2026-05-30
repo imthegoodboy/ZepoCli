@@ -261,6 +261,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report attempts to include failed and successful workflow steps");
     expect(verifier).toContain("expected installed live report coverage to include only successful workflow steps");
     expect(verifier).toContain("expected installed live report missing coverage to include requested-but-unverified workflow steps only");
+    expect(verifier).toContain("expected installed live report confirmed-session adjustment to make --login conditional");
+    expect(verifier).toContain("expected installed live report confirmed-session adjustment to avoid skipped login missing coverage");
+    expect(verifier).toContain("pass installed live report conditional login request");
     expect(verifier).toContain("expected installed verify:live requested-checkout report to mark checkout scope requested");
     expect(verifier).toContain("expected installed verify:live requested-checkout report to mark requested checkout coverage missing");
     expect(verifier).toContain("pass installed verify live requested checkout missing coverage");

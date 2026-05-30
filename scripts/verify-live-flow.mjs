@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import {
+  adjustLiveReportRequestsForConfirmedSession,
   buildLiveCommandLaunchFailureStep,
   buildLiveCommandTimeoutStep,
   buildLiveReportStep,
@@ -113,6 +114,7 @@ async function main() {
   if (!status.ok) {
     return;
   }
+  report.requested = adjustLiveReportRequestsForConfirmedSession(report.requested, status.payload);
 
   if (status.payload?.confirmedSession !== true) {
     if (!options.login) {
@@ -811,6 +813,7 @@ Example:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
+If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart

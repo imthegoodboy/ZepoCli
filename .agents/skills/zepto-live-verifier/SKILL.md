@@ -39,6 +39,8 @@ npm run build
 npm --silent run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 ```
 
+`--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
+
 Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
@@ -75,7 +77,8 @@ The live report is acceptable only when:
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.
 - `missingCoverage` shows requested capabilities that did not pass; all values must be false before treating a requested scope as verified.
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.
-- `login` confirms `sessionSaved: true` and `confirmedSession: true`.
+- `login` confirms `sessionSaved: true` and `confirmedSession: true` when a login step actually runs.
+- Existing confirmed sessions with `--login` leave `requested.login` false and require `requested.liveSession` to pass instead.
 - `status live` reports `liveSession.state: "logged-in"`.
 - `search` has one or more product results when requested.
 - `add` has both selected product evidence and readable cart items when requested.

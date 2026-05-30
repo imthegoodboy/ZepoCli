@@ -137,6 +137,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("the same doctor checks");
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
+      "`--login` is conditional: if the dedicated data directory already has a confirmed session, the runner does not force a fresh login or claim login coverage; it requires `liveSession` coverage from `status --live` instead"
+    );
+    expect(readme).toContain(
       "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified"
     );
     expect(readme).toContain("`checkoutHandoff`");
