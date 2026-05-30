@@ -21,6 +21,7 @@ const {
   summarizeCommandError,
   summarizeLiveReportAttempts,
   summarizeLiveReportCoverage,
+  summarizeLiveReportRequests,
   summarizeLiveRunnerFailure
 } = await import("../scripts/live-report-utils.mjs");
 
@@ -123,6 +124,7 @@ describe("live verification runner", () => {
 
     expect(script).toContain("version: packageJson.version");
     expect(script).toContain('readFileSync(resolve(rootDir, "package.json"), "utf8")');
+    expect(script).toContain("requested: summarizeLiveReportRequests(options)");
     expect(script).toContain("attempted: summarizeLiveReportAttempts([])");
     expect(script).toContain("coverage: summarizeLiveReportCoverage([])");
     expect(script).toContain("updateReportCoverage()");
@@ -204,6 +206,67 @@ describe("live verification runner", () => {
       track: true,
       history: true,
       reorder: true
+    });
+  });
+
+  it("summarizes requested live report scope without sensitive option values", () => {
+    expect(
+      summarizeLiveReportRequests({
+        login: true,
+        search: "healthy snacks",
+        address: "Home Tower 7",
+        addressAdd: false,
+        addressList: false,
+        add: "protein bars",
+        cart: false,
+        remove: "protein bars",
+        clear: false,
+        checkout: true,
+        track: true,
+        history: true,
+        reorderLast: true
+      })
+    ).toEqual({
+      browserPreflight: true,
+      localStatus: true,
+      login: true,
+      liveSession: true,
+      search: true,
+      addressAdd: false,
+      addressList: false,
+      addressUse: true,
+      add: true,
+      cart: true,
+      remove: true,
+      clear: false,
+      checkoutHandoff: true,
+      track: true,
+      history: true,
+      reorder: true
+    });
+
+    expect(
+      summarizeLiveReportRequests({
+        login: false,
+        checkout: false
+      })
+    ).toEqual({
+      browserPreflight: true,
+      localStatus: true,
+      login: false,
+      liveSession: false,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: false,
+      track: false,
+      history: false,
+      reorder: false
     });
   });
 

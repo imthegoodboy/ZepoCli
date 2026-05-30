@@ -135,7 +135,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("the same doctor checks");
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
-      "top-level `attempted` and `coverage` objects showing which workflow capabilities ran and which actually passed"
+      "top-level `requested`, `attempted`, and `coverage` objects showing which workflow capabilities were requested, ran, and actually passed"
     );
     expect(readme).toContain("`checkoutHandoff`");
     expect(readme).toContain(
