@@ -111,6 +111,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`requested` shows the explicit verification scope without workflow query values");
     expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");
+    expect(liveVerifierSkill).toContain("`attempted` and `coverage` match the saved `steps` array");
     expect(liveVerifierSkill).toContain("`missingCoverage` shows requested capabilities that did not pass");
     expect(liveVerifierSkill).toContain("`--login` is conditional");
     expect(liveVerifierSkill).toContain("Existing confirmed sessions with `--login` leave `requested.login` false");

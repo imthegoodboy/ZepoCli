@@ -199,6 +199,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
+    "`attempted`/`coverage` consistency with `steps`",
     "Live report failures use stable `error.code` values.",
     "live_verification_incomplete",
     "npm run verify:secrets",
@@ -760,6 +761,37 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept complete report evidence"
   );
+  const inconsistentAttemptedLiveReport = {
+    ...acceptedLiveReport,
+    attempted: {
+      ...acceptedLiveReport.attempted,
+      search: false
+    }
+  };
+  assert(
+    validateLiveReportAcceptance(inconsistentAttemptedLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_attempted_mismatch"),
+    "expected installed live report acceptance helper to reject attempted summaries that do not match steps"
+  );
+  const inconsistentCoverageLiveReport = {
+    ...acceptedLiveReport,
+    coverage: {
+      ...acceptedLiveReport.coverage,
+      search: false
+    }
+  };
+  inconsistentCoverageLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    inconsistentCoverageLiveReport.requested,
+    inconsistentCoverageLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(inconsistentCoverageLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_coverage_mismatch"),
+    "expected installed live report acceptance helper to reject coverage summaries that do not match steps"
+  );
+  console.log("pass installed live report summary consistency");
   const acceptedLiveReportPath = join(tempRoot, "accepted-live-verification-report.json");
   writeFileSync(acceptedLiveReportPath, `${JSON.stringify(acceptedLiveReport, null, 2)}\n`);
   const acceptedLiveReportResult = runNpm(
