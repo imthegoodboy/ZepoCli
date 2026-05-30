@@ -1,11 +1,23 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { execFileSync, spawnSync } from "node:child_process";
+import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { basename, extname, join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import packageJson from "../package.json" with { type: "json" };
 
 const rootDir = resolve(import.meta.dirname, "..");
+const skippedSecretScanDirectories = new Set([".git", "coverage", "dist", "node_modules"]);
+const scannedTextFileExtensions = new Set([
+  ".json",
+  ".md",
+  ".mjs",
+  ".ts",
+  ".tsx",
+  ".yml",
+  ".yaml"
+]);
+const scannedTextFileNames = new Set([".gitattributes", ".gitignore", "LICENSE"]);
 
 function collectTsFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -17,6 +29,33 @@ function collectTsFiles(directory: string): string[] {
 
     return entry.isFile() && fullPath.endsWith(".ts") ? [fullPath] : [];
   });
+}
+
+function collectProjectTextFiles(directory: string): string[] {
+  const gitFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], {
+    cwd: directory,
+    encoding: "utf8"
+  });
+
+  return gitFiles
+    .split("\0")
+    .filter(Boolean)
+    .filter((filePath) => !filePath.split(/[\\/]/).some((segment) => skippedSecretScanDirectories.has(segment)))
+    .filter((filePath) => isSecretScannedProjectTextFile(filePath))
+    .map((filePath) => resolve(directory, filePath));
+}
+
+function isSecretScannedProjectTextFile(filePath: string): boolean {
+  const name = basename(filePath);
+
+  return (
+    name === ".env" ||
+    name.startsWith(".env.") ||
+    name === ".npmrc" ||
+    name.startsWith(".npmrc.") ||
+    scannedTextFileNames.has(name) ||
+    scannedTextFileExtensions.has(extname(name))
+  );
 }
 
 function collectSourceErrorCodes(): string[] {
@@ -64,6 +103,27 @@ describe("package CLI contract", () => {
     expect(attributes).toContain("*.tgz binary");
   });
 
+  it("keeps local npm token files ignored and npm tokens out of tracked text", () => {
+    const gitignore = readFileSync(resolve(rootDir, ".gitignore"), "utf8");
+
+    expect(gitignore).toContain(".npmrc");
+    expect(gitignore).toContain(".npmrc.*");
+    expect(gitignore).toContain("!.npmrc.example");
+    expect(gitignore).toContain(".env.*");
+    expect(gitignore).toContain("!.env.example");
+    expect(readFileSync(resolve(rootDir, ".npmrc.example"), "utf8")).toContain("${NPM_TOKEN}");
+    expect(readFileSync(resolve(rootDir, ".env.example"), "utf8")).toContain("NPM_TOKEN=");
+
+    const leakedTokens = collectProjectTextFiles(rootDir).flatMap((filePath) => {
+      const text = readFileSync(filePath, "utf8");
+      const matches = text.match(/npm_[A-Za-z0-9]{20,}/g) ?? [];
+
+      return matches.map((match) => `${relative(rootDir, filePath)}:${match}`);
+    });
+
+    expect(leakedTokens).toEqual([]);
+  });
+
   it("keeps the source entry declared as a Node executable", () => {
     const sourceEntry = readFileSync(resolve(rootDir, "src", "index.ts"), "utf8");
     const firstLine = sourceEntry.split("\n", 1)[0]?.replace(/\r$/, "");
@@ -75,10 +135,12 @@ describe("package CLI contract", () => {
     expect(packageJson.scripts?.build).toContain("node scripts/clean-dist.mjs");
     expect(packageJson.scripts?.build).toContain("tsc -p tsconfig.json");
     expect(packageJson.scripts?.build).toContain("node scripts/normalize-cli-entry.mjs");
+    expect(packageJson.scripts?.["verify:secrets"]).toBe("node scripts/verify-secrets.mjs");
 
     const checkScript = packageJson.scripts?.check ?? "";
 
     for (const gate of [
+      "npm run verify:secrets",
       "npm run build",
       "npm test",
       "npm run verify:cli",
@@ -102,6 +164,47 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("scripts/normalize-cli-entry.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
+  });
+
+  it("keeps secret verification redacted and scoped to project text", () => {
+    const verifier = readFileSync(resolve(rootDir, "scripts", "verify-secrets.mjs"), "utf8");
+
+    expect(verifier).toContain("const skippedDirectories = new Set");
+    expect(verifier).toContain('"node_modules"');
+    expect(verifier).toContain('"dist"');
+    expect(verifier).toContain("git");
+    expect(verifier).toContain("ls-files");
+    expect(verifier).toContain("--exclude-standard");
+    expect(verifier).toContain('name === ".zepo"');
+    expect(verifier).toContain('name.startsWith(".zepo-")');
+    expect(verifier).toContain("isLocalSecretConfigName");
+    expect(verifier).toContain("npmTokenPattern");
+    expect(verifier).toContain(".npmrc.example");
+    expect(verifier).toContain(".env.example");
+    expect(verifier).toContain("<redacted-npm-token>");
+    expect(verifier).not.toContain("console.error(line)");
+  });
+
+  it("redacts npm-shaped tokens when secret verification fails", () => {
+    const fixturePath = resolve(rootDir, "secret-scan-fixture.mjs");
+    const fakeToken = `npm_${"A".repeat(24)}`;
+
+    writeFileSync(fixturePath, `export const fixture = "${fakeToken}";\n`);
+
+    try {
+      const result = spawnSync(process.execPath, ["scripts/verify-secrets.mjs"], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toContain("Secret verification failed.");
+      expect(result.stderr).toContain("<redacted-npm-token>");
+      expect(result.stderr).not.toContain(fakeToken);
+    } finally {
+      rmSync(fixturePath, { force: true });
+    }
   });
 
   it("keeps installed package verification checking shipped README guidance", () => {

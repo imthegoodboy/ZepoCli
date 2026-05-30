@@ -168,7 +168,10 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "Live report failures use stable `error.code` values.",
-    "live_verification_incomplete"
+    "live_verification_incomplete",
+    "npm run verify:secrets",
+    "without printing the raw token",
+    "Never put npm tokens in the app, README, tests, or committed config."
   ]) {
     assert(readme.includes(text), `expected installed README to document: ${text}`);
   }

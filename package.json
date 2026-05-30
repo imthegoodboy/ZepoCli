@@ -21,9 +21,10 @@
     "test": "vitest run",
     "verify:cli": "node scripts/verify-cli.mjs",
     "verify:package": "node scripts/verify-package.mjs",
+    "verify:secrets": "node scripts/verify-secrets.mjs",
     "verify:audit": "npm audit --omit=dev",
     "verify:live": "node scripts/verify-live-flow.mjs",
-    "check": "npm run build && npm test && npm run verify:cli && npm run verify:package && node dist/index.js --help && npm run verify:audit && npm pack --dry-run",
+    "check": "npm run verify:secrets && npm run build && npm test && npm run verify:cli && npm run verify:package && node dist/index.js --help && npm run verify:audit && npm pack --dry-run",
     "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"
   },

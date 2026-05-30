@@ -747,6 +747,10 @@ for (const check of checks) {
   }
 }
 
+// Some imported runtime dependencies can leave native process state alive even after
+// the smoke checks finish. Exit explicitly so the release gate cannot hang after passing.
+process.exit(0);
+
 function runCli(args) {
   const result = spawnSync(process.execPath, [cliPath, ...args], {
     cwd: rootDir,

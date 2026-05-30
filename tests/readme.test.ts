@@ -184,5 +184,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("npm publish --provenance --access public");
     expect(readme).toContain("NPM_TOKEN");
     expect(readme).toContain("It does not run `verify:live`");
+    expect(readme).toContain("npm run verify:secrets");
+    expect(readme).toContain("without printing the raw token");
+    expect(readme).toContain("Never put npm tokens in the app, README, tests, or committed config.");
+    expect(readme).toContain("GitHub Actions secret named `NPM_TOKEN`");
+    expect(readme).toContain("copy `.npmrc.example` to ignored `.npmrc`");
+    expect(readme).toContain("set `NPM_TOKEN` in your shell");
   });
 });
