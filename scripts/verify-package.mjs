@@ -97,11 +97,18 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedCliPath = join(packageDir, "dist", "index.js");
   const installedCleanDistPath = join(packageDir, "scripts", "clean-dist.mjs");
   const installedNormalizeCliEntryPath = join(packageDir, "scripts", "normalize-cli-entry.mjs");
+  const installedVerifySecretsPath = join(packageDir, "scripts", "verify-secrets.mjs");
+  const installedEnvExamplePath = join(packageDir, ".env.example");
+  const installedNpmrcExamplePath = join(packageDir, ".npmrc.example");
 
   assert(installedPackageJson.bin?.zepo === "./dist/index.js", "expected installed package bin zepo entry");
   assert(
     installedPackageJson.scripts?.build?.includes("node scripts/clean-dist.mjs"),
     "expected installed build script to clean dist"
+  );
+  assert(
+    installedPackageJson.scripts?.["verify:secrets"] === "node scripts/verify-secrets.mjs",
+    "expected installed verify:secrets package script"
   );
   assert(
     installedPackageJson.scripts?.build?.includes("node scripts/normalize-cli-entry.mjs"),
@@ -110,6 +117,18 @@ function verifyInstalledCliEntryContract(prefixDir) {
   assert(existsSync(installedCliPath), "expected installed dist/index.js");
   assert(existsSync(installedCleanDistPath), "expected installed clean-dist script");
   assert(existsSync(installedNormalizeCliEntryPath), "expected installed normalize-cli-entry script");
+  assert(existsSync(installedVerifySecretsPath), "expected installed verify-secrets script");
+  assert(existsSync(installedEnvExamplePath), "expected installed .env.example");
+  assert(existsSync(installedNpmrcExamplePath), "expected installed .npmrc.example");
+  assert(
+    readFileSync(installedEnvExamplePath, "utf8").includes("NPM_TOKEN="),
+    "expected installed .env.example to document NPM_TOKEN placeholder"
+  );
+  assert(
+    readFileSync(installedNpmrcExamplePath, "utf8").includes("${NPM_TOKEN}"),
+    "expected installed .npmrc.example to reference NPM_TOKEN placeholder"
+  );
+  runNpm(["run", "--prefix", packageDir, "verify:secrets", "--silent"], { cwd: rootDir });
   assert(
     readFileSync(installedCliPath, "utf8").startsWith("#!/usr/bin/env node\n"),
     "expected installed CLI entry to keep node shebang"
