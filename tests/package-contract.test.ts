@@ -236,6 +236,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live step-timeout option");
     expect(verifier).toContain("expected installed verify:live command-timeout code guidance");
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");
+    expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
     expect(verifier).toContain("expected installed live verifier to sanitize report write failures");
     expect(verifier).toContain("expected installed live verifier to write sanitized partial reports on interrupts");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");

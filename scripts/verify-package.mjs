@@ -321,6 +321,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     result.stdout.includes("accepts 10-digit, +91, or leading-0 Indian mobile formats"),
     "expected installed verify:live login phone format guidance"
   );
+  assert(
+    result.stdout.includes("requested, attempted, and coverage booleans") &&
+      result.stdout.includes("partial runs cannot be mistaken for full verification"),
+    "expected installed verify:live help to explain report summary booleans"
+  );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
   assert(result.stdout.includes("Stable report failure codes include"), "expected installed verify:live stable-code guidance");
   assert(
