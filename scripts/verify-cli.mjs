@@ -544,6 +544,20 @@ const checks = [
     }
   },
   {
+    name: "json forward-slash path unknown option redaction",
+    args: ["--json", "status", "--path=C:/Users/parth/.zepo-live/report.json"],
+    expect: (result) => {
+      expectJsonError(
+        result,
+        "invalid_input",
+        "error: unknown option '--path=<redacted-local-path>'",
+        "invalid_input"
+      );
+      assert(!result.stderr.includes("C:/Users"), "expected JSON parser error to omit Windows forward-slash path");
+      assert(!result.stderr.includes("report.json"), "expected JSON parser error to omit forward-slash path tail");
+    }
+  },
+  {
     name: "json npm token unknown option redaction",
     args: ["--json", "status", `--bad-${FAKE_NPM_TOKEN}`],
     expect: (result) => {

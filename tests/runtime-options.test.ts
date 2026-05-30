@@ -104,22 +104,22 @@ describe("global runtime options", () => {
       await waitForLogDestinationReady(runtime.logDestination);
       runtime.logger.error(
         {
-          error: `Order #ZEP1234 OTP 123456 failed for +91-98765-43210 with ${fakeNpmToken} near C:\\Users\\parth\\.zepo-live\\trace.txt`,
+          error: `Order #ZEP1234 OTP 123456 failed for +91-98765-43210 with ${fakeNpmToken} near C:\\Users\\parth\\.zepo-live\\trace.txt and C:/Users/parth/.zepo-live/trace.txt`,
           browserProfileDir: runtime.paths.browserProfileDir,
           nested: {
             payment: "card 4111 1111 1111 1111 and handle abc@upi",
             encoded:
-              "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%5CUsers%5Cparth%5C.zepo-live%5Ctrace.txt"
+              "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt"
           },
           values: ["CVV 123", "./local-report.json and rerun `zepo doctor`."]
         },
-        "browser launch failed for ZEP9999 near 09876543210 and C:\\Users\\parth\\.zepo-live\\debug.log"
+        "browser launch failed for ZEP9999 near 09876543210, C:\\Users\\parth\\.zepo-live\\debug.log, and file:///C:/Users/parth/.zepo-live/debug.log"
       );
       const directError = new Error(
-        "Direct Error for Order ID: ZEP7777 with OTP 654321 and phone +91 98765 43210 near C:\\Users\\parth\\.zepo-live\\error.txt"
+        "Direct Error for Order ID: ZEP7777 with OTP 654321 and phone +91 98765 43210 near C:\\Users\\parth\\.zepo-live\\error.txt and C:/Users/parth/.zepo-live/error.txt"
       );
       directError.stack =
-        "Error: Direct Error for Order ID: ZEP7777 with OTP 654321\n    at run (C:\\Users\\parth\\.zepo-live\\error.ts:1:1)";
+        "Error: Direct Error for Order ID: ZEP7777 with OTP 654321\n    at run (C:/Users/parth/.zepo-live/error.ts:1:1)";
       runtime.logger.error(directError, "direct error for ZEP8888 and card 5555 5555 5555 4444");
       closeRuntime(runtime);
 
@@ -162,7 +162,8 @@ describe("global runtime options", () => {
       expect(serialized).toContain("<redacted-auth-token>");
       expect(serialized).not.toContain("raw-token-123");
       expect(serialized).not.toContain("abc.def.ghi");
-      expect(serialized).not.toContain("C%3A%5CUsers");
+      expect(serialized).not.toContain("C%3A%2FUsers");
+      expect(serialized).not.toContain("file:///");
       expect(serialized).not.toContain("Users");
       expect(serialized).not.toContain("local-report.json");
       expect(serialized).not.toContain("error.ts");
