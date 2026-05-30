@@ -495,6 +495,60 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live report to omit local temp paths"
   );
 
+  const requestedCheckoutDataDir = join(tempRoot, "live-requested-checkout-data");
+  const requestedCheckoutReportPath = join(tempRoot, "live-requested-checkout-report.json");
+  const requestedCheckoutResult = runNpmResult(
+    [
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live",
+      "--",
+      "--data-dir",
+      requestedCheckoutDataDir,
+      "--report",
+      requestedCheckoutReportPath,
+      "--checkout"
+    ],
+    {
+      cwd: rootDir,
+      env: {
+        ...process.env,
+        FORCE_COLOR: "0",
+        NO_COLOR: "1"
+      }
+    }
+  );
+  assert(
+    requestedCheckoutResult.status === 1,
+    "expected installed verify:live requested-checkout no-session run to fail intentionally"
+  );
+  assert(
+    existsSync(requestedCheckoutReportPath),
+    "expected installed verify:live requested-checkout no-session report"
+  );
+  const requestedCheckoutReport = JSON.parse(readFileSync(requestedCheckoutReportPath, "utf8"));
+  assert(
+    requestedCheckoutReport.requested?.liveSession === true &&
+      requestedCheckoutReport.requested?.checkoutHandoff === true,
+    "expected installed verify:live requested-checkout report to mark checkout scope requested"
+  );
+  assert(
+    requestedCheckoutReport.coverage?.liveSession === false &&
+      requestedCheckoutReport.coverage?.checkoutHandoff === false,
+    "expected installed verify:live requested-checkout report to leave checkout coverage false without login"
+  );
+  assert(
+    requestedCheckoutReport.missingCoverage?.liveSession === true &&
+      requestedCheckoutReport.missingCoverage?.checkoutHandoff === true,
+    "expected installed verify:live requested-checkout report to mark requested checkout coverage missing"
+  );
+  assert(
+    !JSON.stringify(requestedCheckoutReport).includes(tempRoot),
+    "expected installed verify:live requested-checkout report to omit local temp paths"
+  );
+  console.log("pass installed verify live requested checkout missing coverage");
+
   const {
     buildLiveCommandLaunchFailureStep,
     buildLiveCommandTimeoutStep,
