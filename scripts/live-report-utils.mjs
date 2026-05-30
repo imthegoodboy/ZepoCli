@@ -236,6 +236,20 @@ export function summarizeLiveReportAttempts(steps = []) {
   return summarizeLiveReportStepBooleans(steps, () => true);
 }
 
+export function summarizeLiveReportMissingCoverage(requested = {}, coverage = {}) {
+  const summary = createLiveReportCapabilitySummary();
+
+  for (const key of Object.keys(summary)) {
+    summary[key] = requested?.[key] === true && coverage?.[key] !== true;
+  }
+
+  return summary;
+}
+
+export function hasLiveReportMissingCoverage(missingCoverage = {}) {
+  return Object.values(missingCoverage).some((value) => value === true);
+}
+
 export function summarizeLiveReportRequests(options = {}) {
   const summary = createLiveReportCapabilitySummary();
   summary.browserPreflight = true;

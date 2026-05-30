@@ -248,6 +248,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live no-session report attempts to distinguish failed preconditions from skipped workflow");
     expect(verifier).toContain("expected installed live report attempts to include failed and successful workflow steps");
     expect(verifier).toContain("expected installed live report coverage to include only successful workflow steps");
+    expect(verifier).toContain("expected installed live report missing coverage to include requested-but-unverified workflow steps only");
     expect(verifier).toContain("installed status malformed stale browser lock json");
     expect(verifier).toContain("expected installed stale malformed lock not to block automation");
     expect(verifier).toContain("installed global json no session nested address list");

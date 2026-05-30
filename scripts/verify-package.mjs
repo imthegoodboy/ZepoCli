@@ -184,7 +184,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token URL-parameter, and local-path rules",
     "npm run verify:live -- --data-dir ./.zepo-live",
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
-    "top-level `requested`, `attempted`, and `coverage` objects showing which workflow capabilities were requested, ran, and actually passed",
+    "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
@@ -322,7 +322,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live login phone format guidance"
   );
   assert(
-    result.stdout.includes("requested, attempted, and coverage booleans") &&
+    result.stdout.includes("requested, attempted, coverage, and missingCoverage booleans") &&
       result.stdout.includes("partial runs cannot be mistaken for full verification"),
     "expected installed verify:live help to explain report summary booleans"
   );
@@ -484,6 +484,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live no-session report attempts to distinguish failed preconditions from skipped workflow"
   );
   assert(
+    noSessionReport.missingCoverage?.browserPreflight === false &&
+      noSessionReport.missingCoverage?.localStatus === false &&
+      noSessionReport.missingCoverage?.login === false &&
+      noSessionReport.missingCoverage?.checkoutHandoff === false,
+    "expected installed verify:live no-session report missing coverage to include requested-but-unverified workflow steps only"
+  );
+  assert(
     !JSON.stringify(noSessionReport).includes(tempRoot),
     "expected installed verify:live report to omit local temp paths"
   );
@@ -499,6 +506,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     summarizeCommandError,
     summarizeLiveReportAttempts,
     summarizeLiveReportCoverage,
+    summarizeLiveReportMissingCoverage,
     summarizeLiveReportRequests,
     summarizeLiveRunnerFailure
   } = await import(pathToFileURL(liveReportUtilsPath).href);
@@ -588,6 +596,42 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       reorder: false
     },
     "expected installed live report coverage to include only successful workflow steps"
+  );
+  assertDeepEqual(
+    summarizeLiveReportMissingCoverage(
+      summarizeLiveReportRequests({
+        login: true,
+        search: "milk",
+        checkout: true,
+        history: true
+      }),
+      summarizeLiveReportCoverage([
+        { name: "doctor", ok: true },
+        { name: "status", ok: true },
+        { name: "login", ok: false },
+        { name: "search", ok: true },
+        { name: "checkout", ok: true }
+      ])
+    ),
+    {
+      browserPreflight: false,
+      localStatus: false,
+      login: true,
+      liveSession: true,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: false,
+      track: false,
+      history: true,
+      reorder: false
+    },
+    "expected installed live report missing coverage to include requested-but-unverified workflow steps only"
   );
   assertDeepEqual(
     redactArgsForLiveConsole([
