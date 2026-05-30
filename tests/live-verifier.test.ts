@@ -70,6 +70,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain(
       "omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
     );
+    expect(result.stdout).toContain("npm-token-shaped values");
     expect(result.stdout).toContain("Stable report failure codes include");
     expect(result.stdout).toContain("live_*_contract_mismatch");
     expect(result.stdout).toContain("live_verification_incomplete");
@@ -1566,11 +1567,13 @@ describe("live verification runner", () => {
   });
 
   it("redacts generic sensitive values from stored error summaries", () => {
+    const fakeNpmToken = `npm_${"A".repeat(24)}`;
+
     expect(
       summarizeCommandError(
         {
           code: "orders_unreadable",
-          message: "Order ID: ZEP1234 failed for phone 98765 43210 and card 4111 1111 1111 1111.",
+          message: `Order ID: ZEP1234 failed for phone 98765 43210, token ${fakeNpmToken}, and card 4111 1111 1111 1111.`,
           hint: "Inspect order ZEP9999 in the visible browser; do not store 09876543210."
         },
         "",
@@ -1579,19 +1582,19 @@ describe("live verification runner", () => {
     ).toEqual({
       code: "orders_unreadable",
       message:
-        "Order <redacted-order-id> failed for phone <redacted-phone> and card <redacted-payment-number>.",
+        "Order <redacted-order-id> failed for phone <redacted-phone>, token <redacted-npm-token>, and card <redacted-payment-number>.",
       hint: "Inspect order <redacted-order-id> in the visible browser; do not store <redacted-phone>."
     });
 
     expect(
       summarizeCommandError(
         undefined,
-        "Order #ZEP7777 failed with payment number 5555 5555 5555 4444.\nMore details are omitted.",
+        `Order #ZEP7777 failed with payment number 5555 5555 5555 4444 and ${fakeNpmToken}.\nMore details are omitted.`,
         []
       )
     ).toEqual({
       code: "command_failed",
-      message: "Order <redacted-order-id> failed with payment number <redacted-payment-number>."
+      message: "Order <redacted-order-id> failed with payment number <redacted-payment-number> and <redacted-npm-token>."
     });
 
     expect(

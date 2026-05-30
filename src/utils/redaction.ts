@@ -12,7 +12,8 @@ function redactSensitivePlainText(value: string): string {
         `$1<redacted-verification-code>`
       )
       .replace(/(?<!\d)(?:\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)/g, "<redacted-phone>")
-      .replace(/\b(?:\d[ -]?){13,19}\b/g, (match) =>
+      .replace(/\bnpm_[A-Za-z0-9]{20,}\b/g, "<redacted-npm-token>")
+      .replace(/\b\d(?:[ -]?\d){12,18}\b/g, (match) =>
         match.replace(/\D/g, "").length >= 13 ? "<redacted-payment-number>" : match
       )
       .replace(/\b[A-Za-z0-9._%+-]{2,}@[A-Za-z][A-Za-z0-9.-]{1,}\b/g, "<redacted-payment-handle>")

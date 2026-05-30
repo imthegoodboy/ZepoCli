@@ -488,6 +488,29 @@ describe("CLI command smokes", () => {
     expect(payload.error.exitCode).toBe(1);
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("redacts npm-token-shaped parser errors in JSON mode", async () => {
+    const fakeNpmToken = `npm_${"A".repeat(24)}`;
+    const result = await runCli(["--json", "status", `--bad-${fakeNpmToken}`]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    const payload = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: {
+        type: string;
+        code?: string;
+        message: string;
+        exitCode: number;
+      };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.error.type).toBe("invalid_input");
+    expect(payload.error.code).toBe("invalid_input");
+    expect(payload.error.message).toBe("error: unknown option '--bad-<redacted-npm-token>'");
+    expect(payload.error.exitCode).toBe(1);
+    expect(result.stderr).not.toContain(fakeNpmToken);
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("prints machine-readable parser errors for nested command mistakes in JSON mode", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-nested-json-"));
     for (const testCase of [

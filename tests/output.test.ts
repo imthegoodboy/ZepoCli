@@ -152,12 +152,13 @@ describe("command JSON output", () => {
 
   it("redacts sensitive-looking strings from JSON errors", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const fakeNpmToken = `npm_${"A".repeat(24)}`;
 
     printJsonError({
       type: "invalid_input",
       code: "invalid_input",
       message:
-        "Order #ZEP1234 OTP 123456 for +91 98765 43210 failed near C:\\Users\\parth\\Desktop\\ZepoCli\\.zepo-live\\report.json",
+        `Order #ZEP1234 OTP 123456 for +91 98765 43210 failed with ${fakeNpmToken} near C:\\Users\\parth\\Desktop\\ZepoCli\\.zepo-live\\report.json`,
       hint: "Inspect order ZEP9999 in Zepto; do not paste card 4111 1111 1111 1111 or abc@upi into CLI logs.",
       exitCode: 2,
       retryAfterMs: 1500,
@@ -191,9 +192,11 @@ describe("command JSON output", () => {
     expect(serialized).toContain("<redacted-phone>");
     expect(serialized).toContain("<redacted-payment-number>");
     expect(serialized).toContain("<redacted-payment-handle>");
+    expect(serialized).toContain("<redacted-npm-token>");
     expect(serialized).toContain("<redacted-local-path>");
     expect(serialized).not.toContain("123456");
     expect(serialized).not.toContain("98765 43210");
+    expect(serialized).not.toContain(fakeNpmToken);
     expect(serialized).not.toContain("4111");
     expect(serialized).not.toContain("abc@upi");
     expect(serialized).not.toContain("Users");
