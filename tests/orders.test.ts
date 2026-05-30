@@ -303,6 +303,14 @@ describe("order automation helpers", () => {
     }
   });
 
+  it("skips unsafe order navigation matches before clicking a later safe control", async () => {
+    const page = createOrdersNavigationCollectionPage();
+
+    await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
+  });
+
   it("does not click account menu controls when any visible or accessible label is unsafe", async () => {
     for (const page of [
       createMixedLabelAccountMenuPage("My Orders", "Account"),
@@ -316,6 +324,14 @@ describe("order automation helpers", () => {
 
       expect(page.clicked).toBe(false);
     }
+  });
+
+  it("skips unsafe account menu matches before clicking a later safe control", async () => {
+    const page = createAccountMenuCollectionPage();
+
+    await expect(clickAccountMenuControl(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
   });
 
   it("does not click disabled reorder controls", async () => {
@@ -347,6 +363,21 @@ describe("order automation helpers", () => {
 
       expect(page.clicked).toBe(false);
     }
+  });
+
+  it("skips older reorder controls before clicking the latest matching order", async () => {
+    const page = createReorderCollectionPage();
+
+    await expect(
+      clickReorderActionButton(page as never, {
+        id: "ZEP1234",
+        status: "Delivered",
+        total: "₹249",
+        rawText: "Order #ZEP1234 Delivered Total ₹249"
+      })
+    ).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["latest"]);
   });
 
   it("does not click a reorder control for a different readable order when reordering last", async () => {
@@ -459,6 +490,46 @@ function createMixedLabelAccountMenuPage(
   return page;
 }
 
+function createOrdersNavigationCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("Checkout", async () => {
+      clicks.push("unsafe");
+    }, "My Orders"),
+    createVisibleLocator("My Orders", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "My Orders") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createAccountMenuCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("My Orders", async () => {
+      clicks.push("unsafe");
+    }, "Account"),
+    createVisibleLocator("Account", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Account") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDisabledReorderPage() {
   const page = {
     clicked: false,
@@ -496,6 +567,28 @@ function createMixedLabelReorderPage(
 
       return createHiddenLocator();
     },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createReorderCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("Reorder", async () => {
+      clicks.push("older");
+    }, undefined, "Order #ZEP9999 Delivered Total ₹249 Reorder"),
+    createVisibleLocator("Reorder", async () => {
+      clicks.push("latest");
+    }, undefined, "Order #ZEP1234 Delivered Total ₹249 Reorder")
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      (role === "button" || role === "link") && matchesLocatorName(options.name, "Reorder")
+        ? locators
+        : createHiddenLocator(),
     locator: () => createHiddenLocator()
   };
 
@@ -617,6 +710,31 @@ function createTextLocator(text: string) {
     getAttribute: async () => null,
     click: async () => undefined
   };
+}
+
+function createLocatorCollection(
+  locators: Array<ReturnType<typeof createVisibleLocator> | ReturnType<typeof createHiddenLocator>>
+) {
+  const hidden = createHiddenLocator();
+  const collection = {
+    first() {
+      return locators[0] ?? hidden;
+    },
+    nth(index: number) {
+      return locators[index] ?? hidden;
+    },
+    count: async () => locators.length,
+    filter() {
+      return collection;
+    },
+    isVisible: async () => collection.first().isVisible(),
+    innerText: async () => collection.first().innerText(),
+    getAttribute: async (name: string) => collection.first().getAttribute(name),
+    evaluate: async (fn?: unknown) => collection.first().evaluate(fn),
+    click: async () => collection.first().click()
+  };
+
+  return collection;
 }
 
 function matchesLocatorName(name: RegExp | string | undefined, text: string): boolean {

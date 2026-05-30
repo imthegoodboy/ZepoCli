@@ -7,6 +7,7 @@ export interface RuntimeOptions {
 }
 
 export interface SessionStatus {
+  version: string;
   dataDir: string;
   authStatePath: string;
   browserProfileDir: string;
@@ -94,6 +95,7 @@ export interface DoctorCheck {
 
 export interface DoctorReport {
   ok: boolean;
+  version: string;
   generatedAt: string;
   dataDir: string;
   browserLock: BrowserRunLockStatus;

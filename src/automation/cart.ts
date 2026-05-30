@@ -10,6 +10,7 @@ import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
+const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|address|location|save for later|saved for later|clear cart)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
@@ -46,15 +47,25 @@ export async function clickCartOpenButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of CART_OPEN_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeCartOpenControl(candidate)) {
+      if (await clickFirstSafeCartOpenControl(candidate)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeCartOpenControl(locator: Locator): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, CART_OPEN_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeCartOpenControl(candidate)) {
+      return true;
     }
   }
 
@@ -187,9 +198,11 @@ export function isCartPageText(text: string): boolean {
     return true;
   }
 
+  const cartTextWithoutAddControls = stripAddToCartControls(normalized);
   return (
-    /\b(checkout|view bill|to pay|grand total|item total|bill summary)\b/i.test(normalized) &&
-    /\b(cart|items?|coupon|delivery address|add more)\b/i.test(normalized)
+    /\b(view bill|to pay|grand total|item total|bill summary)\b/i.test(normalized) &&
+    (/\b(my cart|coupon|delivery address|add more|[1-9]\d*\s+items?)\b/i.test(normalized) ||
+      /\bcart\b/i.test(cartTextWithoutAddControls))
   );
 }
 
@@ -275,9 +288,16 @@ export function hasCartSurfaceEvidence(text: string): boolean {
     return false;
   }
 
-  return /\b(cart|my cart|view bill|bill summary|item total|grand total|to pay|qty|quantity|remove|delete|decrease)\b/i.test(
-    normalized
+  const cartTextWithoutAddControls = stripAddToCartControls(normalized);
+  return (
+    /\b(my cart|view bill|bill summary|item total|grand total|to pay|qty|quantity|remove|delete|decrease)\b/i.test(
+      normalized
+    ) || /\bcart\b/i.test(cartTextWithoutAddControls)
   );
+}
+
+function stripAddToCartControls(text: string): string {
+  return text.replace(/\badd(?:\s+to)?\s+cart\b/gi, " ");
 }
 
 export function isLikelyRemovableCartItemText(text: string, query?: string): boolean {
@@ -324,6 +344,10 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
       normalizeProductMatchText(value)
         .split(/[^a-z0-9.]+/i)
         .filter((term) => term.length > 1);
+    const productMatchPhraseMatches = (text: string, queryText: string) => {
+      const escaped = queryText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+      return new RegExp(`(^|[^a-z0-9.])${escaped}(?=$|[^a-z0-9.])`, "i").test(text);
+    };
     const productMatchTermVariants = (term: string) => {
       const variants = [term];
       if (/^[a-z]{4,}ies$/i.test(term)) {
@@ -333,6 +357,19 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
       }
       return variants;
     };
+    const productMatchTermVariantMatches = (searchableTerms: string[], compactSearchable: string, variant: string) => {
+      if (/^[a-z]+$/i.test(variant)) {
+        return searchableTerms.some(
+          (term) => term === variant || (variant.length >= 3 && term.startsWith(variant))
+        );
+      }
+
+      return searchableTerms.includes(variant) || (/\d/.test(variant) && compactSearchable.includes(variant));
+    };
+    const productMatchTermMatches = (searchableTerms: string[], compactSearchable: string, term: string) =>
+      productMatchTermVariants(term).some((variant) =>
+        productMatchTermVariantMatches(searchableTerms, compactSearchable, variant)
+      );
     const textMatchesProductQuery = (text: string, query: string) => {
       const searchable = normalizeProductMatchText(text);
       const queryText = normalizeProductMatchText(query);
@@ -342,17 +379,18 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
 
       const compactSearchable = compactProductMatchText(searchable);
       const compactQuery = compactProductMatchText(queryText);
-      if (searchable.includes(queryText) || (compactQuery.length > 1 && compactSearchable.includes(compactQuery))) {
+      const searchableTerms = productMatchTerms(searchable);
+      if (queryText.includes(" ") && productMatchPhraseMatches(searchable, queryText)) {
+        return true;
+      }
+
+      if (compactQuery.length > 1 && /\d/.test(compactQuery) && compactSearchable.includes(compactQuery)) {
         return true;
       }
 
       const terms = productMatchTerms(queryText);
       return terms.length > 0
-        ? terms.every((term) =>
-            productMatchTermVariants(term).some(
-              (variant) => searchable.includes(variant) || compactSearchable.includes(variant)
-            )
-          )
+        ? terms.every((term) => productMatchTermMatches(searchableTerms, compactSearchable, term))
         : false;
     };
     const isSummaryOrFeeText = (text: string) =>
@@ -386,6 +424,8 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
         element.textContent ?? "",
         element.getAttribute("aria-label") ?? "",
         element.getAttribute("title") ?? "",
+        element.getAttribute("placeholder") ?? "",
+        element.getAttribute("value") ?? "",
         element.getAttribute("aria-description") ?? "",
         ...referencedLabelText(element)
       ]
@@ -512,7 +552,7 @@ function readClosestCartRemoveCardText(element: Element): string {
       .map((id) => target.ownerDocument.getElementById(id)?.textContent ?? "")
       .join(" ");
   const controlText = normalize(
-    `${element.textContent ?? ""} ${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""} ${element.getAttribute("aria-description") ?? ""} ${referencedLabelText(element)}`
+    `${element.textContent ?? ""} ${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""} ${element.getAttribute("placeholder") ?? ""} ${element.getAttribute("value") ?? ""} ${element.getAttribute("aria-description") ?? ""} ${referencedLabelText(element)}`
   );
 
   let current: Element | null = element;
@@ -657,4 +697,29 @@ function hasCartMutationSignal(text: string): boolean {
     /[+\-−]\s*\d+\b/.test(text) ||
     /\b\d+\s*[+\-−]/.test(text)
   );
+}
+
+async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {
+  const count = Math.min(await locatorCount(locator), limit);
+  for (let index = 0; index < count; index += 1) {
+    yield locatorAt(locator, index);
+  }
+}
+
+async function locatorCount(locator: Locator): Promise<number> {
+  const countable = locator as { count?: () => Promise<number> };
+  if (typeof countable.count === "function") {
+    return countable.count().catch(() => 0);
+  }
+
+  return (await locator.first().isVisible().catch(() => false)) ? 1 : 0;
+}
+
+function locatorAt(locator: Locator, index: number): Locator {
+  const indexable = locator as { nth?: (index: number) => Locator };
+  if (typeof indexable.nth === "function") {
+    return indexable.nth(index);
+  }
+
+  return index === 0 ? locator.first() : locator;
 }

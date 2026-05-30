@@ -1,17 +1,28 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import {
-  parseJsonFromOutput,
+  buildLiveCommandLaunchFailureStep,
+  buildLiveCommandTimeoutStep,
+  buildLiveReportStep,
+  createLiveConsoleTextRedactor,
   redactArgsForLiveConsole,
-  redactArgsForLiveReport,
-  summarizeCommandError
+  summarizeLiveRunnerFailure
 } from "./live-report-utils.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
+const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
+const DEFAULT_STEP_TIMEOUT_MS = 30 * 60 * 1_000;
+const MIN_STEP_TIMEOUT_MS = 1_000;
+const MAX_STEP_TIMEOUT_MS = 60 * 60 * 1_000;
+const COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 5_000;
+const INTERRUPT_EXIT_CODES = {
+  SIGINT: 130,
+  SIGTERM: 143
+};
 
 const options = parseArgs(process.argv.slice(2));
 
@@ -36,6 +47,7 @@ if (!existsSync(cliPath)) {
 const reportPath = options.report ?? resolve(options.dataDir, "live-verification-report.json");
 const report = {
   ok: true,
+  version: packageJson.version,
   generatedAt: new Date().toISOString(),
   dataDir: "<redacted-data-dir>",
   reportPath: "<redacted-report-path>",
@@ -43,20 +55,42 @@ const report = {
     "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.",
   steps: []
 };
+let activeChild;
+let interrupted = false;
 
-await main();
+process.once("SIGINT", () => handleInterrupt("SIGINT"));
+process.once("SIGTERM", () => handleInterrupt("SIGTERM"));
 
-mkdirSync(dirname(reportPath), { recursive: true });
-writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-console.log(`\nLive verification report: ${reportPath}`);
-process.exitCode = report.ok ? 0 : 1;
+try {
+  await main();
+} catch (error) {
+  report.ok = false;
+  report.steps.push({
+    name: "live runner",
+    command: "internal",
+    exitCode: 1,
+    ok: false,
+    error: summarizeLiveRunnerFailure(error)
+  });
+  console.error("Live verification runner failed before completing all requested steps.");
+}
+
+const reportWriteError = writeLiveReport(reportPath, report);
+console.log("\nLive verification report: <redacted-report-path>");
+if (reportWriteError) {
+  console.error("Could not write live verification report.");
+  console.error("Choose a writable report file path and rerun with --report <path>.");
+  process.exitCode = 1;
+} else {
+  process.exitCode = report.ok ? 0 : 1;
+}
 
 async function main() {
   console.log("ZepoCli live verification runner");
   console.log("This runs real CLI commands against Zepto with a human-controlled browser when needed.");
   console.log("It never enters OTPs, payment credentials, or clicks final Zepto payment/order controls.\n");
 
-  if (!(await runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--skip-browser", "--json"])).ok) {
+  if (!(await runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--json"])).ok) {
     return;
   }
 
@@ -92,6 +126,10 @@ async function main() {
     "--live",
     "--json"
   ]);
+
+  if (!liveStatus.ok) {
+    return;
+  }
 
   if (liveStatus.payload?.liveSession?.state !== "logged-in") {
     addManualFailure(
@@ -133,7 +171,7 @@ async function main() {
   }
 
   if (options.add) {
-    if (!(await runStep("add", [
+    const addArgs = [
       "--data-dir",
       options.dataDir,
       "--visible",
@@ -142,7 +180,12 @@ async function main() {
       "--quantity",
       String(options.quantity),
       "--json"
-    ])).ok) {
+    ];
+    if (options.chooseAdd) {
+      addArgs.splice(addArgs.length - 1, 0, "--choose");
+    }
+
+    if (!(await runStep("add", addArgs)).ok) {
       return;
     }
   }
@@ -202,17 +245,27 @@ async function main() {
 
 async function runStep(name, args) {
   console.log(`> zepo ${redactArgsForLiveConsole(args).join(" ")}`);
-  const result = await runCli(args);
-  const payload = parseJsonFromOutput(result.stdout);
-  const errorPayload = parseJsonFromOutput(result.stderr)?.error;
-  const step = {
+  let result;
+  try {
+    result = await runCli(args);
+  } catch (error) {
+    const step =
+      isLiveCommandTimeoutError(error) && Number.isFinite(error.timeoutMs)
+        ? buildLiveCommandTimeoutStep(name, args, error.timeoutMs)
+        : buildLiveCommandLaunchFailureStep(name, args, error);
+    report.ok = false;
+    report.steps.push(step);
+    console.log(`fail ${name}`);
+    return step;
+  }
+  const { step, payload } = buildLiveReportStep({
     name,
-    command: `zepo ${redactArgsForLiveReport(args).join(" ")}`,
-    exitCode: result.status,
-    ok: result.status === 0,
-    ...(payload ? { summary: summarizePayload(name, payload) } : {}),
-    ...(result.status !== 0 ? { error: summarizeCommandError(errorPayload, result.stderr, args) } : {})
-  };
+    args,
+    status: result.status,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    summarizePayload
+  });
   report.steps.push(step);
 
   if (step.ok) {
@@ -239,18 +292,60 @@ function runCli(args) {
       },
       stdio: ["inherit", "pipe", "pipe"]
     });
+    activeChild = child;
 
     let stdout = "";
     let stderr = "";
+    let settled = false;
+    let timedOut = false;
+    let forceKill;
+    const stderrRedactor = createLiveConsoleTextRedactor(args, (text) => process.stderr.write(text), {
+      immediate: shouldStreamLiveStderrImmediately(args)
+    });
+    const timeout = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      timedOut = true;
+      child.kill("SIGTERM");
+      forceKill = setTimeout(() => child.kill("SIGKILL"), COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS);
+    }, options.stepTimeoutMs);
+
     child.stdout.on("data", (chunk) => {
       stdout += chunk;
     });
     child.stderr.on("data", (chunk) => {
       stderr += chunk;
-      process.stderr.write(chunk);
+      stderrRedactor.write(chunk);
     });
-    child.on("error", reject);
+    child.on("error", (error) => {
+      if (settled) {
+        return;
+      }
+
+      clearTimeout(timeout);
+      clearForceKillTimer(forceKill);
+      settled = true;
+      clearActiveChild(child);
+      stderrRedactor.flush();
+      reject(timedOut ? liveCommandTimeoutError(options.stepTimeoutMs) : error);
+    });
     child.on("close", (status) => {
+      if (settled) {
+        return;
+      }
+
+      clearTimeout(timeout);
+      clearForceKillTimer(forceKill);
+      settled = true;
+      clearActiveChild(child);
+      stderrRedactor.flush();
+      if (timedOut) {
+        reject(liveCommandTimeoutError(options.stepTimeoutMs));
+        return;
+      }
+
       resolvePromise({
         status: status ?? 1,
         stdout: stdout.trim(),
@@ -258,6 +353,117 @@ function runCli(args) {
       });
     });
   });
+}
+
+function shouldStreamLiveStderrImmediately(args) {
+  const positionals = collectLiveCommandPositionals(args);
+  const command = positionals[0];
+
+  return (
+    command === "login" ||
+    command === "checkout" ||
+    (command === "address" && positionals[1] === "add") ||
+    (command === "add" && args.includes("--choose"))
+  );
+}
+
+function collectLiveCommandPositionals(args) {
+  const valueOptions = new Set(["--data-dir", "--phone", "--quantity", "--report", "--timeout"]);
+  const positionals = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (valueOptions.has(arg)) {
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      continue;
+    }
+
+    positionals.push(arg);
+  }
+
+  return positionals;
+}
+
+function handleInterrupt(signal) {
+  if (interrupted) {
+    return;
+  }
+  interrupted = true;
+
+  const exitCode = INTERRUPT_EXIT_CODES[signal] ?? 1;
+  report.ok = false;
+  report.steps.push({
+    name: "live runner",
+    command: "internal",
+    exitCode,
+    ok: false,
+    error: {
+      code: "live_runner_failed",
+      message: "Live verification interrupted by the user.",
+      hint: "Review the visible Zepto browser state, then rerun verify:live when ready."
+    }
+  });
+
+  const child = activeChild;
+  if (child && child.exitCode === null && child.signalCode === null) {
+    const forceKill = setTimeout(() => child.kill("SIGKILL"), COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS);
+    child.once("close", () => {
+      clearForceKillTimer(forceKill);
+      finishInterruptedRun(signal, exitCode);
+    });
+    child.kill("SIGTERM");
+    return;
+  }
+
+  finishInterruptedRun(signal, exitCode);
+}
+
+function finishInterruptedRun(signal, exitCode) {
+  const reportWriteError = writeLiveReport(reportPath, report);
+  console.error(`Live verification interrupted by ${signal}.`);
+  console.log("\nLive verification report: <redacted-report-path>");
+  if (reportWriteError) {
+    console.error("Could not write live verification report.");
+    console.error("Choose a writable report file path and rerun with --report <path>.");
+  }
+  process.exit(exitCode);
+}
+
+function clearActiveChild(child) {
+  if (activeChild === child) {
+    activeChild = undefined;
+  }
+}
+
+function clearForceKillTimer(timer) {
+  if (timer) {
+    clearTimeout(timer);
+  }
+}
+
+function liveCommandTimeoutError(timeoutMs) {
+  const error = new Error(`Command timed out after ${timeoutMs} ms.`);
+  error.code = "live_command_timeout";
+  error.timeoutMs = timeoutMs;
+  return error;
+}
+
+function isLiveCommandTimeoutError(error) {
+  return typeof error === "object" && error !== null && error.code === "live_command_timeout";
+}
+
+function writeLiveReport(path, payload) {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`);
+    return undefined;
+  } catch (error) {
+    return error;
+  }
 }
 
 function addManualFailure(name, message, hint) {
@@ -365,6 +571,8 @@ function parseArgs(args) {
     quantity: 1,
     reorderLast: false,
     clear: false,
+    chooseAdd: false,
+    stepTimeoutMs: DEFAULT_STEP_TIMEOUT_MS,
     track: false
   };
 
@@ -376,10 +584,12 @@ function parseArgs(args) {
       parsed.dataDir = requireValue(args, ++index, arg);
     } else if (arg === "--report") {
       parsed.report = requireValue(args, ++index, arg);
+    } else if (arg === "--step-timeout") {
+      parsed.stepTimeoutMs = parseStepTimeout(requireValue(args, ++index, arg));
     } else if (arg === "--login") {
       parsed.login = true;
     } else if (arg === "--phone") {
-      parsed.phone = requireValue(args, ++index, arg);
+      parsed.phone = normalizeLoginPhone(requireValue(args, ++index, arg));
     } else if (arg === "--search") {
       parsed.search = requireValue(args, ++index, arg);
     } else if (arg === "--address") {
@@ -390,6 +600,8 @@ function parseArgs(args) {
       parsed.addressList = true;
     } else if (arg === "--add") {
       parsed.add = requireValue(args, ++index, arg);
+    } else if (arg === "--choose-add") {
+      parsed.chooseAdd = true;
     } else if (arg === "--quantity") {
       parsed.quantity = parseQuantity(requireValue(args, ++index, arg));
     } else if (arg === "--cart") {
@@ -422,10 +634,35 @@ function requireValue(args, index, option) {
     process.exit(1);
   }
 
+  if (value.trim().length === 0) {
+    console.error(`${option} requires a non-empty value.`);
+    process.exit(1);
+  }
+
   return value;
 }
 
+function parseStepTimeout(value) {
+  if (!/^\d+$/.test(value)) {
+    console.error(`--step-timeout must be an integer from ${MIN_STEP_TIMEOUT_MS} to ${MAX_STEP_TIMEOUT_MS} ms.`);
+    process.exit(1);
+  }
+
+  const timeoutMs = Number.parseInt(value, 10);
+  if (!Number.isInteger(timeoutMs) || timeoutMs < MIN_STEP_TIMEOUT_MS || timeoutMs > MAX_STEP_TIMEOUT_MS) {
+    console.error(`--step-timeout must be an integer from ${MIN_STEP_TIMEOUT_MS} to ${MAX_STEP_TIMEOUT_MS} ms.`);
+    process.exit(1);
+  }
+
+  return timeoutMs;
+}
+
 function parseQuantity(value) {
+  if (!/^\d+$/.test(value)) {
+    console.error("--quantity must be an integer from 1 to 12.");
+    process.exit(1);
+  }
+
   const quantity = Number.parseInt(value, 10);
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 12) {
     console.error("--quantity must be an integer from 1 to 12.");
@@ -435,9 +672,51 @@ function parseQuantity(value) {
   return quantity;
 }
 
+function normalizeLoginPhone(value) {
+  const trimmed = String(value ?? "").trim();
+  if (!/^\+?[\d\s-]+$/.test(trimmed)) {
+    return undefined;
+  }
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (/^[6-9]\d{9}$/.test(digits)) {
+    return digits;
+  }
+
+  if (/^91[6-9]\d{9}$/.test(digits)) {
+    return digits.slice(2);
+  }
+
+  if (/^0[6-9]\d{9}$/.test(digits)) {
+    return digits.slice(1);
+  }
+
+  return undefined;
+}
+
 function validateOptions(parsed) {
   if (parsed.phone && !parsed.login) {
     console.error("--phone can only be used with --login.");
+    process.exit(1);
+  }
+
+  if (parsed.phone === undefined && "phone" in parsed) {
+    console.error("--phone must be a valid Indian mobile number.");
+    process.exit(1);
+  }
+
+  if (parsed.quantity !== 1 && !parsed.add) {
+    console.error("--quantity can only be used with --add.");
+    process.exit(1);
+  }
+
+  if (parsed.chooseAdd && !parsed.add) {
+    console.error("--choose-add can only be used with --add.");
+    process.exit(1);
+  }
+
+  if (parsed.address && parsed.addressList) {
+    console.error("--address cannot be combined with --address-list because address selection already verifies the address flow.");
     process.exit(1);
   }
 
@@ -458,12 +737,13 @@ Required:
 
 Options:
   --login               Run visible zepo login if no confirmed session exists
-  --phone <number>      Prefill login phone through zepo login --phone
+  --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
   --search <query>      Run visible product search
   --address-list        Run visible address list
   --address <query>     Select a saved address by visible text
   --address-add         Open the visible add-address flow
   --add <query>         Add a product to cart
+  --choose-add          Use zepo add --choose for human product selection during --add
   --quantity <number>   Quantity for --add, 1 to 12
   --cart                Read the cart
   --remove <query>      Remove a matching cart item
@@ -473,14 +753,19 @@ Options:
   --history             Read order history
   --reorder-last        Reorder the latest readable order and read the cart
   --report <path>       Write sanitized report to this path
+  --step-timeout <ms>   Per-command timeout, ${MIN_STEP_TIMEOUT_MS} to ${MAX_STEP_TIMEOUT_MS} ms (default: ${DEFAULT_STEP_TIMEOUT_MS})
 
 Example:
   npm run build
   npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 
+When terminal logs may be shared, prefer npm --silent run verify:live -- ... so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
+
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
   npm run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
-The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.`);
+The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
+
+Stable report failure codes include live_*_contract_mismatch, live_verification_incomplete, live_runner_failed, live_command_launch_failed, live_command_timeout, live_summary_failed, live_json_unreadable, live_json_unexpected, and command_failed.`);
 }

@@ -12,10 +12,11 @@ import {
   HEADLESS_BROWSER_RUN_HISTORY_META_KEY,
   LAST_ACCESS_CHALLENGE_META_KEY
 } from "../automation/browser.js";
+import { PACKAGE_VERSION } from "../config/package.js";
 import type { AppRuntime } from "../config/runtime.js";
 import type { DoctorCheck, DoctorReport } from "../types.js";
 
-const MIN_NODE_VERSION = "20.11.0";
+const MIN_NODE_VERSION = "20.19.0";
 
 export interface DoctorOptions {
   browser: boolean;
@@ -53,6 +54,7 @@ export class DoctorService {
 
     return {
       ok: checks.every((check) => check.status !== "fail"),
+      version: PACKAGE_VERSION,
       generatedAt: new Date().toISOString(),
       dataDir: this.runtime.paths.dataDir,
       browserLock,

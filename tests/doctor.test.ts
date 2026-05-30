@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import packageJson from "../package.json" with { type: "json" };
 import { HEADLESS_BROWSER_RUN_HISTORY_META_KEY, LAST_ACCESS_CHALLENGE_META_KEY } from "../src/automation/browser.js";
 import { closeRuntimeBestEffort, createRuntime } from "../src/config/runtime.js";
 import { checkNodeVersion, compareVersions, DoctorService } from "../src/services/doctor.js";
@@ -30,13 +31,13 @@ describe("doctor service", () => {
   });
 
   it("compares semantic Node versions", () => {
-    expect(compareVersions("20.11.0", "20.11.0")).toBe(0);
-    expect(compareVersions("20.12.0", "20.11.0")).toBeGreaterThan(0);
-    expect(compareVersions("20.10.9", "20.11.0")).toBeLessThan(0);
+    expect(compareVersions("20.19.0", "20.19.0")).toBe(0);
+    expect(compareVersions("20.20.0", "20.19.0")).toBeGreaterThan(0);
+    expect(compareVersions("20.18.9", "20.19.0")).toBeLessThan(0);
   });
 
   it("fails unsupported Node versions", () => {
-    expect(checkNodeVersion("20.10.0")).toMatchObject({
+    expect(checkNodeVersion("20.18.0")).toMatchObject({
       name: "Node.js",
       status: "fail"
     });
@@ -54,6 +55,7 @@ describe("doctor service", () => {
     closeRuntimeBestEffort(runtime);
 
     expect(report.ok).toBe(true);
+    expect(report.version).toBe(packageJson.version);
     expect(report.dataDir).toBe(tempDir);
     expect(report.browserLock).toEqual({
       path: runtime.paths.browserLockPath,

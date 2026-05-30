@@ -77,6 +77,20 @@ describe("cart automation helpers", () => {
         "milk"
       )
     ).toBe(false);
+
+    expect(
+      cartHasMatchingItem(
+        {
+          items: [
+            {
+              name: "Price Drop Wheat Flour",
+              unit: "1 pack (1 kg)"
+            }
+          ]
+        },
+        "rice"
+      )
+    ).toBe(false);
   });
 
   it("detects cart page text from readable items or empty-cart copy", () => {
@@ -217,8 +231,42 @@ describe("cart automation helpers", () => {
     );
   });
 
+  it("does not treat add-to-cart product listing copy as cart surface evidence", () => {
+    const productListingText = `
+      Search results
+      Add to Cart
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+    `;
+
+    expect(hasCartSurfaceEvidence(productListingText)).toBe(false);
+    expect(isCartPageText(productListingText)).toBe(false);
+    expect(() => requireReadableCartSnapshot(productListingText)).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
+  });
+
+  it("does not treat add-to-cart listing copy with checkout promo text as a cart page", () => {
+    const productListingText = `
+      Search results
+      Add to Cart
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+      Checkout these offers
+    `;
+
+    expect(hasCartSurfaceEvidence(productListingText)).toBe(false);
+    expect(isCartPageText(productListingText)).toBe(false);
+    expect(() => requireReadableCartSnapshot(productListingText)).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
+  });
+
   it("accepts parsed cart items only with cart-surface evidence", () => {
     expect(hasCartSurfaceEvidence("Cart Amul Taaza Toned Milk 1 pack (500 ml) ₹32")).toBe(true);
+    expect(hasCartSurfaceEvidence("Cart Add to Cart Amul Taaza Toned Milk 1 pack (500 ml) ₹32")).toBe(true);
     expect(hasCartSurfaceEvidence("Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1")).toBe(true);
     expect(hasCartSurfaceEvidence("Amul Taaza Toned Milk 1 pack (500 ml) ₹32")).toBe(false);
   });
@@ -279,6 +327,14 @@ describe("cart automation helpers", () => {
     }
   });
 
+  it("skips unsafe cart navigation matches before clicking a later safe control", async () => {
+    const page = createCartOpenCollectionPage();
+
+    await expect(clickCartOpenButton(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
+  });
+
   it("does not click disabled tagged cart remove controls", async () => {
     const page = createTaggedCartRemovePage({ "data-disabled": "true" });
 
@@ -337,6 +393,16 @@ describe("cart automation helpers", () => {
     expect(page.clicked).toBe(false);
   });
 
+  it("does not click tagged cart remove controls when the query only matches inside another word", async () => {
+    const page = createTaggedCartRemovePage({}, "Price Drop Wheat Flour 1 kg ₹99 Qty 1 Remove");
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "rice")).rejects.toThrow(
+      "Zepto cart remove control no longer matches a removable cart item."
+    );
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click tagged cart remove controls when any label is unsafe", async () => {
     for (const attributes of [
       { "aria-label": "Checkout" },
@@ -344,7 +410,8 @@ describe("cart automation helpers", () => {
       { "aria-description": "Payment" },
       { "aria-label": "UPI" },
       { title: "Cash on Delivery" },
-      { "aria-description": "Credit Card" }
+      { "aria-description": "Credit Card" },
+      { value: "Pay Now" }
     ]) {
       const page = createTaggedCartRemovePage(attributes, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
 
@@ -393,6 +460,7 @@ describe("cart automation helpers", () => {
     expect(isLikelyRemovableCartItemText("Before you checkout Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Complete your cart Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Potato Chips 52 g Rs 20", "milk")).toBe(false);
+    expect(isLikelyRemovableCartItemText("Price Drop Wheat Flour 1 kg Rs 99 Remove", "rice")).toBe(false);
   });
 });
 
@@ -433,6 +501,26 @@ function createMixedLabelCartOpenPage(
 
       return createHiddenLocator();
     },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartOpenCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("Checkout", async () => {
+      clicks.push("unsafe");
+    }, { "aria-label": "Cart" }),
+    createVisibleLocator("Cart", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Cart") ? locators : createHiddenLocator(),
     locator: () => createHiddenLocator()
   };
 
@@ -503,6 +591,31 @@ function createHiddenLocator() {
     evaluate: async () => false,
     click: async () => undefined
   };
+}
+
+function createLocatorCollection(
+  locators: Array<ReturnType<typeof createVisibleLocator> | ReturnType<typeof createHiddenLocator>>
+) {
+  const hidden = createHiddenLocator();
+  const collection = {
+    first() {
+      return locators[0] ?? hidden;
+    },
+    nth(index: number) {
+      return locators[index] ?? hidden;
+    },
+    count: async () => locators.length,
+    filter() {
+      return collection;
+    },
+    isVisible: async () => collection.first().isVisible(),
+    innerText: async () => collection.first().innerText(),
+    getAttribute: async (name: string) => collection.first().getAttribute(name),
+    evaluate: async (fn?: unknown) => collection.first().evaluate(fn),
+    click: async () => collection.first().click()
+  };
+
+  return collection;
 }
 
 function matchesLocatorName(name: RegExp | string | undefined, text: string): boolean {

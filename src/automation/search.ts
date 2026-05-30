@@ -22,6 +22,7 @@ const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
 const SEARCH_SUBMIT_PAUSE_MS = 150;
+const SEARCH_TRIGGER_CONTROL_SCAN_LIMIT = 8;
 
 export async function searchProducts(page: Page, query: string, limit: number): Promise<Product[]> {
   const searchedFromHome = await searchFromHome(page, query);
@@ -32,19 +33,19 @@ export async function searchProducts(page: Page, query: string, limit: number): 
   }
 
   let products = await extractProducts(page, limit);
+  if (searchedFromHome && products.length > 0 && !(await isSearchResultsSurface(page))) {
+    products = [];
+  }
+
   if (products.length === 0 && !attemptedDirectSearch) {
     await openSearch(page, query);
     products = await extractProducts(page, limit);
   }
 
   if (products.length === 0) {
-    const publicProducts = await searchPublicHomepageProducts(page, query, limit);
-    if (publicProducts.length > 0) {
-      return publicProducts;
-    }
-
-    const bodyText = await page.locator("body").innerText().catch(() => "");
-    if (!bodyText.trim()) {
+    const searchPageText = await page.locator("body").innerText().catch(() => "");
+    const searchPageBodyText = searchPageText.trim();
+    if (!searchPageBodyText) {
       throw new UserFacingError("Zepto returned an empty page during search.", {
         code: "zepto_access_protection",
         hint:
@@ -53,15 +54,20 @@ export async function searchProducts(page: Page, query: string, limit: number): 
       });
     }
 
-    if (/no results|not found/i.test(bodyText)) {
+    if (/no results|not found/i.test(searchPageBodyText)) {
       return [];
     }
 
-    if (isLocationSetupRequiredText(bodyText)) {
+    if (isLocationSetupRequiredText(searchPageBodyText)) {
       throw new UserFacingError("Zepto needs a delivery location before search results are readable.", {
         code: "delivery_location_required",
         hint: "Run `zepo login`, then set or select a delivery location with `zepo address add` or `zepo address use <query>`."
       });
+    }
+
+    const publicProducts = await searchPublicHomepageProducts(page, query, limit);
+    if (publicProducts.length > 0) {
+      return publicProducts;
     }
 
     throw new UserFacingError("Zepto search did not expose readable product results.", {
@@ -185,7 +191,7 @@ export async function findSearchInput(page: Page): Promise<Locator | undefined> 
   const inputs = page.locator("input[type='search'], input[placeholder*='Search' i], input[aria-label*='Search' i]");
   const directCount = await locatorCount(inputs);
   for (let index = 0; index < Math.min(directCount, 5); index += 1) {
-    const input = inputs.nth(index);
+    const input = locatorAt(inputs, index);
     if (await isSafeSearchInput(input)) {
       return input;
     }
@@ -194,7 +200,7 @@ export async function findSearchInput(page: Page): Promise<Locator | undefined> 
   const candidateInputs = page.locator("input:not([type]), input[type='search'], input[type='text'], textarea");
   const count = await locatorCount(candidateInputs);
   for (let index = 0; index < Math.min(count, 20); index += 1) {
-    const input = candidateInputs.nth(index);
+    const input = locatorAt(candidateInputs, index);
     if (await isSafeSearchInput(input)) {
       return input;
     }
@@ -208,22 +214,46 @@ async function locatorCount(locator: Locator): Promise<number> {
     count?: () => Promise<number>;
   };
 
-  return typeof countable.count === "function" ? countable.count().catch(() => 0) : 0;
+  if (typeof countable.count === "function") {
+    return countable.count().catch(() => 0);
+  }
+
+  return (await locator.first().isVisible().catch(() => false)) ? 1 : 0;
+}
+
+function locatorAt(locator: Locator, index: number): Locator {
+  const indexable = locator as { nth?: (index: number) => Locator };
+  if (typeof indexable.nth === "function") {
+    return indexable.nth(index);
+  }
+
+  return index === 0 ? locator.first() : locator;
 }
 
 export async function clickSearchTrigger(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of SEARCH_TRIGGER_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeSearchTrigger(candidate)) {
+      if (await clickFirstSafeSearchTrigger(candidate)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeSearchTrigger(locator: Locator): Promise<boolean> {
+  const count = Math.min(await locatorCount(locator), SEARCH_TRIGGER_CONTROL_SCAN_LIMIT);
+  for (let index = 0; index < count; index += 1) {
+    if (await clickSafeSearchTrigger(locatorAt(locator, index))) {
+      return true;
     }
   }
 
@@ -450,6 +480,37 @@ export function filterProductsForQuery(products: Product[], query: string): Prod
     }));
 }
 
+export async function isSearchResultsSurface(page: Page): Promise<boolean> {
+  const currentUrl = safePageUrl(page);
+  if (isSearchResultsUrl(currentUrl)) {
+    return true;
+  }
+
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  return /\b(search results?|results for|showing results)\b/i.test(bodyText.replace(/\s+/g, " ").trim());
+}
+
+function safePageUrl(page: Page): string {
+  try {
+    return page.url();
+  } catch {
+    return "";
+  }
+}
+
+function isSearchResultsUrl(value: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return /\bsearch\b/i.test(url.pathname);
+  } catch {
+    return /\bsearch\b/i.test(value);
+  }
+}
+
 async function assertTaggedProductControlMatches(
   locator: Locator,
   product: Product,
@@ -508,6 +569,8 @@ export async function extractProducts(page: Page, limit: number): Promise<Produc
         element.textContent ?? "",
         element.getAttribute("aria-label") ?? "",
         element.getAttribute("title") ?? "",
+        element.getAttribute("placeholder") ?? "",
+        element.getAttribute("value") ?? "",
         element.getAttribute("aria-description") ?? "",
         ...referencedLabelText(element)
       ]

@@ -90,6 +90,7 @@ function printStatus(status: SessionStatus): void {
     ? chalk.green("ready")
     : chalk.yellow(formatBrowserAutomationReadiness(status.browserAutomation));
 
+  console.log(`${chalk.bold("Version:")} ${status.version}`);
   console.log(`${chalk.bold("Auth state:")} ${auth}`);
   console.log(`${chalk.bold("Browser profile:")} ${profile}`);
   console.log(`${chalk.bold("Marked logged in:")} ${loginMarker}`);

@@ -194,6 +194,33 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("does not report a labeled MRP as the selling price", () => {
+    expect(
+      parseProductCard(
+        {
+          automationId: 18,
+          text: "ADD\nMRP ₹145\nProtein Bar\n50 g"
+        },
+        0
+      )
+    ).toMatchObject({
+      name: "Protein Bar",
+      price: undefined,
+      mrp: "₹145",
+      unit: "50 g"
+    });
+
+    expect(
+      parseProductCard(
+        {
+          automationId: 19,
+          text: "ADD\nMaximum Retail Price ₹145\nProtein Bar"
+        },
+        0
+      )
+    ).toBeUndefined();
+  });
+
   it("ignores merchandising badges when choosing product names", () => {
     const product = parseProductCard(
       {
@@ -209,6 +236,24 @@ describe("Zepto page extraction helpers", () => {
       name: "Whole Farm Eggs",
       price: "₹78",
       unit: "6 pieces"
+    });
+  });
+
+  it("ignores add-to-cart controls when choosing product names", () => {
+    const product = parseProductCard(
+      {
+        automationId: 17,
+        text: "Add to Cart\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      index: 0,
+      automationId: 17,
+      name: "Amul Taaza Toned Milk",
+      price: "₹32",
+      unit: "1 pack (500 ml)"
     });
   });
 
@@ -393,6 +438,27 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not parse add-to-cart controls as cart products", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Add to Cart
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+      Qty 1
+      Grand Total ₹32
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "1"
+      }
+    ]);
+  });
+
   it("parses common cart quantity variants", () => {
     expect(
       parseCartItemsFromText(`
@@ -516,6 +582,36 @@ describe("Zepto page extraction helpers", () => {
         quantity: "1"
       }
     ]);
+  });
+
+  it("does not treat labeled MRP rows as cart item prices", () => {
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Protein Bar
+        50 g
+        MRP ₹145
+        Qty 1
+        Grand Total ₹120
+      `)
+    ).toEqual([
+      {
+        name: "Protein Bar",
+        price: undefined,
+        unit: "50 g",
+        quantity: "1"
+      }
+    ]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Protein Bar
+        Maximum Retail Price ₹145
+        Qty 1
+        Grand Total ₹120
+      `)
+    ).toEqual([]);
   });
 
   it("does not borrow fee prices for products without readable item details", () => {
@@ -675,6 +771,20 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("parses arriving-in ETA text when the order id is the local context", () => {
+    const orders = parseOrdersFromText("Order #ZEP1234 Arriving in 8 mins Total ₹249");
+
+    expect(orders).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Arriving",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Order #ZEP1234 Arriving in 8 mins Total ₹249"
+      }
+    ]);
+  });
+
   it("parses tracking timeline text without requiring an order id", () => {
     const orders = parseOrdersFromText("Track order Confirmed Packed Out for delivery ETA: 8 mins Total ₹249");
 
@@ -721,6 +831,16 @@ describe("Zepto page extraction helpers", () => {
         eta: undefined,
         total: "₹249",
         rawText: "Track order Out for delivery ETA: Reorder Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Track order Out for delivery ETA: 8 mins More details Support Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: 8 mins More details Support Total ₹249"
       }
     ]);
   });
@@ -783,11 +903,13 @@ describe("Zepto page extraction helpers", () => {
 
   it("does not parse order-marketing copy as an order", () => {
     expect(parseOrdersFromText("Order groceries delivered in minutes ETA: 8 mins Total ₹249")).toEqual([]);
+    expect(parseOrdersFromText("Order #ZEP1234 Groceries delivered in minutes ETA: 8 mins Total ₹249")).toEqual([]);
     expect(parseOrdersFromText("Order fresh milk and get it delivered in 8 mins Total ₹249")).toEqual([]);
     expect(parseOrdersFromText("My Orders No orders yet Groceries delivered in minutes")).toEqual([]);
     expect(parseOrdersFromText("Past Orders No orders yet Get groceries delivered within 10 minutes")).toEqual([]);
     expect(parseOrdersFromText("My Orders No orders yet Snacks arriving in 8 mins")).toEqual([]);
     expect(parseOrdersFromText("Past Orders No orders yet Daily essentials arriving within 10 minutes")).toEqual([]);
+    expect(parseOrdersFromText("Order #ZEP1234 Daily essentials arriving in 8 mins Total ₹249")).toEqual([]);
   });
 
   it("does not parse bare order ids without readable order details", () => {

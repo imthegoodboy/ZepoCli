@@ -40,16 +40,17 @@ describe("automation control state", () => {
     await expect(isEditableTextInput(createTextInputLocator({}, false) as never)).resolves.toBe(false);
   });
 
-  it("reads visible, aria, title, and placeholder labels for safety checks", async () => {
+  it("reads visible, aria, title, placeholder, and value labels for safety checks", async () => {
     await expect(
       readControlLabels(
         createLabelLocator(" Checkout ", {
           "aria-label": "Proceed to Pay",
           title: "Payment Method",
-          placeholder: "Search products"
+          placeholder: "Search products",
+          value: "Pay Now"
         }) as never
       )
-    ).resolves.toEqual([" Checkout ", "Proceed to Pay", "Payment Method", "Search products"]);
+    ).resolves.toEqual([" Checkout ", "Proceed to Pay", "Payment Method", "Search products", "Pay Now"]);
   });
 
   it("reads aria description and referenced labels for click safety checks", async () => {

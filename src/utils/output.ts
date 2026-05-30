@@ -1,6 +1,9 @@
 import chalk from "chalk";
 
-import type { Address, CartSnapshot, OrderSnapshot, Product } from "../types.js";
+import type { Address, CartItem, CartSnapshot, OrderSnapshot, Product } from "../types.js";
+import { redactSensitiveText } from "./redaction.js";
+
+export { redactSensitiveText } from "./redaction.js";
 
 export interface JsonError {
   type: "user_error" | "invalid_input" | "unexpected_error";
@@ -16,16 +19,16 @@ export interface JsonError {
 }
 
 export function printJson(value: unknown): void {
-  console.log(JSON.stringify(value, null, 2));
+  console.log(JSON.stringify(toPublicJsonValue(value), null, 2));
 }
 
 export function printJsonError(error: JsonError): void {
   console.error(
     JSON.stringify(
-      {
+      toPublicJsonValue({
         ok: false,
         error
-      },
+      }, { redactStrings: true }),
       null,
       2
     )
@@ -136,8 +139,17 @@ function toPublicProduct(product: Product): Omit<Product, "automationId"> {
 
 function toPublicCartSnapshot(cart: CartSnapshot): Omit<CartSnapshot, "rawText"> {
   return {
-    items: cart.items,
+    items: cart.items.map(toPublicCartItem),
     ...(cart.total ? { total: cart.total } : {})
+  };
+}
+
+function toPublicCartItem(item: CartItem): CartItem {
+  return {
+    name: item.name,
+    ...(item.quantity ? { quantity: item.quantity } : {}),
+    ...(item.price ? { price: item.price } : {}),
+    ...(item.unit ? { unit: item.unit } : {})
   };
 }
 
@@ -157,4 +169,41 @@ function toPublicOrderSnapshot(order: OrderSnapshot): Omit<OrderSnapshot, "rawTe
     ...(order.total ? { total: order.total } : {}),
     ...(order.placedAt ? { placedAt: order.placedAt } : {})
   };
+}
+
+interface PublicJsonOptions {
+  redactStrings?: boolean;
+}
+
+function toPublicJsonValue(value: unknown, options: PublicJsonOptions = {}): unknown {
+  if (Array.isArray(value)) {
+    return value.map((child) => toPublicJsonValue(child, options));
+  }
+
+  if (typeof value === "string") {
+    return options.redactStrings ? redactSensitiveText(value) : value;
+  }
+
+  if (!isPlainObject(value)) {
+    return value;
+  }
+
+  const output: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "rawText" || key === "automationId") {
+      continue;
+    }
+    output[key] = toPublicJsonValue(child, options);
+  }
+
+  return output;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }

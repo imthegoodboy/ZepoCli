@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
+const CLI_COMMAND_TIMEOUT_MS = 120_000;
 const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "dist", "commands", "checkout.js")).href);
 const { HEADLESS_BROWSER_RUN_HISTORY_META_KEY, LAST_ACCESS_CHALLENGE_META_KEY } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "browser.js")).href
@@ -273,6 +274,26 @@ const checks = [
     }
   },
   {
+    name: "status human",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "status"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes(`Version: ${packageJson.version}`), "expected status to print package version");
+      assert(stdout.includes("Confirmed session:"), "expected status readiness output");
+    }
+  },
+  {
+    name: "doctor skip browser human",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "doctor", "--skip-browser"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("ZepoCli doctor"), "expected doctor heading");
+      assert(stdout.includes(`Version: ${packageJson.version}`), "expected doctor to print package version");
+    }
+  },
+  {
     name: "status json",
     args: ({ dataDir }) => ["--data-dir", dataDir, "status", "--json"],
     expect: ({ status, stdout }, { dataDir }) => {
@@ -289,6 +310,20 @@ const checks = [
       assert(stderr === "", "expected empty stderr");
       const payload = parseJson(stdout, "stdout");
       assertFreshStatus(payload, dataDir);
+    }
+  },
+  {
+    name: "global json no session cart",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "--json", "cart"],
+    expect: (result) => {
+      expectJsonError(result, "user_error", "No confirmed Zepto session found.", "no_confirmed_session");
+    }
+  },
+  {
+    name: "global json no session nested address list",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "--json", "address", "list"],
+    expect: (result) => {
+      expectJsonError(result, "user_error", "No confirmed Zepto session found.", "no_confirmed_session");
     }
   },
   {
@@ -337,12 +372,44 @@ const checks = [
     }
   },
   {
+    name: "status malformed stale browser lock json",
+    args: ({ dataDir }) => {
+      const lockPath = join(dataDir, "browser.lock");
+      writeFileSync(lockPath, "{}");
+      utimesSync(lockPath, new Date(10_000), new Date(10_000));
+      return ["--data-dir", dataDir, "status", "--json"];
+    },
+    expect: ({ status, stdout }, { dataDir }) => {
+      assert(status === 0, "expected exit code 0");
+      const payload = parseJson(stdout, "stdout");
+      assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected malformed lock path");
+      assert(payload.browserLock?.present === true, "expected malformed lock present");
+      assert(payload.browserLock?.stale === true, "expected malformed lock to be stale");
+      assert(payload.browserLock?.staleReason === "expired", "expected malformed lock expired stale reason");
+      assert(typeof payload.browserLock?.createdAt === "string", "expected malformed lock createdAt from mtime");
+      assert(payload.browserAutomation?.ready === true, "expected stale malformed lock not to block automation");
+      assert(
+        !payload.browserAutomation?.reasons?.includes("browser_lock_active"),
+        "expected stale malformed lock not to report active lock reason"
+      );
+    }
+  },
+  {
     name: "doctor skip browser json",
     args: ({ dataDir }) => ["--data-dir", dataDir, "doctor", "--skip-browser", "--json"],
     expect: ({ status, stdout }, { dataDir }) => {
       assert(status === 0, "expected exit code 0");
       const payload = parseJson(stdout, "stdout");
       assertDoctorReport(payload, dataDir);
+    }
+  },
+  {
+    name: "doctor browser json",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "doctor", "--json"],
+    expect: ({ status, stdout }, { dataDir }) => {
+      assert(status === 0, "expected exit code 0");
+      const payload = parseJson(stdout, "stdout");
+      assertDoctorReport(payload, dataDir, { browser: true });
     }
   },
   {
@@ -395,9 +462,23 @@ const checks = [
   },
   {
     name: "json invalid input",
-    args: ["--timeout", "abc", "status", "--json"],
+    args: ["--timeout", "1e3", "status", "--json"],
     expect: (result) => {
-      expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+      const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+      assert(payload.error?.issues?.[0]?.path === "timeout", "expected timeout validation issue");
+      assert(
+        payload.error?.issues?.[0]?.message === "must be a decimal integer number of milliseconds",
+        "expected timeout format message"
+      );
+    }
+  },
+  {
+    name: "json invalid timeout range",
+    args: ["--timeout", "999", "status", "--json"],
+    expect: (result) => {
+      const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+      assert(payload.error?.issues?.[0]?.path === "timeout", "expected timeout validation issue");
+      assert(payload.error?.issues?.[0]?.message === "must be at least 1000 ms", "expected timeout minimum message");
     }
   },
   {
@@ -409,6 +490,35 @@ const checks = [
       assert(payload.error?.issues?.[0]?.message === "must not be blank", "expected blank data dir message");
     }
   },
+  ...[
+    {
+      name: "search",
+      args: ["search", "   ", "--json"],
+      message: "Search query is required."
+    },
+    {
+      name: "add",
+      args: ["add", "   ", "--json"],
+      message: "Product query is required."
+    },
+    {
+      name: "remove",
+      args: ["remove", "   ", "--json"],
+      message: "Cart item query is required."
+    },
+    {
+      name: "address use",
+      args: ["address", "use", "   ", "--json"],
+      message: "Address query is required."
+    }
+  ].map((testCase) => ({
+    name: `json blank ${testCase.name} query`,
+    args: ({ dataDir }) => ["--data-dir", dataDir, ...testCase.args],
+    expect: (result) => {
+      expectJsonError(result, "user_error", testCase.message, "invalid_input");
+      assert(!result.stderr.includes("No confirmed Zepto session found."), "expected blank query to fail before session work");
+    }
+  })),
   {
     name: "json unknown command",
     args: ["--json", "not-a-command"],
@@ -421,6 +531,15 @@ const checks = [
     args: ["--json", "status", "--bad-option"],
     expect: (result) => {
       expectJsonError(result, "invalid_input", "error: unknown option '--bad-option'", "invalid_input");
+    }
+  },
+  {
+    name: "json encoded sensitive unknown option redaction",
+    args: ["--json", "status", "--phone=%2B91+98765+43210"],
+    expect: (result) => {
+      expectJsonError(result, "invalid_input", "error: unknown option '--phone=<redacted-phone>'", "invalid_input");
+      assert(!result.stderr.includes("%2B91"), "expected JSON parser error to omit encoded phone value");
+      assert(!result.stderr.includes("98765+43210"), "expected JSON parser error to omit plus-encoded phone value");
     }
   },
   {
@@ -451,7 +570,8 @@ const checks = [
       writeFileSync(blockedPath, "not a directory");
       return ["--data-dir", blockedPath, "status", "--json"];
     },
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
+      const blockedPath = join(dataDir, "blocked-file");
       assert(result.status === 1, "expected exit code 1");
       assert(result.stdout === "", "expected empty stdout");
       const payload = parseJson(result.stderr, "stderr");
@@ -462,7 +582,26 @@ const checks = [
         String(payload.error?.message).startsWith("Could not initialize local ZepoCli storage"),
         "expected runtime setup message"
       );
+      assert(String(payload.error?.message).includes("<redacted-local-path>"), "expected redacted data-dir path");
+      assert(!result.stderr.includes(blockedPath), "expected JSON runtime setup error to omit raw data-dir path");
       assert(String(payload.error?.hint).includes("zepo --data-dir <path> doctor"), "expected data-dir doctor hint");
+    }
+  },
+  {
+    name: "human runtime setup redaction",
+    args: ({ dataDir }) => {
+      const blockedPath = join(dataDir, "blocked-file");
+      writeFileSync(blockedPath, "not a directory");
+      return ["--data-dir", blockedPath, "status"];
+    },
+    expect: (result, { dataDir }) => {
+      const blockedPath = join(dataDir, "blocked-file");
+      assert(result.status === 1, "expected exit code 1");
+      assert(result.stdout === "", "expected empty stdout");
+      assert(result.stderr.includes("Could not initialize local ZepoCli storage"), "expected runtime setup message");
+      assert(result.stderr.includes("<redacted-local-path>"), "expected human redacted data-dir path");
+      assert(!result.stderr.includes(blockedPath), "expected human runtime setup error to omit raw data-dir path");
+      assert(result.stderr.includes("zepo --data-dir <path> doctor"), "expected data-dir doctor hint");
     }
   },
   {
@@ -488,9 +627,27 @@ const checks = [
   },
   {
     name: "invalid phone prefill",
-    args: ({ dataDir }) => ["--data-dir", dataDir, "login", "--phone", "abc", "--json"],
+    args: ({ dataDir }) => ["--data-dir", dataDir, "login", "--phone", "phone 9876543210", "--json"],
     expect: (result) => {
-      expectJsonError(result, "user_error", "Phone number must be a valid 10-digit Indian mobile number.", "invalid_input");
+      const payload = expectJsonError(
+        result,
+        "user_error",
+        "Phone number must be a valid 10-digit Indian mobile number.",
+        "invalid_input"
+      );
+      assert(String(payload.error?.hint).includes("<redacted-phone>"), "expected redacted phone hint");
+      assert(!result.stderr.includes("9876543210"), "expected JSON phone error to omit raw phone-shaped value");
+    }
+  },
+  {
+    name: "human invalid phone prefill redaction",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "login", "--phone", "phone 9876543210"],
+    expect: (result) => {
+      assert(result.status === 1, "expected exit code 1");
+      assert(result.stdout === "", "expected empty stdout");
+      assert(result.stderr.includes("Phone number must be a valid 10-digit Indian mobile number."), "expected phone message");
+      assert(result.stderr.includes("<redacted-phone>"), "expected human redacted phone hint");
+      assert(!result.stderr.includes("9876543210"), "expected human phone error to omit raw phone-shaped value");
     }
   },
   {
@@ -517,6 +674,13 @@ const checks = [
   {
     name: "invalid search limit json",
     args: ({ dataDir }) => ["--data-dir", dataDir, "search", "milk", "--limit", "0", "--json"],
+    expect: (result) => {
+      expectJsonError(result, "user_error", "Search limit must be an integer from 1 to 50.", "invalid_input");
+    }
+  },
+  {
+    name: "invalid search limit format json",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "search", "milk", "--limit", "1e1", "--json"],
     expect: (result) => {
       expectJsonError(result, "user_error", "Search limit must be an integer from 1 to 50.", "invalid_input");
     }
@@ -561,6 +725,13 @@ const checks = [
     expect: (result) => {
       expectJsonError(result, "user_error", "Quantity must be an integer from 1 to 12.", "invalid_input");
     }
+  },
+  {
+    name: "invalid add quantity format",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "add", "milk", "--quantity", "0x2", "--json"],
+    expect: (result) => {
+      expectJsonError(result, "user_error", "Quantity must be an integer from 1 to 12.", "invalid_input");
+    }
   }
 ];
 
@@ -580,6 +751,8 @@ function runCli(args) {
   const result = spawnSync(process.execPath, [cliPath, ...args], {
     cwd: rootDir,
     encoding: "utf8",
+    killSignal: "SIGTERM",
+    timeout: CLI_COMMAND_TIMEOUT_MS,
     env: {
       ...process.env,
       FORCE_COLOR: "0",
@@ -588,7 +761,7 @@ function runCli(args) {
   });
 
   if (result.error) {
-    throw result.error;
+    throwSpawnError(result.error, process.execPath, [cliPath, ...args], CLI_COMMAND_TIMEOUT_MS);
   }
 
   return {
@@ -596,6 +769,14 @@ function runCli(args) {
     stdout: result.stdout.trim(),
     stderr: result.stderr.trim()
   };
+}
+
+function throwSpawnError(error, command, args, timeoutMs) {
+  if (error && error.code === "ETIMEDOUT") {
+    throw new Error(`Command timed out after ${timeoutMs} ms: ${command} ${args.join(" ")}`);
+  }
+
+  throw error;
 }
 
 function verifyLocalCliEntryContract() {
@@ -645,6 +826,7 @@ function assertFreshCache(cache) {
 
 function assertFreshStatus(payload, dataDir) {
   assertFreshCache(payload.cache);
+  assert(payload.version === packageJson.version, "expected status version to match package.json");
   assert(payload.dataDir === dataDir, "expected status to use disposable data dir");
   assert(payload.confirmedSession === false, "expected fresh data dir to be logged out");
   assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected browser lock path");
@@ -664,8 +846,9 @@ function assertFreshStatus(payload, dataDir) {
   assert(payload.accessChallenge?.retryAfterMs === 0, "expected zero Zepto access challenge retry delay");
 }
 
-function assertDoctorReport(payload, dataDir) {
+function assertDoctorReport(payload, dataDir, options = { browser: false }) {
   assert(payload.ok === true, "expected doctor ok true");
+  assert(payload.version === packageJson.version, "expected doctor version to match package.json");
   assert(payload.dataDir === dataDir, "expected doctor data dir");
   assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected doctor browser lock path");
   assert(payload.browserLock?.present === false, "expected doctor no browser lock");
@@ -690,7 +873,14 @@ function assertDoctorReport(payload, dataDir) {
   assert(checkNames.includes("Browser automation lock"), "expected browser automation lock doctor check");
   assert(checkNames.includes("Headless browser throttle"), "expected headless browser throttle doctor check");
   assert(checkNames.includes("Zepto access challenge"), "expected Zepto access challenge doctor check");
-  assert(!checkNames.includes("Playwright Chromium"), "expected browser check to be skipped");
+  if (options.browser) {
+    assert(checkNames.includes("Playwright Chromium"), "expected Playwright Chromium doctor check");
+    const chromiumCheck = payload.checks.find((check) => check.name === "Playwright Chromium");
+    assert(chromiumCheck?.status === "pass", "expected Playwright Chromium doctor check to pass");
+    assert(chromiumCheck?.message === "Chromium launches successfully.", "expected Playwright Chromium pass message");
+  } else {
+    assert(!checkNames.includes("Playwright Chromium"), "expected browser check to be skipped");
+  }
 }
 
 function assertCheckoutHandoffContract(payload) {

@@ -15,6 +15,8 @@ const ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN =
   "\\b(use (?:my |your |device )?current location|use device location|allow (?:browser |precise )?location|allow location access|share (?:my |your |current |device )?location|detect (?:my |your |current |device )?location|get current location|find (?:my |your |current )?location|enable (?:browser |precise )?location|enable location services|use precise location|grant location access|turn on location|locate me|use gps|enter current location)\\b";
 const ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN =
   "\\b(confirm address|confirm location|save\\s+(?:&|and)\\s+(?:continue|proceed)|save address|use this address|deliver here|select this location)\\b";
+const ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN =
+  "\\b(cart|my cart|checkout|proceed(?:\\s+to)?|continue|payment|payments|pay(?:\\s+now)?|make payment|place order|confirm order|orders?|order history|track order|reorder|order again|repeat order|order summary|bill summary|view bill|item total|grand total|to pay|coupon|promo|voucher|delivery fee|delivery charge|handling fee|platform fee)\\b";
 const NON_ADDRESS_SURFACE_PATTERN =
   `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}`;
 export const ADDRESS_MANAGER_CLICK_LABELS = [
@@ -29,6 +31,7 @@ export const ADD_ADDRESS_CLICK_LABELS = [
   /^add new address$/i,
   /^enter\s+(?:delivery\s+)?location$/i
 ] as const;
+const ADDRESS_CONTROL_SCAN_LIMIT = 8;
 
 export interface AddressSelectionCandidate {
   index: number;
@@ -56,15 +59,25 @@ export async function clickAddressManagerButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of ADDRESS_MANAGER_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeAddressManagerControl(candidate)) {
+      if (await clickFirstSafeAddressManagerControl(candidate)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeAddressManagerControl(locator: Locator): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, ADDRESS_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeAddressManagerControl(candidate)) {
+      return true;
     }
   }
 
@@ -463,15 +476,25 @@ export async function clickAddAddressButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of ADD_ADDRESS_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeAddAddressControl(candidate)) {
+      if (await clickFirstSafeAddAddressControl(candidate)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeAddAddressControl(locator: Locator): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, ADDRESS_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeAddAddressControl(candidate)) {
+      return true;
     }
   }
 
@@ -539,6 +562,7 @@ export function isUnsafeAddressAutomationClickText(text: string): boolean {
     isUserLocationConsentText(normalized) ||
     isPaymentMethodLabelText(normalized) ||
     new RegExp(ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN, "i").test(normalized) ||
+    new RegExp(ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN, "i").test(normalized) ||
     /\b(save|confirm|continue|proceed|done|submit)\b/i.test(
       normalized
     )
@@ -551,7 +575,32 @@ export function isAddAddressFlowText(text: string): boolean {
     return false;
   }
 
-  return /\b(add new address|enter complete address|enter address details|house\s*\/?\s*flat|house no|flat no|building|floor|receiver name|save address|confirm address|pin your location|mark as home|mark as work)\b/i.test(
+  return /\b(add new address|enter complete address|enter address details|house\s*\/?\s*flat|house no|flat no|building|floor|receiver name|pin your location|mark as home|mark as work)\b/i.test(
     normalized
   );
+}
+
+async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {
+  const count = Math.min(await locatorCount(locator), limit);
+  for (let index = 0; index < count; index += 1) {
+    yield locatorAt(locator, index);
+  }
+}
+
+async function locatorCount(locator: Locator): Promise<number> {
+  const countable = locator as { count?: () => Promise<number> };
+  if (typeof countable.count === "function") {
+    return countable.count().catch(() => 0);
+  }
+
+  return (await locator.first().isVisible().catch(() => false)) ? 1 : 0;
+}
+
+function locatorAt(locator: Locator, index: number): Locator {
+  const indexable = locator as { nth?: (index: number) => Locator };
+  if (typeof indexable.nth === "function") {
+    return indexable.nth(index);
+  }
+
+  return index === 0 ? locator.first() : locator;
 }

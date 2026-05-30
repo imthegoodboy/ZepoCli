@@ -50,6 +50,13 @@ describe("search automation helpers", () => {
         name: "Daawat Rozana Super Basmati Rice",
         price: "₹363",
         unit: "1 pack (5 kg)"
+      },
+      {
+        index: 23,
+        automationId: 23,
+        name: "Price Drop Wheat Flour",
+        price: "₹99",
+        unit: "1 pack (1 kg)"
       }
     ];
 
@@ -93,6 +100,32 @@ describe("search automation helpers", () => {
       "Amul Taaza Toned Milk"
     ]);
     expect(filterProductsForQuery(products, "milk 1l").map((product) => product.name)).toEqual(["Amul Gold Milk"]);
+  });
+
+  it("tries direct search before accepting product cards left on the homepage", async () => {
+    const page = createHomepageSearchNoNavigationPage();
+
+    await expect(searchProducts(page as never, "milk", 1)).resolves.toEqual([]);
+
+    expect(page.gotoUrls.filter((url) => url.includes("/search?query=milk"))).toHaveLength(1);
+  });
+
+  it("does not let homepage fallback mask explicit search-page no-results copy", async () => {
+    const page = createExplicitSearchStateWithHomepageFallbackPage("No results found for milk");
+
+    await expect(searchProducts(page as never, "milk", 1)).resolves.toEqual([]);
+
+    expect(page.gotoUrls.filter(isHomepageUrl)).toHaveLength(1);
+  });
+
+  it("does not let homepage fallback mask delivery-location setup copy", async () => {
+    const page = createExplicitSearchStateWithHomepageFallbackPage("Select location to see products near you");
+
+    await expect(searchProducts(page as never, "milk", 1)).rejects.toThrow(
+      "Zepto needs a delivery location before search results are readable."
+    );
+
+    expect(page.gotoUrls.filter(isHomepageUrl)).toHaveLength(1);
   });
 
   it("clicks only explicit homepage search trigger labels", () => {
@@ -263,6 +296,13 @@ describe("search automation helpers", () => {
           "aria-label": "Add to Cart",
           "aria-description": "Cash on Delivery"
         }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add to Cart",
+          value: "Pay Now"
+        }
       })
     ]) {
       await expect(extractProducts(page as never, 5)).resolves.toEqual([]);
@@ -322,6 +362,14 @@ describe("search automation helpers", () => {
 
       expect(page.clicked).toBe(false);
     }
+  });
+
+  it("skips unsafe search trigger matches before clicking a later safe control", async () => {
+    const page = createSearchTriggerCollectionPage();
+
+    await expect(clickSearchTrigger(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["safe"]);
   });
 
   it("detects delivery-location setup copy without treating normal search text as setup", () => {
@@ -457,6 +505,9 @@ describe("search automation helpers", () => {
       }),
       createProductAddButtonPage("ADD\nAmul Milk\n500 ml\n₹32", "ADD", {
         "aria-description": "Cash on Delivery"
+      }),
+      createProductAddButtonPage("ADD\nAmul Milk\n500 ml\n₹32", "ADD", {
+        value: "Pay Now"
       })
     ]) {
       await expect(
@@ -483,6 +534,21 @@ describe("search automation helpers", () => {
         unit: "500 ml"
       })
     ).rejects.toThrow("The ADD button no longer matches Amul Milk.");
+
+    expect(page.clicked).toBe(false);
+  });
+
+  it("does not accept product matches inside unrelated words", async () => {
+    const page = createProductAddButtonPage("ADD\nPrice Drop Wheat Flour\n1 kg\n₹99");
+
+    await expect(
+      clickProductAdd(page as never, {
+        index: 0,
+        automationId: 4,
+        name: "Rice",
+        unit: "1 kg"
+      })
+    ).rejects.toThrow("The ADD button no longer matches Rice.");
 
     expect(page.clicked).toBe(false);
   });
@@ -1077,6 +1143,26 @@ function createMixedLabelSearchTriggerPage(
   return page;
 }
 
+function createSearchTriggerCollectionPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocator("Cart", async () => {
+      clicks.push("unsafe");
+    }, { "aria-label": "Search" }),
+    createVisibleLocator("Search", async () => {
+      clicks.push("safe");
+    })
+  ]);
+  const page = {
+    clicks,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
+      role === "button" && matchesLocatorName(options.name, "Search") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDisabledInputAfterSearchTriggerPage() {
   return createInputAfterSearchTriggerPage({ "aria-disabled": "true" });
 }
@@ -1158,6 +1244,103 @@ function createReadonlyDirectSearchInputPage() {
 
       if (selector.includes("input[type='search']")) {
         return createSearchInput(page, { readonly: "" });
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
+function createHomepageSearchNoNavigationPage() {
+  const gotoUrls: string[] = [];
+  let mode: "home" | "search" = "home";
+  const searchInput = createSearchInputCandidate({
+    placeholder: "Search products"
+  });
+
+  const page = {
+    gotoUrls,
+    goto: async (url: string | URL) => {
+      const value = String(url);
+      gotoUrls.push(value);
+      mode = value.includes("/search") ? "search" : "home";
+      return {
+        status: () => 200,
+        url: () => value
+      };
+    },
+    url: () => (mode === "search" ? "https://www.zepto.com/search?query=milk" : "https://www.zepto.com/"),
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    title: async () => "Zepto",
+    evaluate: async () =>
+      mode === "home"
+        ? [
+            {
+              automationId: 0,
+              text: "Daily Good Sona Masoori Raw Rice\n1 kg\n₹69\nADD"
+            }
+          ]
+        : [],
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return {
+          ...createHiddenLocator(),
+          innerText: async () =>
+            mode === "home" ? "Fresh picks Daily Good Sona Masoori Raw Rice 1 kg ₹69 ADD" : "No results"
+        };
+      }
+
+      if (selector.includes("input[type='search']")) {
+        return createLocatorCollection(mode === "home" ? [searchInput] : []);
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
+function createExplicitSearchStateWithHomepageFallbackPage(searchBodyText: string) {
+  const gotoUrls: string[] = [];
+  let mode: "home" | "search" = "home";
+
+  const page = {
+    gotoUrls,
+    goto: async (url: string | URL) => {
+      const value = String(url);
+      gotoUrls.push(value);
+      mode = value.includes("/search") ? "search" : "home";
+      return {
+        status: () => 200,
+        url: () => value
+      };
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    title: async () => "Zepto",
+    evaluate: async () =>
+      mode === "home"
+        ? [
+            {
+              automationId: 0,
+              text: "Amul Taaza Toned Milk\n500 ml\n₹32\nADD"
+            }
+          ]
+        : [],
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return {
+          ...createHiddenLocator(),
+          innerText: async () =>
+            mode === "home" ? "Fresh picks Amul Taaza Toned Milk 500 ml ₹32 ADD" : searchBodyText
+        };
       }
 
       return createHiddenLocator();
@@ -1303,4 +1486,8 @@ function matchesLocatorName(name: RegExp | string | undefined, text: string): bo
   }
 
   return name === text;
+}
+
+function isHomepageUrl(value: string): boolean {
+  return value === "https://www.zepto.com" || value === "https://www.zepto.com/";
 }

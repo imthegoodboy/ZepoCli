@@ -23,6 +23,7 @@ export const ACCOUNT_SURFACE_CLICK_LABELS = [
   /^login\s*\/\s*sign\s*up$/i,
   /^log in\s*\/\s*sign up$/i
 ] as const;
+const ACCOUNT_SURFACE_CONTROL_SCAN_LIMIT = 8;
 const PHONE_PREFILL_TYPE_DELAY_MS = 45;
 const STRONG_LOGIN_REQUIRED_TEXT_PATTERN =
   /\b(enter (?:mobile|phone)|otp|verify otp|verify mobile|verify phone|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
@@ -54,15 +55,25 @@ export async function clickAccountSurfaceButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
   for (const label of ACCOUNT_SURFACE_CLICK_LABELS) {
     const candidates = [
-      page.getByRole("button", { name: label }).first(),
-      page.getByRole("link", { name: label }).first(),
-      controls.filter({ hasText: label }).first()
+      page.getByRole("button", { name: label }),
+      page.getByRole("link", { name: label }),
+      controls.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {
-      if (await clickSafeAccountSurfaceControl(candidate)) {
+      if (await clickFirstSafeAccountSurfaceControl(candidate)) {
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstSafeAccountSurfaceControl(locator: Locator): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, ACCOUNT_SURFACE_CONTROL_SCAN_LIMIT)) {
+    if (await clickSafeAccountSurfaceControl(candidate)) {
+      return true;
     }
   }
 
@@ -138,7 +149,7 @@ export function inferLoginStateFromText(text: string): LoginState {
     return "login-required";
   }
 
-  if (hasLoggedInAccountEvidence(normalized) && !/\blogin\b/i.test(normalized)) {
+  if (hasLoggedInAccountEvidence(normalized)) {
     return "logged-in";
   }
 
@@ -161,4 +172,29 @@ function hasLoggedInAccountEvidence(text: string): boolean {
   const hasAccountEntry = /\b(account|profile)\b/i.test(text);
   const hasAccountOnlyFeature = /\b(wallet|my orders|orders|order history)\b/i.test(text);
   return hasAccountEntry && hasAccountOnlyFeature;
+}
+
+async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {
+  const count = Math.min(await locatorCount(locator), limit);
+  for (let index = 0; index < count; index += 1) {
+    yield locatorAt(locator, index);
+  }
+}
+
+async function locatorCount(locator: Locator): Promise<number> {
+  const countable = locator as { count?: () => Promise<number> };
+  if (typeof countable.count === "function") {
+    return countable.count().catch(() => 0);
+  }
+
+  return (await locator.first().isVisible().catch(() => false)) ? 1 : 0;
+}
+
+function locatorAt(locator: Locator, index: number): Locator {
+  const indexable = locator as { nth?: (index: number) => Locator };
+  if (typeof indexable.nth === "function") {
+    return indexable.nth(index);
+  }
+
+  return index === 0 ? locator.first() : locator;
 }

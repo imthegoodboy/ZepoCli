@@ -177,13 +177,22 @@ export function normalizeLoginPhone(phone: string | undefined): string | undefin
     return undefined;
   }
 
-  const digits = phone.replace(/\D/g, "");
+  const trimmed = phone.trim();
+  if (!/^\+?[\d\s-]+$/.test(trimmed)) {
+    throw invalidLoginPhoneError();
+  }
+
+  const digits = trimmed.replace(/\D/g, "");
   const normalized = normalizeIndianMobileDigits(digits);
   if (normalized) {
     return normalized;
   }
 
-  throw new UserFacingError("Phone number must be a valid 10-digit Indian mobile number.", {
+  throw invalidLoginPhoneError();
+}
+
+function invalidLoginPhoneError(): UserFacingError {
+  return new UserFacingError("Phone number must be a valid 10-digit Indian mobile number.", {
     code: "invalid_input",
     hint: "Use a value like `zepo login --phone 9876543210`."
   });

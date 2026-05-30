@@ -63,12 +63,27 @@ describe("CLI command smokes", () => {
     expect(result.stderr).toBe("");
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("prints version in human readiness output", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-human-version-"));
+
+    const status = await runCli(["--data-dir", dataDir, "status"]);
+    const doctor = await runCli(["--data-dir", dataDir, "doctor", "--skip-browser"]);
+
+    expect(status.exitCode).toBe(0);
+    expect(status.stdout).toContain(`Version: ${packageJson.version}`);
+    expect(status.stdout).toContain("Confirmed session:");
+    expect(doctor.exitCode).toBe(0);
+    expect(doctor.stdout).toContain("ZepoCli doctor");
+    expect(doctor.stdout).toContain(`Version: ${packageJson.version}`);
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("prints machine-readable status for a fresh data directory", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-status-"));
     const result = await runCli(["--data-dir", dataDir, "status", "--json"]);
 
     expect(result.exitCode).toBe(0);
     const status = JSON.parse(result.stdout) as {
+      version: string;
       dataDir: string;
       hasAuthState: boolean;
       markedLoggedIn: boolean;
@@ -103,6 +118,7 @@ describe("CLI command smokes", () => {
         orders: number;
       };
     };
+    expect(status.version).toBe(packageJson.version);
     expect(status.dataDir).toBe(dataDir);
     expect(status.hasAuthState).toBe(false);
     expect(status.markedLoggedIn).toBe(false);
@@ -280,6 +296,7 @@ describe("CLI command smokes", () => {
     expect(result.exitCode).toBe(0);
     const report = JSON.parse(result.stdout) as {
       ok: boolean;
+      version: string;
       dataDir: string;
       browserLock: {
         path: string;
@@ -306,6 +323,7 @@ describe("CLI command smokes", () => {
       checks: Array<{ name: string; status: string }>;
     };
     expect(report.ok).toBe(true);
+    expect(report.version).toBe(packageJson.version);
     expect(report.dataDir).toBe(dataDir);
     expect(report.browserLock).toEqual({
       path: join(dataDir, "browser.lock"),
@@ -353,7 +371,7 @@ describe("CLI command smokes", () => {
   }, CLI_TEST_TIMEOUT_MS);
 
   it("prints machine-readable validation errors when JSON output is requested", async () => {
-    const result = await runCli(["--timeout", "abc", "status", "--json"]);
+    const result = await runCli(["--timeout", "1e3", "status", "--json"]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
@@ -372,7 +390,31 @@ describe("CLI command smokes", () => {
     expect(payload.error.code).toBe("invalid_input");
     expect(payload.error.message).toBe("Invalid input.");
     expect(payload.error.exitCode).toBe(1);
-    expect(payload.error.issues[0]?.path).toBe("timeout");
+    expect(payload.error.issues[0]).toEqual({
+      path: "timeout",
+      message: "must be a decimal integer number of milliseconds"
+    });
+  }, CLI_TEST_TIMEOUT_MS);
+
+  it("prints stable timeout range validation errors in JSON mode", async () => {
+    for (const testCase of [
+      { timeout: "999", message: "must be at least 1000 ms" },
+      { timeout: "300001", message: "must be at most 300000 ms" }
+    ]) {
+      const result = await runCli(["--timeout", testCase.timeout, "status", "--json"]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe("");
+      const payload = JSON.parse(result.stderr) as {
+        error: {
+          issues: Array<{ path: string; message: string }>;
+        };
+      };
+      expect(payload.error.issues[0]).toEqual({
+        path: "timeout",
+        message: testCase.message
+      });
+    }
   }, CLI_TEST_TIMEOUT_MS);
 
   it("rejects blank data directories before runtime setup", async () => {
@@ -504,13 +546,28 @@ describe("CLI command smokes", () => {
     expect(payload.ok).toBe(false);
     expect(payload.error.type).toBe("user_error");
     expect(payload.error.message).toContain("Could not initialize local ZepoCli storage");
-    expect(payload.error.message).toContain(blockedPath);
+    expect(payload.error.message).toContain("<redacted-local-path>");
+    expect(payload.error.message).not.toContain(blockedPath);
     expect(payload.error.hint).toContain("zepo --data-dir <path> doctor");
     expect(payload.error.exitCode).toBe(1);
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("redacts local paths from human runtime setup errors", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-human-data-file-parent-"));
+    const blockedPath = join(dataDir, "blocked-file");
+    writeFileSync(blockedPath, "not a directory");
+    const result = await runCli(["--data-dir", blockedPath, "status"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("Could not initialize local ZepoCli storage");
+    expect(result.stderr).toContain("<redacted-local-path>");
+    expect(result.stderr).not.toContain(blockedPath);
+    expect(result.stderr).toContain("zepo --data-dir <path> doctor");
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("rejects invalid search limit before opening a browser", async () => {
-    const result = await runCli(["search", "milk", "--limit", "abc"]);
+    const result = await runCli(["search", "milk", "--limit", "1e1"]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Search limit must be an integer from 1 to 50.");
@@ -559,6 +616,68 @@ describe("CLI command smokes", () => {
     expect(status.headlessBrowserThrottle.recentRuns).toBe(0);
     expect(status.accessChallenge.detected).toBe(false);
   }, CLI_TEST_TIMEOUT_MS);
+
+  it("prints machine-readable blank-query errors before browser or session work", async () => {
+    for (const testCase of [
+      {
+        args: ["search", "   ", "--json"],
+        message: "Search query is required."
+      },
+      {
+        args: ["add", "   ", "--json"],
+        message: "Product query is required."
+      },
+      {
+        args: ["remove", "   ", "--json"],
+        message: "Cart item query is required."
+      },
+      {
+        args: ["address", "use", "   ", "--json"],
+        message: "Address query is required."
+      }
+    ]) {
+      dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-blank-query-"));
+      const result = await runCli(["--data-dir", dataDir, ...testCase.args]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).not.toContain("No confirmed Zepto session found.");
+      expect(existsSync(join(dataDir, "browser.lock"))).toBe(false);
+      const payload = JSON.parse(result.stderr) as {
+        ok: boolean;
+        error: {
+          type: string;
+          code?: string;
+          message: string;
+          exitCode: number;
+        };
+      };
+      expect(payload).toMatchObject({
+        ok: false,
+        error: {
+          type: "user_error",
+          code: "invalid_input",
+          message: testCase.message,
+          exitCode: 1
+        }
+      });
+
+      const statusResult = await runCli(["--data-dir", dataDir, "status", "--json"]);
+      const status = JSON.parse(statusResult.stdout) as {
+        hasAuthState: boolean;
+        hasBrowserProfileData: boolean;
+        headlessBrowserThrottle: {
+          recentRuns: number;
+        };
+      };
+      expect(status.hasAuthState).toBe(false);
+      expect(status.hasBrowserProfileData).toBe(false);
+      expect(status.headlessBrowserThrottle.recentRuns).toBe(0);
+
+      rmSync(dataDir, { recursive: true, force: true });
+      dataDir = undefined;
+    }
+  }, CLI_TEST_TIMEOUT_MS * 2);
 
   it("prints retry timing for local safety stops before browser work", async () => {
     for (const testCase of [
@@ -614,7 +733,7 @@ describe("CLI command smokes", () => {
 
   it("rejects invalid add quantity before checking session", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-quantity-"));
-    const result = await runCli(["--data-dir", dataDir, "add", "milk", "--quantity", "abc"]);
+    const result = await runCli(["--data-dir", dataDir, "add", "milk", "--quantity", "0x2"]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Quantity must be an integer from 1 to 12.");
@@ -624,7 +743,7 @@ describe("CLI command smokes", () => {
 
   it("rejects invalid login phone prefill before opening the browser", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-phone-"));
-    const result = await runCli(["--data-dir", dataDir, "login", "--phone", "abc", "--json"]);
+    const result = await runCli(["--data-dir", dataDir, "login", "--phone", "phone 9876543210", "--json"]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
@@ -644,10 +763,21 @@ describe("CLI command smokes", () => {
         type: "user_error",
         code: "invalid_input",
         message: "Phone number must be a valid 10-digit Indian mobile number.",
-        hint: "Use a value like `zepo login --phone 9876543210`.",
+        hint: "Use a value like `zepo login --phone <redacted-phone>`.",
         exitCode: 1
       }
     });
+  }, CLI_TEST_TIMEOUT_MS);
+
+  it("redacts phone-shaped values from human login phone errors", async () => {
+    dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-human-phone-"));
+    const result = await runCli(["--data-dir", dataDir, "login", "--phone", "phone 9876543210"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("Phone number must be a valid 10-digit Indian mobile number.");
+    expect(result.stderr).toContain("Use a value like `zepo login --phone <redacted-phone>`.");
+    expect(result.stderr).not.toContain("9876543210");
   }, CLI_TEST_TIMEOUT_MS);
 
   it("prints machine-readable user errors when JSON output is requested", async () => {

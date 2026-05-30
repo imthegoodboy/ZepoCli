@@ -1,13 +1,13 @@
-import { z } from "zod";
-
 import { DEFAULT_PRODUCT_LIMIT } from "../config/constants.js";
 import type { AppRuntime } from "../config/runtime.js";
 import type { Product } from "../types.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
+import { parseDecimalInteger } from "../utils/validation.js";
 import { BrowserAutomation } from "../automation/browser.js";
 import { searchProducts } from "../automation/search.js";
 
-const LimitSchema = z.coerce.number().int().min(1).max(50);
+const MIN_SEARCH_LIMIT = 1;
+const MAX_SEARCH_LIMIT = 50;
 
 export class SearchService {
   private readonly browser: BrowserAutomation;
@@ -30,9 +30,9 @@ export class SearchService {
 }
 
 export function parseSearchLimit(limitInput: unknown): number {
-  const result = LimitSchema.safeParse(limitInput);
-  if (result.success) {
-    return result.data;
+  const limit = parseDecimalInteger(limitInput);
+  if (limit !== undefined && limit >= MIN_SEARCH_LIMIT && limit <= MAX_SEARCH_LIMIT) {
+    return limit;
   }
 
   throw new UserFacingError("Search limit must be an integer from 1 to 50.", {
