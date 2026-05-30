@@ -59,6 +59,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("interrupted with Ctrl+C/SIGTERM");
       expect(guidance).toContain("write the same sanitized partial report when possible");
       expect(guidance).toContain("`verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats");
+      expect(guidance).toContain("npm --silent run verify:live:report -- <report-path>");
+      expect(guidance).toContain("The report validator does not contact Zepto or prove a fresh run happened");
       expect(guidance).toContain("Playwright Chromium launches");
       expect(guidance).toContain("require `browserAutomation.ready === true` and a passing `Playwright Chromium` check");
       expect(guidance).toContain("package `version`");
@@ -121,6 +123,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("npm-token-shaped values");
     expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
+    expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
+    expect(liveVerifierSkill).toContain("It only checks the saved report contract");
     expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --search milk --address home --add");
     expect(liveVerifierSkill).toContain("Do not combine `--clear` with `--checkout`");

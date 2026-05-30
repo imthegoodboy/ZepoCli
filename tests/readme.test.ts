@@ -154,6 +154,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("The examples use `npm --silent run verify:live -- ...`");
     expect(readme).toContain("interrupted with Ctrl+C/SIGTERM");
     expect(readme).toContain("writes the same sanitized partial report when possible");
+    expect(readme).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
+    expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");
     expect(readme).toContain("Use `--step-timeout <ms>` only when a human-controlled Zepto step legitimately needs more than the default per-command timeout");
     expect(readme).toContain("`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats");

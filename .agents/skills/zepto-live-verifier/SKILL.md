@@ -45,6 +45,14 @@ Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation ar
 
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
 
+After a human-controlled run, validate the saved report:
+
+```bash
+npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json
+```
+
+`verify:live:report` does not contact Zepto or prove a fresh run happened. It only checks the saved report contract before agents treat the report as acceptance evidence.
+
 Optional focused passes:
 
 ```bash

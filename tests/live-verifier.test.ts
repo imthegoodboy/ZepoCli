@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -8,6 +9,7 @@ import packageJson from "../package.json" with { type: "json" };
 
 const rootDir = resolve(import.meta.dirname, "..");
 const scriptPath = resolve(rootDir, "scripts", "verify-live-flow.mjs");
+const reportScriptPath = resolve(rootDir, "scripts", "verify-live-report.mjs");
 const LIVE_VERIFIER_TEST_TIMEOUT_MS = 15_000;
 const {
   adjustLiveReportRequestsForConfirmedSession,
@@ -25,7 +27,8 @@ const {
   summarizeLiveReportCoverage,
   summarizeLiveReportMissingCoverage,
   summarizeLiveReportRequests,
-  summarizeLiveRunnerFailure
+  summarizeLiveRunnerFailure,
+  validateLiveReportAcceptance
 } = await import("../scripts/live-report-utils.mjs");
 
 function automationDiagnosticsPayload() {
@@ -48,6 +51,70 @@ function statusDiagnosticsPayload() {
   return {
     ...automationDiagnosticsPayload(),
     cache: { searches: 0, cartSnapshots: 0, addresses: 0, orders: 0 }
+  };
+}
+
+function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
+  const steps = [
+    {
+      name: "doctor",
+      ok: true,
+      summary: {
+        ok: true,
+        browserAutomationReady: true,
+        playwrightChromiumPassed: true
+      }
+    },
+    {
+      name: "status",
+      ok: true,
+      summary: {
+        confirmedSession: true,
+        browserAutomationReady: true
+      }
+    },
+    {
+      name: "status live",
+      ok: true,
+      summary: {
+        confirmedSession: true,
+        browserAutomationReady: true,
+        liveSessionState: "logged-in"
+      }
+    },
+    {
+      name: "search",
+      ok: true,
+      summary: {
+        productCount: 1
+      }
+    },
+    {
+      name: "checkout",
+      ok: true,
+      summary: {
+        status: "checkout_handoff_returned",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      }
+    }
+  ];
+  const requested = summarizeLiveReportRequests({
+    search: "milk",
+    checkout: true
+  });
+  const coverage = summarizeLiveReportCoverage(steps);
+
+  return {
+    ok: true,
+    version: packageJson.version,
+    requested,
+    attempted: summarizeLiveReportAttempts(steps),
+    coverage,
+    missingCoverage: summarizeLiveReportMissingCoverage(requested, coverage),
+    steps,
+    ...overrides
   };
 }
 
@@ -328,6 +395,95 @@ describe("live verification runner", () => {
     expect(missingCoverage.liveSession).toBe(false);
     expect(hasLiveReportMissingCoverage(missingCoverage)).toBe(false);
     expect(adjustLiveReportRequestsForConfirmedSession(requested, { confirmedSession: false })).toBe(requested);
+  });
+
+  it("validates live report acceptance without reusing partial coverage as proof", () => {
+    expect(validateLiveReportAcceptance(acceptedLiveReport(), { expectedVersion: packageJson.version })).toEqual({
+      accepted: true,
+      issues: []
+    });
+
+    const missingLiveSession = acceptedLiveReport();
+    missingLiveSession.coverage = {
+      ...missingLiveSession.coverage,
+      liveSession: false
+    };
+    missingLiveSession.missingCoverage = summarizeLiveReportMissingCoverage(
+      missingLiveSession.requested,
+      missingLiveSession.coverage
+    );
+
+    const missingResult = validateLiveReportAcceptance(missingLiveSession, {
+      expectedVersion: packageJson.version
+    });
+
+    expect(missingResult.accepted).toBe(false);
+    expect(missingResult.issues.map((issue) => issue.code)).toContain("live_report_missing_coverage");
+    expect(missingResult.issues.map((issue) => issue.code)).toContain("live_report_requested_coverage_missing");
+
+    const weakDoctor = acceptedLiveReport({
+      steps: [
+        {
+          name: "doctor",
+          ok: true,
+          summary: {
+            ok: true,
+            browserAutomationReady: true,
+            playwrightChromiumPassed: false
+          }
+        },
+        ...acceptedLiveReport().steps.slice(1)
+      ]
+    });
+
+    expect(
+      validateLiveReportAcceptance(weakDoctor, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_step_contract_mismatch");
+  });
+
+  it("validates saved live report files without echoing local paths", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "zepo-live-report-"));
+    try {
+      const reportPath = join(tempDir, "live-verification-report.json");
+      writeFileSync(reportPath, `${JSON.stringify(acceptedLiveReport(), null, 2)}\n`);
+
+      const pass = spawnSync(process.execPath, [reportScriptPath, reportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(pass.status).toBe(0);
+      expect(pass.stdout).toContain("pass live verification report acceptance");
+      expect(`${pass.stdout}\n${pass.stderr}`).not.toContain(tempDir);
+
+      const badReportPath = join(tempDir, "bad-live-verification-report.json");
+      writeFileSync(
+        badReportPath,
+        `${JSON.stringify(
+          acceptedLiveReport({
+            ok: false,
+            version: "0.0.0"
+          }),
+          null,
+          2
+        )}\n`
+      );
+
+      const fail = spawnSync(process.execPath, [reportScriptPath, badReportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(fail.status).toBe(1);
+      expect(fail.stderr).toContain("Live verification report is not acceptable.");
+      expect(fail.stderr).toContain("live_report_not_ok");
+      expect(fail.stderr).toContain("live_report_version_mismatch");
+      expect(`${fail.stdout}\n${fail.stderr}`).not.toContain(tempDir);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it("summarizes requested but uncovered live report capabilities", () => {

@@ -99,6 +99,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedCleanDistPath = join(packageDir, "scripts", "clean-dist.mjs");
   const installedNormalizeCliEntryPath = join(packageDir, "scripts", "normalize-cli-entry.mjs");
   const installedVerifySecretsPath = join(packageDir, "scripts", "verify-secrets.mjs");
+  const installedVerifyLiveReportPath = join(packageDir, "scripts", "verify-live-report.mjs");
   const installedEnvExamplePath = join(packageDir, ".env.example");
   const installedNpmrcExamplePath = join(packageDir, ".npmrc.example");
 
@@ -112,6 +113,10 @@ function verifyInstalledCliEntryContract(prefixDir) {
     "expected installed verify:secrets package script"
   );
   assert(
+    installedPackageJson.scripts?.["verify:live:report"] === "node scripts/verify-live-report.mjs",
+    "expected installed verify:live:report package script"
+  );
+  assert(
     installedPackageJson.scripts?.build?.includes("node scripts/normalize-cli-entry.mjs"),
     "expected installed build script to normalize the CLI entry"
   );
@@ -119,6 +124,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   assert(existsSync(installedCleanDistPath), "expected installed clean-dist script");
   assert(existsSync(installedNormalizeCliEntryPath), "expected installed normalize-cli-entry script");
   assert(existsSync(installedVerifySecretsPath), "expected installed verify-secrets script");
+  assert(existsSync(installedVerifyLiveReportPath), "expected installed live report acceptance validator");
   assert(existsSync(installedEnvExamplePath), "expected installed .env.example");
   assert(existsSync(installedNpmrcExamplePath), "expected installed .npmrc.example");
   assert(
@@ -191,6 +197,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
+    "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
+    "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "Live report failures use stable `error.code` values.",
     "live_verification_incomplete",
     "npm run verify:secrets",
@@ -275,13 +283,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const installedPackageJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
   const liveReportUtilsPath = join(packageDir, "scripts", "live-report-utils.mjs");
   const liveVerifierPath = join(packageDir, "scripts", "verify-live-flow.mjs");
+  const liveReportVerifierPath = join(packageDir, "scripts", "verify-live-report.mjs");
 
   assert(
     installedPackageJson.scripts?.["verify:live"] === "node scripts/verify-live-flow.mjs",
     "expected installed verify:live package script"
   );
+  assert(
+    installedPackageJson.scripts?.["verify:live:report"] === "node scripts/verify-live-report.mjs",
+    "expected installed verify:live:report package script"
+  );
   assert(existsSync(liveReportUtilsPath), "expected installed live-report-utils script");
   assert(existsSync(liveVerifierPath), "expected installed verify-live-flow script");
+  assert(existsSync(liveReportVerifierPath), "expected installed live report acceptance validator");
   const liveVerifierSource = readFileSync(liveVerifierPath, "utf8");
   assert(
     liveVerifierSource.includes("version: packageJson.version"),
@@ -619,7 +633,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     summarizeLiveReportCoverage,
     summarizeLiveReportMissingCoverage,
     summarizeLiveReportRequests,
-    summarizeLiveRunnerFailure
+    summarizeLiveRunnerFailure,
+    validateLiveReportAcceptance
   } = await import(pathToFileURL(liveReportUtilsPath).href);
   assertDeepEqual(
     summarizeLiveReportRequests({
@@ -681,6 +696,109 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report confirmed-session adjustment to avoid skipped login missing coverage"
   );
   console.log("pass installed live report conditional login request");
+
+  const acceptedLiveReportSteps = [
+    {
+      name: "doctor",
+      ok: true,
+      summary: {
+        ok: true,
+        browserAutomationReady: true,
+        playwrightChromiumPassed: true
+      }
+    },
+    {
+      name: "status",
+      ok: true,
+      summary: {
+        confirmedSession: true,
+        browserAutomationReady: true
+      }
+    },
+    {
+      name: "status live",
+      ok: true,
+      summary: {
+        confirmedSession: true,
+        browserAutomationReady: true,
+        liveSessionState: "logged-in"
+      }
+    },
+    {
+      name: "search",
+      ok: true,
+      summary: {
+        productCount: 1
+      }
+    },
+    {
+      name: "checkout",
+      ok: true,
+      summary: {
+        status: "checkout_handoff_returned",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      }
+    }
+  ];
+  const acceptedLiveReportRequested = summarizeLiveReportRequests({
+    search: "milk",
+    checkout: true
+  });
+  const acceptedLiveReportCoverage = summarizeLiveReportCoverage(acceptedLiveReportSteps);
+  const acceptedLiveReport = {
+    ok: true,
+    version: packageJson.version,
+    requested: acceptedLiveReportRequested,
+    attempted: summarizeLiveReportAttempts(acceptedLiveReportSteps),
+    coverage: acceptedLiveReportCoverage,
+    missingCoverage: summarizeLiveReportMissingCoverage(acceptedLiveReportRequested, acceptedLiveReportCoverage),
+    steps: acceptedLiveReportSteps
+  };
+  assert(
+    validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
+    "expected installed live report acceptance helper to accept complete report evidence"
+  );
+  const acceptedLiveReportPath = join(tempRoot, "accepted-live-verification-report.json");
+  writeFileSync(acceptedLiveReportPath, `${JSON.stringify(acceptedLiveReport, null, 2)}\n`);
+  const acceptedLiveReportResult = runNpm(
+    ["--silent", "run", "--prefix", packageDir, "verify:live:report", "--", acceptedLiveReportPath],
+    { cwd: rootDir }
+  );
+  assert(
+    acceptedLiveReportResult.stdout.includes("pass live verification report acceptance"),
+    "expected installed live report validator to accept complete report"
+  );
+  const rejectedLiveReportPath = join(tempRoot, "rejected-live-verification-report.json");
+  writeFileSync(
+    rejectedLiveReportPath,
+    `${JSON.stringify(
+      {
+        ...acceptedLiveReport,
+        ok: false,
+        version: "0.0.0"
+      },
+      null,
+      2
+    )}\n`
+  );
+  const rejectedLiveReportResult = runNpmResult(
+    ["--silent", "run", "--prefix", packageDir, "verify:live:report", "--", rejectedLiveReportPath],
+    { cwd: rootDir }
+  );
+  assert(rejectedLiveReportResult.status === 1, "expected installed live report validator to reject incomplete reports");
+  assert(
+    rejectedLiveReportResult.stderr.includes("Live verification report is not acceptable.") &&
+      rejectedLiveReportResult.stderr.includes("live_report_not_ok") &&
+      rejectedLiveReportResult.stderr.includes("live_report_version_mismatch"),
+    "expected installed live report validator to explain acceptance failures with stable codes"
+  );
+  assert(
+    !`${rejectedLiveReportResult.stdout}\n${rejectedLiveReportResult.stderr}`.includes(tempRoot),
+    "expected installed live report validator output to omit local report paths"
+  );
+  console.log("pass installed live report acceptance validator");
   assertDeepEqual(
     summarizeLiveReportAttempts([
       { name: "doctor", ok: true },
