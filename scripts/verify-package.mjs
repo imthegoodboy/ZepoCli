@@ -820,6 +820,18 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !redactedLiveStderr.includes("Users"),
     "expected installed live console stderr redaction to omit workflow queries and local paths"
   );
+  const forwardSlashPathLiveStderr = redactLiveConsoleText(
+    "Live stderr referenced C:/Users/parth/.zepo-live/report.json and file:///C:/Users/parth/.zepo-live/trace.txt.",
+    []
+  );
+  assert(
+    forwardSlashPathLiveStderr.includes("<redacted-local-path>") &&
+      !forwardSlashPathLiveStderr.includes("C:/Users") &&
+      !forwardSlashPathLiveStderr.includes("file:///") &&
+      !forwardSlashPathLiveStderr.includes("report.json") &&
+      !forwardSlashPathLiveStderr.includes("trace.txt"),
+    "expected installed live console stderr redaction to omit Windows forward-slash local paths"
+  );
   const encodedLiveStderr = redactLiveConsoleText(
     "Debug URL: https://www.zepto.com/search?query=Amul%20Milk%20500ml&fallback=Amul+Milk+500ml",
     ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"]
@@ -1648,6 +1660,20 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
           !result.stderr.includes("98765+43210"),
           "expected installed JSON parser error to omit plus-encoded phone value"
         );
+      }
+    },
+    {
+      name: "installed json forward-slash path unknown option redaction",
+      args: ["--json", "status", "--path=C:/Users/parth/.zepo-live/report.json"],
+      expect: (result) => {
+        expectJsonError(
+          result,
+          "invalid_input",
+          "error: unknown option '--path=<redacted-local-path>'",
+          "invalid_input"
+        );
+        assert(!result.stderr.includes("C:/Users"), "expected installed JSON parser error to omit Windows path");
+        assert(!result.stderr.includes("report.json"), "expected installed JSON parser error to omit path tail");
       }
     },
     {

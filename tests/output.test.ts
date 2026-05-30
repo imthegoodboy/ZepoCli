@@ -158,8 +158,9 @@ describe("command JSON output", () => {
       type: "invalid_input",
       code: "invalid_input",
       message:
-        `Order #ZEP1234 OTP 123456 for +91 98765 43210 failed with ${fakeNpmToken} near C:\\Users\\parth\\Desktop\\ZepoCli\\.zepo-live\\report.json`,
-      hint: "Inspect order ZEP9999 in Zepto; do not paste card 4111 1111 1111 1111 or abc@upi into CLI logs.",
+        `Order #ZEP1234 OTP 123456 for +91 98765 43210 failed with ${fakeNpmToken} near C:\\Users\\parth\\Desktop\\ZepoCli\\.zepo-live\\report.json and C:/Users/parth/Desktop/ZepoCli/.zepo-live/report.json`,
+      hint:
+        "Inspect order ZEP9999 in Zepto; do not paste card 4111 1111 1111 1111, abc@upi, or file:///C:/Users/parth/.zepo-live/trace.txt into CLI logs.",
       exitCode: 2,
       retryAfterMs: 1500,
       issues: [
@@ -200,6 +201,7 @@ describe("command JSON output", () => {
     expect(serialized).not.toContain("4111");
     expect(serialized).not.toContain("abc@upi");
     expect(serialized).not.toContain("Users");
+    expect(serialized).not.toContain("file:///");
     expect(serialized).not.toContain("local-report.json");
     expect(serialized).not.toContain("ZEP1234");
     expect(serialized).not.toContain("ZEP9999");
@@ -212,7 +214,7 @@ describe("command JSON output", () => {
       type: "unexpected_error",
       code: "unexpected_error",
       message:
-        "Request failed at https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%5CUsers%5Cparth%5C.zepo-live%5Ctrace.txt",
+        "Request failed at https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt",
       exitCode: 1
     });
 
@@ -232,7 +234,7 @@ describe("command JSON output", () => {
     expect(serialized).not.toContain("abc%40upi");
     expect(serialized).not.toContain("raw-token-123");
     expect(serialized).not.toContain("abc.def.ghi");
-    expect(serialized).not.toContain("C%3A%5CUsers");
+    expect(serialized).not.toContain("C%3A%2FUsers");
   });
 
   it("omits internal automation ids from product JSON output", () => {

@@ -268,6 +268,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("installed global json no session nested address list");
     expect(verifier).toContain("installed json encoded sensitive unknown option redaction");
     expect(verifier).toContain("expected installed JSON parser error to omit encoded phone value");
+    expect(verifier).toContain("installed json forward-slash path unknown option redaction");
+    expect(verifier).toContain("expected installed JSON parser error to omit Windows path");
     expect(verifier).toContain("installed json npm token unknown option redaction");
     expect(verifier).toContain("expected installed JSON parser error to omit npm-token-shaped value");
     expect(verifier).toContain("expected installed redacted phone hint");
@@ -289,6 +291,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live console command redaction to omit workflow queries");
     expect(verifier).toContain("expected installed live report command redaction to handle global timeout before workflow commands");
     expect(verifier).toContain("expected installed live console stderr redaction to omit workflow queries and local paths");
+    expect(verifier).toContain("expected installed live console stderr redaction to omit Windows forward-slash local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded workflow queries");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded sensitive values");
     expect(verifier).toContain("expected installed live console stderr redaction to omit npm-token-shaped values");
@@ -305,6 +308,8 @@ describe("package CLI contract", () => {
     expect(cliVerifier).toContain("expected redacted phone hint");
     expect(cliVerifier).toContain("expected JSON phone error to omit raw phone-shaped value");
     expect(cliVerifier).toContain("expected JSON parser error to omit encoded phone value");
+    expect(cliVerifier).toContain("json forward-slash path unknown option redaction");
+    expect(cliVerifier).toContain("expected JSON parser error to omit Windows forward-slash path");
     expect(cliVerifier).toContain("json npm token unknown option redaction");
     expect(cliVerifier).toContain("expected JSON parser error to omit npm-token-shaped value");
     expect(cliVerifier).toContain("expected JSON runtime setup error to omit raw data-dir path");

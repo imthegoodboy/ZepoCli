@@ -1528,7 +1528,7 @@ describe("live verification runner", () => {
 
   it("redacts URL-encoded sensitive values from live report errors and console stderr", () => {
     const encodedUrl =
-      "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%5CUsers%5Cparth%5C.zepo-live%5Ctrace.txt";
+      "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt";
 
     expect(
       summarizeCommandError(
@@ -1559,12 +1559,12 @@ describe("live verification runner", () => {
     expect(redacted).not.toContain("abc%40upi");
     expect(redacted).not.toContain("raw-token-123");
     expect(redacted).not.toContain("abc.def.ghi");
-    expect(redacted).not.toContain("C%3A%5CUsers");
+    expect(redacted).not.toContain("C%3A%2FUsers");
   });
 
   it("redacts workflow inputs and sensitive values from streamed live console stderr", () => {
     const text =
-      'Could not find a Zepto product matching "Amul Milk 500ml" near C:\\Users\\parth\\.zepo-live\\trace.txt. Order #ZEP1234 failed for +91 98765 43210 and card 4111 1111 1111 1111.';
+      'Could not find a Zepto product matching "Amul Milk 500ml" near C:\\Users\\parth\\.zepo-live\\trace.txt and C:/Users/parth/.zepo-live/trace.txt. Order #ZEP1234 failed for +91 98765 43210 and card 4111 1111 1111 1111.';
     const redacted = redactLiveConsoleText(text, [
       "--data-dir",
       ".zepo-live",
@@ -1646,8 +1646,9 @@ describe("live verification runner", () => {
         {
           code: "checkout_handoff_unverified",
           message:
-            "Payment handle user.name@okaxis was visible near C:\\Users\\parth\\.zepo-live\\trace.txt and .\\.zepo-live\\debug.html.",
-          hint: "Retry after inspecting /home/parth/.zepo-live/report.json or .zepo-live/live-verification-report.json."
+            "Payment handle user.name@okaxis was visible near C:\\Users\\parth\\.zepo-live\\trace.txt, C:/Users/parth/.zepo-live/trace.txt, and .\\.zepo-live\\debug.html.",
+          hint:
+            "Retry after inspecting /home/parth/.zepo-live/report.json, file:///C:/Users/parth/.zepo-live/report.json, or .zepo-live/live-verification-report.json."
         },
         "",
         []
@@ -1655,8 +1656,8 @@ describe("live verification runner", () => {
     ).toEqual({
       code: "checkout_handoff_unverified",
       message:
-        "Payment handle <redacted-payment-handle> was visible near <redacted-local-path> and <redacted-local-path>.",
-      hint: "Retry after inspecting <redacted-local-path> or <redacted-local-path>."
+        "Payment handle <redacted-payment-handle> was visible near <redacted-local-path>, <redacted-local-path>, and <redacted-local-path>.",
+      hint: "Retry after inspecting <redacted-local-path>, <redacted-local-path>, or <redacted-local-path>."
     });
   });
 

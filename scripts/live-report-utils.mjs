@@ -868,10 +868,11 @@ function redactGenericPlainSensitiveText(value) {
     .replace(/\bnpm_[A-Za-z0-9]{20,}\b/g, "<redacted-npm-token>")
     .replace(/\b\d(?:[ -]?\d){12,18}\b/g, "<redacted-payment-number>")
     .replace(/(?<![\w.-])[\w.-]{2,}@[A-Za-z][A-Za-z0-9.-]{1,}(?![\w.-])/g, "<redacted-payment-handle>")
-    .replace(/[A-Za-z]:\\[^\r\n"'<>]+/g, redactLocalPathMatch)
-    .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"'<>]+/g, redactLocalPathMatch)
-    .replace(/(?<![\w.-])\.{1,2}[\\/][^\r\n"'<>]+/g, redactLocalPathMatch)
-    .replace(/(?<![\w.-])\.zepo-live[\\/][^\r\n"'<>]+/g, redactLocalPathMatch);
+    .replace(/file:\/\/\/[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]+/gi, redactLocalPathMatch)
+    .replace(/(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]+/g, redactLocalPathMatch)
+    .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"',;<>|]+/g, redactLocalPathMatch)
+    .replace(/(?<![\w.-])\.{1,2}[\\/][^\r\n"',;<>|]+/g, redactLocalPathMatch)
+    .replace(/(?<![\w.-])\.zepo-live[\\/][^\r\n"',;<>|]+/g, redactLocalPathMatch);
 }
 
 function redactEncodedSensitiveParameterValues(value) {

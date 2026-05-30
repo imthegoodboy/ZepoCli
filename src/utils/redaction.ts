@@ -17,8 +17,9 @@ function redactSensitivePlainText(value: string): string {
         match.replace(/\D/g, "").length >= 13 ? "<redacted-payment-number>" : match
       )
       .replace(/\b[A-Za-z0-9._%+-]{2,}@[A-Za-z][A-Za-z0-9.-]{1,}\b/g, "<redacted-payment-handle>")
-      .replace(/\b[A-Za-z]:\\[^\r\n"'<>|]*/g, redactLocalPathMatch)
-      .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt|opt|root)\/[^\r\n"'<>]*/g, redactLocalPathMatch)
+      .replace(/file:\/\/\/[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*/gi, redactLocalPathMatch)
+      .replace(/(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*/g, redactLocalPathMatch)
+      .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt|opt|root)\/[^\r\n"',;<>|]*/g, redactLocalPathMatch)
   );
 }
 
@@ -97,7 +98,7 @@ function redactSensitiveError(error: Error): Error {
 }
 
 function redactRelativeLocalPaths(value: string): string {
-  return value.replace(/(^|[\s("'`])((?:\.{1,2}|\.zepo-live)[\\/][^\r\n"'<>]*)/g, (_match, prefix: string, path: string) => {
+  return value.replace(/(^|[\s("'`])((?:\.{1,2}|\.zepo-live)[\\/][^\r\n"',;<>|]*)/g, (_match, prefix: string, path: string) => {
     return `${prefix}${redactLocalPathMatch(path)}`;
   });
 }
