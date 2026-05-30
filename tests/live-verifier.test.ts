@@ -58,6 +58,7 @@ describe("live verification runner", () => {
     });
 
     expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Usage: npm --silent run verify:live");
     expect(result.stdout).toContain("human-controlled live verification");
     expect(result.stdout).toContain("--checkout");
     expect(result.stdout).toContain("--remove <query>");
@@ -80,6 +81,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("command_failed");
     expect(result.stdout).toContain("--step-timeout <ms>");
     expect(result.stdout).toContain("npm --silent run verify:live");
+    expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
 
   it("waits for timed-out live commands to close before recording timeout failures", () => {

@@ -184,7 +184,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "including URL/query-string encoded forms of those values",
     "Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL-parameter, and local-path rules",
-    "npm run verify:live -- --data-dir ./.zepo-live",
+    "npm --silent run verify:live -- --data-dir ./.zepo-live",
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
@@ -309,6 +309,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
 
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
+  assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
   assert(result.stdout.includes("human-controlled live verification"), "expected installed verify:live help output");
   assert(result.stdout.includes("--reorder-last"), "expected installed verify:live reorder option");
   assert(result.stdout.includes("--choose-add"), "expected installed verify:live choose-add option");

@@ -234,6 +234,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("--choose-add can only be used with --add.");
     expect(verifier).toContain("expected installed verify:live compatible phone to pass phone parsing");
     expect(verifier).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
+    expect(verifier).toContain("expected installed verify:live usage to use silent npm");
     expect(verifier).toContain("expected installed verify:live step-timeout option");
     expect(verifier).toContain("expected installed verify:live command-timeout code guidance");
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");

@@ -40,7 +40,9 @@ validateOptions(options);
 
 if (!options.dataDir) {
   console.error("Missing required --data-dir <path>.");
-  console.error("Use a dedicated persistent data directory, for example: npm run verify:live -- --data-dir ./.zepo-live --login");
+  console.error(
+    "Use a dedicated persistent data directory, for example: npm --silent run verify:live -- --data-dir ./.zepo-live --login"
+  );
   process.exit(1);
 }
 
@@ -753,7 +755,7 @@ function validateOptions(parsed) {
 }
 
 function printHelp() {
-  console.log(`Usage: npm run verify:live -- --data-dir <path> [options]
+  console.log(`Usage: npm --silent run verify:live -- --data-dir <path> [options]
 
 Runs an opt-in human-controlled live verification sequence against the compiled zepo CLI.
 
@@ -782,13 +784,13 @@ Options:
 
 Example:
   npm run build
-  npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 
-When terminal logs may be shared, prefer npm --silent run verify:live -- ... so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
+The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
-  npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
-  npm run verify:live -- --data-dir ./.zepo-live --login --clear --cart
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
 The report includes top-level requested, attempted, coverage, and missingCoverage booleans so partial runs cannot be mistaken for full verification.
 The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
