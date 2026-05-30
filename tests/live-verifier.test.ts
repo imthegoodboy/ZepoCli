@@ -420,6 +420,35 @@ describe("live verification runner", () => {
     expect(missingResult.accepted).toBe(false);
     expect(missingResult.issues.map((issue) => issue.code)).toContain("live_report_missing_coverage");
     expect(missingResult.issues.map((issue) => issue.code)).toContain("live_report_requested_coverage_missing");
+    expect(missingResult.issues.map((issue) => issue.code)).toContain("live_report_coverage_mismatch");
+
+    const inconsistentAttempted = acceptedLiveReport();
+    inconsistentAttempted.attempted = {
+      ...inconsistentAttempted.attempted,
+      search: false
+    };
+
+    expect(
+      validateLiveReportAcceptance(inconsistentAttempted, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_attempted_mismatch");
+
+    const inconsistentCoverage = acceptedLiveReport();
+    inconsistentCoverage.coverage = {
+      ...inconsistentCoverage.coverage,
+      search: false
+    };
+    inconsistentCoverage.missingCoverage = summarizeLiveReportMissingCoverage(
+      inconsistentCoverage.requested,
+      inconsistentCoverage.coverage
+    );
+
+    expect(
+      validateLiveReportAcceptance(inconsistentCoverage, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_coverage_mismatch");
 
     const weakDoctor = acceptedLiveReport({
       steps: [

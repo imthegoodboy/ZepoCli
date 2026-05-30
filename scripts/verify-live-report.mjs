@@ -88,6 +88,7 @@ Validates that a human-controlled verify:live report is acceptable evidence for 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
 - package version matches
 - ok is true
+- attempted and coverage summaries match the steps array
 - requested capabilities have passing coverage
 - missingCoverage has no true values
 - required step summaries are present for browser preflight, live session, checkout handoff, and requested workflows

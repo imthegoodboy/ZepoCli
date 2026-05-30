@@ -265,6 +265,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
 
   const issues = [];
   const requested = report.requested;
+  const attempted = report.attempted;
   const coverage = report.coverage;
   const missingCoverage = report.missingCoverage;
   const steps = Array.isArray(report.steps) ? report.steps : undefined;
@@ -283,12 +284,14 @@ export function validateLiveReportAcceptance(report, options = {}) {
     });
   }
 
-  if (!isObject(requested) || !isObject(coverage) || !isObject(missingCoverage)) {
+  if (!isObject(requested) || !isObject(attempted) || !isObject(coverage) || !isObject(missingCoverage)) {
     issues.push({
       code: "live_report_contract_mismatch",
-      message: "Live report must include requested, coverage, and missingCoverage objects."
+      message: "Live report must include requested, attempted, coverage, and missingCoverage objects."
     });
-  } else {
+  }
+
+  if (isObject(requested) && isObject(coverage) && isObject(missingCoverage)) {
     const expectedMissingCoverage = summarizeLiveReportMissingCoverage(requested, coverage);
     for (const key of Object.keys(expectedMissingCoverage)) {
       if (missingCoverage[key] !== expectedMissingCoverage[key]) {
@@ -338,6 +341,30 @@ export function validateLiveReportAcceptance(report, options = {}) {
         issues.push({
           code: "live_report_step_contract_mismatch",
           message: `Live report ${requirement.step} summary does not satisfy acceptance requirements.`
+        });
+      }
+    }
+  }
+
+  if (steps && isObject(attempted)) {
+    const expectedAttempted = summarizeLiveReportAttempts(steps);
+    for (const key of Object.keys(expectedAttempted)) {
+      if (attempted[key] !== expectedAttempted[key]) {
+        issues.push({
+          code: "live_report_attempted_mismatch",
+          message: `Live report attempted.${key} does not match the steps array.`
+        });
+      }
+    }
+  }
+
+  if (steps && isObject(coverage)) {
+    const expectedCoverage = summarizeLiveReportCoverage(steps);
+    for (const key of Object.keys(expectedCoverage)) {
+      if (coverage[key] !== expectedCoverage[key]) {
+        issues.push({
+          code: "live_report_coverage_mismatch",
+          message: `Live report coverage.${key} does not match the steps array.`
         });
       }
     }
