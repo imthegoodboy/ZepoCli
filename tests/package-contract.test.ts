@@ -218,6 +218,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Safe-click checks inspect visible text");
     expect(verifier).toContain("Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token URL parameters, and local-path values");
+    expect(verifier).toContain("npm-token-shaped values");
     expect(verifier).toContain("including URL/query-string encoded forms of those values");
     expect(verifier).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token URL-parameter, and local-path rules");
@@ -237,6 +238,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live command-timeout code guidance");
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");
     expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
+    expect(verifier).toContain("expected installed verify:live npm-token redaction guidance");
     expect(verifier).toContain("function installedVerifyLiveArgs");
     expect(verifier).toContain('"--silent", "run", "--prefix", packageDir, "verify:live"');
     expect(verifier).toContain("expected installed verify:live invalid phone output to omit raw phone input");
@@ -262,6 +264,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("installed global json no session nested address list");
     expect(verifier).toContain("installed json encoded sensitive unknown option redaction");
     expect(verifier).toContain("expected installed JSON parser error to omit encoded phone value");
+    expect(verifier).toContain("installed json npm token unknown option redaction");
+    expect(verifier).toContain("expected installed JSON parser error to omit npm-token-shaped value");
     expect(verifier).toContain("expected installed redacted phone hint");
     expect(verifier).toContain("expected installed JSON phone error to omit raw phone-shaped value");
     expect(verifier).toContain("expected runtime error to omit raw data-dir path");
@@ -283,6 +287,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live console stderr redaction to omit workflow queries and local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded workflow queries");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded sensitive values");
+    expect(verifier).toContain("expected installed live console stderr redaction to omit npm-token-shaped values");
     expect(verifier).toContain("expected installed live console stderr stream redaction to handle split workflow queries");
     expect(verifier).toContain("live_verification_incomplete");
   });
@@ -296,6 +301,8 @@ describe("package CLI contract", () => {
     expect(cliVerifier).toContain("expected redacted phone hint");
     expect(cliVerifier).toContain("expected JSON phone error to omit raw phone-shaped value");
     expect(cliVerifier).toContain("expected JSON parser error to omit encoded phone value");
+    expect(cliVerifier).toContain("json npm token unknown option redaction");
+    expect(cliVerifier).toContain("expected JSON parser error to omit npm-token-shaped value");
     expect(cliVerifier).toContain("expected JSON runtime setup error to omit raw data-dir path");
     expect(cliVerifier).toContain("human runtime setup redaction");
     expect(cliVerifier).toContain("expected human runtime setup error to omit raw data-dir path");
@@ -305,6 +312,7 @@ describe("package CLI contract", () => {
     expect(runtime).toContain("redactSensitiveValue");
     expect(redaction).toContain("redactSensitiveError");
     expect(redaction).toContain("redactEncodedSensitiveParameterValues");
+    expect(redaction).toContain("<redacted-npm-token>");
     expect(runtime).toContain("formatters");
     expect(runtime).toContain("hooks");
     expect(runtime).toContain("logMethod");

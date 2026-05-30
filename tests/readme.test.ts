@@ -61,6 +61,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("auth/session/token URL parameters, and local-path values");
     expect(readme).toContain("auth/session/token URL parameters");
     expect(readme).toContain("including URL/query-string encoded forms of those values");
+    expect(readme).toContain("npm-token-shaped values");
     expect(readme).toContain("Use ZepoCli only where permitted by Zepto and applicable law");
     expect(readme).toContain("https://www.zepto.com/s/terms-of-service");
     expect(readme).toContain("Terms of Use version 1.4");
@@ -120,6 +121,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("auth/session/token URL-parameter, and local-path rules");
     expect(readme).toContain("auth/session/token URL-parameter");
     expect(readme).toContain("including URL/query-string encoded forms of those values");
+    expect(readme).toContain("They also redact npm-token-shaped values");
     expect(readme).toContain("It refuses to run while another ZepoCli browser command owns the current data directory lock");
     expect(readme).toContain("configured data directory is blank");
     expect(readme).toContain('"code": "no_confirmed_session"');
@@ -143,7 +145,7 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("live-verification-report.json` with the package `version`");
     expect(readme).toContain(
-      "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, and search/add/remove/address-use query text"
+      "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, search/add/remove/address-use query text, and npm-token-shaped values"
     );
     expect(readme).toContain("prefer `npm --silent run verify:live -- ...`");
     expect(readme).toContain("interrupted with Ctrl+C/SIGTERM");

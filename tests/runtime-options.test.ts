@@ -98,12 +98,13 @@ describe("global runtime options", () => {
   it("redacts sensitive-looking values from persistent runtime logs", async () => {
     const dataDir = mkdtempSync(join(tmpdir(), "zepo-runtime-log-redaction-"));
     const runtime = createRuntime({ dataDir, debug: true });
+    const fakeNpmToken = `npm_${"A".repeat(24)}`;
 
     try {
       await waitForLogDestinationReady(runtime.logDestination);
       runtime.logger.error(
         {
-          error: "Order #ZEP1234 OTP 123456 failed for +91-98765-43210 near C:\\Users\\parth\\.zepo-live\\trace.txt",
+          error: `Order #ZEP1234 OTP 123456 failed for +91-98765-43210 with ${fakeNpmToken} near C:\\Users\\parth\\.zepo-live\\trace.txt`,
           browserProfileDir: runtime.paths.browserProfileDir,
           nested: {
             payment: "card 4111 1111 1111 1111 and handle abc@upi",
@@ -143,12 +144,14 @@ describe("global runtime options", () => {
       expect(serialized).toContain("<redacted-phone>");
       expect(serialized).toContain("<redacted-payment-number>");
       expect(serialized).toContain("<redacted-payment-handle>");
+      expect(serialized).toContain("<redacted-npm-token>");
       expect(serialized).toContain("<redacted-local-path>");
       expect(serialized).not.toContain("123456");
       expect(serialized).not.toContain("654321");
       expect(serialized).not.toContain("98765-43210");
       expect(serialized).not.toContain("98765 43210");
       expect(serialized).not.toContain("09876543210");
+      expect(serialized).not.toContain(fakeNpmToken);
       expect(serialized).not.toContain("4111");
       expect(serialized).not.toContain("5555");
       expect(serialized).not.toContain("abc@upi");

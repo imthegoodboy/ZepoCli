@@ -9,6 +9,7 @@ const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "u
 const npmExecPath = process.env.npm_execpath;
 const INSTALLED_CLI_COMMAND_TIMEOUT_MS = 120_000;
 const NPM_COMMAND_TIMEOUT_MS = 180_000;
+const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
 
 const tempRoot = mkdtempSync(join(tmpdir(), "zepo-package-smoke-"));
 const packDir = join(tempRoot, "pack");
@@ -179,6 +180,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "passwords and payment instrument details as sensitive personal information",
     "Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL parameters, and local-path values",
+    "npm-token-shaped values",
     "including URL/query-string encoded forms of those values",
     "Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL-parameter, and local-path rules",
@@ -327,6 +329,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live help to explain report summary booleans"
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
+  assert(result.stdout.includes("npm-token-shaped values"), "expected installed verify:live npm-token redaction guidance");
   assert(result.stdout.includes("Stable report failure codes include"), "expected installed verify:live stable-code guidance");
   assert(
     result.stdout.includes("live_verification_incomplete"),
@@ -795,6 +798,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !encodedSensitiveLiveStderr.includes("abc.def.ghi") &&
       !encodedSensitiveLiveStderr.includes("C%3A%5CUsers"),
     "expected installed live console stderr redaction to omit URL-encoded sensitive values"
+  );
+  const fakeNpmToken = `npm_${"A".repeat(24)}`;
+  const npmTokenLiveStderr = redactLiveConsoleText(`Live stderr included ${fakeNpmToken}.`, []);
+  assert(
+    npmTokenLiveStderr.includes("<redacted-npm-token>") && !npmTokenLiveStderr.includes(fakeNpmToken),
+    "expected installed live console stderr redaction to omit npm-token-shaped values"
   );
   const streamedLiveStderrChunks = [];
   const streamedLiveStderrRedactor = createLiveConsoleTextRedactor(
@@ -1586,6 +1595,22 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(
           !result.stderr.includes("98765+43210"),
           "expected installed JSON parser error to omit plus-encoded phone value"
+        );
+      }
+    },
+    {
+      name: "installed json npm token unknown option redaction",
+      args: ["--json", "status", `--bad-${FAKE_NPM_TOKEN}`],
+      expect: (result) => {
+        expectJsonError(
+          result,
+          "invalid_input",
+          "error: unknown option '--bad-<redacted-npm-token>'",
+          "invalid_input"
+        );
+        assert(
+          !result.stderr.includes(FAKE_NPM_TOKEN),
+          "expected installed JSON parser error to omit npm-token-shaped value"
         );
       }
     },

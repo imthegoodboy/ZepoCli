@@ -865,7 +865,8 @@ function redactGenericPlainSensitiveText(value) {
       "$1<redacted-verification-code>"
     )
     .replace(/(?<!\d)(?:\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)/g, "<redacted-phone>")
-    .replace(/\b(?:\d[ -]?){13,19}\b/g, "<redacted-payment-number>")
+    .replace(/\bnpm_[A-Za-z0-9]{20,}\b/g, "<redacted-npm-token>")
+    .replace(/\b\d(?:[ -]?\d){12,18}\b/g, "<redacted-payment-number>")
     .replace(/(?<![\w.-])[\w.-]{2,}@[A-Za-z][A-Za-z0-9.-]{1,}(?![\w.-])/g, "<redacted-payment-handle>")
     .replace(/[A-Za-z]:\\[^\r\n"'<>]+/g, redactLocalPathMatch)
     .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"'<>]+/g, redactLocalPathMatch)

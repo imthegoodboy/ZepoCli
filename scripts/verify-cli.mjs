@@ -8,6 +8,7 @@ const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
 const CLI_COMMAND_TIMEOUT_MS = 120_000;
+const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
 const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "dist", "commands", "checkout.js")).href);
 const { HEADLESS_BROWSER_RUN_HISTORY_META_KEY, LAST_ACCESS_CHALLENGE_META_KEY } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "browser.js")).href
@@ -540,6 +541,14 @@ const checks = [
       expectJsonError(result, "invalid_input", "error: unknown option '--phone=<redacted-phone>'", "invalid_input");
       assert(!result.stderr.includes("%2B91"), "expected JSON parser error to omit encoded phone value");
       assert(!result.stderr.includes("98765+43210"), "expected JSON parser error to omit plus-encoded phone value");
+    }
+  },
+  {
+    name: "json npm token unknown option redaction",
+    args: ["--json", "status", `--bad-${FAKE_NPM_TOKEN}`],
+    expect: (result) => {
+      expectJsonError(result, "invalid_input", "error: unknown option '--bad-<redacted-npm-token>'", "invalid_input");
+      assert(!result.stderr.includes(FAKE_NPM_TOKEN), "expected JSON parser error to omit npm-token-shaped value");
     }
   },
   {
