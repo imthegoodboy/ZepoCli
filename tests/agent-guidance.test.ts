@@ -61,8 +61,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Playwright Chromium launches");
       expect(guidance).toContain("require `browserAutomation.ready === true` and a passing `Playwright Chromium` check");
       expect(guidance).toContain("package `version`");
-      expect(guidance).toContain("top-level `coverage`");
-      expect(guidance).toContain("capabilities that actually passed");
+      expect(guidance).toContain("top-level `attempted` and `coverage`");
+      expect(guidance).toContain("capabilities that ran and actually passed");
       for (const code of [
         "live_doctor_contract_mismatch",
         "live_login_contract_mismatch",
@@ -103,6 +103,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Local gates prove the CLI package shape");
     expect(liveVerifierSkill).toContain("They do not prove a real Zepto account can complete login");
     expect(liveVerifierSkill).toContain("Do not mark the project fully complete until a human-controlled Zepto account exercises the required live workflow");
+    expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");
     expect(liveVerifierSkill).toContain("do not treat omitted or false coverage fields as verified");
     expect(liveVerifierSkill).toContain("npm run check");

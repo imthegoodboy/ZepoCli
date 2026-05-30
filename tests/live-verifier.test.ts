@@ -19,6 +19,7 @@ const {
   redactArgsForLiveReport,
   redactLiveConsoleText,
   summarizeCommandError,
+  summarizeLiveReportAttempts,
   summarizeLiveReportCoverage,
   summarizeLiveRunnerFailure
 } = await import("../scripts/live-report-utils.mjs");
@@ -122,6 +123,7 @@ describe("live verification runner", () => {
 
     expect(script).toContain("version: packageJson.version");
     expect(script).toContain('readFileSync(resolve(rootDir, "package.json"), "utf8")');
+    expect(script).toContain("attempted: summarizeLiveReportAttempts([])");
     expect(script).toContain("coverage: summarizeLiveReportCoverage([])");
     expect(script).toContain("updateReportCoverage()");
   });
@@ -159,6 +161,48 @@ describe("live verification runner", () => {
       checkoutHandoff: true,
       track: true,
       history: false,
+      reorder: true
+    });
+  });
+
+  it("summarizes attempted live report steps separately from passing coverage", () => {
+    expect(
+      summarizeLiveReportAttempts([
+        { name: "doctor", ok: true },
+        { name: "status", ok: true },
+        { name: "login", ok: false },
+        { name: "status live", ok: false },
+        { name: "search", ok: true },
+        { name: "address add", ok: false },
+        { name: "address list", ok: false },
+        { name: "address use", ok: true },
+        { name: "add", ok: false },
+        { name: "cart", ok: false },
+        { name: "remove", ok: true },
+        { name: "clear", ok: false },
+        { name: "checkout", ok: false },
+        { name: "track", ok: true },
+        { name: "history", ok: false },
+        { name: "reorder", ok: false },
+        { name: "unknown", ok: false },
+        undefined
+      ])
+    ).toEqual({
+      browserPreflight: true,
+      localStatus: true,
+      login: true,
+      liveSession: true,
+      search: true,
+      addressAdd: true,
+      addressList: true,
+      addressUse: true,
+      add: true,
+      cart: true,
+      remove: true,
+      clear: true,
+      checkoutHandoff: true,
+      track: true,
+      history: true,
       reorder: true
     });
   });

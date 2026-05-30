@@ -134,7 +134,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
-    expect(readme).toContain("top-level `coverage` object showing which workflow capabilities actually passed");
+    expect(readme).toContain(
+      "top-level `attempted` and `coverage` objects showing which workflow capabilities ran and which actually passed"
+    );
     expect(readme).toContain("`checkoutHandoff`");
     expect(readme).toContain(
       "omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments"
