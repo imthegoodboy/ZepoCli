@@ -11,6 +11,7 @@ import {
   redactArgsForLiveConsole,
   summarizeLiveReportAttempts,
   summarizeLiveReportCoverage,
+  summarizeLiveReportRequests,
   summarizeLiveRunnerFailure
 } from "./live-report-utils.mjs";
 
@@ -55,6 +56,7 @@ const report = {
   reportPath: "<redacted-report-path>",
   note:
     "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.",
+  requested: summarizeLiveReportRequests(options),
   attempted: summarizeLiveReportAttempts([]),
   coverage: summarizeLiveReportCoverage([]),
   steps: []

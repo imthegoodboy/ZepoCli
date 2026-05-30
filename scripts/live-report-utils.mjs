@@ -236,8 +236,60 @@ export function summarizeLiveReportAttempts(steps = []) {
   return summarizeLiveReportStepBooleans(steps, () => true);
 }
 
+export function summarizeLiveReportRequests(options = {}) {
+  const summary = createLiveReportCapabilitySummary();
+  summary.browserPreflight = true;
+  summary.localStatus = true;
+  summary.login = options.login === true;
+  summary.search = hasReadableText(options.search);
+  summary.addressAdd = options.addressAdd === true;
+  summary.addressList = options.addressList === true;
+  summary.addressUse = hasReadableText(options.address);
+  summary.add = hasReadableText(options.add);
+  summary.remove = hasReadableText(options.remove);
+  summary.clear = options.clear === true;
+  summary.checkoutHandoff = options.checkout === true;
+  summary.track = options.track === true;
+  summary.history = options.history === true;
+  summary.reorder = options.reorderLast === true;
+  summary.cart = options.cart === true || summary.add || summary.remove || summary.clear || summary.reorder;
+  summary.liveSession =
+    summary.login ||
+    summary.search ||
+    summary.addressAdd ||
+    summary.addressList ||
+    summary.addressUse ||
+    summary.add ||
+    summary.cart ||
+    summary.remove ||
+    summary.clear ||
+    summary.checkoutHandoff ||
+    summary.track ||
+    summary.history ||
+    summary.reorder;
+
+  return summary;
+}
+
 function summarizeLiveReportStepBooleans(steps, includeStep) {
-  const summary = {
+  const summary = createLiveReportCapabilitySummary();
+
+  for (const step of steps) {
+    if (!isObject(step) || !includeStep(step)) {
+      continue;
+    }
+
+    const key = LIVE_REPORT_CAPABILITY_BY_STEP_NAME.get(step.name);
+    if (key) {
+      summary[key] = true;
+    }
+  }
+
+  return summary;
+}
+
+function createLiveReportCapabilitySummary() {
+  return {
     browserPreflight: false,
     localStatus: false,
     login: false,
@@ -255,19 +307,6 @@ function summarizeLiveReportStepBooleans(steps, includeStep) {
     history: false,
     reorder: false
   };
-
-  for (const step of steps) {
-    if (!isObject(step) || !includeStep(step)) {
-      continue;
-    }
-
-    const key = LIVE_REPORT_CAPABILITY_BY_STEP_NAME.get(step.name);
-    if (key) {
-      summary[key] = true;
-    }
-  }
-
-  return summary;
 }
 
 const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
