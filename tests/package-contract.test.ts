@@ -255,4 +255,19 @@ describe("package CLI contract", () => {
     expect(workflow).toContain("npm run check");
     expect(workflow).not.toContain("verify:live");
   });
+
+  it("keeps npm release publishing guarded by the release gate", () => {
+    const workflow = readFileSync(resolve(rootDir, ".github", "workflows", "release.yml"), "utf8");
+
+    expect(workflow).toContain("tags:");
+    expect(workflow).toContain('"v*"');
+    expect(workflow).toContain("id-token: write");
+    expect(workflow).toContain("node-version: 20.19");
+    expect(workflow).toContain("registry-url: https://registry.npmjs.org");
+    expect(workflow).toContain("npx playwright install --with-deps chromium");
+    expect(workflow).toContain("npm run check");
+    expect(workflow).toContain("npm publish --provenance --access public");
+    expect(workflow).toContain("NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
+    expect(workflow).not.toContain("verify:live");
+  });
 });

@@ -174,4 +174,15 @@ describe("README package guidance", () => {
     }
     expect(readme).toContain("not part of `npm run check` or CI");
   });
+
+  it("documents guarded npm release publishing", () => {
+    expect(readme).toContain("## Release");
+    expect(readme).toContain("Release publishing is tag-driven");
+    expect(readme).toContain("npm run check");
+    expect(readme).toContain("git tag v0.1.0");
+    expect(readme).toContain("git push origin v0.1.0");
+    expect(readme).toContain("npm publish --provenance --access public");
+    expect(readme).toContain("NPM_TOKEN");
+    expect(readme).toContain("It does not run `verify:live`");
+  });
 });

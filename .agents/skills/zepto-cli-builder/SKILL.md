@@ -147,6 +147,8 @@ Keep package verification checking that `package.json` maps `zepo` to `./dist/in
 
 Keep `verify:cli` and `verify:package` checking both `doctor --skip-browser --json` and normal `doctor --json` so release gates prove Playwright Chromium launches for the compiled and installed CLI.
 
+Keep `.github/workflows/release.yml` tag-driven, using Node.js 20.19, installing Playwright Chromium, running `npm run check`, then publishing with `npm publish --provenance --access public` and `NPM_TOKEN`. Do not add `verify:live` to release automation; live Zepto account verification remains manual and human-controlled.
+
 Use `npm run verify:live -- --data-dir <dedicated-dir> ...` only for opt-in human-account verification. Keep it out of CI and normal `npm run check` because it requires a real Zepto account, visible browser handoffs, delivery context, cart mutation choices, and optional Zepto-side checkout/payment decisions. It can cover `zepo add --choose` with `--add <query> --choose-add --cart`, and cart cleanup with `--remove <query>` and `--clear` when the test cart can be safely changed. Use `--step-timeout <ms>` only when a human-controlled Zepto step legitimately needs more than the default per-command timeout. Its report must include the package `version`; the report, live runner command echoes, and final report-path line must stay sanitized and omit raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, and unredacted workflow query arguments.
 
 When terminal logs may be shared, prefer `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.

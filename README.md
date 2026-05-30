@@ -244,6 +244,18 @@ npm run verify:package
 
 `npm run check` builds, runs tests, verifies compiled CLI smoke behavior including the executable entry contract, runs both `doctor --skip-browser --json` and normal `doctor --json` browser-launch checks, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary through the same doctor checks, checks `node dist/index.js --help`, runs `npm audit --omit=dev`, and runs `npm pack --dry-run`.
 
+## Release
+
+Release publishing is tag-driven. Before creating a release tag, run the local gate and keep issue #1 open unless a fresh human-controlled `verify:live` report proves the Zepto account workflow in the current website UI.
+
+```bash
+npm run check
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The GitHub release workflow runs `npm ci`, installs Playwright Chromium, runs `npm run check`, then publishes the package with `npm publish --provenance --access public` using `NPM_TOKEN`. It does not run `verify:live`; that remains a manual human-account gate because it can require OTP, location, cart mutation, checkout handoff, and Zepto-side payment decisions.
+
 For real human-account verification, use the opt-in live runner after building:
 
 ```bash
