@@ -158,12 +158,14 @@ describe("package CLI contract", () => {
   it("exposes audit verification and keeps live verification opt-in", () => {
     expect(packageJson.scripts?.["verify:audit"]).toBe("npm audit --omit=dev");
     expect(packageJson.scripts?.["verify:live"]).toBe("node scripts/verify-live-flow.mjs");
+    expect(packageJson.scripts?.["verify:live:report"]).toBe("node scripts/verify-live-report.mjs");
     expect(packageJson.files).toContain("README.md");
     expect(packageJson.files).toContain("LICENSE");
     expect(packageJson.files).toContain("scripts/clean-dist.mjs");
     expect(packageJson.files).toContain("scripts/normalize-cli-entry.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
+    expect(packageJson.files).toContain("scripts/verify-live-report.mjs");
     expect(packageJson.files).toContain("scripts/verify-secrets.mjs");
     expect(packageJson.files).toContain(".env.example");
     expect(packageJson.files).toContain(".npmrc.example");
@@ -267,6 +269,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live requested-checkout report to mark checkout scope requested");
     expect(verifier).toContain("expected installed verify:live requested-checkout report to mark requested checkout coverage missing");
     expect(verifier).toContain("pass installed verify live requested checkout missing coverage");
+    expect(verifier).toContain("expected installed verify:live:report package script");
+    expect(verifier).toContain("expected installed live report acceptance validator");
+    expect(verifier).toContain("pass installed live report acceptance validator");
     expect(verifier).toContain("installed status malformed stale browser lock json");
     expect(verifier).toContain("expected installed stale malformed lock not to block automation");
     expect(verifier).toContain("installed global json no session nested address list");

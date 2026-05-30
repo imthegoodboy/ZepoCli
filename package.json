@@ -12,6 +12,7 @@
     "scripts/normalize-cli-entry.mjs",
     "scripts/live-report-utils.mjs",
     "scripts/verify-live-flow.mjs",
+    "scripts/verify-live-report.mjs",
     "scripts/verify-secrets.mjs",
     ".env.example",
     ".npmrc.example",
@@ -27,6 +28,7 @@
     "verify:secrets": "node scripts/verify-secrets.mjs",
     "verify:audit": "npm audit --omit=dev",
     "verify:live": "node scripts/verify-live-flow.mjs",
+    "verify:live:report": "node scripts/verify-live-report.mjs",
     "check": "npm run verify:secrets && npm run build && npm test && npm run verify:cli && npm run verify:package && node dist/index.js --help && npm run verify:audit && npm pack --dry-run",
     "prepack": "npm run build",
     "prepare:browsers": "playwright install chromium"

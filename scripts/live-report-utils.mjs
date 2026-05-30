@@ -250,6 +250,105 @@ export function hasLiveReportMissingCoverage(missingCoverage = {}) {
   return Object.values(missingCoverage).some((value) => value === true);
 }
 
+export function validateLiveReportAcceptance(report, options = {}) {
+  if (!isObject(report)) {
+    return {
+      accepted: false,
+      issues: [
+        {
+          code: "live_report_invalid",
+          message: "Live report JSON must be an object."
+        }
+      ]
+    };
+  }
+
+  const issues = [];
+  const requested = report.requested;
+  const coverage = report.coverage;
+  const missingCoverage = report.missingCoverage;
+  const steps = Array.isArray(report.steps) ? report.steps : undefined;
+
+  if (report.ok !== true) {
+    issues.push({
+      code: "live_report_not_ok",
+      message: "Live report ok must be true."
+    });
+  }
+
+  if (hasReadableText(options.expectedVersion) && report.version !== options.expectedVersion) {
+    issues.push({
+      code: "live_report_version_mismatch",
+      message: "Live report version does not match the installed package version."
+    });
+  }
+
+  if (!isObject(requested) || !isObject(coverage) || !isObject(missingCoverage)) {
+    issues.push({
+      code: "live_report_contract_mismatch",
+      message: "Live report must include requested, coverage, and missingCoverage objects."
+    });
+  } else {
+    const expectedMissingCoverage = summarizeLiveReportMissingCoverage(requested, coverage);
+    for (const key of Object.keys(expectedMissingCoverage)) {
+      if (missingCoverage[key] !== expectedMissingCoverage[key]) {
+        issues.push({
+          code: "live_report_missing_coverage_mismatch",
+          message: `Live report missingCoverage.${key} does not match requested and coverage.`
+        });
+      }
+
+      if (requested[key] === true && coverage[key] !== true) {
+        issues.push({
+          code: "live_report_requested_coverage_missing",
+          message: `Live report requested ${key} but coverage.${key} did not pass.`
+        });
+      }
+    }
+
+    if (hasLiveReportMissingCoverage(missingCoverage)) {
+      issues.push({
+        code: "live_report_missing_coverage",
+        message: "Live report still has requested capabilities without passing coverage."
+      });
+    }
+  }
+
+  if (!steps) {
+    issues.push({
+      code: "live_report_contract_mismatch",
+      message: "Live report must include a steps array."
+    });
+  } else if (isObject(requested)) {
+    for (const requirement of LIVE_REPORT_ACCEPTANCE_REQUIREMENTS) {
+      if (requested[requirement.capability] !== true) {
+        continue;
+      }
+
+      const step = steps.find((candidate) => candidate?.name === requirement.step && candidate?.ok === true);
+      if (!step) {
+        issues.push({
+          code: "live_report_step_missing",
+          message: `Live report requested ${requirement.capability} but no passing ${requirement.step} step is present.`
+        });
+        continue;
+      }
+
+      if (requirement.accepts && !requirement.accepts(step)) {
+        issues.push({
+          code: "live_report_step_contract_mismatch",
+          message: `Live report ${requirement.step} summary does not satisfy acceptance requirements.`
+        });
+      }
+    }
+  }
+
+  return {
+    accepted: issues.length === 0,
+    issues
+  };
+}
+
 export function summarizeLiveReportRequests(options = {}) {
   const summary = createLiveReportCapabilitySummary();
   summary.browserPreflight = true;
@@ -353,6 +452,92 @@ const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
   ["history", "history"],
   ["reorder", "reorder"]
 ]);
+
+const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
+  {
+    capability: "browserPreflight",
+    step: "doctor",
+    accepts: (step) =>
+      step.summary?.ok === true &&
+      step.summary?.browserAutomationReady === true &&
+      step.summary?.playwrightChromiumPassed === true
+  },
+  {
+    capability: "localStatus",
+    step: "status",
+    accepts: (step) => step.summary?.browserAutomationReady === true
+  },
+  {
+    capability: "login",
+    step: "login"
+  },
+  {
+    capability: "liveSession",
+    step: "status live",
+    accepts: (step) => step.summary?.confirmedSession === true && step.summary?.liveSessionState === "logged-in"
+  },
+  {
+    capability: "search",
+    step: "search",
+    accepts: (step) => step.summary?.productCount > 0
+  },
+  {
+    capability: "addressAdd",
+    step: "address add",
+    accepts: (step) => step.summary?.addressCount > 0
+  },
+  {
+    capability: "addressList",
+    step: "address list",
+    accepts: (step) => step.summary?.addressCount > 0
+  },
+  {
+    capability: "addressUse",
+    step: "address use",
+    accepts: (step) => step.summary?.selected === true && step.summary?.hasAddressText === true
+  },
+  {
+    capability: "add",
+    step: "add",
+    accepts: (step) => step.summary?.productAdded === true && step.summary?.cartItemCount > 0
+  },
+  {
+    capability: "cart",
+    step: "cart"
+  },
+  {
+    capability: "remove",
+    step: "remove"
+  },
+  {
+    capability: "clear",
+    step: "clear",
+    accepts: (step) => step.summary?.cartItemCount === 0
+  },
+  {
+    capability: "checkoutHandoff",
+    step: "checkout",
+    accepts: (step) =>
+      step.summary?.status === "checkout_handoff_returned" &&
+      step.summary?.paymentStatus === "not_observed_by_zepocli" &&
+      step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
+      step.summary?.orderStatusCommand === "zepo track"
+  },
+  {
+    capability: "track",
+    step: "track",
+    accepts: (step) => step.summary?.latestHasStatus === true || step.summary?.latestHasEta === true
+  },
+  {
+    capability: "history",
+    step: "history"
+  },
+  {
+    capability: "reorder",
+    step: "reorder",
+    accepts: (step) => step.summary?.cartItemCount > 0
+  }
+];
 
 function summarizeStepPayload(name, payload, args, summarizePayload) {
   try {

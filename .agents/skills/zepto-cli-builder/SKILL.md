@@ -162,6 +162,8 @@ If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human hando
 
 `verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats as `zepo login --phone`, pass the normalized 10-digit value to the CLI, and redact phone input from reports.
 
+After a human-controlled live run, `npm --silent run verify:live:report -- <report-path>` should validate the saved report contract before agents treat it as acceptance evidence. The report validator does not contact Zepto or prove a fresh run happened.
+
 Live report failures should keep stable `error.code` values. Contract mismatch codes include `live_doctor_contract_mismatch`, `live_login_contract_mismatch`, `live_status_contract_mismatch`, `live_checkout_contract_mismatch`, `live_track_contract_mismatch`, `live_search_contract_mismatch`, `live_add_contract_mismatch`, `live_cart_contract_mismatch`, `live_clear_contract_mismatch`, `live_address_contract_mismatch`, `live_history_contract_mismatch`, and `live_reorder_contract_mismatch`; manual precondition failures use `live_verification_incomplete`; runner/reporting failures use `live_runner_failed`, `live_command_launch_failed`, `live_command_timeout`, `live_summary_failed`, `live_json_unreadable`, `live_json_unexpected`, or `command_failed`.
 
 Do not combine `verify:live --clear` with `--checkout`; `--clear` empties the cart, so run it as a separate cleanup verification pass.

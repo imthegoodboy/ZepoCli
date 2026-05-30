@@ -274,5 +274,12 @@ npm --silent run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 The examples use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it signals the active child command, writes the same sanitized partial report when possible, and keeps console paths redacted.
 `verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats as `zepo login --phone`, normalizes the value before invoking the CLI, and still redacts phone input from the live report.
+After a human-controlled live run, validate the report before treating it as proof:
+
+```bash
+npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json
+```
+
+`verify:live:report` does not contact Zepto or prove a fresh run happened. It checks the saved report contract: package version, `ok`, requested coverage, `missingCoverage`, and required step summaries for browser preflight, live session, checkout handoff, and requested workflows.
 
 Live report failures use stable `error.code` values. Contract failures use `live_doctor_contract_mismatch`, `live_login_contract_mismatch`, `live_status_contract_mismatch`, `live_checkout_contract_mismatch`, `live_track_contract_mismatch`, `live_search_contract_mismatch`, `live_add_contract_mismatch`, `live_cart_contract_mismatch`, `live_clear_contract_mismatch`, `live_address_contract_mismatch`, `live_history_contract_mismatch`, and `live_reorder_contract_mismatch`. Manual precondition failures use `live_verification_incomplete`. Runner/reporting failures use `live_runner_failed`, `live_command_launch_failed`, `live_command_timeout`, `live_summary_failed`, `live_json_unreadable`, `live_json_unexpected`, or `command_failed`.
