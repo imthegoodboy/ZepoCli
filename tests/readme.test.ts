@@ -128,8 +128,8 @@ describe("README package guidance", () => {
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
-    expect(readme).toContain("npm run verify:live -- --data-dir ./.zepo-live");
-    expect(readme).toContain('npm run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
+    expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
+    expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
     expect(readme).toContain("It starts with normal `zepo doctor --json`, including the Playwright Chromium launch check");
     expect(readme).toContain("the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
@@ -147,7 +147,7 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, search/add/remove/address-use query text, and npm-token-shaped values"
     );
-    expect(readme).toContain("prefer `npm --silent run verify:live -- ...`");
+    expect(readme).toContain("The examples use `npm --silent run verify:live -- ...`");
     expect(readme).toContain("interrupted with Ctrl+C/SIGTERM");
     expect(readme).toContain("writes the same sanitized partial report when possible");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");

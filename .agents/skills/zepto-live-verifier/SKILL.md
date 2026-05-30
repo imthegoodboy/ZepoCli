@@ -36,23 +36,23 @@ Use a dedicated persistent data directory:
 
 ```bash
 npm run build
-npm run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
 ```
 
-When terminal logs may be shared, prefer `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
+Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
 
 Optional focused passes:
 
 ```bash
-npm run verify:live -- --data-dir ./.zepo-live --login --address-list
-npm run verify:live -- --data-dir ./.zepo-live --login --address-add
-npm run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart
-npm run verify:live -- --data-dir ./.zepo-live --login --history
-npm run verify:live -- --data-dir ./.zepo-live --login --reorder-last --cart
-npm run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
-npm run verify:live -- --data-dir ./.zepo-live --login --clear --cart
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --address-list
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --address-add
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --history
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --reorder-last --cart
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 ```
 
 Do not combine `--clear` with `--checkout`; clearing the cart destroys checkout evidence.
