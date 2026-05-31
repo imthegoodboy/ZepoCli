@@ -87,6 +87,7 @@ The live report is acceptable only when:
 - `ok: true` reports contain only passing known workflow steps.
 - Every workflow step name appears at most once in an ok report.
 - Ok report workflow steps follow the live runner order.
+- Workflow step summary values keep the runner's expected types.
 - Every passing workflow step summary satisfies its known report contract, even when that capability was not requested.
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.

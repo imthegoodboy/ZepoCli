@@ -206,6 +206,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`ok` reports containing only passing known workflow steps",
     "unique workflow step names",
     "runner workflow order",
+    "typed workflow step summaries",
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
@@ -1026,6 +1027,37 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to reject login steps without confirmed session evidence"
   );
   console.log("pass installed live report login step contract");
+  const stringlySummaryLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "search"
+        ? {
+            ...step,
+            summary: {
+              productCount: "1"
+            }
+          }
+        : step
+    )
+  };
+  stringlySummaryLiveReport.attempted = summarizeLiveReportAttempts(stringlySummaryLiveReport.steps);
+  stringlySummaryLiveReport.coverage = summarizeLiveReportCoverage(stringlySummaryLiveReport.steps);
+  stringlySummaryLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    stringlySummaryLiveReport.requested,
+    stringlySummaryLiveReport.coverage
+  );
+  const stringlySummaryIssues = validateLiveReportAcceptance(stringlySummaryLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    stringlySummaryIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject stringly typed step summaries"
+  );
+  assert(
+    !JSON.stringify(stringlySummaryIssues).includes('"1"'),
+    "expected installed live report summary type rejection to omit raw step values"
+  );
+  console.log("pass installed live report summary value contract");
   const unrequestedBadCheckoutLiveReport = {
     ...acceptedLiveReport,
     requested: summarizeLiveReportRequests({

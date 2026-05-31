@@ -685,6 +685,34 @@ describe("live verification runner", () => {
       "live_report_step_contract_mismatch"
     );
 
+    const stringlySummaryReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "search"
+          ? {
+              ...step,
+              summary: {
+                productCount: "1"
+              }
+            }
+          : step
+      )
+    });
+    stringlySummaryReport.attempted = summarizeLiveReportAttempts(stringlySummaryReport.steps);
+    stringlySummaryReport.coverage = summarizeLiveReportCoverage(stringlySummaryReport.steps);
+    stringlySummaryReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      stringlySummaryReport.requested,
+      stringlySummaryReport.coverage
+    );
+
+    const stringlySummaryResult = validateLiveReportAcceptance(stringlySummaryReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(stringlySummaryResult.accepted).toBe(false);
+    expect(stringlySummaryResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+    expect(JSON.stringify(stringlySummaryResult.issues)).not.toContain('"1"');
+
     const unrequestedBadCheckoutReport = acceptedLiveReport({
       requested: summarizeLiveReportRequests({
         search: "milk"

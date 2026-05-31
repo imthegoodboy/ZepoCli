@@ -421,6 +421,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
         LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS,
         issues
       );
+      validateLiveReportSummaryValueContract(step.summary, issues);
     }
   }
 }
@@ -517,6 +518,32 @@ function addLiveReportStepContractMismatchIssue(issues) {
       code: "live_report_step_contract_mismatch",
       message: "Live report step summary does not satisfy acceptance requirements."
     });
+  }
+}
+
+function validateLiveReportSummaryValueContract(summary, issues) {
+  for (const [key, value] of Object.entries(summary)) {
+    if (LIVE_REPORT_BOOLEAN_SUMMARY_KEYS.has(key)) {
+      if (typeof value !== "boolean") {
+        addLiveReportStepContractMismatchIssue(issues);
+        return;
+      }
+    } else if (LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS.has(key)) {
+      if (!Number.isInteger(value) || value < 0) {
+        addLiveReportStepContractMismatchIssue(issues);
+        return;
+      }
+    } else if (LIVE_REPORT_STRING_SUMMARY_KEYS.has(key)) {
+      if (!hasReadableText(value)) {
+        addLiveReportStepContractMismatchIssue(issues);
+        return;
+      }
+    } else if (LIVE_REPORT_STRING_ARRAY_SUMMARY_KEYS.has(key)) {
+      if (!Array.isArray(value) || value.some((item) => !hasReadableText(item))) {
+        addLiveReportStepContractMismatchIssue(issues);
+        return;
+      }
+    }
   }
 }
 
@@ -803,6 +830,35 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["reorder", new Set(["cartItemCount", "hasTotal"])]
 ]);
+const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
+  "browserAutomationReady",
+  "confirmedSession",
+  "hasAddressText",
+  "hasTotal",
+  "latestHasEta",
+  "latestHasStatus",
+  "observed",
+  "ok",
+  "playwrightChromiumPassed",
+  "productAdded",
+  "selected",
+  "sessionSaved"
+]);
+const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS = new Set([
+  "addressCount",
+  "cartItemCount",
+  "orderCount",
+  "productCount",
+  "selectedCount"
+]);
+const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
+  "liveSessionState",
+  "orderPlacement",
+  "orderStatusCommand",
+  "paymentStatus",
+  "status"
+]);
+const LIVE_REPORT_STRING_ARRAY_SUMMARY_KEYS = new Set(["failures", "warnings"]);
 
 const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
   ["doctor", "browserPreflight"],
