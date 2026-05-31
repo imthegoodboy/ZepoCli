@@ -334,6 +334,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
     if (report.ok === true) {
       validateLiveReportOkStepSetContract(steps, issues);
       validateLiveReportUniqueStepNamesContract(steps, issues);
+      validateLiveReportStepOrderContract(steps, issues);
       validateLiveReportPassingStepContracts(steps, issues);
     }
 
@@ -463,6 +464,35 @@ function addLiveReportStepUniquenessMismatchIssue(issues) {
     issues.push({
       code: "live_report_step_uniqueness_mismatch",
       message: "Live report ok=true must not contain duplicate workflow steps."
+    });
+  }
+}
+
+function validateLiveReportStepOrderContract(steps, issues) {
+  let previousOrder = -1;
+  for (const step of steps) {
+    if (!isObject(step) || !hasReadableText(step.name)) {
+      continue;
+    }
+
+    const order = LIVE_REPORT_STEP_ORDER_BY_NAME.get(step.name);
+    if (order === undefined) {
+      continue;
+    }
+
+    if (order < previousOrder) {
+      addLiveReportStepOrderMismatchIssue(issues);
+      return;
+    }
+    previousOrder = order;
+  }
+}
+
+function addLiveReportStepOrderMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_step_order_mismatch")) {
+    issues.push({
+      code: "live_report_step_order_mismatch",
+      message: "Live report ok=true workflow steps must follow the live runner order."
     });
   }
 }
@@ -791,6 +821,25 @@ const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
   ["track", "track"],
   ["history", "history"],
   ["reorder", "reorder"]
+]);
+
+const LIVE_REPORT_STEP_ORDER_BY_NAME = new Map([
+  ["doctor", 0],
+  ["status", 1],
+  ["login", 2],
+  ["status live", 3],
+  ["search", 4],
+  ["address add", 5],
+  ["address list", 6],
+  ["address use", 6],
+  ["add", 7],
+  ["reorder", 8],
+  ["remove", 9],
+  ["clear", 10],
+  ["cart", 11],
+  ["checkout", 12],
+  ["track", 13],
+  ["history", 14]
 ]);
 
 const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [

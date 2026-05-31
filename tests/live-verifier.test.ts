@@ -596,6 +596,28 @@ describe("live verification runner", () => {
     );
     expect(JSON.stringify(duplicateStepResult.issues)).not.toContain("paid");
 
+    const outOfOrderStepReport = acceptedLiveReport({
+      steps: [
+        acceptedLiveReport().steps[0],
+        acceptedLiveReport().steps[1],
+        acceptedLiveReport().steps[4],
+        acceptedLiveReport().steps[2],
+        acceptedLiveReport().steps[3]
+      ]
+    });
+    outOfOrderStepReport.attempted = summarizeLiveReportAttempts(outOfOrderStepReport.steps);
+    outOfOrderStepReport.coverage = summarizeLiveReportCoverage(outOfOrderStepReport.steps);
+    outOfOrderStepReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      outOfOrderStepReport.requested,
+      outOfOrderStepReport.coverage
+    );
+
+    const outOfOrderStepResult = validateLiveReportAcceptance(outOfOrderStepReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(outOfOrderStepResult.accepted).toBe(false);
+    expect(outOfOrderStepResult.issues.map((issue) => issue.code)).toContain("live_report_step_order_mismatch");
+
     const unrequestedBadCheckoutReport = acceptedLiveReport({
       requested: summarizeLiveReportRequests({
         search: "milk"

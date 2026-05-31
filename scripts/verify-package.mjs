@@ -205,6 +205,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "redacted step command contract",
     "`ok` reports containing only passing known workflow steps",
     "unique workflow step names",
+    "runner workflow order",
     "all passing workflow step summaries satisfy their known contracts",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
@@ -940,6 +941,30 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report duplicate-step rejection to omit raw duplicate step values"
   );
   console.log("pass installed live report unique step contract");
+  const outOfOrderStepLiveReport = {
+    ...acceptedLiveReport,
+    steps: [
+      acceptedLiveReport.steps[0],
+      acceptedLiveReport.steps[1],
+      acceptedLiveReport.steps[4],
+      acceptedLiveReport.steps[2],
+      acceptedLiveReport.steps[3]
+    ]
+  };
+  outOfOrderStepLiveReport.attempted = summarizeLiveReportAttempts(outOfOrderStepLiveReport.steps);
+  outOfOrderStepLiveReport.coverage = summarizeLiveReportCoverage(outOfOrderStepLiveReport.steps);
+  outOfOrderStepLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    outOfOrderStepLiveReport.requested,
+    outOfOrderStepLiveReport.coverage
+  );
+  const outOfOrderStepIssues = validateLiveReportAcceptance(outOfOrderStepLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    outOfOrderStepIssues.some((issue) => issue.code === "live_report_step_order_mismatch"),
+    "expected installed live report acceptance helper to reject out-of-order workflow steps"
+  );
+  console.log("pass installed live report step order contract");
   const unrequestedBadCheckoutLiveReport = {
     ...acceptedLiveReport,
     requested: summarizeLiveReportRequests({

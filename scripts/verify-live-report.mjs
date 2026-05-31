@@ -92,7 +92,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - report fields match the accepted schema
 - requested, attempted, coverage, and missingCoverage are complete boolean capability maps
 - attempted and coverage summaries match the steps array
-- ok reports contain only passing known workflow steps with no duplicate workflow step names
+- ok reports contain only passing known workflow steps with no duplicate workflow step names and preserve runner workflow order
 - all passing workflow step summaries satisfy their known contracts
 - stored step command strings match the redacted command contract
 - step exitCode, ok, summary, and error fields are internally consistent
