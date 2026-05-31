@@ -199,6 +199,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
+    "sanitized `generatedAt` plus data/report path metadata",
     "accepted report schema",
     "redacted step command contract",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
@@ -765,6 +766,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const acceptedLiveReport = {
     ok: true,
     version: packageJson.version,
+    generatedAt: "2026-05-31T00:00:00.000Z",
+    dataDir: "<redacted-data-dir>",
+    reportPath: "<redacted-report-path>",
+    note: "Sanitized ZepoCli live verification report. Fixture omits raw workflow data.",
     requested: acceptedLiveReportRequested,
     attempted: summarizeLiveReportAttempts(acceptedLiveReportSteps),
     coverage: acceptedLiveReportCoverage,
@@ -840,6 +845,25 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
   }
   console.log("pass installed live report closed schema");
+  const metadataLiveReportIssues = validateLiveReportAcceptance(
+    {
+      ...acceptedLiveReport,
+      generatedAt: "today",
+      dataDir: "<redacted-local-path>"
+    },
+    {
+      expectedVersion: packageJson.version
+    }
+  ).issues;
+  assert(
+    metadataLiveReportIssues.some((issue) => issue.code === "live_report_metadata_mismatch"),
+    "expected installed live report acceptance helper to reject malformed top-level metadata"
+  );
+  assert(
+    !JSON.stringify(metadataLiveReportIssues).includes("today"),
+    "expected installed live report metadata rejection to omit raw metadata values"
+  );
+  console.log("pass installed live report metadata contract");
   const rawCommandLiveReport = {
     ...acceptedLiveReport,
     steps: acceptedLiveReport.steps.map((step) =>
