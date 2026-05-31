@@ -156,6 +156,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("writes the same sanitized partial report when possible");
     expect(readme).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
+    expect(readme).toContain("sanitized `generatedAt` plus data/report path metadata");
     expect(readme).toContain("accepted report schema");
     expect(readme).toContain("redacted step command contract");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");

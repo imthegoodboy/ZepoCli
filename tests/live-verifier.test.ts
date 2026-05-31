@@ -119,6 +119,10 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
   return {
     ok: true,
     version: packageJson.version,
+    generatedAt: "2026-05-31T00:00:00.000Z",
+    dataDir: "<redacted-data-dir>",
+    reportPath: "<redacted-report-path>",
+    note: "Sanitized ZepoCli live verification report. Fixture omits raw workflow data.",
     requested,
     attempted: summarizeLiveReportAttempts(steps),
     coverage,
@@ -485,6 +489,23 @@ describe("live verification runner", () => {
     expect(sensitiveKeyResult.accepted).toBe(false);
     expect(sensitiveKeyResult.issues.map((issue) => issue.code)).toContain("live_report_sensitive_text");
     expect(JSON.stringify(sensitiveKeyResult.issues)).not.toContain("Users");
+
+    const metadataReports = [
+      acceptedLiveReport({ generatedAt: "today" }),
+      acceptedLiveReport({ generatedAt: undefined }),
+      acceptedLiveReport({ dataDir: "<redacted-local-path>" }),
+      acceptedLiveReport({ reportPath: "<redacted-local-path>" }),
+      acceptedLiveReport({ note: "Report fixture without the sanitizer note." })
+    ];
+
+    for (const report of metadataReports) {
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_metadata_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("today");
+    }
 
     const unexpectedTopLevel = acceptedLiveReport({
       rawQuery: "Amul Milk 500ml"
