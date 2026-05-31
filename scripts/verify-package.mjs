@@ -201,6 +201,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "accepted report schema",
     "redacted step command contract",
+    "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -705,6 +706,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     {
       name: "doctor",
       command: "zepo --data-dir <redacted-data-dir> doctor --json",
+      exitCode: 0,
       ok: true,
       summary: {
         ok: true,
@@ -715,6 +717,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     {
       name: "status",
       command: "zepo --data-dir <redacted-data-dir> status --json",
+      exitCode: 0,
       ok: true,
       summary: {
         confirmedSession: true,
@@ -724,6 +727,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     {
       name: "status live",
       command: "zepo --data-dir <redacted-data-dir> --visible status --live --json",
+      exitCode: 0,
       ok: true,
       summary: {
         confirmedSession: true,
@@ -734,6 +738,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     {
       name: "search",
       command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+      exitCode: 0,
       ok: true,
       summary: {
         productCount: 1
@@ -742,6 +747,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     {
       name: "checkout",
       command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      exitCode: 0,
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
@@ -859,6 +865,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       step.name === "search"
         ? {
             name: step.name,
+            exitCode: step.exitCode,
             ok: step.ok,
             summary: step.summary
           }
@@ -872,6 +879,48 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to require redacted command strings"
   );
   console.log("pass installed live report command contract");
+  const malformedStepResultLiveReports = [
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "search"
+          ? {
+              name: step.name,
+              command: step.command,
+              ok: step.ok,
+              summary: step.summary
+            }
+          : step
+      )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "search" ? { ...step, exitCode: 1 } : step
+      )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "add",
+          command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+          exitCode: 1,
+          ok: false
+        }
+      ]
+    }
+  ];
+  for (const malformedStepResultLiveReport of malformedStepResultLiveReports) {
+    assert(
+      validateLiveReportAcceptance(malformedStepResultLiveReport, {
+        expectedVersion: packageJson.version
+      }).issues.some((issue) => issue.code === "live_report_step_result_mismatch"),
+      "expected installed live report acceptance helper to reject inconsistent step result fields"
+    );
+  }
+  console.log("pass installed live report step result contract");
   const sensitiveLiveReport = {
     ...acceptedLiveReport,
     reportPath: join(tempRoot, "raw-live-verification-report.json"),

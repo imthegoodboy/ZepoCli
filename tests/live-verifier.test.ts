@@ -59,6 +59,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     {
       name: "doctor",
       command: "zepo --data-dir <redacted-data-dir> doctor --json",
+      exitCode: 0,
       ok: true,
       summary: {
         ok: true,
@@ -69,6 +70,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     {
       name: "status",
       command: "zepo --data-dir <redacted-data-dir> status --json",
+      exitCode: 0,
       ok: true,
       summary: {
         confirmedSession: true,
@@ -78,6 +80,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     {
       name: "status live",
       command: "zepo --data-dir <redacted-data-dir> --visible status --live --json",
+      exitCode: 0,
       ok: true,
       summary: {
         confirmedSession: true,
@@ -88,6 +91,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     {
       name: "search",
       command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+      exitCode: 0,
       ok: true,
       summary: {
         productCount: 1
@@ -96,6 +100,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     {
       name: "checkout",
       command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      exitCode: 0,
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
@@ -520,6 +525,7 @@ describe("live verification runner", () => {
           {
             name: "add",
             command: "zepo --data-dir <redacted-data-dir> --visible add protein bars --quantity 1 --json",
+            exitCode: 1,
             ok: false,
             error: {
               code: "command_failed",
@@ -534,6 +540,7 @@ describe("live verification runner", () => {
           {
             name: "address use",
             command: "zepo --data-dir <redacted-data-dir> --visible address use home --json",
+            exitCode: 1,
             ok: false,
             error: {
               code: "command_failed",
@@ -548,6 +555,7 @@ describe("live verification runner", () => {
           {
             name: "remove",
             command: "zepo --data-dir <redacted-data-dir> --visible remove chips --json",
+            exitCode: 1,
             ok: false,
             error: {
               code: "command_failed",
@@ -574,6 +582,7 @@ describe("live verification runner", () => {
         step.name === "search"
           ? {
               name: step.name,
+              exitCode: step.exitCode,
               ok: step.ok,
               summary: step.summary
             }
@@ -594,6 +603,7 @@ describe("live verification runner", () => {
         {
           name: "login",
           command: "manual",
+          exitCode: 1,
           ok: false,
           error: {
             code: "live_verification_incomplete",
@@ -609,11 +619,85 @@ describe("live verification runner", () => {
       }).issues.map((issue) => issue.code)
     ).not.toContain("live_report_command_mismatch");
 
+    const malformedStepResultReports = [
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "search"
+            ? {
+                name: step.name,
+                command: step.command,
+                ok: step.ok,
+                summary: step.summary
+              }
+            : step
+        )
+      }),
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "search"
+            ? {
+                ...step,
+                exitCode: 1
+              }
+            : step
+        )
+      }),
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "search"
+            ? {
+                ...step,
+                error: {
+                  code: "command_failed",
+                  message: "failed"
+                }
+              }
+            : step
+        )
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "add",
+            command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+            exitCode: 1,
+            ok: false
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "add",
+            command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+            exitCode: 0,
+            ok: false,
+            error: {
+              code: "command_failed",
+              message: "failed"
+            }
+          }
+        ]
+      })
+    ];
+
+    for (const report of malformedStepResultReports) {
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_result_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("failed");
+    }
+
     const weakDoctor = acceptedLiveReport({
       steps: [
         {
           name: "doctor",
           command: "zepo --data-dir <redacted-data-dir> doctor --json",
+          exitCode: 0,
           ok: true,
           summary: {
             ok: true,
@@ -823,7 +907,7 @@ describe("live verification runner", () => {
         expect(output).not.toContain(hidden);
       }
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("rejects live verification option combinations that cannot produce useful evidence", () => {
     const clearCheckout = spawnSync(
@@ -890,7 +974,7 @@ describe("live verification runner", () => {
       expect(result.stderr).toContain("--quantity must be an integer from 1 to 12.");
       expect(result.stderr).not.toContain("Compiled CLI was not found");
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("rejects malformed live verification step timeouts before touching the compiled CLI", () => {
     for (const timeout of ["abc", "1e3", "999", "3600001"]) {
@@ -907,7 +991,7 @@ describe("live verification runner", () => {
       expect(result.stderr).toContain("--step-timeout must be an integer from 1000 to 3600000 ms.");
       expect(result.stderr).not.toContain("Compiled CLI was not found");
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("rejects malformed live verification phone input before touching the compiled CLI", () => {
     for (const phone of ["abc", "phone 9876543210", "9876543210 ext 1", "1234567890", "99999", "99999999999"]) {
@@ -924,7 +1008,7 @@ describe("live verification runner", () => {
       expect(result.stderr).toContain("--phone must be a valid Indian mobile number.");
       expect(result.stderr).not.toContain("Compiled CLI was not found");
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("accepts CLI-supported live verification phone formats before touching the compiled CLI", () => {
     for (const phone of ["9876543210", "+91 98765 43210", "+91-98765-43210", "09876543210"]) {
@@ -942,7 +1026,7 @@ describe("live verification runner", () => {
       expect(result.stderr).not.toContain("--phone must be a valid");
       expect(result.stderr).not.toContain("Compiled CLI was not found");
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("rejects blank live verification option values before touching the compiled CLI", () => {
     for (const testCase of [
@@ -962,7 +1046,7 @@ describe("live verification runner", () => {
       expect(result.stderr).toContain(testCase.message);
       expect(result.stderr).not.toContain("Compiled CLI was not found");
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("parses final JSON after prompt output on stderr", () => {
     const mixedStderr = [
