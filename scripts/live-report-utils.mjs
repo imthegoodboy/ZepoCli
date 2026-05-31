@@ -29,6 +29,17 @@ export const LIVE_REPORT_NOTE =
   "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.";
 const LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS = 5 * 60 * 1_000;
 const LIVE_REPORT_ERROR_RETRY_AFTER_MAX_MS = 60 * 60 * 1_000;
+const LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES = [
+  "browserPreflight",
+  "localStatus",
+  "liveSession",
+  "search",
+  "addressUse",
+  "add",
+  "cart",
+  "checkoutHandoff",
+  "track"
+];
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
@@ -392,10 +403,23 @@ export function validateLiveReportAcceptance(report, options = {}) {
     }
   }
 
+  if (options.requireProductionScope === true && isObject(coverage)) {
+    validateLiveReportProductionScopeCoverage(coverage, issues);
+  }
+
   return {
     accepted: issues.length === 0,
     issues
   };
+}
+
+function validateLiveReportProductionScopeCoverage(coverage, issues) {
+  if (!LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES.every((key) => coverage[key] === true)) {
+    issues.push({
+      code: "live_report_production_scope_missing",
+      message: "Live report does not prove the required production workflow coverage."
+    });
+  }
 }
 
 function validateLiveReportAcceptedSchema(report, issues) {

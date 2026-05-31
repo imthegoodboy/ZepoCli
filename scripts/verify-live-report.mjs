@@ -28,7 +28,8 @@ try {
 }
 
 const result = validateLiveReportAcceptance(report, {
-  expectedVersion: packageJson.version
+  expectedVersion: packageJson.version,
+  requireProductionScope: options.requireProductionScope
 });
 
 if (!result.accepted) {
@@ -44,12 +45,18 @@ console.log("pass live verification report acceptance");
 function parseArgs(args) {
   const parsed = {
     help: false,
+    requireProductionScope: false,
     reportPath: ""
   };
 
   for (const arg of args) {
     if (arg === "--help" || arg === "-h") {
       parsed.help = true;
+      continue;
+    }
+
+    if (arg === "--require-production-scope") {
+      parsed.requireProductionScope = true;
       continue;
     }
 
@@ -81,9 +88,10 @@ function parseArgs(args) {
 }
 
 function printHelp() {
-  console.log(`Usage: npm --silent run verify:live:report -- <live-verification-report.json>
+  console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] <live-verification-report.json>
 
 Validates that a human-controlled verify:live report is acceptable evidence for the requested scope.
+Use --require-production-scope for final readiness: it also requires browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage.
 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
 - package version matches
@@ -107,7 +115,8 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - requested capabilities have passing coverage
 - missingCoverage has no true values
 - required step summaries are present for browser preflight, live session, checkout handoff, and requested workflows
+- when --require-production-scope is used, the core login/session, search, address, cart, checkout handoff, and track workflow has passing coverage
 
 Example:
-  npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json`);
+  npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json`);
 }
