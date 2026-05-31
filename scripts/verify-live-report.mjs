@@ -88,6 +88,7 @@ Validates that a human-controlled verify:live report is acceptable evidence for 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
 - package version matches
 - ok is true
+- report fields match the accepted schema
 - attempted and coverage summaries match the steps array
 - sensitive-looking report keys and values have been redacted
 - requested capabilities have passing coverage

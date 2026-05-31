@@ -199,6 +199,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
+    "accepted report schema",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -793,6 +794,40 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to reject coverage summaries that do not match steps"
   );
   console.log("pass installed live report summary consistency");
+  const unexpectedFieldLiveReports = [
+    {
+      ...acceptedLiveReport,
+      rawQuery: "Amul Milk 500ml"
+    },
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "search" ? { ...step, rawPayload: "Amul Milk 500ml" } : step
+      )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "checkout"
+          ? { ...step, summary: { ...step.summary, rawPageText: "Amul Milk 500ml" } }
+          : step
+      )
+    }
+  ];
+  for (const unexpectedFieldLiveReport of unexpectedFieldLiveReports) {
+    const unexpectedFieldIssues = validateLiveReportAcceptance(unexpectedFieldLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues;
+    assert(
+      unexpectedFieldIssues.some((issue) => issue.code === "live_report_unexpected_field"),
+      "expected installed live report acceptance helper to reject fields outside the accepted schema"
+    );
+    assert(
+      !JSON.stringify(unexpectedFieldIssues).includes("Amul Milk 500ml"),
+      "expected installed live report unexpected-field rejection to omit raw workflow values"
+    );
+  }
+  console.log("pass installed live report closed schema");
   const sensitiveLiveReport = {
     ...acceptedLiveReport,
     reportPath: join(tempRoot, "raw-live-verification-report.json"),
