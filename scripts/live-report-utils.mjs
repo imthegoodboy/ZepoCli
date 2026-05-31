@@ -427,6 +427,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
       );
       validateLiveReportSummaryRequiredKeysContract(step.summary, requiredSummaryKeys, issues);
       validateLiveReportSummaryValueContract(step.summary, issues);
+      validateLiveReportSummaryConsistencyContract(step.name, step.summary, issues);
     }
   }
 }
@@ -574,6 +575,40 @@ function isAllowedLiveReportStringSummaryValue(key, value) {
 function isAllowedLiveReportStringArraySummaryValue(key, value) {
   const allowed = LIVE_REPORT_STRING_ARRAY_SUMMARY_ALLOWED_VALUES_BY_KEY.get(key);
   return allowed === undefined || (value.length <= allowed.size && value.every((item) => allowed.has(item)));
+}
+
+function validateLiveReportSummaryConsistencyContract(name, summary, issues) {
+  if (name === "doctor") {
+    if (
+      (summary.ok === true && Array.isArray(summary.failures) && summary.failures.length > 0) ||
+      (summary.playwrightChromiumPassed === true &&
+        Array.isArray(summary.failures) &&
+        summary.failures.includes("Playwright Chromium"))
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
+  if (name === "address add" || name === "address list") {
+    if (
+      Number.isInteger(summary.addressCount) &&
+      Number.isInteger(summary.selectedCount) &&
+      summary.selectedCount > summary.addressCount
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
+  if (name === "track" || name === "history") {
+    if (
+      summary.orderCount === 0 &&
+      (summary.latestHasStatus === true || summary.latestHasEta === true)
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+  }
 }
 
 function validateLiveReportCapabilitySummaryContract(value, issues) {
