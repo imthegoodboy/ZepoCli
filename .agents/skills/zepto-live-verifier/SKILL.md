@@ -80,7 +80,7 @@ The live report is acceptable only when:
 
 - `ok` is true.
 - `version` matches `package.json`.
-- `generatedAt` is a valid ISO timestamp, and `dataDir`/`reportPath` use redacted markers.
+- `generatedAt` is a valid ISO timestamp, `dataDir`/`reportPath` use redacted markers, and `note` matches the runner literal.
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - Stored step command strings match the redacted command contract.
 - Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.

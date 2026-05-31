@@ -25,6 +25,9 @@ export function parseJsonFromOutput(text) {
   return undefined;
 }
 
+export const LIVE_REPORT_NOTE =
+  "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.";
+
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
   const fallbackMessage = firstLine(stderr) ?? "Command failed.";
@@ -635,8 +638,7 @@ function validateLiveReportMetadataContract(report, issues) {
     !isValidLiveReportGeneratedAt(report.generatedAt) ||
     report.dataDir !== "<redacted-data-dir>" ||
     report.reportPath !== "<redacted-report-path>" ||
-    !hasReadableText(report.note) ||
-    !report.note.startsWith(LIVE_REPORT_NOTE_PREFIX)
+    report.note !== LIVE_REPORT_NOTE
   ) {
     addLiveReportMetadataMismatchIssue(issues);
   }
@@ -655,7 +657,7 @@ function addLiveReportMetadataMismatchIssue(issues) {
   if (!issues.some((issue) => issue.code === "live_report_metadata_mismatch")) {
     issues.push({
       code: "live_report_metadata_mismatch",
-      message: "Live report metadata must include generatedAt and redacted data/report path markers."
+      message: "Live report metadata must include generatedAt, redacted data/report path markers, and the runner note."
     });
   }
 }
@@ -882,7 +884,6 @@ const LIVE_REPORT_CAPABILITY_KEYS = new Set(Object.keys(createLiveReportCapabili
 const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error"]);
 const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
 const LIVE_REPORT_FALLBACK_SUMMARY_KEYS = new Set(["observed"]);
-const LIVE_REPORT_NOTE_PREFIX = "Sanitized ZepoCli live verification report.";
 const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
   ["doctor", /^zepo --data-dir <redacted-data-dir> doctor --json$/],
   ["status", /^zepo --data-dir <redacted-data-dir> status --json$/],

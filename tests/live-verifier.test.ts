@@ -18,6 +18,7 @@ const {
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
   hasLiveReportMissingCoverage,
+  LIVE_REPORT_NOTE,
   parseJsonFromOutput,
   redactArgsForLiveConsole,
   redactArgsForLiveReport,
@@ -124,7 +125,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     generatedAt: "2026-05-31T00:00:00.000Z",
     dataDir: "<redacted-data-dir>",
     reportPath: "<redacted-report-path>",
-    note: "Sanitized ZepoCli live verification report. Fixture omits raw workflow data.",
+    note: LIVE_REPORT_NOTE,
     requested,
     attempted: summarizeLiveReportAttempts(steps),
     coverage,
@@ -1022,7 +1023,8 @@ describe("live verification runner", () => {
       acceptedLiveReport({ generatedAt: undefined }),
       acceptedLiveReport({ dataDir: "<redacted-local-path>" }),
       acceptedLiveReport({ reportPath: "<redacted-local-path>" }),
-      acceptedLiveReport({ note: "Report fixture without the sanitizer note." })
+      acceptedLiveReport({ note: "Report fixture without the sanitizer note." }),
+      acceptedLiveReport({ note: `${LIVE_REPORT_NOTE} Cart item Amul Milk 500ml was observed.` })
     ];
 
     for (const report of metadataReports) {
@@ -1032,6 +1034,7 @@ describe("live verification runner", () => {
       expect(result.accepted).toBe(false);
       expect(result.issues.map((issue) => issue.code)).toContain("live_report_metadata_mismatch");
       expect(JSON.stringify(result.issues)).not.toContain("today");
+      expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
     }
 
     const unexpectedTopLevel = acceptedLiveReport({
