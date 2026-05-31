@@ -605,6 +605,7 @@ function parseArgs(args) {
     help: false,
     history: false,
     login: false,
+    productionScope: false,
     quantity: 1,
     reorderLast: false,
     clear: false,
@@ -625,6 +626,8 @@ function parseArgs(args) {
       parsed.stepTimeoutMs = parseStepTimeout(requireValue(args, ++index, arg));
     } else if (arg === "--login") {
       parsed.login = true;
+    } else if (arg === "--production-scope") {
+      parsed.productionScope = true;
     } else if (arg === "--phone") {
       parsed.phone = normalizeLoginPhone(requireValue(args, ++index, arg));
     } else if (arg === "--search") {
@@ -660,7 +663,18 @@ function parseArgs(args) {
     }
   }
 
+  applyProductionScopeDefaults(parsed);
   return parsed;
+}
+
+function applyProductionScopeDefaults(parsed) {
+  if (!parsed.productionScope) {
+    return;
+  }
+
+  parsed.cart = true;
+  parsed.checkout = true;
+  parsed.track = true;
 }
 
 function failUnknownArgument(arg) {
@@ -775,6 +789,10 @@ function validateOptions(parsed) {
     process.exit(1);
   }
 
+  if (parsed.productionScope) {
+    validateProductionScopeOptions(parsed);
+  }
+
   if (parsed.address && parsed.addressList) {
     console.error("--address cannot be combined with --address-list because address selection already verifies the address flow.");
     process.exit(1);
@@ -787,6 +805,44 @@ function validateOptions(parsed) {
   }
 }
 
+function validateProductionScopeOptions(parsed) {
+  const missing = [];
+  if (!parsed.search) {
+    missing.push("--search <query>");
+  }
+  if (!parsed.address) {
+    missing.push("--address <query>");
+  }
+  if (!parsed.add) {
+    missing.push("--add <query>");
+  }
+
+  if (missing.length > 0) {
+    console.error(`--production-scope requires ${formatList(missing)}.`);
+    process.exit(1);
+  }
+
+  if (parsed.addressAdd || parsed.addressList || parsed.remove || parsed.clear || parsed.history || parsed.reorderLast) {
+    console.error(
+      "--production-scope cannot be combined with --address-add, --address-list, --remove, --clear, --history, or --reorder-last."
+    );
+    console.error("Run those focused live verifications separately so final production-scope evidence stays clear.");
+    process.exit(1);
+  }
+}
+
+function formatList(values) {
+  if (values.length <= 1) {
+    return values[0] ?? "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
+}
+
 function printHelp() {
   console.log(`Usage: npm --silent run verify:live -- --data-dir <path> [options]
 
@@ -797,6 +853,7 @@ Required:
 
 Options:
   --login               Run visible zepo login if no confirmed session exists
+  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies cart, checkout handoff, and track
   --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
   --search <query>      Run visible product search
   --address-list        Run visible address list
@@ -817,10 +874,11 @@ Options:
 
 Example:
   npm run build
-  npm --silent run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
+Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart

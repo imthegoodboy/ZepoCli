@@ -239,6 +239,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(verifier).toContain("expected installed verify:live usage to use silent npm");
     expect(verifier).toContain("expected installed verify:live step-timeout option");
+    expect(verifier).toContain("expected installed verify:live production-scope option");
+    expect(verifier).toContain("expected installed verify:live help to explain production-scope preset");
+    expect(verifier).toContain("expected installed verify:live production-scope missing input guard");
+    expect(verifier).toContain("expected installed verify:live production-scope focused-only guard");
     expect(verifier).toContain("expected installed verify:live unknown option output to omit npm-token-shaped value");
     expect(verifier).toContain("expected installed verify:live unknown assignment output to omit workflow query");
     expect(verifier).toContain("expected installed verify:live unknown assignment output to omit local temp paths");
@@ -331,6 +335,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live requested-checkout report to mark checkout scope requested");
     expect(verifier).toContain("expected installed verify:live requested-checkout report to mark requested checkout coverage missing");
     expect(verifier).toContain("pass installed verify live requested checkout missing coverage");
+    expect(verifier).toContain("expected installed verify:live production-scope report to request final readiness coverage");
+    expect(verifier).toContain("expected installed verify:live production-scope report to mark final readiness coverage missing without login");
+    expect(verifier).toContain("pass installed verify live production scope preset");
     expect(verifier).toContain("expected installed verify:live:report package script");
     expect(verifier).toContain("expected installed live report acceptance validator");
     expect(verifier).toContain("pass installed live report acceptance validator");

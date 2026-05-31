@@ -36,10 +36,11 @@ Use a dedicated persistent data directory:
 
 ```bash
 npm run build
-npm --silent run verify:live -- --data-dir ./.zepo-live --login --search milk --address home --add "Amul Milk 500ml" --cart --checkout --track
+npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"
 ```
 
 `--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
+`--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope`.
 
 Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 

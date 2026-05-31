@@ -191,7 +191,10 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
+    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
+    "Use `--production-scope` for the final readiness run",
+    "then requests cart, checkout handoff, and track coverage",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
@@ -347,6 +350,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
   assert(result.stdout.includes("human-controlled live verification"), "expected installed verify:live help output");
+  assert(result.stdout.includes("--production-scope"), "expected installed verify:live production-scope option");
   assert(result.stdout.includes("--reorder-last"), "expected installed verify:live reorder option");
   assert(result.stdout.includes("--choose-add"), "expected installed verify:live choose-add option");
   assert(result.stdout.includes("--remove <query>"), "expected installed verify:live remove option");
@@ -364,6 +368,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     result.stdout.includes("requested, attempted, coverage, and missingCoverage booleans") &&
       result.stdout.includes("partial runs cannot be mistaken for full verification"),
     "expected installed verify:live help to explain report summary booleans"
+  );
+  assert(
+    result.stdout.includes("Use --production-scope for the final production readiness run"),
+    "expected installed verify:live help to explain production-scope preset"
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
   assert(result.stdout.includes("npm-token-shaped values"), "expected installed verify:live npm-token redaction guidance");
@@ -454,6 +462,63 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     !chooseAddWithoutAddResult.stderr.includes("Compiled CLI was not found"),
     "expected installed verify:live choose-add guard to fail before compiled CLI checks"
+  );
+
+  const productionScopeMissingInputsResult = runNpmResult(
+    installedVerifyLiveArgs(packageDir, "--data-dir", join(tempRoot, "live-production-scope-missing-data"), "--production-scope"),
+    { cwd: rootDir }
+  );
+  assert(
+    productionScopeMissingInputsResult.status === 1,
+    "expected installed verify:live production-scope missing inputs to fail"
+  );
+  assert(
+    productionScopeMissingInputsResult.stderr.includes(
+      "--production-scope requires --search <query>, --address <query>, and --add <query>."
+    ),
+    "expected installed verify:live production-scope missing input guard"
+  );
+  assert(
+    !productionScopeMissingInputsResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live production-scope missing input guard to fail before compiled CLI checks"
+  );
+
+  const productionScopeFocusedOnlyResult = runNpmResult(
+    installedVerifyLiveArgs(
+      packageDir,
+      "--data-dir",
+      join(tempRoot, "live-production-scope-focused-only-data"),
+      "--production-scope",
+      "--search",
+      "milk",
+      "--address",
+      "home",
+      "--add",
+      "milk",
+      "--remove",
+      "milk"
+    ),
+    { cwd: rootDir }
+  );
+  assert(
+    productionScopeFocusedOnlyResult.status === 1,
+    "expected installed verify:live production-scope extra workflow to fail"
+  );
+  assert(
+    productionScopeFocusedOnlyResult.stderr.includes(
+      "--production-scope cannot be combined with --address-add, --address-list, --remove, --clear, --history, or --reorder-last."
+    ),
+    "expected installed verify:live production-scope focused-only guard"
+  );
+  assert(
+    productionScopeFocusedOnlyResult.stderr.includes(
+      "Run those focused live verifications separately so final production-scope evidence stays clear."
+    ),
+    "expected installed verify:live production-scope focused-only guidance"
+  );
+  assert(
+    !productionScopeFocusedOnlyResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live production-scope focused-only guard to fail before compiled CLI checks"
   );
 
   const unknownTokenOptionResult = runNpmResult(
@@ -639,6 +704,91 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live requested-checkout report to omit local temp paths"
   );
   console.log("pass installed verify live requested checkout missing coverage");
+
+  const productionScopeDataDir = join(tempRoot, "live-production-scope-data");
+  const productionScopeReportPath = join(tempRoot, "live-production-scope-report.json");
+  const productionScopeResult = runNpmResult(
+    installedVerifyLiveArgs(
+      packageDir,
+      "--data-dir",
+      productionScopeDataDir,
+      "--report",
+      productionScopeReportPath,
+      "--production-scope",
+      "--search",
+      "milk",
+      "--address",
+      "home",
+      "--add",
+      "milk"
+    ),
+    {
+      cwd: rootDir,
+      env: {
+        ...process.env,
+        FORCE_COLOR: "0",
+        NO_COLOR: "1"
+      }
+    }
+  );
+  assert(
+    productionScopeResult.status === 1,
+    "expected installed verify:live production-scope no-session run to fail intentionally"
+  );
+  assert(
+    !`${productionScopeResult.stdout}\n${productionScopeResult.stderr}`.includes(tempRoot),
+    "expected installed verify:live production-scope console output to omit local temp paths"
+  );
+  assert(
+    !`${productionScopeResult.stdout}\n${productionScopeResult.stderr}`.includes("milk") &&
+      !`${productionScopeResult.stdout}\n${productionScopeResult.stderr}`.includes("home"),
+    "expected installed verify:live production-scope console output to omit workflow query values"
+  );
+  assert(existsSync(productionScopeReportPath), "expected installed verify:live production-scope no-session report");
+  const productionScopeReport = JSON.parse(readFileSync(productionScopeReportPath, "utf8"));
+  assert(
+    productionScopeReport.requested?.browserPreflight === true &&
+      productionScopeReport.requested?.localStatus === true &&
+      productionScopeReport.requested?.liveSession === true &&
+      productionScopeReport.requested?.search === true &&
+      productionScopeReport.requested?.addressUse === true &&
+      productionScopeReport.requested?.add === true &&
+      productionScopeReport.requested?.cart === true &&
+      productionScopeReport.requested?.checkoutHandoff === true &&
+      productionScopeReport.requested?.track === true,
+    "expected installed verify:live production-scope report to request final readiness coverage"
+  );
+  assert(
+    productionScopeReport.coverage?.browserPreflight === true &&
+      productionScopeReport.coverage?.localStatus === true &&
+      productionScopeReport.coverage?.liveSession === false &&
+      productionScopeReport.coverage?.search === false &&
+      productionScopeReport.coverage?.addressUse === false &&
+      productionScopeReport.coverage?.add === false &&
+      productionScopeReport.coverage?.cart === false &&
+      productionScopeReport.coverage?.checkoutHandoff === false &&
+      productionScopeReport.coverage?.track === false,
+    "expected installed verify:live production-scope no-session report to leave account workflow coverage false"
+  );
+  assert(
+    productionScopeReport.missingCoverage?.browserPreflight === false &&
+      productionScopeReport.missingCoverage?.localStatus === false &&
+      productionScopeReport.missingCoverage?.liveSession === true &&
+      productionScopeReport.missingCoverage?.search === true &&
+      productionScopeReport.missingCoverage?.addressUse === true &&
+      productionScopeReport.missingCoverage?.add === true &&
+      productionScopeReport.missingCoverage?.cart === true &&
+      productionScopeReport.missingCoverage?.checkoutHandoff === true &&
+      productionScopeReport.missingCoverage?.track === true,
+    "expected installed verify:live production-scope report to mark final readiness coverage missing without login"
+  );
+  assert(
+    !JSON.stringify(productionScopeReport).includes(tempRoot) &&
+      !JSON.stringify(productionScopeReport).includes("milk") &&
+      !JSON.stringify(productionScopeReport).includes("home"),
+    "expected installed verify:live production-scope report to omit local paths and workflow query values"
+  );
+  console.log("pass installed verify live production scope preset");
 
   const {
     adjustLiveReportRequestsForConfirmedSession,
