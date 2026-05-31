@@ -199,7 +199,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
-    "sanitized `generatedAt` plus data/report path metadata",
+    "sanitized `generatedAt` plus data/report path metadata, the fixed runner note",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -643,6 +643,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     buildLiveCommandTimeoutStep,
     buildLiveReportStep,
     createLiveConsoleTextRedactor,
+    LIVE_REPORT_NOTE,
     redactArgsForLiveConsole,
     redactArgsForLiveReport,
     redactLiveConsoleText,
@@ -783,7 +784,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     generatedAt: "2026-05-31T00:00:00.000Z",
     dataDir: "<redacted-data-dir>",
     reportPath: "<redacted-report-path>",
-    note: "Sanitized ZepoCli live verification report. Fixture omits raw workflow data.",
+    note: LIVE_REPORT_NOTE,
     requested: acceptedLiveReportRequested,
     attempted: summarizeLiveReportAttempts(acceptedLiveReportSteps),
     coverage: acceptedLiveReportCoverage,
@@ -1374,24 +1375,31 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
   }
   console.log("pass installed live report closed schema");
-  const metadataLiveReportIssues = validateLiveReportAcceptance(
+  const malformedMetadataLiveReports = [
     {
       ...acceptedLiveReport,
       generatedAt: "today",
       dataDir: "<redacted-local-path>"
     },
     {
-      expectedVersion: packageJson.version
+      ...acceptedLiveReport,
+      note: `${LIVE_REPORT_NOTE} Cart item Amul Milk 500ml was observed.`
     }
-  ).issues;
-  assert(
-    metadataLiveReportIssues.some((issue) => issue.code === "live_report_metadata_mismatch"),
-    "expected installed live report acceptance helper to reject malformed top-level metadata"
-  );
-  assert(
-    !JSON.stringify(metadataLiveReportIssues).includes("today"),
-    "expected installed live report metadata rejection to omit raw metadata values"
-  );
+  ];
+  for (const malformedMetadataLiveReport of malformedMetadataLiveReports) {
+    const metadataLiveReportIssues = validateLiveReportAcceptance(malformedMetadataLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues;
+    assert(
+      metadataLiveReportIssues.some((issue) => issue.code === "live_report_metadata_mismatch"),
+      "expected installed live report acceptance helper to reject malformed top-level metadata"
+    );
+    assert(
+      !JSON.stringify(metadataLiveReportIssues).includes("today") &&
+        !JSON.stringify(metadataLiveReportIssues).includes("Amul Milk 500ml"),
+      "expected installed live report metadata rejection to omit raw metadata values"
+    );
+  }
   console.log("pass installed live report metadata contract");
   const rawCommandLiveReport = {
     ...acceptedLiveReport,

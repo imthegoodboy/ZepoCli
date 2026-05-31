@@ -10,6 +10,7 @@ import {
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
   hasLiveReportMissingCoverage,
+  LIVE_REPORT_NOTE,
   redactArgsForLiveConsole,
   redactLiveConsoleText,
   summarizeLiveReportAttempts,
@@ -62,8 +63,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   dataDir: "<redacted-data-dir>",
   reportPath: "<redacted-report-path>",
-  note:
-    "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.",
+  note: LIVE_REPORT_NOTE,
   requested: requestedCoverage,
   attempted: summarizeLiveReportAttempts([]),
   coverage: initialCoverage,

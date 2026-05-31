@@ -157,6 +157,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
     expect(readme).toContain("sanitized `generatedAt` plus data/report path metadata");
+    expect(readme).toContain("the fixed runner note");
     expect(readme).toContain("accepted report schema");
     expect(readme).toContain("complete boolean capability summaries");
     expect(readme).toContain("redacted step command contract");
