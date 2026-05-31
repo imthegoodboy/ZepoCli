@@ -618,6 +618,73 @@ describe("live verification runner", () => {
     expect(outOfOrderStepResult.accepted).toBe(false);
     expect(outOfOrderStepResult.issues.map((issue) => issue.code)).toContain("live_report_step_order_mismatch");
 
+    const reportWithLoginStep = acceptedLiveReport({
+      requested: summarizeLiveReportRequests({
+        login: true,
+        search: "milk",
+        checkout: true
+      }),
+      steps: [
+        acceptedLiveReport().steps[0],
+        acceptedLiveReport().steps[1],
+        {
+          name: "login",
+          command: "zepo --data-dir <redacted-data-dir> --visible login --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            sessionSaved: true,
+            confirmedSession: true
+          }
+        },
+        ...acceptedLiveReport().steps.slice(2)
+      ]
+    });
+    reportWithLoginStep.attempted = summarizeLiveReportAttempts(reportWithLoginStep.steps);
+    reportWithLoginStep.coverage = summarizeLiveReportCoverage(reportWithLoginStep.steps);
+    reportWithLoginStep.missingCoverage = summarizeLiveReportMissingCoverage(
+      reportWithLoginStep.requested,
+      reportWithLoginStep.coverage
+    );
+
+    expect(
+      validateLiveReportAcceptance(reportWithLoginStep, {
+        expectedVersion: packageJson.version
+      })
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
+
+    const badLoginSummaryReport = acceptedLiveReport({
+      requested: reportWithLoginStep.requested,
+      steps: reportWithLoginStep.steps.map((step) =>
+        step.name === "login"
+          ? {
+              ...step,
+              summary: {
+                sessionSaved: true,
+                confirmedSession: false
+              }
+            }
+          : step
+      )
+    });
+    badLoginSummaryReport.attempted = summarizeLiveReportAttempts(badLoginSummaryReport.steps);
+    badLoginSummaryReport.coverage = summarizeLiveReportCoverage(badLoginSummaryReport.steps);
+    badLoginSummaryReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      badLoginSummaryReport.requested,
+      badLoginSummaryReport.coverage
+    );
+
+    const badLoginSummaryResult = validateLiveReportAcceptance(badLoginSummaryReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(badLoginSummaryResult.accepted).toBe(false);
+    expect(badLoginSummaryResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+
     const unrequestedBadCheckoutReport = acceptedLiveReport({
       requested: summarizeLiveReportRequests({
         search: "milk"

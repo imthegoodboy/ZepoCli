@@ -207,6 +207,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "unique workflow step names",
     "runner workflow order",
     "all passing workflow step summaries satisfy their known contracts",
+    "login session evidence",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
@@ -965,6 +966,66 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to reject out-of-order workflow steps"
   );
   console.log("pass installed live report step order contract");
+  const loginStepLiveReport = {
+    ...acceptedLiveReport,
+    requested: summarizeLiveReportRequests({
+      login: true,
+      search: "milk",
+      checkout: true
+    }),
+    steps: [
+      acceptedLiveReport.steps[0],
+      acceptedLiveReport.steps[1],
+      {
+        name: "login",
+        command: "zepo --data-dir <redacted-data-dir> --visible login --json",
+        exitCode: 0,
+        ok: true,
+        summary: {
+          sessionSaved: true,
+          confirmedSession: true
+        }
+      },
+      ...acceptedLiveReport.steps.slice(2)
+    ]
+  };
+  loginStepLiveReport.attempted = summarizeLiveReportAttempts(loginStepLiveReport.steps);
+  loginStepLiveReport.coverage = summarizeLiveReportCoverage(loginStepLiveReport.steps);
+  loginStepLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    loginStepLiveReport.requested,
+    loginStepLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(loginStepLiveReport, { expectedVersion: packageJson.version }).accepted === true,
+    "expected installed live report acceptance helper to accept login session evidence"
+  );
+  const badLoginStepLiveReport = {
+    ...loginStepLiveReport,
+    steps: loginStepLiveReport.steps.map((step) =>
+      step.name === "login"
+        ? {
+            ...step,
+            summary: {
+              sessionSaved: true,
+              confirmedSession: false
+            }
+          }
+        : step
+    )
+  };
+  badLoginStepLiveReport.attempted = summarizeLiveReportAttempts(badLoginStepLiveReport.steps);
+  badLoginStepLiveReport.coverage = summarizeLiveReportCoverage(badLoginStepLiveReport.steps);
+  badLoginStepLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    badLoginStepLiveReport.requested,
+    badLoginStepLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(badLoginStepLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject login steps without confirmed session evidence"
+  );
+  console.log("pass installed live report login step contract");
   const unrequestedBadCheckoutLiveReport = {
     ...acceptedLiveReport,
     requested: summarizeLiveReportRequests({
