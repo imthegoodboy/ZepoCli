@@ -55,6 +55,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("--step-timeout <ms>");
       expect(guidance).toContain("live runner command echoes");
       expect(guidance).toContain("final report-path line");
+      expect(guidance).toContain("stored step commands must match the runner's redacted command shapes");
       expect(guidance).toContain("npm --silent run verify:live");
       expect(guidance).toContain("interrupted with Ctrl+C/SIGTERM");
       expect(guidance).toContain("write the same sanitized partial report when possible");
@@ -109,6 +110,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("They do not prove a real Zepto account can complete login");
     expect(liveVerifierSkill).toContain("Do not mark the project fully complete until a human-controlled Zepto account exercises the required live workflow");
     expect(liveVerifierSkill).toContain("The report contains only accepted schema fields");
+    expect(liveVerifierSkill).toContain("Stored step command strings match the redacted command contract");
     expect(liveVerifierSkill).toContain("`requested` shows the explicit verification scope without workflow query values");
     expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");
@@ -123,6 +125,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("live_command_timeout");
     expect(liveVerifierSkill).toContain("--step-timeout <ms>");
     expect(liveVerifierSkill).toContain("The report, live runner command echoes, and final report-path line redact data directory");
+    expect(liveVerifierSkill).toContain("Stored step commands must match the runner's redacted command shapes");
     expect(liveVerifierSkill).toContain("npm-token-shaped values");
     expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");

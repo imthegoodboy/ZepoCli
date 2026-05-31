@@ -58,6 +58,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
   const steps = [
     {
       name: "doctor",
+      command: "zepo --data-dir <redacted-data-dir> doctor --json",
       ok: true,
       summary: {
         ok: true,
@@ -67,6 +68,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     },
     {
       name: "status",
+      command: "zepo --data-dir <redacted-data-dir> status --json",
       ok: true,
       summary: {
         confirmedSession: true,
@@ -75,6 +77,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     },
     {
       name: "status live",
+      command: "zepo --data-dir <redacted-data-dir> --visible status --live --json",
       ok: true,
       summary: {
         confirmedSession: true,
@@ -84,6 +87,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     },
     {
       name: "search",
+      command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
       ok: true,
       summary: {
         productCount: 1
@@ -91,6 +95,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     },
     {
       name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
@@ -501,10 +506,114 @@ describe("live verification runner", () => {
       expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
     }
 
+    const rawCommandReports = [
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "search"
+            ? { ...step, command: "zepo --data-dir <redacted-data-dir> --visible search Amul Milk 500ml --json" }
+            : step
+        )
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "add",
+            command: "zepo --data-dir <redacted-data-dir> --visible add protein bars --quantity 1 --json",
+            ok: false,
+            error: {
+              code: "command_failed",
+              message: "failed"
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "address use",
+            command: "zepo --data-dir <redacted-data-dir> --visible address use home --json",
+            ok: false,
+            error: {
+              code: "command_failed",
+              message: "failed"
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "remove",
+            command: "zepo --data-dir <redacted-data-dir> --visible remove chips --json",
+            ok: false,
+            error: {
+              code: "command_failed",
+              message: "failed"
+            }
+          }
+        ]
+      })
+    ];
+
+    for (const report of rawCommandReports) {
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_command_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
+      expect(JSON.stringify(result.issues)).not.toContain("protein bars");
+      expect(JSON.stringify(result.issues)).not.toContain("chips");
+    }
+
+    const missingCommandReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "search"
+          ? {
+              name: step.name,
+              ok: step.ok,
+              summary: step.summary
+            }
+          : step
+      )
+    });
+
+    expect(
+      validateLiveReportAcceptance(missingCommandReport, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_command_mismatch");
+
+    const manualPartialReport = acceptedLiveReport({
+      ok: false,
+      steps: [
+        ...acceptedLiveReport().steps,
+        {
+          name: "login",
+          command: "manual",
+          ok: false,
+          error: {
+            code: "live_verification_incomplete",
+            message: "No confirmed Zepto session is available."
+          }
+        }
+      ]
+    });
+
+    expect(
+      validateLiveReportAcceptance(manualPartialReport, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).not.toContain("live_report_command_mismatch");
+
     const weakDoctor = acceptedLiveReport({
       steps: [
         {
           name: "doctor",
+          command: "zepo --data-dir <redacted-data-dir> doctor --json",
           ok: true,
           summary: {
             ok: true,

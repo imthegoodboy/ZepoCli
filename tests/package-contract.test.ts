@@ -269,6 +269,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject fields outside the accepted schema");
     expect(verifier).toContain("expected installed live report unexpected-field rejection to omit raw workflow values");
     expect(verifier).toContain("pass installed live report closed schema");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject unredacted command strings");
+    expect(verifier).toContain("expected installed live report command rejection to omit raw workflow values");
+    expect(verifier).toContain("expected installed live report acceptance helper to require redacted command strings");
+    expect(verifier).toContain("pass installed live report command contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
     expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");
     expect(verifier).toContain("pass installed live report sensitive text rejection");
