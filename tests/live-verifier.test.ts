@@ -1161,11 +1161,11 @@ describe("live verification runner", () => {
       ]
     });
 
-    expect(
-      validateLiveReportAcceptance(manualPartialReport, {
-        expectedVersion: packageJson.version
-      }).issues.map((issue) => issue.code)
-    ).not.toContain("live_report_command_mismatch");
+    const manualPartialReportIssueCodes = validateLiveReportAcceptance(manualPartialReport, {
+      expectedVersion: packageJson.version
+    }).issues.map((issue) => issue.code);
+    expect(manualPartialReportIssueCodes).not.toContain("live_report_command_mismatch");
+    expect(manualPartialReportIssueCodes).not.toContain("live_report_error_mismatch");
 
     const malformedStepResultReports = [
       acceptedLiveReport({
@@ -1238,6 +1238,90 @@ describe("live verification runner", () => {
       expect(result.accepted).toBe(false);
       expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_result_mismatch");
       expect(JSON.stringify(result.issues)).not.toContain("failed");
+    }
+
+    const malformedErrorReports = [
+      acceptedLiveReport({
+        ok: false,
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "cart",
+            command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+            exitCode: 1,
+            ok: false,
+            error: {
+              code: "not_a_stable_code",
+              message: "failed"
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        ok: false,
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "cart",
+            command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+            exitCode: 1,
+            ok: false,
+            error: {
+              code: "command_failed",
+              message: ""
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        ok: false,
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "cart",
+            command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+            exitCode: 1,
+            ok: false,
+            error: {
+              code: "command_failed",
+              message: "failed",
+              hint: 123
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        ok: false,
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "cart",
+            command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+            exitCode: 1,
+            ok: false,
+            error: {
+              code: "zepto_access_cooldown",
+              message: "cooling down",
+              retryAfterMs: -1
+            }
+          }
+        ]
+      })
+    ];
+
+    for (const report of malformedErrorReports) {
+      report.attempted = summarizeLiveReportAttempts(report.steps);
+      report.coverage = summarizeLiveReportCoverage(report.steps);
+      report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_error_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("not_a_stable_code");
+      expect(JSON.stringify(result.issues)).not.toContain("failed");
+      expect(JSON.stringify(result.issues)).not.toContain("cooling down");
     }
 
     const weakDoctor = acceptedLiveReport({

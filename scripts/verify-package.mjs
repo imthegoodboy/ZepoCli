@@ -214,6 +214,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
+    "stable failure error objects",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -1473,6 +1474,81 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
   }
   console.log("pass installed live report step result contract");
+  const malformedErrorLiveReports = [
+    {
+      ...acceptedLiveReport,
+      ok: false,
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "cart",
+          command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "not_a_stable_code",
+            message: "failed"
+          }
+        }
+      ]
+    },
+    {
+      ...acceptedLiveReport,
+      ok: false,
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "cart",
+          command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "command_failed",
+            message: ""
+          }
+        }
+      ]
+    },
+    {
+      ...acceptedLiveReport,
+      ok: false,
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "cart",
+          command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "zepto_access_cooldown",
+            message: "cooling down",
+            retryAfterMs: -1
+          }
+        }
+      ]
+    }
+  ];
+  for (const malformedErrorLiveReport of malformedErrorLiveReports) {
+    malformedErrorLiveReport.attempted = summarizeLiveReportAttempts(malformedErrorLiveReport.steps);
+    malformedErrorLiveReport.coverage = summarizeLiveReportCoverage(malformedErrorLiveReport.steps);
+    malformedErrorLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      malformedErrorLiveReport.requested,
+      malformedErrorLiveReport.coverage
+    );
+    const malformedErrorIssues = validateLiveReportAcceptance(malformedErrorLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues;
+    assert(
+      malformedErrorIssues.some((issue) => issue.code === "live_report_error_mismatch"),
+      "expected installed live report acceptance helper to reject malformed error objects"
+    );
+    assert(
+      !JSON.stringify(malformedErrorIssues).includes("not_a_stable_code") &&
+        !JSON.stringify(malformedErrorIssues).includes("cooling down"),
+      "expected installed live report error rejection to omit raw values"
+    );
+  }
+  console.log("pass installed live report error object contract");
   const sensitiveLiveReport = {
     ...acceptedLiveReport,
     reportPath: join(tempRoot, "raw-live-verification-report.json"),

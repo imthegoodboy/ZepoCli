@@ -413,6 +413,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
     validateLiveReportCommandContract(step, issues);
     if (isObject(step.error)) {
       validateAllowedLiveReportKeys(step.error, LIVE_REPORT_ERROR_KEYS, issues);
+      validateLiveReportErrorContract(step.error, issues);
     }
 
     if (isObject(step.summary)) {
@@ -688,6 +689,28 @@ function addLiveReportStepResultMismatchIssue(issues) {
     issues.push({
       code: "live_report_step_result_mismatch",
       message: "Live report steps must include consistent exitCode, ok, summary, and error fields."
+    });
+  }
+}
+
+function validateLiveReportErrorContract(error, issues) {
+  if (
+    !hasReadableText(error.code) ||
+    !SAFE_REPORT_ERROR_CODES.has(error.code) ||
+    !hasReadableText(error.message) ||
+    (error.hint !== undefined && !hasReadableText(error.hint)) ||
+    (error.retryAfterMs !== undefined &&
+      (!Number.isInteger(error.retryAfterMs) || error.retryAfterMs < 0))
+  ) {
+    addLiveReportErrorMismatchIssue(issues);
+  }
+}
+
+function addLiveReportErrorMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_error_mismatch")) {
+    issues.push({
+      code: "live_report_error_mismatch",
+      message: "Live report error objects must keep stable code, message, hint, and retryAfterMs fields."
     });
   }
 }

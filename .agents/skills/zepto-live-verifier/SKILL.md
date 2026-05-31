@@ -84,6 +84,7 @@ The live report is acceptable only when:
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - Stored step command strings match the redacted command contract.
 - Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.
+- Failing step error objects use stable `code`, readable `message`/`hint`, and valid `retryAfterMs` fields.
 - `ok: true` reports contain only passing known workflow steps.
 - Every workflow step name appears at most once in an ok report.
 - Ok report workflow steps follow the live runner order.

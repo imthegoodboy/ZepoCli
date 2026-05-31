@@ -171,6 +171,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("all passing workflow step summaries satisfy their known contracts");
     expect(readme).toContain("login session evidence");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
+    expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");

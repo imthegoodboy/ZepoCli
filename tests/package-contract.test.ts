@@ -314,6 +314,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("pass installed live report command contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject inconsistent step result fields");
     expect(verifier).toContain("pass installed live report step result contract");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject malformed error objects");
+    expect(verifier).toContain("expected installed live report error rejection to omit raw values");
+    expect(verifier).toContain("pass installed live report error object contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
     expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");
     expect(verifier).toContain("pass installed live report sensitive text rejection");

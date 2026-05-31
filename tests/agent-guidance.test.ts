@@ -114,6 +114,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("The report contains only accepted schema fields");
     expect(liveVerifierSkill).toContain("Stored step command strings match the redacted command contract");
     expect(liveVerifierSkill).toContain("Passing steps include `exitCode: 0` and a summary");
+    expect(liveVerifierSkill).toContain("Failing step error objects use stable `code`, readable `message`/`hint`, and valid `retryAfterMs` fields");
     expect(liveVerifierSkill).toContain("`ok: true` reports contain only passing known workflow steps");
     expect(liveVerifierSkill).toContain("Every workflow step name appears at most once in an ok report");
     expect(liveVerifierSkill).toContain("Ok report workflow steps follow the live runner order");
