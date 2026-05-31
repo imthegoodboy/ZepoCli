@@ -596,6 +596,39 @@ describe("live verification runner", () => {
     );
     expect(JSON.stringify(duplicateStepResult.issues)).not.toContain("paid");
 
+    const unrequestedBadCheckoutReport = acceptedLiveReport({
+      requested: summarizeLiveReportRequests({
+        search: "milk"
+      }),
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                paymentStatus: "paid",
+                orderPlacement: "confirmed"
+              }
+            }
+          : step
+      )
+    });
+    unrequestedBadCheckoutReport.attempted = summarizeLiveReportAttempts(unrequestedBadCheckoutReport.steps);
+    unrequestedBadCheckoutReport.coverage = summarizeLiveReportCoverage(unrequestedBadCheckoutReport.steps);
+    unrequestedBadCheckoutReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      unrequestedBadCheckoutReport.requested,
+      unrequestedBadCheckoutReport.coverage
+    );
+
+    const unrequestedBadCheckoutResult = validateLiveReportAcceptance(unrequestedBadCheckoutReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(unrequestedBadCheckoutResult.accepted).toBe(false);
+    expect(unrequestedBadCheckoutResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+    expect(JSON.stringify(unrequestedBadCheckoutResult.issues)).not.toContain("paid");
+
     const sensitiveReport = acceptedLiveReport({
       dataDir: "C:\\Users\\parth\\.zepo-live",
       note: `raw token npm_${"A".repeat(24)} should not be accepted`
@@ -934,7 +967,7 @@ describe("live verification runner", () => {
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
-  });
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("summarizes requested but uncovered live report capabilities", () => {
     const requested = summarizeLiveReportRequests({

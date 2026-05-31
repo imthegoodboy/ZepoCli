@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import packageJson from "../package.json" with { type: "json" };
 
 const rootDir = resolve(import.meta.dirname, "..");
+const PACKAGE_CONTRACT_SLOW_TEST_TIMEOUT_MS = 15_000;
 const skippedSecretScanDirectories = new Set([".git", "coverage", "dist", "node_modules"]);
 const scannedTextFileExtensions = new Set([
   ".json",
@@ -122,7 +123,7 @@ describe("package CLI contract", () => {
     });
 
     expect(leakedTokens).toEqual([]);
-  });
+  }, PACKAGE_CONTRACT_SLOW_TEST_TIMEOUT_MS);
 
   it("keeps the source entry declared as a Node executable", () => {
     const sourceEntry = readFileSync(resolve(rootDir, "src", "index.ts"), "utf8");
@@ -210,7 +211,7 @@ describe("package CLI contract", () => {
     } finally {
       rmSync(fixturePath, { force: true });
     }
-  });
+  }, PACKAGE_CONTRACT_SLOW_TEST_TIMEOUT_MS);
 
   it("keeps installed package verification checking shipped README guidance", () => {
     const verifier = readFileSync(resolve(rootDir, "scripts", "verify-package.mjs"), "utf8");
@@ -276,6 +277,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject duplicate workflow steps");
     expect(verifier).toContain("expected installed live report duplicate-step rejection to omit raw duplicate step values");
     expect(verifier).toContain("pass installed live report unique step contract");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject malformed unrequested passing steps");
+    expect(verifier).toContain("expected installed live report all-step contract rejection to omit raw step values");
+    expect(verifier).toContain("pass installed live report all passing step contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject fields outside the accepted schema");
     expect(verifier).toContain("expected installed live report unexpected-field rejection to omit raw workflow values");
     expect(verifier).toContain("pass installed live report closed schema");

@@ -162,6 +162,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("redacted step command contract");
     expect(readme).toContain("`ok` reports containing only passing known workflow steps");
     expect(readme).toContain("unique workflow step names");
+    expect(readme).toContain("all passing workflow step summaries satisfy their known contracts");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
