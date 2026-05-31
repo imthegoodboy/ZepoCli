@@ -87,6 +87,7 @@ The live report is acceptable only when:
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.
+- `requested`, `attempted`, `coverage`, and `missingCoverage` contain every supported capability as booleans.
 - `attempted` and `coverage` match the saved `steps` array; agents must reject edited summaries that do not match step evidence.
 - The report keys and values do not contain sensitive-looking local paths, phone/order/payment/verification values, or npm-token-shaped values.
 - `missingCoverage` shows requested capabilities that did not pass; all values must be false before treating a requested scope as verified.

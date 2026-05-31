@@ -464,6 +464,47 @@ describe("live verification runner", () => {
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_coverage_mismatch");
 
+    const malformedCapabilityReports = [
+      acceptedLiveReport({
+        requested: {
+          ...acceptedLiveReport().requested,
+          search: "true"
+        }
+      }),
+      acceptedLiveReport({
+        attempted: {
+          ...acceptedLiveReport().attempted,
+          checkoutHandoff: 1
+        }
+      }),
+      acceptedLiveReport({
+        coverage: {
+          ...acceptedLiveReport().coverage,
+          search: "yes"
+        }
+      }),
+      acceptedLiveReport({
+        missingCoverage: {
+          ...acceptedLiveReport().missingCoverage,
+          checkoutHandoff: "false"
+        }
+      }),
+      acceptedLiveReport({
+        requested: Object.fromEntries(
+          Object.entries(acceptedLiveReport().requested).filter(([key]) => key !== "search")
+        )
+      })
+    ];
+
+    for (const report of malformedCapabilityReports) {
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_capability_summary_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("yes");
+    }
+
     const sensitiveReport = acceptedLiveReport({
       dataDir: "C:\\Users\\parth\\.zepo-live",
       note: `raw token npm_${"A".repeat(24)} should not be accepted`

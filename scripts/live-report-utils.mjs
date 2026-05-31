@@ -391,6 +391,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
   for (const value of [report.requested, report.attempted, report.coverage, report.missingCoverage]) {
     if (isObject(value)) {
       validateAllowedLiveReportKeys(value, LIVE_REPORT_CAPABILITY_KEYS, issues);
+      validateLiveReportCapabilitySummaryContract(value, issues);
     }
   }
 
@@ -417,6 +418,24 @@ function validateLiveReportAcceptedSchema(report, issues) {
         issues
       );
     }
+  }
+}
+
+function validateLiveReportCapabilitySummaryContract(value, issues) {
+  for (const key of LIVE_REPORT_CAPABILITY_KEYS) {
+    if (typeof value[key] !== "boolean") {
+      addLiveReportCapabilitySummaryMismatchIssue(issues);
+      return;
+    }
+  }
+}
+
+function addLiveReportCapabilitySummaryMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_capability_summary_mismatch")) {
+    issues.push({
+      code: "live_report_capability_summary_mismatch",
+      message: "Live report capability summaries must include complete boolean fields."
+    });
   }
 }
 

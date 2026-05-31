@@ -201,6 +201,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "sanitized `generatedAt` plus data/report path metadata",
     "accepted report schema",
+    "complete boolean capability summaries",
     "redacted step command contract",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
@@ -811,6 +812,28 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to reject coverage summaries that do not match steps"
   );
   console.log("pass installed live report summary consistency");
+  const malformedCapabilityLiveReports = [
+    {
+      ...acceptedLiveReport,
+      requested: {
+        ...acceptedLiveReport.requested,
+        search: "true"
+      }
+    },
+    {
+      ...acceptedLiveReport,
+      coverage: Object.fromEntries(Object.entries(acceptedLiveReport.coverage).filter(([key]) => key !== "search"))
+    }
+  ];
+  for (const malformedCapabilityLiveReport of malformedCapabilityLiveReports) {
+    assert(
+      validateLiveReportAcceptance(malformedCapabilityLiveReport, {
+        expectedVersion: packageJson.version
+      }).issues.some((issue) => issue.code === "live_report_capability_summary_mismatch"),
+      "expected installed live report acceptance helper to reject incomplete or non-boolean capability summaries"
+    );
+  }
+  console.log("pass installed live report capability summary contract");
   const unexpectedFieldLiveReports = [
     {
       ...acceptedLiveReport,
