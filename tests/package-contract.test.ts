@@ -282,6 +282,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to accept login session evidence");
     expect(verifier).toContain("expected installed live report acceptance helper to reject login steps without confirmed session evidence");
     expect(verifier).toContain("pass installed live report login step contract");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject stringly typed step summaries");
+    expect(verifier).toContain("expected installed live report summary type rejection to omit raw step values");
+    expect(verifier).toContain("pass installed live report summary value contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject malformed unrequested passing steps");
     expect(verifier).toContain("expected installed live report all-step contract rejection to omit raw step values");
     expect(verifier).toContain("pass installed live report all passing step contract");
