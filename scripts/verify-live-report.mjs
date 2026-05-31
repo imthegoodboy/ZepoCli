@@ -90,6 +90,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - ok is true
 - report fields match the accepted schema
 - attempted and coverage summaries match the steps array
+- stored step command strings match the redacted command contract
 - sensitive-looking report keys and values have been redacted
 - requested capabilities have passing coverage
 - missingCoverage has no true values

@@ -149,7 +149,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("standalone percent-encoded sensitive fragments");
     expect(readme).toContain("live-verification-report.json` with the package `version`");
     expect(readme).toContain(
-      "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, search/add/remove/address-use query text, and npm-token-shaped values"
+      "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, search/add/remove/address-use query text, and npm-token-shaped values; stored step commands must also match the runner's redacted command shapes"
     );
     expect(readme).toContain("The examples use `npm --silent run verify:live -- ...`");
     expect(readme).toContain("interrupted with Ctrl+C/SIGTERM");
@@ -157,6 +157,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
     expect(readme).toContain("accepted report schema");
+    expect(readme).toContain("redacted step command contract");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");

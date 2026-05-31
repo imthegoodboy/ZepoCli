@@ -28,7 +28,7 @@ For a safe no-account smoke, run `verify:live` with a disposable data directory 
 - `status` passes with structured browser automation readiness.
 - The runner stops with `live_verification_incomplete` for missing login.
 - Slow human-controlled steps fail with `live_command_timeout`; increase `--step-timeout <ms>` only when the Zepto browser step legitimately needs more time.
-- The report, live runner command echoes, and final report-path line redact data directory, report path, phone input, workflow query arguments, order ids, payment handles, card-like numbers, OTP/PIN values, npm-token-shaped values, standalone percent-encoded sensitive fragments, and raw Zepto page text.
+- The report, live runner command echoes, and final report-path line redact data directory, report path, phone input, workflow query arguments, order ids, payment handles, card-like numbers, OTP/PIN values, npm-token-shaped values, standalone percent-encoded sensitive fragments, and raw Zepto page text. Stored step commands must match the runner's redacted command shapes.
 
 ## Human-Controlled Live Pass
 
@@ -81,6 +81,7 @@ The live report is acceptable only when:
 - `ok` is true.
 - `version` matches `package.json`.
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
+- Stored step command strings match the redacted command contract.
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.

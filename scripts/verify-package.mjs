@@ -200,6 +200,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "accepted report schema",
+    "redacted step command contract",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -703,6 +704,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const acceptedLiveReportSteps = [
     {
       name: "doctor",
+      command: "zepo --data-dir <redacted-data-dir> doctor --json",
       ok: true,
       summary: {
         ok: true,
@@ -712,6 +714,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       name: "status",
+      command: "zepo --data-dir <redacted-data-dir> status --json",
       ok: true,
       summary: {
         confirmedSession: true,
@@ -720,6 +723,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       name: "status live",
+      command: "zepo --data-dir <redacted-data-dir> --visible status --live --json",
       ok: true,
       summary: {
         confirmedSession: true,
@@ -729,6 +733,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       name: "search",
+      command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
       ok: true,
       summary: {
         productCount: 1
@@ -736,6 +741,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
@@ -828,6 +834,44 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
   }
   console.log("pass installed live report closed schema");
+  const rawCommandLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "search"
+        ? { ...step, command: "zepo --data-dir <redacted-data-dir> --visible search Amul Milk 500ml --json" }
+        : step
+    )
+  };
+  const rawCommandIssues = validateLiveReportAcceptance(rawCommandLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    rawCommandIssues.some((issue) => issue.code === "live_report_command_mismatch"),
+    "expected installed live report acceptance helper to reject unredacted command strings"
+  );
+  assert(
+    !JSON.stringify(rawCommandIssues).includes("Amul Milk 500ml"),
+    "expected installed live report command rejection to omit raw workflow values"
+  );
+  const missingCommandLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "search"
+        ? {
+            name: step.name,
+            ok: step.ok,
+            summary: step.summary
+          }
+        : step
+    )
+  };
+  assert(
+    validateLiveReportAcceptance(missingCommandLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_command_mismatch"),
+    "expected installed live report acceptance helper to require redacted command strings"
+  );
+  console.log("pass installed live report command contract");
   const sensitiveLiveReport = {
     ...acceptedLiveReport,
     reportPath: join(tempRoot, "raw-live-verification-report.json"),

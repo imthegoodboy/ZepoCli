@@ -403,6 +403,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
     }
 
     validateAllowedLiveReportKeys(step, LIVE_REPORT_STEP_KEYS, issues);
+    validateLiveReportCommandContract(step, issues);
     if (isObject(step.error)) {
       validateAllowedLiveReportKeys(step.error, LIVE_REPORT_ERROR_KEYS, issues);
     }
@@ -414,6 +415,34 @@ function validateLiveReportAcceptedSchema(report, issues) {
         issues
       );
     }
+  }
+}
+
+function validateLiveReportCommandContract(step, issues) {
+  if (!hasReadableText(step.command)) {
+    addLiveReportCommandMismatchIssue(issues);
+    return;
+  }
+
+  if (step.command === "manual" || step.command === "internal") {
+    if (step.ok === true) {
+      addLiveReportCommandMismatchIssue(issues);
+    }
+    return;
+  }
+
+  const pattern = LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME.get(step.name);
+  if (!pattern || !pattern.test(step.command)) {
+    addLiveReportCommandMismatchIssue(issues);
+  }
+}
+
+function addLiveReportCommandMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_command_mismatch")) {
+    issues.push({
+      code: "live_report_command_mismatch",
+      message: "Live report command strings must match the redacted command contract."
+    });
   }
 }
 
@@ -551,6 +580,27 @@ const LIVE_REPORT_CAPABILITY_KEYS = new Set(Object.keys(createLiveReportCapabili
 const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error"]);
 const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
 const LIVE_REPORT_FALLBACK_SUMMARY_KEYS = new Set(["observed"]);
+const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
+  ["doctor", /^zepo --data-dir <redacted-data-dir> doctor --json$/],
+  ["status", /^zepo --data-dir <redacted-data-dir> status --json$/],
+  ["login", /^zepo --data-dir <redacted-data-dir> --visible login(?: --phone <redacted-phone>)? --json$/],
+  ["status live", /^zepo --data-dir <redacted-data-dir> --visible status --live --json$/],
+  ["search", /^zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json$/],
+  ["address add", /^zepo --data-dir <redacted-data-dir> --visible address add --json$/],
+  ["address list", /^zepo --data-dir <redacted-data-dir> --visible address list --json$/],
+  ["address use", /^zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json$/],
+  [
+    "add",
+    /^zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity (?:[1-9]|1[0-2])(?: --choose)? --json$/
+  ],
+  ["cart", /^zepo --data-dir <redacted-data-dir> --visible cart --json$/],
+  ["remove", /^zepo --data-dir <redacted-data-dir> --visible remove <redacted-cart-query> --json$/],
+  ["clear", /^zepo --data-dir <redacted-data-dir> --visible clear --json$/],
+  ["checkout", /^zepo --data-dir <redacted-data-dir> --visible checkout --json$/],
+  ["track", /^zepo --data-dir <redacted-data-dir> --visible track --json$/],
+  ["history", /^zepo --data-dir <redacted-data-dir> --visible history --json$/],
+  ["reorder", /^zepo --data-dir <redacted-data-dir> --visible reorder last --json$/]
+]);
 const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
   ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
