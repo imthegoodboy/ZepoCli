@@ -209,6 +209,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "complete workflow step summaries",
     "typed workflow step summaries",
     "runner-known string and string-array workflow step summaries",
+    "internally consistent workflow step summaries",
     "bounded numeric workflow step summaries",
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
@@ -1137,6 +1138,81 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
   }
   console.log("pass installed live report string summary value contract");
+  const inconsistentSummaryLiveReports = [
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "doctor"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                failures: ["SQLite"]
+              }
+            }
+          : step
+      )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: [
+        ...acceptedLiveReport.steps.slice(0, 3),
+        {
+          name: "address list",
+          command: "zepo --data-dir <redacted-data-dir> --visible address list --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            addressCount: 1,
+            selectedCount: 2
+          }
+        },
+        ...acceptedLiveReport.steps.slice(3)
+      ]
+    },
+    {
+      ...acceptedLiveReport,
+      requested: summarizeLiveReportRequests({
+        search: "milk",
+        checkout: true,
+        track: true
+      }),
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "track",
+          command: "zepo --data-dir <redacted-data-dir> --visible track --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            orderCount: 0,
+            latestHasStatus: true,
+            latestHasEta: false
+          }
+        }
+      ]
+    }
+  ];
+  for (const inconsistentSummaryLiveReport of inconsistentSummaryLiveReports) {
+    inconsistentSummaryLiveReport.attempted = summarizeLiveReportAttempts(inconsistentSummaryLiveReport.steps);
+    inconsistentSummaryLiveReport.coverage = summarizeLiveReportCoverage(inconsistentSummaryLiveReport.steps);
+    inconsistentSummaryLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      inconsistentSummaryLiveReport.requested,
+      inconsistentSummaryLiveReport.coverage
+    );
+    const inconsistentSummaryIssues = validateLiveReportAcceptance(inconsistentSummaryLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues;
+    assert(
+      inconsistentSummaryIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+      "expected installed live report acceptance helper to reject internally inconsistent step summaries"
+    );
+    assert(
+      !JSON.stringify(inconsistentSummaryIssues).includes("SQLite"),
+      "expected installed live report summary consistency rejection to omit raw values"
+    );
+  }
+  console.log("pass installed live report summary consistency contract");
   const oversizedSummaryLiveReport = {
     ...acceptedLiveReport,
     steps: acceptedLiveReport.steps.map((step) =>

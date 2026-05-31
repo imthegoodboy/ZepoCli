@@ -289,6 +289,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject freeform string summaries");
     expect(verifier).toContain("expected installed live report string summary rejection to omit raw values");
     expect(verifier).toContain("pass installed live report string summary value contract");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject internally inconsistent step summaries");
+    expect(verifier).toContain("expected installed live report summary consistency rejection to omit raw values");
+    expect(verifier).toContain("pass installed live report summary consistency contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject oversized numeric summaries");
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking numeric summaries");
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive oversized numeric summaries");

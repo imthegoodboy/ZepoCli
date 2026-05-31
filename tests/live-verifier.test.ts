@@ -786,6 +786,93 @@ describe("live verification runner", () => {
       expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
     }
 
+    const inconsistentSummaryReports = [
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "doctor"
+            ? {
+                ...step,
+                summary: {
+                  ...step.summary,
+                  failures: ["SQLite"]
+                }
+              }
+            : step
+        )
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps.slice(0, 3),
+          {
+            name: "address list",
+            command: "zepo --data-dir <redacted-data-dir> --visible address list --json",
+            exitCode: 0,
+            ok: true,
+            summary: {
+              addressCount: 1,
+              selectedCount: 2
+            }
+          },
+          ...acceptedLiveReport().steps.slice(3)
+        ]
+      }),
+      acceptedLiveReport({
+        requested: summarizeLiveReportRequests({
+          search: "milk",
+          checkout: true,
+          track: true
+        }),
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "track",
+            command: "zepo --data-dir <redacted-data-dir> --visible track --json",
+            exitCode: 0,
+            ok: true,
+            summary: {
+              orderCount: 0,
+              latestHasStatus: true,
+              latestHasEta: false
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        requested: summarizeLiveReportRequests({
+          search: "milk",
+          checkout: true,
+          history: true
+        }),
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "history",
+            command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+            exitCode: 0,
+            ok: true,
+            summary: {
+              orderCount: 0,
+              latestHasStatus: false,
+              latestHasEta: true
+            }
+          }
+        ]
+      })
+    ];
+
+    for (const report of inconsistentSummaryReports) {
+      report.attempted = summarizeLiveReportAttempts(report.steps);
+      report.coverage = summarizeLiveReportCoverage(report.steps);
+      report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("SQLite");
+    }
+
     const oversizedSummaryReport = acceptedLiveReport({
       steps: acceptedLiveReport().steps.map((step) =>
         step.name === "search"

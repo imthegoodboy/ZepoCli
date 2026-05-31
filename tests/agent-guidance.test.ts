@@ -120,6 +120,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Workflow step summaries include every runner-defined key");
     expect(liveVerifierSkill).toContain("Workflow step summary values keep the runner's expected types");
     expect(liveVerifierSkill).toContain("String and string-array workflow step summary values stay within runner-known values");
+    expect(liveVerifierSkill).toContain("Related workflow step summary fields are internally consistent");
     expect(liveVerifierSkill).toContain("Numeric workflow step summaries stay within runner-supported ranges");
     expect(liveVerifierSkill).toContain("Every passing workflow step summary satisfies its known report contract");
     expect(liveVerifierSkill).toContain("`requested` shows the explicit verification scope without workflow query values");
