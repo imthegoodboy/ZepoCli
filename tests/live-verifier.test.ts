@@ -715,6 +715,62 @@ describe("live verification runner", () => {
     );
     expect(JSON.stringify(stringlySummaryResult.issues)).not.toContain('"1"');
 
+    const oversizedSummaryReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "search"
+          ? {
+              ...step,
+              summary: {
+                productCount: 51
+              }
+            }
+          : step
+      )
+    });
+    oversizedSummaryReport.attempted = summarizeLiveReportAttempts(oversizedSummaryReport.steps);
+    oversizedSummaryReport.coverage = summarizeLiveReportCoverage(oversizedSummaryReport.steps);
+    oversizedSummaryReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      oversizedSummaryReport.requested,
+      oversizedSummaryReport.coverage
+    );
+
+    const oversizedSummaryResult = validateLiveReportAcceptance(oversizedSummaryReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(oversizedSummaryResult.accepted).toBe(false);
+    expect(oversizedSummaryResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+
+    const sensitiveNumberSummaryReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "search"
+          ? {
+              ...step,
+              summary: {
+                productCount: 9876543210
+              }
+            }
+          : step
+      )
+    });
+    sensitiveNumberSummaryReport.attempted = summarizeLiveReportAttempts(sensitiveNumberSummaryReport.steps);
+    sensitiveNumberSummaryReport.coverage = summarizeLiveReportCoverage(sensitiveNumberSummaryReport.steps);
+    sensitiveNumberSummaryReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      sensitiveNumberSummaryReport.requested,
+      sensitiveNumberSummaryReport.coverage
+    );
+
+    const sensitiveNumberSummaryResult = validateLiveReportAcceptance(sensitiveNumberSummaryReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(sensitiveNumberSummaryResult.accepted).toBe(false);
+    expect(sensitiveNumberSummaryResult.issues.map((issue) => issue.code)).toContain("live_report_sensitive_text");
+    expect(sensitiveNumberSummaryResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+    expect(JSON.stringify(sensitiveNumberSummaryResult.issues)).not.toContain("9876543210");
+
     const strippedSummaryReport = acceptedLiveReport({
       steps: acceptedLiveReport().steps.map((step) =>
         step.name === "doctor"

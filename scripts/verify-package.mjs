@@ -208,6 +208,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "runner workflow order",
     "complete workflow step summaries",
     "typed workflow step summaries",
+    "bounded numeric workflow step summaries",
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
@@ -1061,6 +1062,67 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report summary type rejection to omit raw step values"
   );
   console.log("pass installed live report summary value contract");
+  const oversizedSummaryLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "search"
+        ? {
+            ...step,
+            summary: {
+              productCount: 51
+            }
+          }
+        : step
+    )
+  };
+  oversizedSummaryLiveReport.attempted = summarizeLiveReportAttempts(oversizedSummaryLiveReport.steps);
+  oversizedSummaryLiveReport.coverage = summarizeLiveReportCoverage(oversizedSummaryLiveReport.steps);
+  oversizedSummaryLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    oversizedSummaryLiveReport.requested,
+    oversizedSummaryLiveReport.coverage
+  );
+  const oversizedSummaryIssues = validateLiveReportAcceptance(oversizedSummaryLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    oversizedSummaryIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject oversized numeric summaries"
+  );
+  const sensitiveNumberSummaryLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "search"
+        ? {
+            ...step,
+            summary: {
+              productCount: 9876543210
+            }
+          }
+        : step
+    )
+  };
+  sensitiveNumberSummaryLiveReport.attempted = summarizeLiveReportAttempts(sensitiveNumberSummaryLiveReport.steps);
+  sensitiveNumberSummaryLiveReport.coverage = summarizeLiveReportCoverage(sensitiveNumberSummaryLiveReport.steps);
+  sensitiveNumberSummaryLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    sensitiveNumberSummaryLiveReport.requested,
+    sensitiveNumberSummaryLiveReport.coverage
+  );
+  const sensitiveNumberSummaryIssues = validateLiveReportAcceptance(sensitiveNumberSummaryLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    sensitiveNumberSummaryIssues.some((issue) => issue.code === "live_report_sensitive_text"),
+    "expected installed live report acceptance helper to reject sensitive-looking numeric summaries"
+  );
+  assert(
+    sensitiveNumberSummaryIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject sensitive oversized numeric summaries"
+  );
+  assert(
+    !JSON.stringify(sensitiveNumberSummaryIssues).includes("9876543210"),
+    "expected installed live report numeric summary rejection to omit raw values"
+  );
+  console.log("pass installed live report numeric summary contract");
   const strippedSummaryLiveReport = {
     ...acceptedLiveReport,
     steps: acceptedLiveReport.steps.map((step) =>

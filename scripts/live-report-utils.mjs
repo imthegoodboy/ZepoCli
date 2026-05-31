@@ -543,7 +543,8 @@ function validateLiveReportSummaryValueContract(summary, issues) {
         return;
       }
     } else if (LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS.has(key)) {
-      if (!Number.isInteger(value) || value < 0) {
+      const max = LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY.get(key);
+      if (!Number.isInteger(value) || value < 0 || (max !== undefined && value > max)) {
         addLiveReportStepContractMismatchIssue(issues);
         return;
       }
@@ -686,6 +687,11 @@ function validateAllowedLiveReportKeys(value, allowedKeys, issues) {
 function containsSensitiveLiveReportText(value, seen = new Set()) {
   if (typeof value === "string") {
     return redactLiveReportText(value, []) !== value;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const text = String(value);
+    return redactLiveReportText(text, []) !== text;
   }
 
   if (Array.isArray(value)) {
@@ -882,6 +888,13 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS = new Set([
   "orderCount",
   "productCount",
   "selectedCount"
+]);
+const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
+  ["addressCount", 200],
+  ["cartItemCount", 200],
+  ["orderCount", 200],
+  ["productCount", 50],
+  ["selectedCount", 200]
 ]);
 const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
   "liveSessionState",
