@@ -95,6 +95,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - ok reports contain only passing known workflow steps with no duplicate workflow step names and preserve runner workflow order
 - step summaries include every runner-defined key
 - step summary values keep the runner's expected types
+- numeric step summary values stay within runner-supported ranges
 - all passing workflow step summaries satisfy their known contracts
 - login step summaries confirm saved session evidence when login runs
 - stored step command strings match the redacted command contract

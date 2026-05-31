@@ -89,6 +89,7 @@ The live report is acceptable only when:
 - Ok report workflow steps follow the live runner order.
 - Workflow step summaries include every runner-defined key.
 - Workflow step summary values keep the runner's expected types.
+- Numeric workflow step summaries stay within runner-supported ranges.
 - Every passing workflow step summary satisfies its known report contract, even when that capability was not requested.
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
