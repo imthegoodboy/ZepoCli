@@ -108,6 +108,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Local gates prove the CLI package shape");
     expect(liveVerifierSkill).toContain("They do not prove a real Zepto account can complete login");
     expect(liveVerifierSkill).toContain("Do not mark the project fully complete until a human-controlled Zepto account exercises the required live workflow");
+    expect(liveVerifierSkill).toContain("The report contains only accepted schema fields");
     expect(liveVerifierSkill).toContain("`requested` shows the explicit verification scope without workflow query values");
     expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");

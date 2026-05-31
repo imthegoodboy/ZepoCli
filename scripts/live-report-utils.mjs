@@ -290,6 +290,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
       message: "Live report contains sensitive-looking text that should have been redacted."
     });
   }
+  validateLiveReportAcceptedSchema(report, issues);
 
   if (!isObject(requested) || !isObject(attempted) || !isObject(coverage) || !isObject(missingCoverage)) {
     issues.push({
@@ -381,6 +382,52 @@ export function validateLiveReportAcceptance(report, options = {}) {
     accepted: issues.length === 0,
     issues
   };
+}
+
+function validateLiveReportAcceptedSchema(report, issues) {
+  validateAllowedLiveReportKeys(report, LIVE_REPORT_TOP_LEVEL_KEYS, issues);
+
+  for (const value of [report.requested, report.attempted, report.coverage, report.missingCoverage]) {
+    if (isObject(value)) {
+      validateAllowedLiveReportKeys(value, LIVE_REPORT_CAPABILITY_KEYS, issues);
+    }
+  }
+
+  if (!Array.isArray(report.steps)) {
+    return;
+  }
+
+  for (const step of report.steps) {
+    if (!isObject(step)) {
+      continue;
+    }
+
+    validateAllowedLiveReportKeys(step, LIVE_REPORT_STEP_KEYS, issues);
+    if (isObject(step.error)) {
+      validateAllowedLiveReportKeys(step.error, LIVE_REPORT_ERROR_KEYS, issues);
+    }
+
+    if (isObject(step.summary)) {
+      validateAllowedLiveReportKeys(
+        step.summary,
+        LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS,
+        issues
+      );
+    }
+  }
+}
+
+function validateAllowedLiveReportKeys(value, allowedKeys, issues) {
+  if (!Object.keys(value).some((key) => !allowedKeys.has(key))) {
+    return;
+  }
+
+  if (!issues.some((issue) => issue.code === "live_report_unexpected_field")) {
+    issues.push({
+      code: "live_report_unexpected_field",
+      message: "Live report contains fields outside the accepted schema."
+    });
+  }
 }
 
 function containsSensitiveLiveReportText(value, seen = new Set()) {
@@ -486,6 +533,42 @@ function createLiveReportCapabilitySummary() {
     reorder: false
   };
 }
+
+const LIVE_REPORT_TOP_LEVEL_KEYS = new Set([
+  "ok",
+  "version",
+  "generatedAt",
+  "dataDir",
+  "reportPath",
+  "note",
+  "requested",
+  "attempted",
+  "coverage",
+  "missingCoverage",
+  "steps"
+]);
+const LIVE_REPORT_CAPABILITY_KEYS = new Set(Object.keys(createLiveReportCapabilitySummary()));
+const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error"]);
+const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
+const LIVE_REPORT_FALLBACK_SUMMARY_KEYS = new Set(["observed"]);
+const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
+  ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
+  ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
+  ["login", LIVE_REPORT_FALLBACK_SUMMARY_KEYS],
+  ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
+  ["search", new Set(["productCount"])],
+  ["address add", new Set(["addressCount", "selectedCount"])],
+  ["address list", new Set(["addressCount", "selectedCount"])],
+  ["address use", new Set(["selected", "hasAddressText"])],
+  ["add", new Set(["productAdded", "cartItemCount"])],
+  ["cart", new Set(["cartItemCount", "hasTotal"])],
+  ["remove", new Set(["cartItemCount", "hasTotal"])],
+  ["clear", new Set(["cartItemCount", "hasTotal"])],
+  ["checkout", new Set(["status", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
+  ["track", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
+  ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
+  ["reorder", new Set(["cartItemCount", "hasTotal"])]
+]);
 
 const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
   ["doctor", "browserPreflight"],

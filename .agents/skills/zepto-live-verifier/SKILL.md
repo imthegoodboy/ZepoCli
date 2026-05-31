@@ -80,6 +80,7 @@ The live report is acceptable only when:
 
 - `ok` is true.
 - `version` matches `package.json`.
+- The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.

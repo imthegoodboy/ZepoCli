@@ -476,6 +476,31 @@ describe("live verification runner", () => {
     expect(sensitiveKeyResult.issues.map((issue) => issue.code)).toContain("live_report_sensitive_text");
     expect(JSON.stringify(sensitiveKeyResult.issues)).not.toContain("Users");
 
+    const unexpectedTopLevel = acceptedLiveReport({
+      rawQuery: "Amul Milk 500ml"
+    });
+    const unexpectedStep = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "search" ? { ...step, rawPayload: "Amul Milk 500ml" } : step
+      )
+    });
+    const unexpectedSummary = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? { ...step, summary: { ...step.summary, rawPageText: "Amul Milk 500ml" } }
+          : step
+      )
+    });
+
+    for (const report of [unexpectedTopLevel, unexpectedStep, unexpectedSummary]) {
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_unexpected_field");
+      expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
+    }
+
     const weakDoctor = acceptedLiveReport({
       steps: [
         {
