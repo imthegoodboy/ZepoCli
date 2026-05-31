@@ -203,6 +203,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
+    "`ok` reports containing only passing known workflow steps",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
@@ -834,6 +835,73 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
   }
   console.log("pass installed live report capability summary contract");
+  const failedKnownStepLiveReport = {
+    ...acceptedLiveReport,
+    steps: [
+      ...acceptedLiveReport.steps,
+      {
+        name: "cart",
+        command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "command_failed",
+          message: "failed"
+        }
+      }
+    ]
+  };
+  failedKnownStepLiveReport.attempted = summarizeLiveReportAttempts(failedKnownStepLiveReport.steps);
+  failedKnownStepLiveReport.coverage = summarizeLiveReportCoverage(failedKnownStepLiveReport.steps);
+  failedKnownStepLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    failedKnownStepLiveReport.requested,
+    failedKnownStepLiveReport.coverage
+  );
+  const failedKnownStepIssues = validateLiveReportAcceptance(failedKnownStepLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    failedKnownStepIssues.some((issue) => issue.code === "live_report_ok_step_mismatch"),
+    "expected installed live report acceptance helper to reject ok reports with failed workflow steps"
+  );
+  assert(
+    !JSON.stringify(failedKnownStepIssues).includes("failed"),
+    "expected installed live report ok-step rejection to omit raw failed step values"
+  );
+  const unknownStepLiveReport = {
+    ...acceptedLiveReport,
+    steps: [
+      ...acceptedLiveReport.steps,
+      {
+        name: "live runner",
+        command: "internal",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_runner_failed",
+          message: "failed"
+        }
+      }
+    ]
+  };
+  unknownStepLiveReport.attempted = summarizeLiveReportAttempts(unknownStepLiveReport.steps);
+  unknownStepLiveReport.coverage = summarizeLiveReportCoverage(unknownStepLiveReport.steps);
+  unknownStepLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    unknownStepLiveReport.requested,
+    unknownStepLiveReport.coverage
+  );
+  const unknownStepIssues = validateLiveReportAcceptance(unknownStepLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    unknownStepIssues.some((issue) => issue.code === "live_report_ok_step_mismatch"),
+    "expected installed live report acceptance helper to reject ok reports with unknown or internal steps"
+  );
+  assert(
+    !JSON.stringify(unknownStepIssues).includes("failed"),
+    "expected installed live report unknown-step rejection to omit raw failed step values"
+  );
+  console.log("pass installed live report ok step set contract");
   const unexpectedFieldLiveReports = [
     {
       ...acceptedLiveReport,

@@ -331,6 +331,10 @@ export function validateLiveReportAcceptance(report, options = {}) {
       message: "Live report must include a steps array."
     });
   } else if (isObject(requested)) {
+    if (report.ok === true) {
+      validateLiveReportOkStepSetContract(steps, issues);
+    }
+
     for (const requirement of LIVE_REPORT_ACCEPTANCE_REQUIREMENTS) {
       if (requested[requirement.capability] !== true) {
         continue;
@@ -418,6 +422,25 @@ function validateLiveReportAcceptedSchema(report, issues) {
         issues
       );
     }
+  }
+}
+
+function validateLiveReportOkStepSetContract(steps, issues) {
+  if (
+    steps.some(
+      (step) => !isObject(step) || !LIVE_REPORT_CAPABILITY_BY_STEP_NAME.has(step.name) || step.ok !== true
+    )
+  ) {
+    addLiveReportOkStepMismatchIssue(issues);
+  }
+}
+
+function addLiveReportOkStepMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_ok_step_mismatch")) {
+    issues.push({
+      code: "live_report_ok_step_mismatch",
+      message: "Live report ok=true must contain only passing known workflow steps."
+    });
   }
 }
 

@@ -505,6 +505,64 @@ describe("live verification runner", () => {
       expect(JSON.stringify(result.issues)).not.toContain("yes");
     }
 
+    const failedKnownStepReport = acceptedLiveReport({
+      steps: [
+        ...acceptedLiveReport().steps,
+        {
+          name: "cart",
+          command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "command_failed",
+            message: "failed"
+          }
+        }
+      ]
+    });
+    failedKnownStepReport.attempted = summarizeLiveReportAttempts(failedKnownStepReport.steps);
+    failedKnownStepReport.coverage = summarizeLiveReportCoverage(failedKnownStepReport.steps);
+    failedKnownStepReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      failedKnownStepReport.requested,
+      failedKnownStepReport.coverage
+    );
+
+    const failedKnownStepResult = validateLiveReportAcceptance(failedKnownStepReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(failedKnownStepResult.accepted).toBe(false);
+    expect(failedKnownStepResult.issues.map((issue) => issue.code)).toContain("live_report_ok_step_mismatch");
+    expect(JSON.stringify(failedKnownStepResult.issues)).not.toContain("failed");
+
+    const unknownStepReport = acceptedLiveReport({
+      steps: [
+        ...acceptedLiveReport().steps,
+        {
+          name: "live runner",
+          command: "internal",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "live_runner_failed",
+            message: "failed"
+          }
+        }
+      ]
+    });
+    unknownStepReport.attempted = summarizeLiveReportAttempts(unknownStepReport.steps);
+    unknownStepReport.coverage = summarizeLiveReportCoverage(unknownStepReport.steps);
+    unknownStepReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      unknownStepReport.requested,
+      unknownStepReport.coverage
+    );
+
+    const unknownStepResult = validateLiveReportAcceptance(unknownStepReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(unknownStepResult.accepted).toBe(false);
+    expect(unknownStepResult.issues.map((issue) => issue.code)).toContain("live_report_ok_step_mismatch");
+    expect(JSON.stringify(unknownStepResult.issues)).not.toContain("failed");
+
     const sensitiveReport = acceptedLiveReport({
       dataDir: "C:\\Users\\parth\\.zepo-live",
       note: `raw token npm_${"A".repeat(24)} should not be accepted`
