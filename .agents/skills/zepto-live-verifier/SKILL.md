@@ -82,6 +82,7 @@ The live report is acceptable only when:
 - `version` matches `package.json`.
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - Stored step command strings match the redacted command contract.
+- Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.

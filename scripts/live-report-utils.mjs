@@ -403,6 +403,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
     }
 
     validateAllowedLiveReportKeys(step, LIVE_REPORT_STEP_KEYS, issues);
+    validateLiveReportStepResultContract(step, issues);
     validateLiveReportCommandContract(step, issues);
     if (isObject(step.error)) {
       validateAllowedLiveReportKeys(step.error, LIVE_REPORT_ERROR_KEYS, issues);
@@ -415,6 +416,39 @@ function validateLiveReportAcceptedSchema(report, issues) {
         issues
       );
     }
+  }
+}
+
+function validateLiveReportStepResultContract(step, issues) {
+  if (
+    !hasReadableText(step.name) ||
+    typeof step.ok !== "boolean" ||
+    !Number.isInteger(step.exitCode) ||
+    step.exitCode < 0 ||
+    step.exitCode > 255
+  ) {
+    addLiveReportStepResultMismatchIssue(issues);
+    return;
+  }
+
+  if (step.ok === true) {
+    if (step.exitCode !== 0 || !isObject(step.summary) || step.error !== undefined) {
+      addLiveReportStepResultMismatchIssue(issues);
+    }
+    return;
+  }
+
+  if (step.exitCode === 0 || !isObject(step.error) || step.summary !== undefined) {
+    addLiveReportStepResultMismatchIssue(issues);
+  }
+}
+
+function addLiveReportStepResultMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_step_result_mismatch")) {
+    issues.push({
+      code: "live_report_step_result_mismatch",
+      message: "Live report steps must include consistent exitCode, ok, summary, and error fields."
+    });
   }
 }
 
