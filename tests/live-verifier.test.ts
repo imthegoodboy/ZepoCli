@@ -135,6 +135,73 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
+  const steps = [
+    ...acceptedLiveReport().steps.slice(0, 4),
+    {
+      name: "address use",
+      command: "zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        selected: true,
+        hasAddressText: true
+      }
+    },
+    {
+      name: "add",
+      command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        productAdded: true,
+        cartItemCount: 1
+      }
+    },
+    {
+      name: "cart",
+      command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        cartItemCount: 1,
+        hasTotal: true
+      }
+    },
+    acceptedLiveReport().steps[4],
+    {
+      name: "track",
+      command: "zepo --data-dir <redacted-data-dir> --visible track --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        orderCount: 1,
+        latestHasStatus: true,
+        latestHasEta: false
+      }
+    }
+  ];
+  const requested = summarizeLiveReportRequests({
+    search: "milk",
+    address: "home",
+    add: "milk",
+    cart: true,
+    checkout: true,
+    track: true
+  });
+  const coverage = summarizeLiveReportCoverage(steps);
+
+  return {
+    ...acceptedLiveReport(),
+    requested,
+    attempted: summarizeLiveReportAttempts(steps),
+    coverage,
+    missingCoverage: summarizeLiveReportMissingCoverage(requested, coverage),
+    steps,
+    ...overrides
+  };
+}
+
 describe("live verification runner", () => {
   it("documents the opt-in human-controlled flow", () => {
     const result = spawnSync(process.execPath, [scriptPath, "--help"], {
@@ -170,6 +237,18 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
+  });
+
+  it("documents production-scope report acceptance", () => {
+    const result = spawnSync(process.execPath, [reportScriptPath, "--help"], {
+      cwd: rootDir,
+      encoding: "utf8"
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Usage: npm --silent run verify:live:report -- [--require-production-scope]");
+    expect(result.stdout).toContain("Use --require-production-scope for final readiness");
+    expect(result.stdout).toContain("core login/session, search, address, cart, checkout handoff, and track workflow");
   });
 
   it("waits for timed-out live commands to close before recording timeout failures", () => {
@@ -422,6 +501,21 @@ describe("live verification runner", () => {
     expect(validateLiveReportAcceptance(acceptedLiveReport()).issues.map((issue) => issue.code)).toContain(
       "live_report_expected_version_missing"
     );
+    expect(
+      validateLiveReportAcceptance(acceptedLiveReport(), {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_missing");
+    expect(
+      validateLiveReportAcceptance(productionScopeLiveReport(), {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true
+      })
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
 
     const missingLiveSession = acceptedLiveReport();
     missingLiveSession.coverage = {
@@ -1387,6 +1481,31 @@ describe("live verification runner", () => {
       expect(pass.status).toBe(0);
       expect(pass.stdout).toContain("pass live verification report acceptance");
       expect(`${pass.stdout}\n${pass.stderr}`).not.toContain(tempDir);
+
+      const partialScopeFail = spawnSync(process.execPath, [reportScriptPath, "--require-production-scope", reportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(partialScopeFail.status).toBe(1);
+      expect(partialScopeFail.stderr).toContain("live_report_production_scope_missing");
+      expect(`${partialScopeFail.stdout}\n${partialScopeFail.stderr}`).not.toContain(tempDir);
+
+      const productionReportPath = join(tempDir, "production-live-verification-report.json");
+      writeFileSync(productionReportPath, `${JSON.stringify(productionScopeLiveReport(), null, 2)}\n`);
+
+      const productionPass = spawnSync(
+        process.execPath,
+        [reportScriptPath, "--require-production-scope", productionReportPath],
+        {
+          cwd: rootDir,
+          encoding: "utf8"
+        }
+      );
+
+      expect(productionPass.status).toBe(0);
+      expect(productionPass.stdout).toContain("pass live verification report acceptance");
+      expect(`${productionPass.stdout}\n${productionPass.stderr}`).not.toContain(tempDir);
 
       const badReportPath = join(tempDir, "bad-live-verification-report.json");
       writeFileSync(

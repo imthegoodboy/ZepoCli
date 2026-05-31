@@ -145,7 +145,12 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
+    expect(liveVerifierSkill).toContain(
+      "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json"
+    );
     expect(liveVerifierSkill).toContain("It only checks the saved report contract");
+    expect(liveVerifierSkill).toContain("Use `--require-production-scope` for final readiness");
+    expect(liveVerifierSkill).toContain("browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass");
     expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --search milk --address home --add");
     expect(liveVerifierSkill).toContain("Do not combine `--clear` with `--checkout`");

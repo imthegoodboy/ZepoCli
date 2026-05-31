@@ -49,9 +49,11 @@ After a human-controlled run, validate the saved report:
 
 ```bash
 npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json
+npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json
 ```
 
 `verify:live:report` does not contact Zepto or prove a fresh run happened. It only checks the saved report contract before agents treat the report as acceptance evidence.
+Use `--require-production-scope` for final readiness so a valid partial report cannot be mistaken for core production workflow proof.
 
 Optional focused passes:
 
@@ -109,5 +111,6 @@ The live report is acceptable only when:
 - `add` has both selected product evidence and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.
 - `checkout` preserves `paymentStatus: "not_observed_by_zepocli"`, `orderPlacement: "not_confirmed_by_zepocli"`, and `orderStatusCommand: "zepo track"`.
+- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass.
 
 If any step fails with a stable `live_*_contract_mismatch`, `live_command_timeout`, `command_failed`, or `live_verification_incomplete` code, the live workflow is not fully verified yet.

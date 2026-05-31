@@ -155,6 +155,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("interrupted with Ctrl+C/SIGTERM");
     expect(readme).toContain("writes the same sanitized partial report when possible");
     expect(readme).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
+    expect(readme).toContain(
+      "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json"
+    );
     expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
     expect(readme).toContain("sanitized non-future `generatedAt` plus data/report path metadata");
     expect(readme).toContain("the fixed runner note");
@@ -173,6 +176,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("login session evidence");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
+    expect(readme).toContain("Use `--require-production-scope` for the final readiness gate");
+    expect(readme).toContain("live session, search, address selection, add, cart, checkout handoff, and track coverage");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");

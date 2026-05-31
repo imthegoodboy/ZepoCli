@@ -198,6 +198,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
+    "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "sanitized non-future `generatedAt` plus data/report path metadata, the fixed runner note",
     "accepted report schema",
@@ -215,6 +216,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "login session evidence",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
+    "Use `--require-production-scope` for the final readiness gate",
+    "live session, search, address selection, add, cart, checkout handoff, and track coverage",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -791,6 +794,71 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     missingCoverage: summarizeLiveReportMissingCoverage(acceptedLiveReportRequested, acceptedLiveReportCoverage),
     steps: acceptedLiveReportSteps
   };
+  const productionScopeLiveReportSteps = [
+    ...acceptedLiveReportSteps.slice(0, 4),
+    {
+      name: "address use",
+      command: "zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        selected: true,
+        hasAddressText: true
+      }
+    },
+    {
+      name: "add",
+      command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        productAdded: true,
+        cartItemCount: 1
+      }
+    },
+    {
+      name: "cart",
+      command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        cartItemCount: 1,
+        hasTotal: true
+      }
+    },
+    acceptedLiveReportSteps[4],
+    {
+      name: "track",
+      command: "zepo --data-dir <redacted-data-dir> --visible track --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        orderCount: 1,
+        latestHasStatus: true,
+        latestHasEta: false
+      }
+    }
+  ];
+  const productionScopeLiveReportRequested = summarizeLiveReportRequests({
+    search: "milk",
+    address: "home",
+    add: "milk",
+    cart: true,
+    checkout: true,
+    track: true
+  });
+  const productionScopeLiveReportCoverage = summarizeLiveReportCoverage(productionScopeLiveReportSteps);
+  const productionScopeLiveReport = {
+    ...acceptedLiveReport,
+    requested: productionScopeLiveReportRequested,
+    attempted: summarizeLiveReportAttempts(productionScopeLiveReportSteps),
+    coverage: productionScopeLiveReportCoverage,
+    missingCoverage: summarizeLiveReportMissingCoverage(
+      productionScopeLiveReportRequested,
+      productionScopeLiveReportCoverage
+    ),
+    steps: productionScopeLiveReportSteps
+  };
   assert(
     validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept complete report evidence"
@@ -800,6 +868,20 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       (issue) => issue.code === "live_report_expected_version_missing"
     ),
     "expected installed live report acceptance helper to require an expected package version"
+  );
+  assert(
+    validateLiveReportAcceptance(acceptedLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true
+    }).issues.some((issue) => issue.code === "live_report_production_scope_missing"),
+    "expected installed live report acceptance helper to reject partial reports for production scope"
+  );
+  assert(
+    validateLiveReportAcceptance(productionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true
+    }).accepted === true,
+    "expected installed live report acceptance helper to accept production-scope report evidence"
   );
   const inconsistentAttemptedLiveReport = {
     ...acceptedLiveReport,
@@ -1632,6 +1714,43 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     acceptedLiveReportResult.stdout.includes("pass live verification report acceptance"),
     "expected installed live report validator to accept complete report"
+  );
+  const partialScopeLiveReportResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--require-production-scope",
+      acceptedLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    partialScopeLiveReportResult.status === 1 &&
+      partialScopeLiveReportResult.stderr.includes("live_report_production_scope_missing"),
+    "expected installed live report validator to reject partial reports when production scope is required"
+  );
+  const productionScopeLiveReportPath = join(tempRoot, "production-scope-live-verification-report.json");
+  writeFileSync(productionScopeLiveReportPath, `${JSON.stringify(productionScopeLiveReport, null, 2)}\n`);
+  const productionScopeLiveReportResult = runNpm(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--require-production-scope",
+      productionScopeLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    productionScopeLiveReportResult.stdout.includes("pass live verification report acceptance"),
+    "expected installed live report validator to accept production-scope report evidence"
   );
   const rejectedLiveReportPath = join(tempRoot, "rejected-live-verification-report.json");
   writeFileSync(

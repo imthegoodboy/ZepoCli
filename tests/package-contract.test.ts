@@ -317,8 +317,13 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject malformed error objects");
     expect(verifier).toContain("expected installed live report error rejection to omit raw values");
     expect(verifier).toContain("pass installed live report error object contract");
+    expect(verifier).toContain("expected installed live report acceptance helper to require an expected package version");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject partial reports for production scope");
+    expect(verifier).toContain("expected installed live report acceptance helper to accept production-scope report evidence");
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
     expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");
+    expect(verifier).toContain("expected installed live report validator to reject partial reports when production scope is required");
+    expect(verifier).toContain("expected installed live report validator to accept production-scope report evidence");
     expect(verifier).toContain("pass installed live report sensitive text rejection");
     expect(verifier).toContain("expected installed live report confirmed-session adjustment to make --login conditional");
     expect(verifier).toContain("expected installed live report confirmed-session adjustment to avoid skipped login missing coverage");
