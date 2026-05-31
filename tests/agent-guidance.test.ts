@@ -50,6 +50,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("payment processing through payment gateways");
       expect(guidance).toContain("avoid sharing login credentials, passwords, or OTPs");
       expect(guidance).toContain("verify:live` should start with normal `zepo doctor --json`");
+      expect(guidance).toContain("--production-scope --search <query> --address <query> --add <query>");
       expect(guidance).toContain("--choose-add");
       expect(guidance).toContain("--add <query> --choose-add --cart");
       expect(guidance).toContain("--step-timeout <ms>");
@@ -144,6 +145,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("npm-token-shaped values");
     expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
+    expect(liveVerifierSkill).toContain("--production-scope --search milk --address home --add");
+    expect(liveVerifierSkill).toContain("`--production-scope` is the final readiness preset");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(liveVerifierSkill).toContain(
       "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json"
@@ -152,7 +155,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Use `--require-production-scope` for final readiness");
     expect(liveVerifierSkill).toContain("browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass");
     expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
-    expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --search milk --address home --add");
+    expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --production-scope --search milk --address home --add");
     expect(liveVerifierSkill).toContain("Do not combine `--clear` with `--checkout`");
     expect(liveVerifierSkill).toContain("Keep OTP, UPI PIN, card, CVV");
     expect(liveVerifierSkill).toContain('liveSession.state: "logged-in"');

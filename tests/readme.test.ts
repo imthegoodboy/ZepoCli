@@ -129,12 +129,18 @@ describe("README package guidance", () => {
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
+    expect(readme).toContain(
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
+    );
     expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
     expect(readme).toContain("It starts with normal `zepo doctor --json`, including the Playwright Chromium launch check");
     expect(readme).toContain("the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");
+    expect(readme).toContain(
+      "Use `--production-scope` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests cart, checkout handoff, and track coverage"
+    );
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
       "`--login` is conditional: if the dedicated data directory already has a confirmed session, the runner does not force a fresh login or claim login coverage; it requires `liveSession` coverage from `status --live` instead"

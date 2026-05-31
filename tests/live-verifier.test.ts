@@ -213,6 +213,8 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("Usage: npm --silent run verify:live");
     expect(result.stdout).toContain("human-controlled live verification");
     expect(result.stdout).toContain("--checkout");
+    expect(result.stdout).toContain("--production-scope");
+    expect(result.stdout).toContain("Final readiness preset");
     expect(result.stdout).toContain("--remove <query>");
     expect(result.stdout).toContain("--clear");
     expect(result.stdout).toContain("--reorder-last");
@@ -235,6 +237,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("npm --silent run verify:live");
     expect(result.stdout).toContain(
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
+    );
+    expect(result.stdout).toContain(
+      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage."
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
@@ -1733,6 +1738,52 @@ describe("live verification runner", () => {
 
     expect(addressAndList.status).toBe(1);
     expect(addressAndList.stderr).toContain("--address cannot be combined with --address-list");
+
+    const missingProductionScopeInputs = spawnSync(
+      process.execPath,
+      [scriptPath, "--data-dir", ".zepo-live", "--production-scope"],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(missingProductionScopeInputs.status).toBe(1);
+    expect(missingProductionScopeInputs.stderr).toContain(
+      "--production-scope requires --search <query>, --address <query>, and --add <query>."
+    );
+    expect(missingProductionScopeInputs.stderr).not.toContain("Compiled CLI was not found");
+
+    const destructiveProductionScope = spawnSync(
+      process.execPath,
+      [
+        scriptPath,
+        "--data-dir",
+        ".zepo-live",
+        "--production-scope",
+        "--search",
+        "milk",
+        "--address",
+        "home",
+        "--add",
+        "milk",
+        "--remove",
+        "milk"
+      ],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(destructiveProductionScope.status).toBe(1);
+    expect(destructiveProductionScope.stderr).toContain(
+      "--production-scope cannot be combined with --address-add, --address-list, --remove, --clear, --history, or --reorder-last."
+    );
+    expect(destructiveProductionScope.stderr).toContain(
+      "Run those focused live verifications separately so final production-scope evidence stays clear."
+    );
+    expect(destructiveProductionScope.stderr).not.toContain("Compiled CLI was not found");
   }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
   it("rejects malformed live verification quantities before touching the compiled CLI", () => {
