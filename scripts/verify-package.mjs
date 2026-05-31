@@ -795,6 +795,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept complete report evidence"
   );
+  assert(
+    validateLiveReportAcceptance(acceptedLiveReport).issues.some(
+      (issue) => issue.code === "live_report_expected_version_missing"
+    ),
+    "expected installed live report acceptance helper to require an expected package version"
+  );
   const inconsistentAttemptedLiveReport = {
     ...acceptedLiveReport,
     attempted: {
@@ -1536,6 +1542,24 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
             code: "zepto_access_cooldown",
             message: "cooling down",
             retryAfterMs: -1
+          }
+        }
+      ]
+    },
+    {
+      ...acceptedLiveReport,
+      ok: false,
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "cart",
+          command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "zepto_access_cooldown",
+            message: "cooling down",
+            retryAfterMs: 3_600_001
           }
         }
       ]

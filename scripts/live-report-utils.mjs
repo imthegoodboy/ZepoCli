@@ -28,6 +28,7 @@ export function parseJsonFromOutput(text) {
 export const LIVE_REPORT_NOTE =
   "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.";
 const LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS = 5 * 60 * 1_000;
+const LIVE_REPORT_ERROR_RETRY_AFTER_MAX_MS = 60 * 60 * 1_000;
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
@@ -281,7 +282,12 @@ export function validateLiveReportAcceptance(report, options = {}) {
     });
   }
 
-  if (hasReadableText(options.expectedVersion) && report.version !== options.expectedVersion) {
+  if (!hasReadableText(options.expectedVersion)) {
+    issues.push({
+      code: "live_report_expected_version_missing",
+      message: "Live report acceptance requires the expected package version."
+    });
+  } else if (report.version !== options.expectedVersion) {
     issues.push({
       code: "live_report_version_mismatch",
       message: "Live report version does not match the installed package version."
@@ -708,7 +714,9 @@ function validateLiveReportErrorContract(error, issues) {
     !hasReadableText(error.message) ||
     (error.hint !== undefined && !hasReadableText(error.hint)) ||
     (error.retryAfterMs !== undefined &&
-      (!Number.isInteger(error.retryAfterMs) || error.retryAfterMs < 0))
+      (!Number.isInteger(error.retryAfterMs) ||
+        error.retryAfterMs < 0 ||
+        error.retryAfterMs > LIVE_REPORT_ERROR_RETRY_AFTER_MAX_MS))
   ) {
     addLiveReportErrorMismatchIssue(issues);
   }

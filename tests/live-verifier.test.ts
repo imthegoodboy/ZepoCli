@@ -419,6 +419,9 @@ describe("live verification runner", () => {
       accepted: true,
       issues: []
     });
+    expect(validateLiveReportAcceptance(acceptedLiveReport()).issues.map((issue) => issue.code)).toContain(
+      "live_report_expected_version_missing"
+    );
 
     const missingLiveSession = acceptedLiveReport();
     missingLiveSession.coverage = {
@@ -1308,6 +1311,23 @@ describe("live verification runner", () => {
               code: "zepto_access_cooldown",
               message: "cooling down",
               retryAfterMs: -1
+            }
+          }
+        ]
+      }),
+      acceptedLiveReport({
+        ok: false,
+        steps: [
+          ...acceptedLiveReport().steps,
+          {
+            name: "cart",
+            command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+            exitCode: 1,
+            ok: false,
+            error: {
+              code: "zepto_access_cooldown",
+              message: "cooling down",
+              retryAfterMs: 3_600_001
             }
           }
         ]
