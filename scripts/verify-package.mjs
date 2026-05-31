@@ -199,7 +199,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
-    "sanitized `generatedAt` plus data/report path metadata, the fixed runner note",
+    "sanitized non-future `generatedAt` plus data/report path metadata, the fixed runner note",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -1383,6 +1383,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       ...acceptedLiveReport,
+      generatedAt: "2999-01-01T00:00:00.000Z"
+    },
+    {
+      ...acceptedLiveReport,
       note: `${LIVE_REPORT_NOTE} Cart item Amul Milk 500ml was observed.`
     }
   ];
@@ -1396,6 +1400,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     );
     assert(
       !JSON.stringify(metadataLiveReportIssues).includes("today") &&
+        !JSON.stringify(metadataLiveReportIssues).includes("2999") &&
         !JSON.stringify(metadataLiveReportIssues).includes("Amul Milk 500ml"),
       "expected installed live report metadata rejection to omit raw metadata values"
     );

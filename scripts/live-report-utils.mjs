@@ -27,6 +27,7 @@ export function parseJsonFromOutput(text) {
 
 export const LIVE_REPORT_NOTE =
   "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.";
+const LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS = 5 * 60 * 1_000;
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
@@ -650,14 +651,19 @@ function isValidLiveReportGeneratedAt(value) {
   }
 
   const parsed = new Date(value);
-  return Number.isFinite(parsed.getTime()) && parsed.toISOString() === value;
+  return (
+    Number.isFinite(parsed.getTime()) &&
+    parsed.toISOString() === value &&
+    parsed.getTime() <= Date.now() + LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS
+  );
 }
 
 function addLiveReportMetadataMismatchIssue(issues) {
   if (!issues.some((issue) => issue.code === "live_report_metadata_mismatch")) {
     issues.push({
       code: "live_report_metadata_mismatch",
-      message: "Live report metadata must include generatedAt, redacted data/report path markers, and the runner note."
+      message:
+        "Live report metadata must include a non-future generatedAt, redacted data/report path markers, and the runner note."
     });
   }
 }

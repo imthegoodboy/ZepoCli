@@ -1021,6 +1021,7 @@ describe("live verification runner", () => {
     const metadataReports = [
       acceptedLiveReport({ generatedAt: "today" }),
       acceptedLiveReport({ generatedAt: undefined }),
+      acceptedLiveReport({ generatedAt: "2999-01-01T00:00:00.000Z" }),
       acceptedLiveReport({ dataDir: "<redacted-local-path>" }),
       acceptedLiveReport({ reportPath: "<redacted-local-path>" }),
       acceptedLiveReport({ note: "Report fixture without the sanitizer note." }),
@@ -1034,6 +1035,7 @@ describe("live verification runner", () => {
       expect(result.accepted).toBe(false);
       expect(result.issues.map((issue) => issue.code)).toContain("live_report_metadata_mismatch");
       expect(JSON.stringify(result.issues)).not.toContain("today");
+      expect(JSON.stringify(result.issues)).not.toContain("2999");
       expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
     }
 
