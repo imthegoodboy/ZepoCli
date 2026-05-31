@@ -463,6 +463,19 @@ describe("live verification runner", () => {
     expect(JSON.stringify(sensitiveResult.issues)).not.toContain("Users");
     expect(JSON.stringify(sensitiveResult.issues)).not.toContain("npm_");
 
+    const sensitiveKeyReport = acceptedLiveReport({
+      metadata: {
+        "C:\\Users\\parth\\.zepo-live": true
+      }
+    });
+    const sensitiveKeyResult = validateLiveReportAcceptance(sensitiveKeyReport, {
+      expectedVersion: packageJson.version
+    });
+
+    expect(sensitiveKeyResult.accepted).toBe(false);
+    expect(sensitiveKeyResult.issues.map((issue) => issue.code)).toContain("live_report_sensitive_text");
+    expect(JSON.stringify(sensitiveKeyResult.issues)).not.toContain("Users");
+
     const weakDoctor = acceptedLiveReport({
       steps: [
         {
@@ -529,7 +542,10 @@ describe("live verification runner", () => {
         sensitiveReportPath,
         `${JSON.stringify(
           acceptedLiveReport({
-            reportPath: join(tempDir, "live-verification-report.json")
+            reportPath: join(tempDir, "live-verification-report.json"),
+            metadata: {
+              [join(tempDir, "raw-report-key")]: true
+            }
           }),
           null,
           2

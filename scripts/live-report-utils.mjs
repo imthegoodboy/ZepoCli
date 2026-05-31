@@ -397,7 +397,9 @@ function containsSensitiveLiveReportText(value, seen = new Set()) {
   }
 
   seen.add(value);
-  return Object.values(value).some((item) => containsSensitiveLiveReportText(item, seen));
+  return Object.entries(value).some(
+    ([key, item]) => redactLiveReportText(key, []) !== key || containsSensitiveLiveReportText(item, seen)
+  );
 }
 
 export function summarizeLiveReportRequests(options = {}) {
