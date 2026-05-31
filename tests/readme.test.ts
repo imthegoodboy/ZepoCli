@@ -163,6 +163,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("`ok` reports containing only passing known workflow steps");
     expect(readme).toContain("unique workflow step names");
     expect(readme).toContain("runner workflow order");
+    expect(readme).toContain("complete workflow step summaries");
     expect(readme).toContain("typed workflow step summaries");
     expect(readme).toContain("all passing workflow step summaries satisfy their known contracts");
     expect(readme).toContain("login session evidence");

@@ -64,7 +64,9 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
       summary: {
         ok: true,
         browserAutomationReady: true,
-        playwrightChromiumPassed: true
+        playwrightChromiumPassed: true,
+        warnings: [],
+        failures: []
       }
     },
     {
@@ -712,6 +714,35 @@ describe("live verification runner", () => {
       "live_report_step_contract_mismatch"
     );
     expect(JSON.stringify(stringlySummaryResult.issues)).not.toContain('"1"');
+
+    const strippedSummaryReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "doctor"
+          ? {
+              ...step,
+              summary: {
+                ok: true,
+                browserAutomationReady: true,
+                playwrightChromiumPassed: true
+              }
+            }
+          : step
+      )
+    });
+    strippedSummaryReport.attempted = summarizeLiveReportAttempts(strippedSummaryReport.steps);
+    strippedSummaryReport.coverage = summarizeLiveReportCoverage(strippedSummaryReport.steps);
+    strippedSummaryReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      strippedSummaryReport.requested,
+      strippedSummaryReport.coverage
+    );
+
+    const strippedSummaryResult = validateLiveReportAcceptance(strippedSummaryReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(strippedSummaryResult.accepted).toBe(false);
+    expect(strippedSummaryResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
 
     const unrequestedBadCheckoutReport = acceptedLiveReport({
       requested: summarizeLiveReportRequests({

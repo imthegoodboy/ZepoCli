@@ -416,11 +416,16 @@ function validateLiveReportAcceptedSchema(report, issues) {
     }
 
     if (isObject(step.summary)) {
+      const expectedSummaryKeys =
+        LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS;
+      const requiredSummaryKeys =
+        LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS;
       validateAllowedLiveReportKeys(
         step.summary,
-        LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS,
+        expectedSummaryKeys,
         issues
       );
+      validateLiveReportSummaryRequiredKeysContract(step.summary, requiredSummaryKeys, issues);
       validateLiveReportSummaryValueContract(step.summary, issues);
     }
   }
@@ -518,6 +523,15 @@ function addLiveReportStepContractMismatchIssue(issues) {
       code: "live_report_step_contract_mismatch",
       message: "Live report step summary does not satisfy acceptance requirements."
     });
+  }
+}
+
+function validateLiveReportSummaryRequiredKeysContract(summary, expectedKeys, issues) {
+  for (const key of expectedKeys) {
+    if (!Object.hasOwn(summary, key)) {
+      addLiveReportStepContractMismatchIssue(issues);
+      return;
+    }
   }
 }
 
@@ -815,6 +829,24 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
 const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
   ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
+  ["login", new Set(["sessionSaved", "confirmedSession"])],
+  ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
+  ["search", new Set(["productCount"])],
+  ["address add", new Set(["addressCount", "selectedCount"])],
+  ["address list", new Set(["addressCount", "selectedCount"])],
+  ["address use", new Set(["selected", "hasAddressText"])],
+  ["add", new Set(["productAdded", "cartItemCount"])],
+  ["cart", new Set(["cartItemCount", "hasTotal"])],
+  ["remove", new Set(["cartItemCount", "hasTotal"])],
+  ["clear", new Set(["cartItemCount", "hasTotal"])],
+  ["checkout", new Set(["status", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
+  ["track", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
+  ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
+  ["reorder", new Set(["cartItemCount", "hasTotal"])]
+]);
+const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
+  ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
+  ["status", new Set(["confirmedSession", "browserAutomationReady"])],
   ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["search", new Set(["productCount"])],

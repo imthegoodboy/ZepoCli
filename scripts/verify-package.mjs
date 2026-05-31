@@ -206,6 +206,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`ok` reports containing only passing known workflow steps",
     "unique workflow step names",
     "runner workflow order",
+    "complete workflow step summaries",
     "typed workflow step summaries",
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
@@ -719,7 +720,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       summary: {
         ok: true,
         browserAutomationReady: true,
-        playwrightChromiumPassed: true
+        playwrightChromiumPassed: true,
+        warnings: [],
+        failures: []
       }
     },
     {
@@ -1058,6 +1061,35 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report summary type rejection to omit raw step values"
   );
   console.log("pass installed live report summary value contract");
+  const strippedSummaryLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "doctor"
+        ? {
+            ...step,
+            summary: {
+              ok: true,
+              browserAutomationReady: true,
+              playwrightChromiumPassed: true
+            }
+          }
+        : step
+    )
+  };
+  strippedSummaryLiveReport.attempted = summarizeLiveReportAttempts(strippedSummaryLiveReport.steps);
+  strippedSummaryLiveReport.coverage = summarizeLiveReportCoverage(strippedSummaryLiveReport.steps);
+  strippedSummaryLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    strippedSummaryLiveReport.requested,
+    strippedSummaryLiveReport.coverage
+  );
+  const strippedSummaryIssues = validateLiveReportAcceptance(strippedSummaryLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    strippedSummaryIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject stripped step summaries"
+  );
+  console.log("pass installed live report summary key contract");
   const unrequestedBadCheckoutLiveReport = {
     ...acceptedLiveReport,
     requested: summarizeLiveReportRequests({
