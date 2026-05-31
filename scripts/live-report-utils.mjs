@@ -549,17 +549,31 @@ function validateLiveReportSummaryValueContract(summary, issues) {
         return;
       }
     } else if (LIVE_REPORT_STRING_SUMMARY_KEYS.has(key)) {
-      if (!hasReadableText(value)) {
+      if (!hasReadableText(value) || !isAllowedLiveReportStringSummaryValue(key, value)) {
         addLiveReportStepContractMismatchIssue(issues);
         return;
       }
     } else if (LIVE_REPORT_STRING_ARRAY_SUMMARY_KEYS.has(key)) {
-      if (!Array.isArray(value) || value.some((item) => !hasReadableText(item))) {
+      if (
+        !Array.isArray(value) ||
+        value.some((item) => !hasReadableText(item)) ||
+        !isAllowedLiveReportStringArraySummaryValue(key, value)
+      ) {
         addLiveReportStepContractMismatchIssue(issues);
         return;
       }
     }
   }
+}
+
+function isAllowedLiveReportStringSummaryValue(key, value) {
+  const allowed = LIVE_REPORT_STRING_SUMMARY_ALLOWED_VALUES_BY_KEY.get(key);
+  return allowed === undefined || allowed.has(value);
+}
+
+function isAllowedLiveReportStringArraySummaryValue(key, value) {
+  const allowed = LIVE_REPORT_STRING_ARRAY_SUMMARY_ALLOWED_VALUES_BY_KEY.get(key);
+  return allowed === undefined || (value.length <= allowed.size && value.every((item) => allowed.has(item)));
 }
 
 function validateLiveReportCapabilitySummaryContract(value, issues) {
@@ -904,6 +918,27 @@ const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
   "status"
 ]);
 const LIVE_REPORT_STRING_ARRAY_SUMMARY_KEYS = new Set(["failures", "warnings"]);
+const LIVE_REPORT_DOCTOR_CHECK_NAMES = new Set([
+  "Node.js",
+  "Data directory",
+  "SQLite",
+  "Zepto session",
+  "Browser automation lock",
+  "Headless browser throttle",
+  "Zepto access challenge",
+  "Playwright Chromium"
+]);
+const LIVE_REPORT_STRING_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
+  ["liveSessionState", new Set(["skipped", "logged-in", "login-required", "unknown"])],
+  ["orderPlacement", new Set(["not_confirmed_by_zepocli"])],
+  ["orderStatusCommand", new Set(["zepo track"])],
+  ["paymentStatus", new Set(["not_observed_by_zepocli"])],
+  ["status", new Set(["checkout_handoff_returned"])]
+]);
+const LIVE_REPORT_STRING_ARRAY_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
+  ["failures", LIVE_REPORT_DOCTOR_CHECK_NAMES],
+  ["warnings", LIVE_REPORT_DOCTOR_CHECK_NAMES]
+]);
 
 const LIVE_REPORT_CAPABILITY_BY_STEP_NAME = new Map([
   ["doctor", "browserPreflight"],

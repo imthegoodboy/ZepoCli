@@ -715,6 +715,77 @@ describe("live verification runner", () => {
     );
     expect(JSON.stringify(stringlySummaryResult.issues)).not.toContain('"1"');
 
+    const statusSkippedReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "status"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                liveSessionState: "skipped"
+              }
+            }
+          : step
+      )
+    });
+    statusSkippedReport.attempted = summarizeLiveReportAttempts(statusSkippedReport.steps);
+    statusSkippedReport.coverage = summarizeLiveReportCoverage(statusSkippedReport.steps);
+    statusSkippedReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      statusSkippedReport.requested,
+      statusSkippedReport.coverage
+    );
+
+    expect(
+      validateLiveReportAcceptance(statusSkippedReport, {
+        expectedVersion: packageJson.version
+      })
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
+
+    const freeformStringSummaryReports = [
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "status"
+            ? {
+                ...step,
+                summary: {
+                  ...step.summary,
+                  liveSessionState: "Cart page showed Amul Milk 500ml"
+                }
+              }
+            : step
+        )
+      }),
+      acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "doctor"
+            ? {
+                ...step,
+                summary: {
+                  ...step.summary,
+                  warnings: ["Amul Milk 500ml"]
+                }
+              }
+            : step
+        )
+      })
+    ];
+
+    for (const report of freeformStringSummaryReports) {
+      report.attempted = summarizeLiveReportAttempts(report.steps);
+      report.coverage = summarizeLiveReportCoverage(report.steps);
+      report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+      const result = validateLiveReportAcceptance(report, {
+        expectedVersion: packageJson.version
+      });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+      expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
+    }
+
     const oversizedSummaryReport = acceptedLiveReport({
       steps: acceptedLiveReport().steps.map((step) =>
         step.name === "search"

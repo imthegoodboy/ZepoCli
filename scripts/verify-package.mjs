@@ -208,6 +208,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "runner workflow order",
     "complete workflow step summaries",
     "typed workflow step summaries",
+    "runner-known string and string-array workflow step summaries",
     "bounded numeric workflow step summaries",
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
@@ -1062,6 +1063,80 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report summary type rejection to omit raw step values"
   );
   console.log("pass installed live report summary value contract");
+  const statusSkippedLiveReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "status"
+        ? {
+            ...step,
+            summary: {
+              ...step.summary,
+              liveSessionState: "skipped"
+            }
+          }
+        : step
+    )
+  };
+  statusSkippedLiveReport.attempted = summarizeLiveReportAttempts(statusSkippedLiveReport.steps);
+  statusSkippedLiveReport.coverage = summarizeLiveReportCoverage(statusSkippedLiveReport.steps);
+  statusSkippedLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    statusSkippedLiveReport.requested,
+    statusSkippedLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(statusSkippedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
+    "expected installed live report acceptance helper to accept runner-known string summaries"
+  );
+  const freeformStringSummaryLiveReports = [
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "status"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                liveSessionState: "Cart page showed Amul Milk 500ml"
+              }
+            }
+          : step
+      )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "doctor"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                warnings: ["Amul Milk 500ml"]
+              }
+            }
+          : step
+      )
+    }
+  ];
+  for (const freeformStringSummaryLiveReport of freeformStringSummaryLiveReports) {
+    freeformStringSummaryLiveReport.attempted = summarizeLiveReportAttempts(freeformStringSummaryLiveReport.steps);
+    freeformStringSummaryLiveReport.coverage = summarizeLiveReportCoverage(freeformStringSummaryLiveReport.steps);
+    freeformStringSummaryLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      freeformStringSummaryLiveReport.requested,
+      freeformStringSummaryLiveReport.coverage
+    );
+    const freeformStringSummaryIssues = validateLiveReportAcceptance(freeformStringSummaryLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues;
+    assert(
+      freeformStringSummaryIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+      "expected installed live report acceptance helper to reject freeform string summaries"
+    );
+    assert(
+      !JSON.stringify(freeformStringSummaryIssues).includes("Amul Milk"),
+      "expected installed live report string summary rejection to omit raw values"
+    );
+  }
+  console.log("pass installed live report string summary value contract");
   const oversizedSummaryLiveReport = {
     ...acceptedLiveReport,
     steps: acceptedLiveReport.steps.map((step) =>
