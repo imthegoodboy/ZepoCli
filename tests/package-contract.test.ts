@@ -268,6 +268,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("pass installed live report summary consistency");
     expect(verifier).toContain("expected installed live report acceptance helper to reject incomplete or non-boolean capability summaries");
     expect(verifier).toContain("pass installed live report capability summary contract");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject ok reports with failed workflow steps");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject ok reports with unknown or internal steps");
+    expect(verifier).toContain("pass installed live report ok step set contract");
+    expect(verifier).toContain("expected installed live report ok-step rejection to omit raw failed step values");
+    expect(verifier).toContain("expected installed live report unknown-step rejection to omit raw failed step values");
     expect(verifier).toContain("expected installed live report acceptance helper to reject fields outside the accepted schema");
     expect(verifier).toContain("expected installed live report unexpected-field rejection to omit raw workflow values");
     expect(verifier).toContain("pass installed live report closed schema");
