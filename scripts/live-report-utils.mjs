@@ -333,6 +333,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
   } else if (isObject(requested)) {
     if (report.ok === true) {
       validateLiveReportOkStepSetContract(steps, issues);
+      validateLiveReportUniqueStepNamesContract(steps, issues);
     }
 
     for (const requirement of LIVE_REPORT_ACCEPTANCE_REQUIREMENTS) {
@@ -440,6 +441,30 @@ function addLiveReportOkStepMismatchIssue(issues) {
     issues.push({
       code: "live_report_ok_step_mismatch",
       message: "Live report ok=true must contain only passing known workflow steps."
+    });
+  }
+}
+
+function validateLiveReportUniqueStepNamesContract(steps, issues) {
+  const names = new Set();
+  for (const step of steps) {
+    if (!isObject(step) || !hasReadableText(step.name)) {
+      continue;
+    }
+
+    if (names.has(step.name)) {
+      addLiveReportStepUniquenessMismatchIssue(issues);
+      return;
+    }
+    names.add(step.name);
+  }
+}
+
+function addLiveReportStepUniquenessMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_step_uniqueness_mismatch")) {
+    issues.push({
+      code: "live_report_step_uniqueness_mismatch",
+      message: "Live report ok=true must not contain duplicate workflow steps."
     });
   }
 }

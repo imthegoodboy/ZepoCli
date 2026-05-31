@@ -563,6 +563,39 @@ describe("live verification runner", () => {
     expect(unknownStepResult.issues.map((issue) => issue.code)).toContain("live_report_ok_step_mismatch");
     expect(JSON.stringify(unknownStepResult.issues)).not.toContain("failed");
 
+    const duplicateStepReport = acceptedLiveReport({
+      steps: [
+        ...acceptedLiveReport().steps,
+        {
+          name: "checkout",
+          command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            status: "checkout_handoff_returned",
+            paymentStatus: "paid",
+            orderPlacement: "confirmed",
+            orderStatusCommand: "zepo track"
+          }
+        }
+      ]
+    });
+    duplicateStepReport.attempted = summarizeLiveReportAttempts(duplicateStepReport.steps);
+    duplicateStepReport.coverage = summarizeLiveReportCoverage(duplicateStepReport.steps);
+    duplicateStepReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      duplicateStepReport.requested,
+      duplicateStepReport.coverage
+    );
+
+    const duplicateStepResult = validateLiveReportAcceptance(duplicateStepReport, {
+      expectedVersion: packageJson.version
+    });
+    expect(duplicateStepResult.accepted).toBe(false);
+    expect(duplicateStepResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_uniqueness_mismatch"
+    );
+    expect(JSON.stringify(duplicateStepResult.issues)).not.toContain("paid");
+
     const sensitiveReport = acceptedLiveReport({
       dataDir: "C:\\Users\\parth\\.zepo-live",
       note: `raw token npm_${"A".repeat(24)} should not be accepted`
