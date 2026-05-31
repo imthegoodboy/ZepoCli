@@ -204,6 +204,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "complete boolean capability summaries",
     "redacted step command contract",
     "`ok` reports containing only passing known workflow steps",
+    "unique workflow step names",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
@@ -902,6 +903,42 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report unknown-step rejection to omit raw failed step values"
   );
   console.log("pass installed live report ok step set contract");
+  const duplicateStepLiveReport = {
+    ...acceptedLiveReport,
+    steps: [
+      ...acceptedLiveReport.steps,
+      {
+        name: "checkout",
+        command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+        exitCode: 0,
+        ok: true,
+        summary: {
+          status: "checkout_handoff_returned",
+          paymentStatus: "paid",
+          orderPlacement: "confirmed",
+          orderStatusCommand: "zepo track"
+        }
+      }
+    ]
+  };
+  duplicateStepLiveReport.attempted = summarizeLiveReportAttempts(duplicateStepLiveReport.steps);
+  duplicateStepLiveReport.coverage = summarizeLiveReportCoverage(duplicateStepLiveReport.steps);
+  duplicateStepLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    duplicateStepLiveReport.requested,
+    duplicateStepLiveReport.coverage
+  );
+  const duplicateStepIssues = validateLiveReportAcceptance(duplicateStepLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    duplicateStepIssues.some((issue) => issue.code === "live_report_step_uniqueness_mismatch"),
+    "expected installed live report acceptance helper to reject duplicate workflow steps"
+  );
+  assert(
+    !JSON.stringify(duplicateStepIssues).includes("paid"),
+    "expected installed live report duplicate-step rejection to omit raw duplicate step values"
+  );
+  console.log("pass installed live report unique step contract");
   const unexpectedFieldLiveReports = [
     {
       ...acceptedLiveReport,

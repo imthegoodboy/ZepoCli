@@ -85,6 +85,7 @@ The live report is acceptable only when:
 - Stored step command strings match the redacted command contract.
 - Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.
 - `ok: true` reports contain only passing known workflow steps.
+- Every workflow step name appears at most once in an ok report.
 - `requested` shows the explicit verification scope without workflow query values.
 - `attempted` shows which workflow capabilities the runner reached.
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.
