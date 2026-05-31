@@ -788,7 +788,7 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
 const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
   ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
-  ["login", LIVE_REPORT_FALLBACK_SUMMARY_KEYS],
+  ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["search", new Set(["productCount"])],
   ["address add", new Set(["addressCount", "selectedCount"])],
@@ -858,7 +858,8 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   },
   {
     capability: "login",
-    step: "login"
+    step: "login",
+    accepts: (step) => step.summary?.sessionSaved === true && step.summary?.confirmedSession === true
   },
   {
     capability: "liveSession",

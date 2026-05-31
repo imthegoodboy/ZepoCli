@@ -531,6 +531,13 @@ function summarizePayload(name, payload) {
     };
   }
 
+  if (name === "login") {
+    return {
+      sessionSaved: payload.sessionSaved === true,
+      confirmedSession: payload.confirmedSession === true
+    };
+  }
+
   if (name === "search") {
     return {
       productCount: Array.isArray(payload) ? payload.length : 0

@@ -164,6 +164,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("unique workflow step names");
     expect(readme).toContain("runner workflow order");
     expect(readme).toContain("all passing workflow step summaries satisfy their known contracts");
+    expect(readme).toContain("login session evidence");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
