@@ -158,6 +158,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
     expect(readme).toContain("sanitized `generatedAt` plus data/report path metadata");
     expect(readme).toContain("accepted report schema");
+    expect(readme).toContain("complete boolean capability summaries");
     expect(readme).toContain("redacted step command contract");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");

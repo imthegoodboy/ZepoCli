@@ -116,6 +116,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`requested` shows the explicit verification scope without workflow query values");
     expect(liveVerifierSkill).toContain("`attempted` shows which workflow capabilities the runner reached");
     expect(liveVerifierSkill).toContain("`coverage` shows which workflow capabilities actually passed");
+    expect(liveVerifierSkill).toContain("contain every supported capability as booleans");
     expect(liveVerifierSkill).toContain("`attempted` and `coverage` match the saved `steps` array");
     expect(liveVerifierSkill).toContain("report keys and values do not contain sensitive-looking local paths");
     expect(liveVerifierSkill).toContain("`missingCoverage` shows requested capabilities that did not pass");

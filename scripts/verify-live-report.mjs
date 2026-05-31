@@ -90,6 +90,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - ok is true
 - generatedAt and data/report path metadata match the sanitized runner shape
 - report fields match the accepted schema
+- requested, attempted, coverage, and missingCoverage are complete boolean capability maps
 - attempted and coverage summaries match the steps array
 - stored step command strings match the redacted command contract
 - step exitCode, ok, summary, and error fields are internally consistent
