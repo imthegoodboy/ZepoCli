@@ -102,6 +102,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - login step summaries confirm saved session evidence when login runs
 - stored step command strings match the redacted command contract
 - step exitCode, ok, summary, and error fields are internally consistent
+- failure error objects keep stable code, message, hint, and retryAfterMs fields
 - sensitive-looking report keys and values have been redacted
 - requested capabilities have passing coverage
 - missingCoverage has no true values
