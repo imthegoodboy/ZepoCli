@@ -334,6 +334,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
     if (report.ok === true) {
       validateLiveReportOkStepSetContract(steps, issues);
       validateLiveReportUniqueStepNamesContract(steps, issues);
+      validateLiveReportPassingStepContracts(steps, issues);
     }
 
     for (const requirement of LIVE_REPORT_ACCEPTANCE_REQUIREMENTS) {
@@ -351,10 +352,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
       }
 
       if (requirement.accepts && !requirement.accepts(step)) {
-        issues.push({
-          code: "live_report_step_contract_mismatch",
-          message: `Live report ${requirement.step} summary does not satisfy acceptance requirements.`
-        });
+        addLiveReportStepContractMismatchIssue(issues);
       }
     }
   }
@@ -465,6 +463,29 @@ function addLiveReportStepUniquenessMismatchIssue(issues) {
     issues.push({
       code: "live_report_step_uniqueness_mismatch",
       message: "Live report ok=true must not contain duplicate workflow steps."
+    });
+  }
+}
+
+function validateLiveReportPassingStepContracts(steps, issues) {
+  for (const step of steps) {
+    if (!isObject(step) || step.ok !== true) {
+      continue;
+    }
+
+    const requirement = LIVE_REPORT_ACCEPTANCE_REQUIREMENT_BY_STEP_NAME.get(step.name);
+    if (requirement?.accepts && !requirement.accepts(step)) {
+      addLiveReportStepContractMismatchIssue(issues);
+      return;
+    }
+  }
+}
+
+function addLiveReportStepContractMismatchIssue(issues) {
+  if (!issues.some((issue) => issue.code === "live_report_step_contract_mismatch")) {
+    issues.push({
+      code: "live_report_step_contract_mismatch",
+      message: "Live report step summary does not satisfy acceptance requirements."
     });
   }
 }
@@ -857,6 +878,10 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
     accepts: (step) => step.summary?.cartItemCount > 0
   }
 ];
+
+const LIVE_REPORT_ACCEPTANCE_REQUIREMENT_BY_STEP_NAME = new Map(
+  LIVE_REPORT_ACCEPTANCE_REQUIREMENTS.map((requirement) => [requirement.step, requirement])
+);
 
 function summarizeStepPayload(name, payload, args, summarizePayload) {
   try {

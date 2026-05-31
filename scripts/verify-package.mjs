@@ -205,6 +205,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "redacted step command contract",
     "`ok` reports containing only passing known workflow steps",
     "unique workflow step names",
+    "all passing workflow step summaries satisfy their known contracts",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
@@ -939,6 +940,42 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report duplicate-step rejection to omit raw duplicate step values"
   );
   console.log("pass installed live report unique step contract");
+  const unrequestedBadCheckoutLiveReport = {
+    ...acceptedLiveReport,
+    requested: summarizeLiveReportRequests({
+      search: "milk"
+    }),
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "checkout"
+        ? {
+            ...step,
+            summary: {
+              ...step.summary,
+              paymentStatus: "paid",
+              orderPlacement: "confirmed"
+            }
+          }
+        : step
+    )
+  };
+  unrequestedBadCheckoutLiveReport.attempted = summarizeLiveReportAttempts(unrequestedBadCheckoutLiveReport.steps);
+  unrequestedBadCheckoutLiveReport.coverage = summarizeLiveReportCoverage(unrequestedBadCheckoutLiveReport.steps);
+  unrequestedBadCheckoutLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    unrequestedBadCheckoutLiveReport.requested,
+    unrequestedBadCheckoutLiveReport.coverage
+  );
+  const unrequestedBadCheckoutIssues = validateLiveReportAcceptance(unrequestedBadCheckoutLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    unrequestedBadCheckoutIssues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject malformed unrequested passing steps"
+  );
+  assert(
+    !JSON.stringify(unrequestedBadCheckoutIssues).includes("paid"),
+    "expected installed live report all-step contract rejection to omit raw step values"
+  );
+  console.log("pass installed live report all passing step contract");
   const unexpectedFieldLiveReports = [
     {
       ...acceptedLiveReport,
