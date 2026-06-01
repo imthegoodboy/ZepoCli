@@ -119,6 +119,7 @@ describe("global runtime options", () => {
           error: `Order #ZEP1234 OTP 123456 failed for +91-98765-43210 with ${fakeNpmToken} near C:\\Users\\parth\\.zepo-live\\trace.txt and C:/Users/parth/.zepo-live/trace.txt`,
           browserProfileDir: runtime.paths.browserProfileDir,
           nested: {
+            diagnosticCount: BigInt(5),
             payment: "card 4111 1111 1111 1111 and handle abc@upi",
             "token=runtime-key-token-123": "sensitive keys are redacted too",
             encoded:
@@ -161,6 +162,7 @@ describe("global runtime options", () => {
       expect(serialized).toContain("<redacted-payment-handle>");
       expect(serialized).toContain("<redacted-npm-token>");
       expect(serialized).toContain("<redacted-local-path>");
+      expect(serialized).toContain('"diagnosticCount":"5"');
       expect(serialized).toContain("token=<redacted-auth-token>");
       expect(serialized).not.toContain("123456");
       expect(serialized).not.toContain("654321");
