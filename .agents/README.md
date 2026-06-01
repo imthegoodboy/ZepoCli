@@ -144,6 +144,7 @@ Before claiming production readiness:
 - `npm run build` passes.
 - `npm test` passes.
 - `npm run verify:secrets` passes against tracked and unignored project text and does not print raw tokens.
+- `npm run verify:dependencies` passes, so declared runtime packages load and required dev-tool binaries are present before build/test work begins.
 - `npm run verify:cli` passes against the compiled `dist/index.js`.
 - `npm run verify:package` passes after packing the npm tarball, installing it into a disposable prefix, and running the installed `zepo` binary.
 - The verify scripts keep checking the `zepo` package bin entry and compiled shebang so the installed CLI works as a normal executable, not only through `node dist/index.js`.

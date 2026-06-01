@@ -137,11 +137,13 @@ describe("package CLI contract", () => {
     expect(packageJson.scripts?.build).toContain("tsc -p tsconfig.json");
     expect(packageJson.scripts?.build).toContain("node scripts/normalize-cli-entry.mjs");
     expect(packageJson.scripts?.["verify:secrets"]).toBe("node scripts/verify-secrets.mjs");
+    expect(packageJson.scripts?.["verify:dependencies"]).toBe("node scripts/verify-dependencies.mjs");
 
     const checkScript = packageJson.scripts?.check ?? "";
 
     for (const gate of [
       "npm run verify:secrets",
+      "npm run verify:dependencies",
       "npm run build",
       "npm test",
       "npm run verify:cli",
@@ -164,6 +166,7 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("LICENSE");
     expect(packageJson.files).toContain("scripts/clean-dist.mjs");
     expect(packageJson.files).toContain("scripts/normalize-cli-entry.mjs");
+    expect(packageJson.files).toContain("scripts/verify-dependencies.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-report.mjs");
@@ -189,6 +192,17 @@ describe("package CLI contract", () => {
     expect(verifier).toContain(".env.example");
     expect(verifier).toContain("<redacted-npm-token>");
     expect(verifier).not.toContain("console.error(line)");
+  });
+
+  it("keeps dependency verification focused on install readiness", () => {
+    const verifier = readFileSync(resolve(rootDir, "scripts", "verify-dependencies.mjs"), "utf8");
+
+    expect(verifier).toContain("ZEPOCLI_VERIFY_DEPENDENCIES_ROOT");
+    expect(verifier).toContain("Missing ${section.name} package");
+    expect(verifier).toContain("Missing devDependency binary");
+    expect(verifier).toContain("npm ci --include=prod --include=dev");
+    expect(verifier).toContain("If your npm config omits dev dependencies");
+    expect(verifier).not.toContain("NPM_TOKEN");
   });
 
   it("redacts npm-shaped tokens when secret verification fails", () => {
@@ -218,6 +232,8 @@ describe("package CLI contract", () => {
 
     expect(verifier).toContain("verifyInstalledReadmeContract");
     expect(verifier).toContain("expected installed package README");
+    expect(verifier).toContain("npm run verify:dependencies");
+    expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("Safe-click checks inspect visible text");
     expect(verifier).toContain("Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token URL parameters, and local-path values");
