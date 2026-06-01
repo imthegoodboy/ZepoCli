@@ -51,10 +51,16 @@ describe("global runtime options", () => {
 
   it("closes SQLite and the runtime log destination together", () => {
     let sqliteClosed = false;
+    let loggerFlushed = false;
     let flushed = false;
     let ended = false;
 
     closeRuntime({
+      logger: {
+        flush: () => {
+          loggerFlushed = true;
+        }
+      },
       sqlite: {
         close: () => {
           sqliteClosed = true;
@@ -70,6 +76,7 @@ describe("global runtime options", () => {
       }
     } as never);
 
+    expect(loggerFlushed).toBe(true);
     expect(sqliteClosed).toBe(true);
     expect(flushed).toBe(true);
     expect(ended).toBe(true);
@@ -78,6 +85,11 @@ describe("global runtime options", () => {
   it("does not let best-effort runtime cleanup replace command errors", () => {
     expect(() =>
       closeRuntimeBestEffort({
+        logger: {
+          flush: () => {
+            throw new Error("logger flush failed");
+          }
+        },
         sqlite: {
           close: () => {
             throw new Error("sqlite close failed");

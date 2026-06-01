@@ -62,12 +62,19 @@ export function createRuntime(options: Partial<RuntimeOptions> = {}): AppRuntime
 }
 
 export function closeRuntime(runtime: AppRuntime): void {
+  flushRuntimeLogger(runtime);
   runtime.sqlite.close();
   runtime.logDestination.flushSync();
   runtime.logDestination.end();
 }
 
 export function closeRuntimeBestEffort(runtime: AppRuntime): void {
+  try {
+    flushRuntimeLogger(runtime);
+  } catch {
+    // Logger flush failures must not replace the command's real result or user-facing error.
+  }
+
   try {
     runtime.sqlite.close();
   } catch {
@@ -84,5 +91,12 @@ export function closeRuntimeBestEffort(runtime: AppRuntime): void {
     runtime.logDestination.end();
   } catch {
     // The process can exit safely even if the log destination has already closed.
+  }
+}
+
+function flushRuntimeLogger(runtime: Partial<Pick<AppRuntime, "logger">>): void {
+  const logger = runtime.logger as (pino.Logger & { flush?: () => void }) | undefined;
+  if (typeof logger?.flush === "function") {
+    logger.flush();
   }
 }
