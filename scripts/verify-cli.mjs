@@ -408,6 +408,22 @@ const checks = [
     }
   },
   {
+    name: "status malformed headless run history metadata json",
+    args: ({ dataDir }) => {
+      setRuntimeMeta(
+        dataDir,
+        HEADLESS_BROWSER_RUN_HISTORY_META_KEY,
+        JSON.stringify(Array.from({ length: 8 }, () => 999_999_999_999_999_999_999))
+      );
+      return ["--data-dir", dataDir, "status", "--json"];
+    },
+    expect: ({ status, stdout }, { dataDir }) => {
+      assert(status === 0, "expected exit code 0");
+      const payload = parseJson(stdout, "stdout");
+      assertFreshStatus(payload, dataDir);
+    }
+  },
+  {
     name: "doctor skip browser json",
     args: ({ dataDir }) => ["--data-dir", dataDir, "doctor", "--skip-browser", "--json"],
     expect: ({ status, stdout }, { dataDir }) => {

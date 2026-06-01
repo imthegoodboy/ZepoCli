@@ -243,6 +243,8 @@ describe("browser automation helpers", () => {
   it("pauses headless automation after a recent access challenge", () => {
     expect(computeAccessChallengeCooldownDelay(undefined, 10_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay("not-a-timestamp", 10_000)).toBe(0);
+    expect(computeAccessChallengeCooldownDelay("9000x", 10_000)).toBe(0);
+    expect(computeAccessChallengeCooldownDelay("1e3", 10_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay("-1", 10_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay("999999999999999999999", 10_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay(String(10_000 + ACCESS_CHALLENGE_COOLDOWN_MS + 1), 10_000)).toBe(0);
@@ -274,6 +276,16 @@ describe("browser automation helpers", () => {
       retryAfterMs: 0
     });
     expect(getAccessChallengeCooldownStatus("not-a-timestamp", 10_000)).toEqual({
+      detected: false,
+      cooldownActive: false,
+      retryAfterMs: 0
+    });
+    expect(getAccessChallengeCooldownStatus("9000x", 10_000)).toEqual({
+      detected: false,
+      cooldownActive: false,
+      retryAfterMs: 0
+    });
+    expect(getAccessChallengeCooldownStatus("1e3", 10_000)).toEqual({
       detected: false,
       cooldownActive: false,
       retryAfterMs: 0
@@ -324,6 +336,37 @@ describe("browser automation helpers", () => {
       retryAfterMs: 0
     });
     expect(getHeadlessBrowserThrottleStatus("not-json", 10_100)).toMatchObject({
+      recentRuns: 0,
+      throttleActive: false
+    });
+    expect(getHeadlessBrowserThrottleStatus("9000x", 10_100)).toMatchObject({
+      recentRuns: 0,
+      throttleActive: false
+    });
+    expect(
+      getHeadlessBrowserThrottleStatus(
+        JSON.stringify([
+          9_000,
+          -1,
+          9_000.5,
+          999_999_999_999_999_999_999,
+          10_100 + 600_001,
+          "9000",
+          null,
+          9_001
+        ]),
+        10_100
+      )
+    ).toMatchObject({
+      recentRuns: 2,
+      throttleActive: false
+    });
+    expect(
+      getHeadlessBrowserThrottleStatus(
+        JSON.stringify(Array.from({ length: 8 }, () => 999_999_999_999_999_999_999)),
+        10_100
+      )
+    ).toMatchObject({
       recentRuns: 0,
       throttleActive: false
     });

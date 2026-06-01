@@ -381,6 +381,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed stale malformed lock not to block automation");
     expect(verifier).toContain("installed status malformed access cooldown metadata json");
     expect(verifier).toContain("LAST_ACCESS_CHALLENGE_META_KEY");
+    expect(verifier).toContain("installed status malformed headless run history metadata json");
+    expect(verifier).toContain("HEADLESS_BROWSER_RUN_HISTORY_META_KEY");
     expect(verifier).toContain("expected no recorded Zepto access challenge");
     expect(verifier).toContain("installed global json no session nested address list");
     expect(verifier).toContain("installed json encoded sensitive unknown option redaction");

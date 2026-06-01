@@ -22,6 +22,7 @@ const BROWSER_RUN_LOCK_STALE_MS = 15 * 60 * 1_000;
 const BROWSER_CONTEXT_CLOSE_TIMEOUT_MS = 5_000;
 const HEADLESS_BROWSER_BURST_WINDOW_MS = 10 * 60 * 1_000;
 const HEADLESS_BROWSER_BURST_LIMIT = 8;
+const MAX_RUNTIME_TIMESTAMP_MS = 8.64e15;
 export const ACCESS_CHALLENGE_COOLDOWN_MS = 15 * 60 * 1_000;
 const VISIBLE_ACCESS_CHALLENGE_WAIT_MS = 90_000;
 const LAST_BROWSER_RUN_META_KEY = "last_browser_run_at";
@@ -1056,12 +1057,12 @@ function parseMetaTimestamp(value: string | undefined, nowMs = Date.now()): numb
     return undefined;
   }
 
-  const timestamp = Number.parseInt(value, 10);
-  if (!Number.isFinite(timestamp) || timestamp < 0 || timestamp > 8.64e15) {
+  if (!/^\d+$/.test(value)) {
     return undefined;
   }
 
-  if (timestamp > nowMs + ACCESS_CHALLENGE_COOLDOWN_MS) {
+  const timestamp = Number.parseInt(value, 10);
+  if (!isRuntimeTimestamp(timestamp, nowMs, ACCESS_CHALLENGE_COOLDOWN_MS)) {
     return undefined;
   }
 
@@ -1069,12 +1070,12 @@ function parseMetaTimestamp(value: string | undefined, nowMs = Date.now()): numb
 }
 
 function recentHeadlessBrowserRuns(runHistory: string | undefined, nowMs: number): number[] {
-  return parseHeadlessBrowserRunHistory(runHistory)
+  return parseHeadlessBrowserRunHistory(runHistory, nowMs)
     .filter((timestamp) => nowMs - timestamp < HEADLESS_BROWSER_BURST_WINDOW_MS)
     .sort((left, right) => left - right);
 }
 
-function parseHeadlessBrowserRunHistory(runHistory: string | undefined): number[] {
+function parseHeadlessBrowserRunHistory(runHistory: string | undefined, nowMs: number): number[] {
   if (!runHistory) {
     return [];
   }
@@ -1082,14 +1083,30 @@ function parseHeadlessBrowserRunHistory(runHistory: string | undefined): number[
   try {
     const parsed = JSON.parse(runHistory) as unknown;
     if (Array.isArray(parsed)) {
-      return parsed.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+      return parsed.filter((value): value is number =>
+        typeof value === "number" && isRuntimeTimestamp(value, nowMs, HEADLESS_BROWSER_BURST_WINDOW_MS)
+      );
     }
   } catch {
+    if (!/^\d+$/.test(runHistory)) {
+      return [];
+    }
+
     const timestamp = Number.parseInt(runHistory, 10);
-    return Number.isFinite(timestamp) ? [timestamp] : [];
+    return isRuntimeTimestamp(timestamp, nowMs, HEADLESS_BROWSER_BURST_WINDOW_MS) ? [timestamp] : [];
   }
 
   return [];
+}
+
+function isRuntimeTimestamp(value: number, nowMs: number, maxFutureMs: number): boolean {
+  return (
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= MAX_RUNTIME_TIMESTAMP_MS &&
+    value <= nowMs + maxFutureMs
+  );
 }
 
 function sleep(ms: number): Promise<void> {
