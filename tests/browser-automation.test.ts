@@ -221,6 +221,11 @@ describe("browser automation helpers", () => {
   it("paces repeated browser automation runs", () => {
     expect(computeBrowserPacingDelay(undefined, 10_000)).toBe(0);
     expect(computeBrowserPacingDelay("not-a-timestamp", 10_000)).toBe(0);
+    expect(computeBrowserPacingDelay("9000x", 10_000)).toBe(0);
+    expect(computeBrowserPacingDelay("1e3", 10_000)).toBe(0);
+    expect(computeBrowserPacingDelay("-1", 10_000)).toBe(0);
+    expect(computeBrowserPacingDelay("999999999999999999999", 10_000)).toBe(0);
+    expect(computeBrowserPacingDelay("13001", 10_000)).toBe(0);
     expect(computeBrowserPacingDelay("9000", 10_000)).toBe(2_000);
     expect(computeBrowserPacingDelay("7000", 10_000)).toBe(0);
     expect(computeBrowserPacingDelay("11000", 10_000)).toBe(3_000);
