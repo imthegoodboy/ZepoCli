@@ -66,7 +66,7 @@ Storage:
 
 ## Researched Zepto Facts
 
-Sources checked on 2026-05-31:
+Product/support sources checked on 2026-05-31; primary policy sources rechecked on 2026-06-02:
 
 - Official site: https://www.zepto.com/
 - Terms: https://www.zepto.com/s/terms-of-service
@@ -85,10 +85,10 @@ Relevant product behavior:
 - Users are responsible for accurate delivery address details.
 - Restricted/regulated categories such as alcohol/tobacco and pharmacy can involve Zepto-side eligibility, age, identity, prescription, or delivery verification; the CLI must not bypass or complete those checks.
 - Official real-time support is through the Zepto app; do not direct users to unofficial phone numbers.
-- Zepto Terms of Use version 1.4 were checked on 2026-05-31 at https://www.zepto.com/s/terms-of-service and show "Last updated: 1 st November 2025". They describe Platform access as limited and revocable, prohibit excessive load, restrict access through non-Zepto interfaces or automatic devices, and allow Zepto to delay, cancel, reject, block, or suspend transactions/access for security, fair-use, or policy reasons.
+- Zepto Terms of Use version 1.4 were checked on 2026-06-02 at https://www.zepto.com/s/terms-of-service and show "Last updated: 1 st November 2025". They describe Platform access as limited and revocable, prohibit excessive load, restrict access through non-Zepto interfaces or automatic devices, and allow Zepto to delay, cancel, reject, block, or suspend transactions/access for security, fair-use, or policy reasons.
 - Zepto operates marketplace transactions in select serviceable areas. serviceability, seller availability, product availability, price, fees, charges, and ETA are Zepto-side state; the CLI must read and present Zepto-visible state, must not promise delivery timing, and must not synthesize availability.
 - Zepto payment methods and charges are displayed during purchase/checkout, and Zepto warns users not to share debit/credit card numbers, CVV, OTP, UPI/ATM PIN, or other sensitive information. ZepoCli must never ask for, store, log, print, or automate those values.
-- Zepto Privacy Notice version 1.1 was checked on 2026-05-31 at https://staticweb.zepto.com/privacy-policy/ and shows "Last updated: 17th June 2025". It treats passwords and payment instrument details as sensitive personal information, describes payment processing through payment gateways, and tells users to keep account information confidential and avoid sharing login credentials, passwords, or OTPs.
+- Zepto Privacy Notice version 1.1 was checked on 2026-06-02 at https://staticweb.zepto.com/privacy-policy/ and shows "Last updated: 17th June 2025". It treats passwords and payment instrument details as sensitive personal information, describes payment processing through payment gateways, and tells users to keep account information confidential and avoid sharing login credentials, passwords, or OTPs.
 
 Implementation consequence:
 
