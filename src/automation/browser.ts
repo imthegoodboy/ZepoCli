@@ -638,12 +638,8 @@ export function shouldCheckExpiredSession(
 }
 
 export function computeBrowserPacingDelay(lastRunAt: string | undefined, nowMs = Date.now()): number {
-  if (!lastRunAt) {
-    return 0;
-  }
-
-  const timestamp = Number.parseInt(lastRunAt, 10);
-  if (!Number.isFinite(timestamp)) {
+  const timestamp = parseRuntimeTimestampString(lastRunAt, nowMs, BROWSER_RUN_PACING_MS);
+  if (timestamp === undefined) {
     return 0;
   }
 
@@ -1053,20 +1049,7 @@ function expiredSessionError(): UserFacingError {
 }
 
 function parseMetaTimestamp(value: string | undefined, nowMs = Date.now()): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  if (!/^\d+$/.test(value)) {
-    return undefined;
-  }
-
-  const timestamp = Number.parseInt(value, 10);
-  if (!isRuntimeTimestamp(timestamp, nowMs, ACCESS_CHALLENGE_COOLDOWN_MS)) {
-    return undefined;
-  }
-
-  return timestamp;
+  return parseRuntimeTimestampString(value, nowMs, ACCESS_CHALLENGE_COOLDOWN_MS);
 }
 
 function recentHeadlessBrowserRuns(runHistory: string | undefined, nowMs: number): number[] {
@@ -1097,6 +1080,15 @@ function parseHeadlessBrowserRunHistory(runHistory: string | undefined, nowMs: n
   }
 
   return [];
+}
+
+function parseRuntimeTimestampString(value: string | undefined, nowMs: number, maxFutureMs: number): number | undefined {
+  if (!value || !/^\d+$/.test(value)) {
+    return undefined;
+  }
+
+  const timestamp = Number.parseInt(value, 10);
+  return isRuntimeTimestamp(timestamp, nowMs, maxFutureMs) ? timestamp : undefined;
 }
 
 function isRuntimeTimestamp(value: number, nowMs: number, maxFutureMs: number): boolean {
