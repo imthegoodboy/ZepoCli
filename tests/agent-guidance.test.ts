@@ -66,7 +66,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("optional `--max-age-minutes` freshness");
       expect(guidance).toContain("stale saved reports are rejected");
       expect(guidance).toContain(
-        "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track must be explicitly requested and covered"
+        "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track must be explicitly requested and covered"
       );
       expect(guidance).toContain(
         "focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence"
@@ -166,7 +166,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Use `--max-age-minutes 1440` for final readiness");
     expect(liveVerifierSkill).toContain("With `--max-age-minutes`, stale reports must be rejected");
     expect(liveVerifierSkill).toContain(
-      "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track must be explicitly requested and have passing coverage"
+      "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage"
     );
     expect(liveVerifierSkill).toContain(
       "focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence"
