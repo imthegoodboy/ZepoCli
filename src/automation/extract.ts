@@ -14,13 +14,15 @@ export interface RawProductCard {
   text: string;
   imageAlt?: string;
   href?: string;
+  ignoredText?: string[];
 }
 
 export function parseProductCard(raw: RawProductCard, outputIndex: number): Product | undefined {
   const lines = splitVisibleLines(raw.text);
+  const ignoredLines = ignoredProductLinesFrom(raw.ignoredText);
   const { price, mrp } = productPricesFrom(lines);
   const unit = lines.find((line) => isLikelyProductUnitLine(line));
-  const name = productNameFrom(raw.imageAlt, lines);
+  const name = productNameFrom(raw.imageAlt, lines, ignoredLines);
 
   if (!name) {
     return undefined;
@@ -288,15 +290,15 @@ function isDiscountOnlyPriceLine(line: string, prices: string[]): boolean {
   );
 }
 
-function productNameFrom(imageAlt: string | undefined, lines: string[]): string | undefined {
+function productNameFrom(imageAlt: string | undefined, lines: string[], ignoredLines: ReadonlySet<string>): string | undefined {
   if (imageAlt) {
     const alt = stripImagePrefix(imageAlt);
-    if (alt && !isGenericImageAlt(alt) && !isIgnoredProductLine(alt)) {
+    if (alt && !isGenericImageAlt(alt) && !isIgnoredProductLine(alt, ignoredLines)) {
       return alt;
     }
   }
 
-  return lines.find((line) => !isIgnoredProductLine(line));
+  return lines.find((line) => !isIgnoredProductLine(line, ignoredLines));
 }
 
 function isGenericImageAlt(value: string): boolean {
@@ -305,12 +307,10 @@ function isGenericImageAlt(value: string): boolean {
   );
 }
 
-function isIgnoredProductLine(line: string): boolean {
+function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): boolean {
   return (
-    /^add$/i.test(line) ||
-    /^add\s+to\s+cart$/i.test(line) ||
-    /^added$/i.test(line) ||
-    /^out of stock$/i.test(line) ||
+    isProductAddControlLine(line) ||
+    ignoredLines.has(normalizedIgnoredProductLine(line)) ||
     /^(sponsored|ad|advertisement|best\s?seller|popular|trending|recommended|featured)$/i.test(line) ||
     /^(?:\d+\s*(?:mins?|minutes?)|delivery\s+in\s+\d+\s*(?:mins?|minutes?)|arrives?\s+in\s+\d+\s*(?:mins?|minutes?)|fast delivery|free delivery|super saver|lowest price|low price|deal|offer|new)$/i.test(line) ||
     isRecommendationHeaderLine(line) ||
@@ -320,6 +320,34 @@ function isIgnoredProductLine(line: string): boolean {
     looksLikeRating(line) ||
     looksLikeUnit(line)
   );
+}
+
+function isProductAddControlLine(line: string): boolean {
+  return /^add(?:ed|\s+to\s+cart)?$/i.test(normalizeText(line));
+}
+
+function ignoredProductLinesFrom(values: string[] | undefined): ReadonlySet<string> {
+  const ignored = new Set<string>();
+  for (const value of values ?? []) {
+    for (const line of splitVisibleLines(value)) {
+      const normalized = normalizedIgnoredProductLine(stripImagePrefix(line));
+      if (
+        normalized &&
+        normalized.length <= 120 &&
+        !looksLikePrice(normalized) &&
+        !looksLikeRating(normalized) &&
+        !looksLikeUnit(normalized)
+      ) {
+        ignored.add(normalized);
+      }
+    }
+  }
+
+  return ignored;
+}
+
+function normalizedIgnoredProductLine(line: string): string {
+  return normalizeText(line).toLowerCase();
 }
 
 function isLikelyProductUnitLine(line: string): boolean {

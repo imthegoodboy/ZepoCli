@@ -17,7 +17,7 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
 ] as const;
 const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = "^add(?:\\s+to\\s+cart)?$";
 const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
-  `^(?:added|out\\s+of\\s+stock|sold\\s+out|unavailable|remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!to\\s+cart$).+|\\b(address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}`;
+  "^(?:remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!to\\s+cart$).+|\\b(address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order)\\b";
 const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
@@ -366,11 +366,23 @@ export function isProductAddControlText(text: string): boolean {
 
 export function isUnsafeProductAddControlText(text: string): boolean {
   const normalized = text.replace(/\s+/g, " ").trim();
-  if (!normalized || isProductAddControlText(normalized)) {
+  if (!normalized || isProductAddCompanionText(normalized)) {
     return false;
   }
 
-  return new RegExp(PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE, "i").test(normalized);
+  return (
+    /^add(?:ed|ing)?$/i.test(normalized) ||
+    new RegExp(PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE, "i").test(normalized) ||
+    isPaymentMethodLabelText(normalized)
+  );
+}
+
+function isProductAddCompanionText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  return (
+    isProductAddControlText(normalized) ||
+    (/\bproduct\b/i.test(normalized) && /\badd\b/i.test(normalized) && /\b(action|button|control)\b/i.test(normalized))
+  );
 }
 
 export function isQuantityIncreaseControlText(text: string): boolean {
@@ -402,7 +414,10 @@ export function isUnsafeQuantityIncreaseControlText(text: string): boolean {
 
 async function assertTaggedProductControlIsStillAdd(locator: Locator, product: Product): Promise<void> {
   const labels = await readControlLabels(locator);
-  if (labels.some(isProductAddControlText) && !labels.some(isUnsafeProductAddControlText)) {
+  if (
+    labels.some(isProductAddControlText) &&
+    !labels.some((label) => isUnsafeProductAddControlText(label) || !isProductAddCompanionText(label))
+  ) {
     return;
   }
 
@@ -552,10 +567,22 @@ function readClosestProductAddCardText(element: Element): string {
 }
 
 export async function extractProducts(page: Page, limit: number): Promise<Product[]> {
-  const rawCards = await page.evaluate(({ maxCards, addControlPatternSource, unsafeAddControlPatternSource }) => {
+  const rawCards = await page.evaluate(({
+    maxCards,
+    addControlPatternSource,
+    unsafeAddControlPatternSource,
+    paymentMethodPatternSource
+  }) => {
     const addControlPattern = new RegExp(addControlPatternSource, "i");
     const unsafeAddControlPattern = new RegExp(unsafeAddControlPatternSource, "i");
+    const paymentMethodPattern = new RegExp(paymentMethodPatternSource, "i");
     const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+    const isAllowedAddCompanionLabel = (label: string) =>
+      addControlPattern.test(label) ||
+      (/\bproduct\b/i.test(label) && /\badd\b/i.test(label) && /\b(action|button|control)\b/i.test(label));
+    const isUnsafeAddControlLabel = (label: string) =>
+      unsafeAddControlPattern.test(label) ||
+      paymentMethodPattern.test(label);
     const visibleText = (element: Element) =>
       element instanceof HTMLElement ? element.innerText : (element.textContent ?? "");
     const referencedLabelText = (element: Element) =>
@@ -578,7 +605,10 @@ export async function extractProducts(page: Page, limit: number): Promise<Produc
         .filter(Boolean);
     const isProductAddControl = (element: Element) => {
       const labels = controlLabels(element);
-      return labels.some((label) => addControlPattern.test(label)) && !labels.some((label) => unsafeAddControlPattern.test(label));
+      return (
+        labels.some((label) => addControlPattern.test(label)) &&
+        !labels.some((label) => isUnsafeAddControlLabel(label) || !isAllowedAddCompanionLabel(label))
+      );
     };
     const isVisible = (element: Element) => {
       const rect = element.getBoundingClientRect();
@@ -635,6 +665,11 @@ export async function extractProducts(page: Page, limit: number): Promise<Produc
       return anchor instanceof HTMLAnchorElement ? anchor.href : undefined;
     };
 
+    const cardControlLabels = (element: Element) =>
+      Array.from(element.querySelectorAll("button, [role='button'], input"))
+        .flatMap((control) => controlLabels(control))
+        .filter(Boolean);
+
     const buttons = Array.from(document.querySelectorAll("button, [role='button']"))
       .filter((button) => isProductAddControl(button) && isVisible(button) && isEnabledControl(button))
       .slice(0, maxCards);
@@ -647,7 +682,8 @@ export async function extractProducts(page: Page, limit: number): Promise<Produc
         automationId: index,
         text: visibleText(card),
         imageAlt: image?.getAttribute("alt") ?? undefined,
-        href: hrefFor(card)
+        href: hrefFor(card),
+        ignoredText: cardControlLabels(card)
       };
     });
 
@@ -663,13 +699,15 @@ export async function extractProducts(page: Page, limit: number): Promise<Produc
         return {
           text: visibleText(card),
           imageAlt: image.getAttribute("alt") ?? undefined,
-          href: hrefFor(card)
+          href: hrefFor(card),
+          ignoredText: cardControlLabels(card)
         };
       });
   }, {
     maxCards: Math.max(limit * 3, 12),
     addControlPatternSource: PRODUCT_ADD_CONTROL_PATTERN_SOURCE,
-    unsafeAddControlPatternSource: PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE
+    unsafeAddControlPatternSource: PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE,
+    paymentMethodPatternSource: PAYMENT_METHOD_LABEL_PATTERN_SOURCE
   }) as RawProductCard[];
 
   const parsed: Product[] = [];
