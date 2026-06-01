@@ -222,7 +222,7 @@ describe("search automation helpers", () => {
   });
 
   it("recognizes only explicit product add control labels", () => {
-    for (const label of ["ADD", "Add", "Add to Cart", " add to cart "]) {
+    for (const label of ["ADD", "Add", "Add to Cart", " add to cart ", "Add Amul Milk to Cart"]) {
       expect(isProductAddControlText(label)).toBe(true);
       expect(isUnsafeProductAddControlText(label)).toBe(false);
     }
@@ -231,8 +231,12 @@ describe("search automation helpers", () => {
       "Add Address",
       "Add more",
       "Add coupon",
+      "Add coupon to cart",
       "Add one",
+      "Add one to cart",
+      "Add 1 to cart",
       "Added",
+      "Add Address to Cart",
       "Payment Method",
       "UPI",
       "Credit Card",
@@ -275,6 +279,26 @@ describe("search automation helpers", () => {
       },
       referencedLabels: {
         "add-label": "Add to Cart"
+      }
+    });
+
+    await expect(extractProducts(page as never, 5)).resolves.toMatchObject([
+      {
+        automationId: 0,
+        name: "Amul Milk",
+        price: "₹32",
+        unit: "500 ml"
+      }
+    ]);
+
+    expect(page.button.getAttribute("data-zepo-add-id")).toBe("0");
+  });
+
+  it("extracts product ADD controls from product-specific accessible labels", async () => {
+    const page = createProductExtractionPage({
+      buttonText: "",
+      buttonAttributes: {
+        "aria-label": "Add Amul Milk to cart"
       }
     });
 
