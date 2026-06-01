@@ -243,6 +243,9 @@ describe("browser automation helpers", () => {
   it("pauses headless automation after a recent access challenge", () => {
     expect(computeAccessChallengeCooldownDelay(undefined, 10_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay("not-a-timestamp", 10_000)).toBe(0);
+    expect(computeAccessChallengeCooldownDelay("-1", 10_000)).toBe(0);
+    expect(computeAccessChallengeCooldownDelay("999999999999999999999", 10_000)).toBe(0);
+    expect(computeAccessChallengeCooldownDelay(String(10_000 + ACCESS_CHALLENGE_COOLDOWN_MS + 1), 10_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay("9000", 10_000)).toBe(899_000);
     expect(computeAccessChallengeCooldownDelay("0", 910_000)).toBe(0);
     expect(computeAccessChallengeCooldownDelay("11000", 10_000)).toBe(900_000);
@@ -271,6 +274,21 @@ describe("browser automation helpers", () => {
       retryAfterMs: 0
     });
     expect(getAccessChallengeCooldownStatus("not-a-timestamp", 10_000)).toEqual({
+      detected: false,
+      cooldownActive: false,
+      retryAfterMs: 0
+    });
+    expect(getAccessChallengeCooldownStatus("-1", 10_000)).toEqual({
+      detected: false,
+      cooldownActive: false,
+      retryAfterMs: 0
+    });
+    expect(getAccessChallengeCooldownStatus("999999999999999999999", 10_000)).toEqual({
+      detected: false,
+      cooldownActive: false,
+      retryAfterMs: 0
+    });
+    expect(getAccessChallengeCooldownStatus(String(10_000 + ACCESS_CHALLENGE_COOLDOWN_MS + 1), 10_000)).toEqual({
       detected: false,
       cooldownActive: false,
       retryAfterMs: 0

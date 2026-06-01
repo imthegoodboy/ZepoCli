@@ -396,6 +396,18 @@ const checks = [
     }
   },
   {
+    name: "status malformed access cooldown metadata json",
+    args: ({ dataDir }) => {
+      setRuntimeMeta(dataDir, LAST_ACCESS_CHALLENGE_META_KEY, "999999999999999999999");
+      return ["--data-dir", dataDir, "status", "--json"];
+    },
+    expect: ({ status, stdout }, { dataDir }) => {
+      assert(status === 0, "expected exit code 0");
+      const payload = parseJson(stdout, "stdout");
+      assertFreshStatus(payload, dataDir);
+    }
+  },
+  {
     name: "doctor skip browser json",
     args: ({ dataDir }) => ["--data-dir", dataDir, "doctor", "--skip-browser", "--json"],
     expect: ({ status, stdout }, { dataDir }) => {
