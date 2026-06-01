@@ -728,6 +728,30 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not parse custom delivery-address labels as cart products", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Delivery Address
+      Parents
+      A-1204 Sunrise Society
+      Near Metro Station, Karnataka 560076 India
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+      Qty 1
+      Grand Total ₹32
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "1"
+      }
+    ]);
+  });
+
   it("does not parse suggested products on cart pages as cart items", () => {
     const items = parseCartItemsFromText(`
       Cart

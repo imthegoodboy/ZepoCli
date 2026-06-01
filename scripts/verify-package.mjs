@@ -192,6 +192,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
     "Saved-address labels are derived from Zepto's visible saved-address row text",
     "rather than a hardcoded service-city allow-list",
+    "Cart parsing skips delivery-address blocks with custom saved-address labels",
+    "not a fixed address-label list or service-city allow-list",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Terms of Use version 1.4",
@@ -304,12 +306,33 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     isAddressManagerClickText,
     isUnsafeAddressAutomationClickText
   } = await import(pathToFileURL(addressAutomationModulePath).href);
+  const { parseCartItemsFromText } = await import(
+    pathToFileURL(
+      join(prefixDir, "node_modules", packageJson.name, "dist", "automation", "extract.js")
+    ).href
+  );
 
   assert(isAddressManagerClickText("Delivery Address") === true, "expected installed address-manager label to be accepted");
   assert(isAddAddressClickText("Add Address") === true, "expected installed add-address label to be accepted");
   assert(
     extractAddressLabel("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India") === "Parents",
     "expected installed address parser to derive custom saved-address labels"
+  );
+  const cartItems = parseCartItemsFromText(`
+    Cart
+    Delivery Address
+    Parents
+    A-1204 Sunrise Society
+    Near Metro Station, Karnataka 560076 India
+    Protein Bar
+    50 g
+    ₹120
+    Qty 1
+    Grand Total ₹120
+  `);
+  assert(
+    cartItems.length === 1 && cartItems[0]?.name === "Protein Bar",
+    "expected installed cart parser to ignore custom-label delivery address blocks"
   );
   for (const unsafeText of ["Checkout", "Pay Now", "Order Summary", "Bill Summary", "Cart"]) {
     assert(

@@ -106,6 +106,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("checkout, payment-method/payment, or final-order action");
     expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text");
     expect(readme).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
+    expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
+    expect(readme).toContain("not a fixed address-label list or service-city allow-list");
     expect(readme).toContain(
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'
     );

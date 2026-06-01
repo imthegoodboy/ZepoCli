@@ -392,21 +392,37 @@ function isCartAddressContextLine(lines: string[], index: number): boolean {
 
   const previousLine = normalizeText(lines[index - 1] ?? "");
   const secondPreviousLine = normalizeText(lines[index - 2] ?? "");
+  const thirdPreviousLine = normalizeText(lines[index - 3] ?? "");
+  const nextLine = normalizeText(lines[index + 1] ?? "");
+  const secondNextLine = normalizeText(lines[index + 2] ?? "");
 
-  if (isAddressLabelLine(line)) {
-    return isCartAddressHeaderLine(previousLine) || isCartAddressHeaderLine(secondPreviousLine);
+  if (isCartAddressHeaderLine(line)) {
+    return true;
   }
 
-  if (!isAddressDetailLine(line)) {
-    return false;
-  }
-
-  return (
+  const hasNearbyAddressHeader =
     isCartAddressHeaderLine(previousLine) ||
     isCartAddressHeaderLine(secondPreviousLine) ||
-    isAddressLabelLine(previousLine) ||
-    (isAddressDetailLine(previousLine) && isAddressLabelLine(secondPreviousLine))
-  );
+    isCartAddressHeaderLine(thirdPreviousLine);
+
+  if (isAddressDetailLine(line)) {
+    return (
+      hasNearbyAddressHeader ||
+      (isLikelyAddressLabelLine(previousLine) && isCartAddressHeaderLine(secondPreviousLine)) ||
+      (isAddressDetailLine(previousLine) &&
+        (hasNearbyAddressHeader ||
+          (isLikelyAddressLabelLine(secondPreviousLine) && isCartAddressHeaderLine(thirdPreviousLine))))
+    );
+  }
+
+  if (isLikelyAddressLabelLine(line)) {
+    return (
+      (isCartAddressHeaderLine(previousLine) || isCartAddressHeaderLine(secondPreviousLine)) &&
+      (isAddressDetailLine(nextLine) || isAddressDetailLine(secondNextLine))
+    );
+  }
+
+  return false;
 }
 
 function isCartRecommendationContextLine(lines: string[], index: number): boolean {
@@ -443,15 +459,45 @@ function isCartAddressHeaderLine(line: string): boolean {
   return /\b(delivery address|deliver(?:ing)? to|selected address|saved addresses?)\b/i.test(line);
 }
 
-function isAddressLabelLine(line: string): boolean {
-  return /^(home|work|other)$/i.test(line);
+function isLikelyAddressLabelLine(line: string): boolean {
+  const normalized = normalizeText(line);
+  if (normalized.length === 0 || normalized.length > 48) {
+    return false;
+  }
+
+  if (
+    looksLikePrice(normalized) ||
+    looksLikeRating(normalized) ||
+    looksLikeUnit(normalized) ||
+    isCartAddressHeaderLine(normalized) ||
+    isCartSummaryLine(normalized) ||
+    isRecommendationHeaderLine(normalized)
+  ) {
+    return false;
+  }
+
+  return /^[a-z0-9][a-z0-9 .,'&()/-]*$/i.test(normalized);
 }
 
 function isAddressDetailLine(line: string): boolean {
+  const normalized = normalizeText(line);
+  if (
+    !normalized ||
+    looksLikePrice(normalized) ||
+    looksLikeRating(normalized) ||
+    looksLikeUnit(normalized) ||
+    isCartSummaryLine(normalized) ||
+    isRecommendationHeaderLine(normalized)
+  ) {
+    return false;
+  }
+
   return (
-    /\b(house|flat|road|street|sector|phase|apartment|building|floor|tower|block|pin|pincode|bengaluru|bangalore|mumbai|delhi|pune|hyderabad|chennai|kolkata|ahmedabad|gurugram|gurgaon|noida)\b/i.test(
-      line
-    ) || /\b\d{3,}\b/.test(line)
+    /\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\s+code|india)\b/i.test(
+      normalized
+    ) ||
+    /\b[a-z]\s*[-/]\s*\d{2,}\b/i.test(normalized) ||
+    /\b\d{3,}\b/.test(normalized)
   );
 }
 
