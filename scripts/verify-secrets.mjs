@@ -4,7 +4,23 @@ import { basename, extname, join, relative, resolve } from "node:path";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const skippedDirectories = new Set([".git", "coverage", "dist", "node_modules"]);
-const scannedExtensions = new Set([".json", ".md", ".mjs", ".ts", ".tsx", ".yml", ".yaml"]);
+const scannedExtensions = new Set([
+  ".cjs",
+  ".cts",
+  ".js",
+  ".json",
+  ".jsx",
+  ".md",
+  ".mjs",
+  ".mts",
+  ".ps1",
+  ".sh",
+  ".ts",
+  ".tsx",
+  ".txt",
+  ".yml",
+  ".yaml"
+]);
 const scannedFileNames = new Set([".env.example", ".gitattributes", ".gitignore", ".npmrc.example", "LICENSE"]);
 const npmTokenPattern = /npm_[A-Za-z0-9]{20,}/g;
 
