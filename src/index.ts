@@ -134,5 +134,5 @@ program.parseAsync(process.argv).catch((error: unknown) => {
 });
 
 function wantsJsonOutput(argv: string[]): boolean {
-  return argv.includes("--json");
+  return argv.some((arg) => arg === "--json" || arg.startsWith("--json="));
 }

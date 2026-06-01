@@ -407,6 +407,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed JSON parser error to omit Windows path");
     expect(verifier).toContain("installed json npm token unknown option redaction");
     expect(verifier).toContain("expected installed JSON parser error to omit npm-token-shaped value");
+    expect(verifier).toContain("installed json equals flag parser error");
+    expect(verifier).toContain("expected installed malformed --json value parser error to keep stdout empty");
     expect(verifier).toContain("expected installed redacted phone hint");
     expect(verifier).toContain("expected installed JSON phone error to omit raw phone-shaped value");
     expect(verifier).toContain("expected runtime error to omit raw data-dir path");
@@ -449,6 +451,8 @@ describe("package CLI contract", () => {
     expect(cliVerifier).toContain("expected JSON parser error to omit Windows forward-slash path");
     expect(cliVerifier).toContain("json npm token unknown option redaction");
     expect(cliVerifier).toContain("expected JSON parser error to omit npm-token-shaped value");
+    expect(cliVerifier).toContain("json equals flag parser error");
+    expect(cliVerifier).toContain("expected malformed --json value parser error to keep stdout empty");
     expect(cliVerifier).toContain("expected JSON runtime setup error to omit raw data-dir path");
     expect(cliVerifier).toContain("human runtime setup redaction");
     expect(cliVerifier).toContain("expected human runtime setup error to omit raw data-dir path");
