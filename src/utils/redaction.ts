@@ -71,44 +71,82 @@ function decodeQueryValue(value: string): string | undefined {
 }
 
 export function redactSensitiveValue(value: unknown): unknown {
+  return redactSensitiveValueInternal(value, new WeakSet<object>());
+}
+
+function redactSensitiveValueInternal(value: unknown, seen: WeakSet<object>): unknown {
   if (typeof value === "string") {
     return redactSensitiveText(value);
   }
 
   if (value instanceof Error) {
-    return redactSensitiveError(value);
+    return redactSensitiveError(value, seen);
   }
 
   if (Array.isArray(value)) {
-    return value.map(redactSensitiveValue);
+    if (seen.has(value)) {
+      return "[Circular]";
+    }
+
+    seen.add(value);
+    try {
+      return value.map((child) => redactSensitiveValueInternal(child, seen));
+    } finally {
+      seen.delete(value);
+    }
   }
 
   if (!isPlainObject(value)) {
     return value;
   }
 
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [redactSensitiveText(key), redactSensitiveValue(child)])
-  );
+  if (seen.has(value)) {
+    return "[Circular]";
+  }
+
+  seen.add(value);
+  try {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [
+        redactSensitiveText(key),
+        redactSensitiveValueInternal(child, seen)
+      ])
+    );
+  } finally {
+    seen.delete(value);
+  }
 }
 
-function redactSensitiveError(error: Error): Error {
-  const cause = "cause" in error ? redactSensitiveValue((error as Error & { cause?: unknown }).cause) : undefined;
-  const redacted =
-    cause === undefined
-      ? new Error(redactSensitiveText(error.message))
-      : new Error(redactSensitiveText(error.message), { cause });
-
-  redacted.name = redactSensitiveText(error.name);
-  if (error.stack) {
-    redacted.stack = redactSensitiveText(error.stack);
+function redactSensitiveError(error: Error, seen: WeakSet<object>): Error | string {
+  if (seen.has(error)) {
+    return "[Circular]";
   }
 
-  for (const [key, child] of Object.entries(error)) {
-    (redacted as Error & Record<string, unknown>)[redactSensitiveText(key)] = redactSensitiveValue(child);
-  }
+  seen.add(error);
+  try {
+    const cause =
+      "cause" in error ? redactSensitiveValueInternal((error as Error & { cause?: unknown }).cause, seen) : undefined;
+    const redacted =
+      cause === undefined
+        ? new Error(redactSensitiveText(error.message))
+        : new Error(redactSensitiveText(error.message), { cause });
 
-  return redacted;
+    redacted.name = redactSensitiveText(error.name);
+    if (error.stack) {
+      redacted.stack = redactSensitiveText(error.stack);
+    }
+
+    for (const [key, child] of Object.entries(error)) {
+      (redacted as Error & Record<string, unknown>)[redactSensitiveText(key)] = redactSensitiveValueInternal(
+        child,
+        seen
+      );
+    }
+
+    return redacted;
+  } finally {
+    seen.delete(error);
+  }
 }
 
 function redactRelativeLocalPaths(value: string): string {
