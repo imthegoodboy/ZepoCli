@@ -28,7 +28,7 @@ For a safe no-account smoke, run `verify:live` with a disposable data directory 
 - `status` passes with structured browser automation readiness.
 - The runner stops with `live_verification_incomplete` for missing login.
 - Slow human-controlled steps fail with `live_command_timeout`; increase `--step-timeout <ms>` only when the Zepto browser step legitimately needs more time.
-- The report, live runner command echoes, and final report-path line redact data directory, report path, phone input, workflow query arguments, order ids, payment handles, card-like numbers, OTP/PIN values, npm-token-shaped values, standalone percent-encoded sensitive fragments, and raw Zepto page text. Stored step commands must match the runner's redacted command shapes.
+- The report, live runner command echoes, and final report-path line redact data directory, report path, browser locale/timezone values, phone input, workflow query arguments, order ids, payment handles, card-like numbers, OTP/PIN values, npm-token-shaped values, standalone percent-encoded sensitive fragments, and raw Zepto page text. Stored step commands must match the runner's redacted command shapes.
 
 ## Human-Controlled Live Pass
 
@@ -41,6 +41,7 @@ npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-sco
 
 `--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
 `--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope --max-age-minutes 1440`.
+`--browser-locale <locale>` and `--browser-timezone <timezone>` are optional; when supplied, the live runner passes the same validated browser context to every child `zepo` command and stores only `<redacted-browser-locale>` / `<redacted-browser-timezone>` in report command strings.
 
 Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 

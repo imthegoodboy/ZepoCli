@@ -106,11 +106,11 @@ async function main() {
   console.log("This runs real CLI commands against Zepto with a human-controlled browser when needed.");
   console.log("It never enters OTPs, payment credentials, or clicks final Zepto payment/order controls.\n");
 
-  if (!(await runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--json"])).ok) {
+  if (!(await runStep("doctor", [...baseCliArgs(), "doctor", "--json"])).ok) {
     return;
   }
 
-  const status = await runStep("status", ["--data-dir", options.dataDir, "status", "--json"]);
+  const status = await runStep("status", [...baseCliArgs(), "status", "--json"]);
   if (!status.ok) {
     return;
   }
@@ -126,7 +126,7 @@ async function main() {
       return;
     }
 
-    const loginArgs = ["--data-dir", options.dataDir, "--visible", "login", "--json"];
+    const loginArgs = [...baseCliArgs({ visible: true }), "login", "--json"];
     if (options.phone) {
       loginArgs.splice(loginArgs.length - 1, 0, "--phone", options.phone);
     }
@@ -136,9 +136,7 @@ async function main() {
   }
 
   const liveStatus = await runStep("status live", [
-    "--data-dir",
-    options.dataDir,
-    "--visible",
+    ...baseCliArgs({ visible: true }),
     "status",
     "--live",
     "--json"
@@ -158,22 +156,20 @@ async function main() {
   }
 
   if (options.search) {
-    if (!(await runStep("search", ["--data-dir", options.dataDir, "--visible", "search", options.search, "--json"])).ok) {
+    if (!(await runStep("search", [...baseCliArgs({ visible: true }), "search", options.search, "--json"])).ok) {
       return;
     }
   }
 
   if (options.addressAdd) {
-    if (!(await runStep("address add", ["--data-dir", options.dataDir, "--visible", "address", "add", "--json"])).ok) {
+    if (!(await runStep("address add", [...baseCliArgs({ visible: true }), "address", "add", "--json"])).ok) {
       return;
     }
   }
 
   if (options.address) {
     if (!(await runStep("address use", [
-      "--data-dir",
-      options.dataDir,
-      "--visible",
+      ...baseCliArgs({ visible: true }),
       "address",
       "use",
       options.address,
@@ -182,16 +178,14 @@ async function main() {
       return;
     }
   } else if (options.addressList) {
-    if (!(await runStep("address list", ["--data-dir", options.dataDir, "--visible", "address", "list", "--json"])).ok) {
+    if (!(await runStep("address list", [...baseCliArgs({ visible: true }), "address", "list", "--json"])).ok) {
       return;
     }
   }
 
   if (options.add) {
     const addArgs = [
-      "--data-dir",
-      options.dataDir,
-      "--visible",
+      ...baseCliArgs({ visible: true }),
       "add",
       options.add,
       "--quantity",
@@ -211,7 +205,7 @@ async function main() {
     console.error(
       "\nReorder verification clicks Zepto's explicit reorder/order-again control for the latest readable order and may add those items back to the cart. Review the visible browser before checkout."
     );
-    if (!(await runStep("reorder", ["--data-dir", options.dataDir, "--visible", "reorder", "last", "--json"])).ok) {
+    if (!(await runStep("reorder", [...baseCliArgs({ visible: true }), "reorder", "last", "--json"])).ok) {
       return;
     }
   }
@@ -220,7 +214,7 @@ async function main() {
     console.error(
       "\nRemove verification changes the Zepto cart by clicking a matching removable item row. Review the visible browser before checkout."
     );
-    if (!(await runStep("remove", ["--data-dir", options.dataDir, "--visible", "remove", options.remove, "--json"])).ok) {
+    if (!(await runStep("remove", [...baseCliArgs({ visible: true }), "remove", options.remove, "--json"])).ok) {
       return;
     }
   }
@@ -229,13 +223,13 @@ async function main() {
     console.error(
       "\nClear verification removes all detected Zepto cart items. Run it only when this test cart can be emptied."
     );
-    if (!(await runStep("clear", ["--data-dir", options.dataDir, "--visible", "clear", "--json"])).ok) {
+    if (!(await runStep("clear", [...baseCliArgs({ visible: true }), "clear", "--json"])).ok) {
       return;
     }
   }
 
   if (options.cart || options.add || options.reorderLast || options.remove || options.clear) {
-    if (!(await runStep("cart", ["--data-dir", options.dataDir, "--visible", "cart", "--json"])).ok) {
+    if (!(await runStep("cart", [...baseCliArgs({ visible: true }), "cart", "--json"])).ok) {
       return;
     }
   }
@@ -244,20 +238,35 @@ async function main() {
     console.error(
       "\nCheckout verification opens Zepto checkout/payment in a visible browser. Complete only the Zepto-side actions you choose; ZepoCli will not click final payment or order-placement controls."
     );
-    if (!(await runStep("checkout", ["--data-dir", options.dataDir, "--visible", "checkout", "--json"])).ok) {
+    if (!(await runStep("checkout", [...baseCliArgs({ visible: true }), "checkout", "--json"])).ok) {
       return;
     }
   }
 
   if (options.track) {
-    if (!(await runStep("track", ["--data-dir", options.dataDir, "--visible", "track", "--json"])).ok) {
+    if (!(await runStep("track", [...baseCliArgs({ visible: true }), "track", "--json"])).ok) {
       return;
     }
   }
 
   if (options.history) {
-    await runStep("history", ["--data-dir", options.dataDir, "--visible", "history", "--json"]);
+    await runStep("history", [...baseCliArgs({ visible: true }), "history", "--json"]);
   }
+}
+
+function baseCliArgs({ visible = false } = {}) {
+  const args = ["--data-dir", options.dataDir];
+  if (options.browserLocale) {
+    args.push("--browser-locale", options.browserLocale);
+  }
+  if (options.browserTimezone) {
+    args.push("--browser-timezone", options.browserTimezone);
+  }
+  if (visible) {
+    args.push("--visible");
+  }
+
+  return args;
 }
 
 async function runStep(name, args) {
@@ -385,7 +394,15 @@ function shouldStreamLiveStderrImmediately(args) {
 }
 
 function collectLiveCommandPositionals(args) {
-  const valueOptions = new Set(["--data-dir", "--phone", "--quantity", "--report", "--timeout"]);
+  const valueOptions = new Set([
+    "--browser-locale",
+    "--browser-timezone",
+    "--data-dir",
+    "--phone",
+    "--quantity",
+    "--report",
+    "--timeout"
+  ]);
   const positionals = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -623,6 +640,10 @@ function parseArgs(args) {
       parsed.dataDir = requireValue(args, ++index, arg);
     } else if (arg === "--report") {
       parsed.report = requireValue(args, ++index, arg);
+    } else if (arg === "--browser-locale") {
+      parsed.browserLocale = parseBrowserLocale(requireValue(args, ++index, arg));
+    } else if (arg === "--browser-timezone") {
+      parsed.browserTimezone = parseBrowserTimezone(requireValue(args, ++index, arg));
     } else if (arg === "--step-timeout") {
       parsed.stepTimeoutMs = parseStepTimeout(requireValue(args, ++index, arg));
     } else if (arg === "--login") {
@@ -747,6 +768,24 @@ function parseQuantity(value) {
   return quantity;
 }
 
+function parseBrowserLocale(value) {
+  try {
+    return Intl.getCanonicalLocales(value)[0];
+  } catch {
+    console.error("--browser-locale must be a valid BCP 47 locale.");
+    process.exit(1);
+  }
+}
+
+function parseBrowserTimezone(value) {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: value }).resolvedOptions().timeZone;
+  } catch {
+    console.error("--browser-timezone must be a valid IANA time zone.");
+    process.exit(1);
+  }
+}
+
 function normalizeLoginPhone(value) {
   const trimmed = String(value ?? "").trim();
   if (!/^\+?[\d\s-]+$/.test(trimmed)) {
@@ -856,6 +895,10 @@ Options:
   --login               Run visible zepo login if no confirmed session exists
   --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart, checkout handoff, and track
   --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
+  --browser-locale <locale>
+                        Pass a validated browser locale to every child zepo command
+  --browser-timezone <timezone>
+                        Pass a validated IANA browser time zone to every child zepo command
   --search <query>      Run visible product search
   --address-list        Run visible address list
   --address <query>     Select a saved address by visible text

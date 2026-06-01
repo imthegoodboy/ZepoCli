@@ -1007,26 +1007,28 @@ const LIVE_REPORT_CAPABILITY_KEYS = new Set(Object.keys(createLiveReportCapabili
 const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error"]);
 const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
 const LIVE_REPORT_FALLBACK_SUMMARY_KEYS = new Set(["observed"]);
+const LIVE_REPORT_BROWSER_CONTEXT_COMMAND_PATTERN_SOURCE =
+  "(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)?";
 const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
-  ["doctor", /^zepo --data-dir <redacted-data-dir> doctor --json$/],
-  ["status", /^zepo --data-dir <redacted-data-dir> status --json$/],
-  ["login", /^zepo --data-dir <redacted-data-dir> --visible login(?: --phone <redacted-phone>)? --json$/],
-  ["status live", /^zepo --data-dir <redacted-data-dir> --visible status --live --json$/],
-  ["search", /^zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json$/],
-  ["address add", /^zepo --data-dir <redacted-data-dir> --visible address add --json$/],
-  ["address list", /^zepo --data-dir <redacted-data-dir> --visible address list --json$/],
-  ["address use", /^zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json$/],
+  ["doctor", liveCommandPattern("doctor --json")],
+  ["status", liveCommandPattern("status --json")],
+  ["login", liveCommandPattern("--visible login(?: --phone <redacted-phone>)? --json")],
+  ["status live", liveCommandPattern("--visible status --live --json")],
+  ["search", liveCommandPattern("--visible search <redacted-query> --json")],
+  ["address add", liveCommandPattern("--visible address add --json")],
+  ["address list", liveCommandPattern("--visible address list --json")],
+  ["address use", liveCommandPattern("--visible address use <redacted-address-query> --json")],
   [
     "add",
-    /^zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity (?:[1-9]|1[0-2])(?: --choose)? --json$/
+    liveCommandPattern("--visible add <redacted-query> --quantity (?:[1-9]|1[0-2])(?: --choose)? --json")
   ],
-  ["cart", /^zepo --data-dir <redacted-data-dir> --visible cart --json$/],
-  ["remove", /^zepo --data-dir <redacted-data-dir> --visible remove <redacted-cart-query> --json$/],
-  ["clear", /^zepo --data-dir <redacted-data-dir> --visible clear --json$/],
-  ["checkout", /^zepo --data-dir <redacted-data-dir> --visible checkout --json$/],
-  ["track", /^zepo --data-dir <redacted-data-dir> --visible track --json$/],
-  ["history", /^zepo --data-dir <redacted-data-dir> --visible history --json$/],
-  ["reorder", /^zepo --data-dir <redacted-data-dir> --visible reorder last --json$/]
+  ["cart", liveCommandPattern("--visible cart --json")],
+  ["remove", liveCommandPattern("--visible remove <redacted-cart-query> --json")],
+  ["clear", liveCommandPattern("--visible clear --json")],
+  ["checkout", liveCommandPattern("--visible checkout --json")],
+  ["track", liveCommandPattern("--visible track --json")],
+  ["history", liveCommandPattern("--visible history --json")],
+  ["reorder", liveCommandPattern("--visible reorder last --json")]
 ]);
 const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
@@ -1046,6 +1048,13 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["reorder", new Set(["cartItemCount", "hasTotal"])]
 ]);
+
+function liveCommandPattern(commandPatternSource) {
+  return new RegExp(
+    `^zepo --data-dir <redacted-data-dir>${LIVE_REPORT_BROWSER_CONTEXT_COMMAND_PATTERN_SOURCE} ${commandPatternSource}$`
+  );
+}
+
 const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
   ["status", new Set(["confirmedSession", "browserAutomationReady"])],
@@ -1675,6 +1684,8 @@ export function redactArgsForLiveReport(args) {
   const redacted = redactOptionValues(
     args,
     new Map([
+      ["--browser-locale", "<redacted-browser-locale>"],
+      ["--browser-timezone", "<redacted-browser-timezone>"],
       ["--data-dir", "<redacted-data-dir>"],
       ["--phone", "<redacted-phone>"],
       ["--report", "<redacted-report-path>"]
@@ -1718,6 +1729,8 @@ function redactOptionValues(args, redactions) {
 function liveReportTextRedactions(args) {
   const redactions = [];
   collectOptionValueRedactions(args, redactions, {
+    "--browser-locale": "<redacted-browser-locale>",
+    "--browser-timezone": "<redacted-browser-timezone>",
     "--data-dir": "<redacted-data-dir>",
     "--phone": "<redacted-phone>",
     "--report": "<redacted-report-path>"
@@ -1881,7 +1894,15 @@ function redactLocalPathMatch(value) {
 }
 
 function collectPositionals(args) {
-  const valueOptions = new Set(["--data-dir", "--phone", "--quantity", "--report", "--timeout"]);
+  const valueOptions = new Set([
+    "--browser-locale",
+    "--browser-timezone",
+    "--data-dir",
+    "--phone",
+    "--quantity",
+    "--report",
+    "--timeout"
+  ]);
   const positionals = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];

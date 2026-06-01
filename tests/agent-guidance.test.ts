@@ -160,6 +160,10 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("live_verification_incomplete");
     expect(liveVerifierSkill).toContain("live_command_timeout");
     expect(liveVerifierSkill).toContain("--step-timeout <ms>");
+    expect(liveVerifierSkill).toContain("browser locale/timezone values");
+    expect(liveVerifierSkill).toContain("`--browser-locale <locale>` and `--browser-timezone <timezone>` are optional");
+    expect(liveVerifierSkill).toContain("<redacted-browser-locale>");
+    expect(liveVerifierSkill).toContain("<redacted-browser-timezone>");
     expect(liveVerifierSkill).toContain("The report, live runner command echoes, and final report-path line redact data directory");
     expect(liveVerifierSkill).toContain("Stored step commands must match the runner's redacted command shapes");
     expect(liveVerifierSkill).toContain("npm-token-shaped values");

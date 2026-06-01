@@ -216,6 +216,8 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--checkout");
     expect(result.stdout).toContain("--production-scope");
     expect(result.stdout).toContain("Final readiness preset");
+    expect(result.stdout).toContain("--browser-locale <locale>");
+    expect(result.stdout).toContain("--browser-timezone <timezone>");
     expect(result.stdout).toContain("--remove <query>");
     expect(result.stdout).toContain("--clear");
     expect(result.stdout).toContain("--reorder-last");
@@ -296,8 +298,10 @@ describe("live verification runner", () => {
   it("runs normal doctor in live verification so Chromium launch is checked", () => {
     const script = readFileSync(scriptPath, "utf8");
 
-    expect(script).toContain('runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--json"])');
+    expect(script).toContain('runStep("doctor", [...baseCliArgs(), "doctor", "--json"])');
     expect(script).not.toContain('runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--skip-browser", "--json"])');
+    expect(script).toContain('args.push("--browser-locale", options.browserLocale)');
+    expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
     expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
     expect(script).toContain('const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium")');
     expect(script).toContain('playwrightChromiumPassed: playwrightChromiumCheck?.status === "pass"');
@@ -512,6 +516,23 @@ describe("live verification runner", () => {
 
   it("validates live report acceptance without reusing partial coverage as proof", () => {
     expect(validateLiveReportAcceptance(acceptedLiveReport(), { expectedVersion: packageJson.version })).toEqual({
+      accepted: true,
+      issues: []
+    });
+    expect(
+      validateLiveReportAcceptance(
+        acceptedLiveReport({
+          steps: acceptedLiveReport().steps.map((step) => ({
+            ...step,
+            command: step.command.replace(
+              "zepo --data-dir <redacted-data-dir>",
+              "zepo --data-dir <redacted-data-dir> --browser-locale <redacted-browser-locale> --browser-timezone <redacted-browser-timezone>"
+            )
+          }))
+        }),
+        { expectedVersion: packageJson.version }
+      )
+    ).toEqual({
       accepted: true,
       issues: []
     });
@@ -2007,6 +2028,55 @@ describe("live verification runner", () => {
     }
   }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 
+  it("rejects malformed live verification browser context options before touching the compiled CLI", () => {
+    for (const testCase of [
+      {
+        args: ["--data-dir", ".zepo-live", "--browser-locale", "not_a_locale"],
+        message: "--browser-locale must be a valid BCP 47 locale."
+      },
+      {
+        args: ["--data-dir", ".zepo-live", "--browser-timezone", "Mars/Olympus"],
+        message: "--browser-timezone must be a valid IANA time zone."
+      }
+    ]) {
+      const result = spawnSync(process.execPath, [scriptPath, ...testCase.args], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(testCase.message);
+      expect(result.stderr).not.toContain("Compiled CLI was not found");
+    }
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
+
+  it("accepts CLI-supported live verification browser context options before touching the compiled CLI", () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        scriptPath,
+        "--data-dir",
+        ".zepo-live",
+        "--browser-locale",
+        "hi-in",
+        "--browser-timezone",
+        "utc",
+        "--quantity",
+        "2"
+      ],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("--quantity can only be used with --add.");
+    expect(result.stderr).not.toContain("--browser-locale must be a valid");
+    expect(result.stderr).not.toContain("--browser-timezone must be a valid");
+    expect(result.stderr).not.toContain("Compiled CLI was not found");
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
+
   it("rejects malformed live verification phone input before touching the compiled CLI", () => {
     for (const phone of ["abc", "phone 9876543210", "9876543210 ext 1", "1234567890", "99999", "99999999999"]) {
       const result = spawnSync(
@@ -2049,7 +2119,12 @@ describe("live verification runner", () => {
       { args: ["--data-dir", ".zepo-live", "--add", "   "], message: "--add requires a non-empty value." },
       { args: ["--data-dir", ".zepo-live", "--address", "   "], message: "--address requires a non-empty value." },
       { args: ["--data-dir", ".zepo-live", "--remove", "   "], message: "--remove requires a non-empty value." },
-      { args: ["--data-dir", ".zepo-live", "--report", "   "], message: "--report requires a non-empty value." }
+      { args: ["--data-dir", ".zepo-live", "--report", "   "], message: "--report requires a non-empty value." },
+      { args: ["--data-dir", ".zepo-live", "--browser-locale", "   "], message: "--browser-locale requires a non-empty value." },
+      {
+        args: ["--data-dir", ".zepo-live", "--browser-timezone", "   "],
+        message: "--browser-timezone requires a non-empty value."
+      }
     ]) {
       const result = spawnSync(process.execPath, [scriptPath, ...testCase.args], {
         cwd: rootDir,
@@ -3225,6 +3300,10 @@ describe("live verification runner", () => {
       redactArgsForLiveReport([
         "--data-dir",
         "C:\\Users\\parth\\.zepo-live",
+        "--browser-locale",
+        "hi-IN",
+        "--browser-timezone",
+        "Asia/Kolkata",
         "--visible",
         "add",
         "Amul Milk 500ml",
@@ -3235,6 +3314,10 @@ describe("live verification runner", () => {
     ).toEqual([
       "--data-dir",
       "<redacted-data-dir>",
+      "--browser-locale",
+      "<redacted-browser-locale>",
+      "--browser-timezone",
+      "<redacted-browser-timezone>",
       "--visible",
       "add",
       "<redacted-query>",
@@ -3329,6 +3412,10 @@ describe("live verification runner", () => {
       redactArgsForLiveConsole([
         "--data-dir",
         ".zepo-live",
+        "--browser-locale",
+        "hi-IN",
+        "--browser-timezone",
+        "Asia/Kolkata",
         "--visible",
         "login",
         "--phone",
@@ -3338,6 +3425,10 @@ describe("live verification runner", () => {
     ).toEqual([
       "--data-dir",
       "<redacted-data-dir>",
+      "--browser-locale",
+      "<redacted-browser-locale>",
+      "--browser-timezone",
+      "<redacted-browser-timezone>",
       "--visible",
       "login",
       "--phone",

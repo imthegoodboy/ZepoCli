@@ -80,6 +80,8 @@ const checks = [
       assert(status === 0, "expected exit code 0");
       assert(stdout.includes("Developer CLI for user-directed Zepto workflows"), "expected CLI description");
       assert(stdout.includes("--no-input"), "expected --no-input in help output");
+      assert(stdout.includes("--browser-locale <locale>"), "expected browser locale option in help output");
+      assert(stdout.includes("--browser-timezone <timezone>"), "expected browser timezone option in help output");
       assert(stdout.includes("checkout"), "expected checkout command in help output");
     }
   },
@@ -517,6 +519,30 @@ const checks = [
       const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
       assert(payload.error?.issues?.[0]?.path === "dataDir", "expected dataDir validation issue");
       assert(payload.error?.issues?.[0]?.message === "must not be blank", "expected blank data dir message");
+    }
+  },
+  {
+    name: "json invalid browser locale",
+    args: ["--browser-locale", "not_a_locale", "status", "--json"],
+    expect: (result) => {
+      const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+      assert(payload.error?.issues?.[0]?.path === "browserLocale", "expected browserLocale validation issue");
+      assert(
+        payload.error?.issues?.[0]?.message === "must be a valid BCP 47 locale",
+        "expected browser locale validation message"
+      );
+    }
+  },
+  {
+    name: "json invalid browser timezone",
+    args: ["--browser-timezone", "Mars/Olympus", "status", "--json"],
+    expect: (result) => {
+      const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+      assert(payload.error?.issues?.[0]?.path === "browserTimezone", "expected browserTimezone validation issue");
+      assert(
+        payload.error?.issues?.[0]?.message === "must be a valid IANA time zone",
+        "expected browser timezone validation message"
+      );
     }
   },
   ...[

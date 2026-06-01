@@ -215,6 +215,10 @@ function verifyInstalledReadmeContract(prefixDir) {
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
     "then requests non-empty cart, checkout handoff, and track coverage",
+    "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
+    "<redacted-browser-locale>",
+    "<redacted-browser-timezone>",
+    "browser locale/timezone values",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
@@ -2876,6 +2880,11 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       expect: ({ status, stdout }) => {
         assert(status === 0, "expected exit code 0");
         assert(stdout.includes("Developer CLI for user-directed Zepto workflows"), "expected CLI description");
+        assert(stdout.includes("--browser-locale <locale>"), "expected installed browser locale option in help output");
+        assert(
+          stdout.includes("--browser-timezone <timezone>"),
+          "expected installed browser timezone option in help output"
+        );
         assert(stdout.includes("checkout"), "expected checkout command in help output");
       }
     },
@@ -3344,6 +3353,33 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
         assert(payload.error?.issues?.[0]?.path === "dataDir", "expected installed dataDir validation issue");
         assert(payload.error?.issues?.[0]?.message === "must not be blank", "expected installed blank data dir message");
+      }
+    },
+    {
+      name: "installed json invalid browser locale",
+      args: ["--browser-locale", "not_a_locale", "status", "--json"],
+      expect: (result) => {
+        const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+        assert(payload.error?.issues?.[0]?.path === "browserLocale", "expected installed browserLocale validation issue");
+        assert(
+          payload.error?.issues?.[0]?.message === "must be a valid BCP 47 locale",
+          "expected installed browser locale validation message"
+        );
+      }
+    },
+    {
+      name: "installed json invalid browser timezone",
+      args: ["--browser-timezone", "Mars/Olympus", "status", "--json"],
+      expect: (result) => {
+        const payload = expectJsonError(result, "invalid_input", "Invalid input.", "invalid_input");
+        assert(
+          payload.error?.issues?.[0]?.path === "browserTimezone",
+          "expected installed browserTimezone validation issue"
+        );
+        assert(
+          payload.error?.issues?.[0]?.message === "must be a valid IANA time zone",
+          "expected installed browser timezone validation message"
+        );
       }
     },
     ...[

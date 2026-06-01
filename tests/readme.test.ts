@@ -155,6 +155,11 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
+      "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command"
+    );
+    expect(readme).toContain("<redacted-browser-locale>");
+    expect(readme).toContain("<redacted-browser-timezone>");
+    expect(readme).toContain(
       "`--login` is conditional: if the dedicated data directory already has a confirmed session, the runner does not force a fresh login or claim login coverage; it requires `liveSession` coverage from `status --live` instead"
     );
     expect(readme).toContain(
@@ -167,7 +172,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("standalone percent-encoded sensitive fragments");
     expect(readme).toContain("live-verification-report.json` with the package `version`");
     expect(readme).toContain(
-      "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, phone input, search/add/remove/address-use query text, and npm-token-shaped values; stored step commands must also match the runner's redacted command shapes"
+      "Console command echoes, the final report-path line, and stored report command strings redact local data/report paths, browser locale/timezone values, phone input, search/add/remove/address-use query text, and npm-token-shaped values; stored step commands must also match the runner's redacted command shapes"
     );
     expect(readme).toContain("The examples use `npm --silent run verify:live -- ...`");
     expect(readme).toContain("interrupted with Ctrl+C/SIGTERM");
