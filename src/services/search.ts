@@ -20,7 +20,7 @@ export class SearchService {
     const cleanQuery = requireNonEmpty(query, "Search query");
     const limit = parseSearchLimit(limitInput);
 
-    const products = await this.browser.withPage({ requireSession: false }, (page) =>
+    const products = await this.browser.withPage({ captureFailures: false, requireSession: false }, (page) =>
       searchProducts(page, cleanQuery, limit)
     );
 

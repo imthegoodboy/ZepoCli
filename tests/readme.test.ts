@@ -77,6 +77,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("passwords and payment instrument details as sensitive personal information");
     expect(readme).toContain("payment processing through payment gateways");
     expect(readme).toContain("avoid sharing login credentials, passwords, or OTPs");
+    expect(readme).toContain("keeps debug capture disabled for Zepto browser pages that may use the persistent profile");
     expect(readme).toContain("marketplace for seller transactions in select serviceable areas");
     expect(readme).toContain("delivery ETA can vary or exceed the displayed estimate");
     expect(readme).toContain("delay, cancel, reject, block, or suspend transactions/access");
@@ -127,6 +128,10 @@ describe("README package guidance", () => {
     expect(readme).toContain("unsafe phone-like payment/cart/address/search fields");
     expect(readme).toContain("visible, enabled account/profile/login controls");
     expect(readme).toContain("Search cache stores redacted query text only");
+    expect(readme).toContain("No raw Zepto page HTML/screenshot artifacts for browser flows that may use the persistent profile");
+    expect(readme).toContain(
+      "Debug HTML/screenshot artifacts are disabled for Zepto browser flows that may use the persistent profile, including search, live session checks, login, cart, address, checkout, orders, and reorder"
+    );
     expect(readme).toContain("raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots");
     expect(readme).toContain("Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");

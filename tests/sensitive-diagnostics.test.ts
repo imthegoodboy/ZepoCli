@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const rootDir = resolve(import.meta.dirname, "..");
 const sensitiveServiceFiles = [
   "src/services/auth.ts",
+  "src/services/search.ts",
   "src/services/cart.ts",
   "src/services/addresses.ts",
   "src/services/checkout.ts",
@@ -19,14 +20,14 @@ const sensitiveBrowserFlowFiles = [
 ];
 
 describe("sensitive browser diagnostics", () => {
-  it("disables debug HTML and screenshot capture for sensitive service browser flows", () => {
+  it("disables debug HTML and screenshot capture for Zepto service browser flows", () => {
     for (const file of sensitiveServiceFiles) {
       const source = readFileSync(resolve(rootDir, file), "utf8");
       const browserCalls = source.match(/withPage\s*\(\s*\{[^}]*\}/g) ?? [];
 
-      expect(browserCalls.length, `${file} should have sensitive browser calls`).toBeGreaterThan(0);
+      expect(browserCalls.length, `${file} should have Zepto browser calls`).toBeGreaterThan(0);
       for (const call of browserCalls) {
-        expect(call, `${file} sensitive browser call should disable failure capture`).toMatch(
+        expect(call, `${file} Zepto browser call should disable failure capture`).toMatch(
           /captureFailures:\s*false/
         );
       }

@@ -61,6 +61,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("passwords and payment instrument details as sensitive personal information");
       expect(guidance).toContain("payment processing through payment gateways");
       expect(guidance).toContain("avoid sharing login credentials, passwords, or OTPs");
+      expect(guidance).toContain("Zepto browser pages that may use the persistent profile");
+      expect(guidance).toContain("including search, live status, login, cart, address, checkout, orders, and reorder");
       expect(guidance).toContain("verify:live` should start with normal `zepo doctor --json`");
       expect(guidance).toContain("--production-scope --search <query> --address <query> --add <query>");
       expect(guidance).toContain("--choose-add");

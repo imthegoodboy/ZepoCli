@@ -204,6 +204,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "was checked on 2026-06-02",
     "Last updated: 17th June 2025",
     "passwords and payment instrument details as sensitive personal information",
+    "keeps debug capture disabled for Zepto browser pages that may use the persistent profile",
+    "Debug HTML/screenshot artifacts are disabled for Zepto browser flows that may use the persistent profile, including search, live session checks, login, cart, address, checkout, orders, and reorder",
     "Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token/password/secret URL parameters, and local-path values",
     "npm-token-shaped values",
