@@ -1041,7 +1041,7 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
-  ["checkout", new Set(["status", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
+  ["checkout", new Set(["status", "cartPrecondition", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
   ["track", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["reorder", new Set(["cartItemCount", "hasTotal"])]
@@ -1059,7 +1059,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
-  ["checkout", new Set(["status", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
+  ["checkout", new Set(["status", "cartPrecondition", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
   ["track", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["reorder", new Set(["cartItemCount", "hasTotal"])]
@@ -1094,6 +1094,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
 ]);
 const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
   "liveSessionState",
+  "cartPrecondition",
   "orderPlacement",
   "orderStatusCommand",
   "paymentStatus",
@@ -1112,6 +1113,7 @@ const LIVE_REPORT_DOCTOR_CHECK_NAMES = new Set([
 ]);
 const LIVE_REPORT_STRING_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
   ["liveSessionState", new Set(["skipped", "logged-in", "login-required", "unknown"])],
+  ["cartPrecondition", new Set(["non_empty_cart_verified"])],
   ["orderPlacement", new Set(["not_confirmed_by_zepocli"])],
   ["orderStatusCommand", new Set(["zepo track"])],
   ["paymentStatus", new Set(["not_observed_by_zepocli"])],
@@ -1227,6 +1229,7 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
     step: "checkout",
     accepts: (step) =>
       step.summary?.status === "checkout_handoff_returned" &&
+      step.summary?.cartPrecondition === "non_empty_cart_verified" &&
       step.summary?.paymentStatus === "not_observed_by_zepocli" &&
       step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
       step.summary?.orderStatusCommand === "zepo track"
@@ -1412,6 +1415,7 @@ function validateCheckoutPayloadContract(payload) {
   if (
     payload?.status === "checkout_handoff_returned" &&
     payload?.payment === "handled_by_zepto" &&
+    payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
     payload?.orderStatusCommand === "zepo track"
@@ -1421,7 +1425,7 @@ function validateCheckoutPayloadContract(payload) {
 
   return {
     code: "live_checkout_contract_mismatch",
-    message: "Checkout JSON did not preserve the Zepto payment and order-placement handoff contract."
+    message: "Checkout JSON did not preserve the Zepto cart, payment, and order-placement handoff contract."
   };
 }
 

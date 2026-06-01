@@ -576,6 +576,7 @@ function summarizePayload(name, payload) {
   if (name === "checkout") {
     return {
       status: payload.status,
+      cartPrecondition: payload.cartPrecondition,
       paymentStatus: payload.paymentStatus,
       orderPlacement: payload.orderPlacement,
       orderStatusCommand: payload.orderStatusCommand

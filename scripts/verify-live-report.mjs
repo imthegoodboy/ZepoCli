@@ -159,7 +159,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - sensitive-looking report keys and values have been redacted
 - requested capabilities have passing coverage
 - missingCoverage has no true values
-- required step summaries are present for browser preflight, live session, checkout handoff, and requested workflows
+- required step summaries are present for browser preflight, live session, checkout handoff, checkout cart precondition, and requested workflows
 - when --require-production-scope is used, the core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage
 - when --require-production-scope is used, --max-age-minutes is also used so the report is fresh evidence
 - when --require-production-scope is used, address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered

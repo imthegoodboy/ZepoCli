@@ -177,6 +177,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Requires Node.js 20.19 or newer.",
     "zepo login",
     "zepo checkout",
+    "cartPrecondition: \"non_empty_cart_verified\"",
     "paymentStatus: \"not_observed_by_zepocli\"",
     "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
@@ -949,6 +950,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
+        cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -1316,6 +1318,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         ok: true,
         summary: {
           status: "checkout_handoff_returned",
+          cartPrecondition: "non_empty_cart_verified",
           paymentStatus: "paid",
           orderPlacement: "confirmed",
           orderStatusCommand: "zepo track"
@@ -1706,6 +1709,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
             ...step,
             summary: {
               ...step.summary,
+              cartPrecondition: "non_empty_cart_verified",
               paymentStatus: "paid",
               orderPlacement: "confirmed"
             }
@@ -2568,6 +2572,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     stdout: JSON.stringify({
       status: "checkout_handoff_returned",
       payment: "handled_by_zepto",
+      cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "paid",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track"
@@ -2579,6 +2584,26 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     checkoutStep.error?.code === "live_checkout_contract_mismatch",
     "expected installed checkout mismatch code"
+  );
+
+  const { step: checkoutWithoutCartPreconditionStep } = buildLiveReportStep({
+    name: "checkout",
+    args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      status: "checkout_handoff_returned",
+      payment: "handled_by_zepto",
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track"
+    }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(
+    checkoutWithoutCartPreconditionStep.ok === false &&
+      checkoutWithoutCartPreconditionStep.error?.code === "live_checkout_contract_mismatch",
+    "expected installed checkout live report contract to require non-empty cart precondition"
   );
 
   const { step: clearStep } = buildLiveReportStep({
@@ -3692,6 +3717,7 @@ function assertDoctorReport(payload, expectedDataDir, options = { browser: false
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected installed checkout handoff status");
   assert(payload.payment === "handled_by_zepto", "expected installed Zepto-handled payment marker");
+  assert(payload.cartPrecondition === "non_empty_cart_verified", "expected installed non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected installed unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected installed track next command");

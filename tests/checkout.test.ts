@@ -217,6 +217,7 @@ describe("checkout handoff detection", () => {
     expect(checkoutHandoffOutput()).toEqual({
       status: "checkout_handoff_returned",
       payment: "handled_by_zepto",
+      cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",

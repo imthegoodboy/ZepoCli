@@ -20,7 +20,9 @@ export function registerCheckoutCommand(program: Command): void {
         }
 
         console.log(
-          chalk.green("Checkout handoff returned to CLI. Payment/order status stays inside Zepto; run `zepo track` after payment.")
+          chalk.green(
+            "Checkout handoff returned to CLI after a readable cart check. Payment/order status stays inside Zepto; run `zepo track` after payment."
+          )
         );
       })
     );
@@ -29,6 +31,7 @@ export function registerCheckoutCommand(program: Command): void {
 export interface CheckoutHandoffOutput {
   status: "checkout_handoff_returned";
   payment: "handled_by_zepto";
+  cartPrecondition: "non_empty_cart_verified";
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
   orderStatusCommand: "zepo track";
@@ -39,6 +42,7 @@ export function checkoutHandoffOutput(): CheckoutHandoffOutput {
   return {
     status: "checkout_handoff_returned",
     payment: "handled_by_zepto",
+    cartPrecondition: "non_empty_cart_verified",
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",
     orderStatusCommand: "zepo track",
