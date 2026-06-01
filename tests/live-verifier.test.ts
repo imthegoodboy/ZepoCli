@@ -257,7 +257,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("Use --require-production-scope for final readiness");
     expect(result.stdout).toContain("Use --max-age-minutes for final readiness");
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
-    expect(result.stdout).toContain("core login/session, search, address, cart, checkout handoff, and track workflow");
+    expect(result.stdout).toContain(
+      "core login/session, search, address, cart, checkout handoff, and track workflow was requested and has passing coverage"
+    );
   });
 
   it("waits for timed-out live commands to close before recording timeout failures", () => {
@@ -549,6 +551,22 @@ describe("live verification runner", () => {
       accepted: true,
       issues: []
     });
+    const unrequestedProductionScope = productionScopeLiveReport({
+      requested: {
+        ...productionScopeLiveReport().requested,
+        search: false
+      }
+    });
+    unrequestedProductionScope.missingCoverage = summarizeLiveReportMissingCoverage(
+      unrequestedProductionScope.requested,
+      unrequestedProductionScope.coverage
+    );
+    expect(
+      validateLiveReportAcceptance(unrequestedProductionScope, {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_missing");
 
     const missingLiveSession = acceptedLiveReport();
     missingLiveSession.coverage = {

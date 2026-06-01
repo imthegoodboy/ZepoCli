@@ -184,9 +184,14 @@ describe("README package guidance", () => {
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("Use `--require-production-scope` for the final readiness gate");
+    expect(readme).toContain(
+      "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be explicitly requested and covered"
+    );
     expect(readme).toContain("Use `--max-age-minutes 1440` for the final readiness gate");
     expect(readme).toContain("stale saved reports are rejected");
-    expect(readme).toContain("live session, search, address selection, add, cart, checkout handoff, and track coverage");
+    expect(readme).toContain(
+      "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be explicitly requested and covered"
+    );
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");
