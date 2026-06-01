@@ -183,15 +183,15 @@ describe("README package guidance", () => {
     expect(readme).toContain("login session evidence");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
-    expect(readme).toContain("Use `--require-production-scope` for the final readiness gate");
+    expect(readme).toContain("Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate");
     expect(readme).toContain(
       "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
     expect(readme).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
-    expect(readme).toContain("Use `--max-age-minutes 1440` for the final readiness gate");
-    expect(readme).toContain("stale saved reports are rejected");
+    expect(readme).toContain("Production-scope acceptance rejects missing freshness windows");
+    expect(readme).toContain("stale saved reports cannot be reused as current evidence");
     expect(readme).toContain(
       "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
