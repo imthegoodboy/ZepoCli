@@ -219,7 +219,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("verifyInstalledReadmeContract");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("Safe-click checks inspect visible text");
-    expect(verifier).toContain("Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+    expect(verifier).toContain("Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token URL parameters, and local-path values");
     expect(verifier).toContain("npm-token-shaped values");
     expect(verifier).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");

@@ -184,7 +184,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Privacy Notice version 1.1",
     "Last updated: 17th June 2025",
     "passwords and payment instrument details as sensitive personal information",
-    "Human and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
+    "Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token URL parameters, and local-path values",
     "npm-token-shaped values",
     "including URL/query-string encoded forms and standalone percent-encoded fragments of those values",

@@ -35,8 +35,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("must not promise delivery timing");
       expect(guidance).toContain("must never ask for, store, log, print, or automate");
       expect(guidance).toContain("UPI/ATM PIN");
-      expect(guidance).toContain("Human and JSON");
+      expect(guidance).toContain("Human spinner/status text");
       expect(guidance).toContain("redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+      expect(guidance).toContain("same sensitive-looking value redaction as terminal errors");
       expect(guidance).toContain("auth/session/token URL parameters, and local-path values");
       expect(guidance).toContain("Persistent runtime log object values, Error messages/stacks, and message strings should use the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
       expect(guidance).toContain("auth/session/token URL-parameter, and local-path redaction rules");

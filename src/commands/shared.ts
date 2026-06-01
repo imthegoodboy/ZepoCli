@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { closeRuntimeBestEffort, createRuntime, type AppRuntime } from "../config/runtime.js";
 import { UserFacingError } from "../utils/errors.js";
+import { redactSensitiveText } from "../utils/redaction.js";
 
 export interface GlobalOptions {
   dataDir?: string;
@@ -88,14 +89,16 @@ export async function withCommandSpinner<T>(
     return action();
   }
 
-  const spinner = ora(startMessage).start();
+  const safeStartMessage = redactSensitiveText(startMessage);
+  const spinner = ora(safeStartMessage).start();
 
   try {
     const result = await action();
-    spinner.succeed(typeof successMessage === "function" ? successMessage(result) : successMessage);
+    const message = typeof successMessage === "function" ? successMessage(result) : successMessage;
+    spinner.succeed(redactSensitiveText(message));
     return result;
   } catch (error) {
-    spinner.fail(startMessage);
+    spinner.fail(safeStartMessage);
     throw error;
   }
 }
