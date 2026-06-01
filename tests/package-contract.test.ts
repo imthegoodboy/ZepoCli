@@ -10,11 +10,19 @@ const rootDir = resolve(import.meta.dirname, "..");
 const PACKAGE_CONTRACT_SLOW_TEST_TIMEOUT_MS = 15_000;
 const skippedSecretScanDirectories = new Set([".git", "coverage", "dist", "node_modules"]);
 const scannedTextFileExtensions = new Set([
+  ".cjs",
+  ".cts",
+  ".js",
   ".json",
+  ".jsx",
   ".md",
   ".mjs",
+  ".mts",
+  ".ps1",
+  ".sh",
   ".ts",
   ".tsx",
+  ".txt",
   ".yml",
   ".yaml"
 ]);
@@ -188,6 +196,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain('name.startsWith(".zepo-")');
     expect(verifier).toContain("isLocalSecretConfigName");
     expect(verifier).toContain("npmTokenPattern");
+    expect(verifier).toContain('".js"');
+    expect(verifier).toContain('".cjs"');
+    expect(verifier).toContain('".mts"');
     expect(verifier).toContain(".npmrc.example");
     expect(verifier).toContain(".env.example");
     expect(verifier).toContain("<redacted-npm-token>");
@@ -206,7 +217,7 @@ describe("package CLI contract", () => {
   });
 
   it("redacts npm-shaped tokens when secret verification fails", () => {
-    const fixturePath = resolve(rootDir, "secret-scan-fixture.mjs");
+    const fixturePath = resolve(rootDir, "secret-scan-fixture.js");
     const fakeToken = `npm_${"A".repeat(24)}`;
 
     writeFileSync(fixturePath, `export const fixture = "${fakeToken}";\n`);
