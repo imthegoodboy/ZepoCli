@@ -407,6 +407,10 @@ export function validateLiveReportAcceptance(report, options = {}) {
     validateLiveReportProductionScopeCoverage(coverage, issues);
   }
 
+  if (options.maxAgeMs !== undefined) {
+    validateLiveReportFreshness(report, options.maxAgeMs, issues);
+  }
+
   return {
     accepted: issues.length === 0,
     issues
@@ -418,6 +422,28 @@ function validateLiveReportProductionScopeCoverage(coverage, issues) {
     issues.push({
       code: "live_report_production_scope_missing",
       message: "Live report does not prove the required production workflow coverage."
+    });
+  }
+}
+
+function validateLiveReportFreshness(report, maxAgeMs, issues) {
+  if (!Number.isFinite(maxAgeMs) || maxAgeMs <= 0) {
+    issues.push({
+      code: "live_report_max_age_invalid",
+      message: "Live report max age must be a positive duration."
+    });
+    return;
+  }
+
+  const generatedAtMs = parseLiveReportGeneratedAtMs(report?.generatedAt);
+  if (generatedAtMs === undefined) {
+    return;
+  }
+
+  if (Date.now() - generatedAtMs > maxAgeMs) {
+    issues.push({
+      code: "live_report_stale",
+      message: "Live report generatedAt is older than the allowed freshness window."
     });
   }
 }
@@ -676,16 +702,22 @@ function validateLiveReportMetadataContract(report, issues) {
 }
 
 function isValidLiveReportGeneratedAt(value) {
+  const parsedTime = parseLiveReportGeneratedAtMs(value);
+  return parsedTime !== undefined && parsedTime <= Date.now() + LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS;
+}
+
+function parseLiveReportGeneratedAtMs(value) {
   if (!hasReadableText(value)) {
-    return false;
+    return undefined;
   }
 
   const parsed = new Date(value);
-  return (
-    Number.isFinite(parsed.getTime()) &&
-    parsed.toISOString() === value &&
-    parsed.getTime() <= Date.now() + LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS
-  );
+  const parsedTime = parsed.getTime();
+  if (!Number.isFinite(parsedTime) || parsed.toISOString() !== value) {
+    return undefined;
+  }
+
+  return parsedTime;
 }
 
 function addLiveReportMetadataMismatchIssue(issues) {

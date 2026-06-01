@@ -241,6 +241,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live step-timeout option");
     expect(verifier).toContain("expected installed verify:live production-scope option");
     expect(verifier).toContain("expected installed verify:live help to explain production-scope preset");
+    expect(verifier).toContain("expected installed verify:live:report max-age option");
+    expect(verifier).toContain("expected installed verify:live:report freshness guidance");
+    expect(verifier).toContain("Use `--max-age-minutes 1440` for the final readiness gate");
+    expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("expected installed verify:live production-scope missing input guard");
     expect(verifier).toContain("expected installed verify:live production-scope focused-only guard");
     expect(verifier).toContain("expected installed verify:live unknown option output to omit npm-token-shaped value");
@@ -322,12 +326,16 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report error rejection to omit raw values");
     expect(verifier).toContain("pass installed live report error object contract");
     expect(verifier).toContain("expected installed live report acceptance helper to require an expected package version");
+    expect(verifier).toContain("expected installed live report acceptance helper to accept fresh report evidence");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject stale report evidence");
     expect(verifier).toContain("expected installed live report acceptance helper to reject partial reports for production scope");
     expect(verifier).toContain("expected installed live report acceptance helper to accept production-scope report evidence");
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
     expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");
     expect(verifier).toContain("expected installed live report validator to reject partial reports when production scope is required");
     expect(verifier).toContain("expected installed live report validator to accept production-scope report evidence");
+    expect(verifier).toContain("expected installed live report validator to reject stale report evidence");
+    expect(verifier).toContain("expected installed live report validator to accept fresh report evidence");
     expect(verifier).toContain("pass installed live report sensitive text rejection");
     expect(verifier).toContain("expected installed live report confirmed-session adjustment to make --login conditional");
     expect(verifier).toContain("expected installed live report confirmed-session adjustment to avoid skipped login missing coverage");

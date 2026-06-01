@@ -62,6 +62,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("write the same sanitized partial report when possible");
       expect(guidance).toContain("`verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats");
       expect(guidance).toContain("npm --silent run verify:live:report -- <report-path>");
+      expect(guidance).toContain("npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>");
+      expect(guidance).toContain("optional `--max-age-minutes` freshness");
+      expect(guidance).toContain("stale saved reports are rejected");
       expect(guidance).toContain("The report validator does not contact Zepto or prove a fresh run happened");
       expect(guidance).toContain("Playwright Chromium launches");
       expect(guidance).toContain("require `browserAutomation.ready === true` and a passing `Playwright Chromium` check");
@@ -112,6 +115,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("They do not prove a real Zepto account can complete login");
     expect(liveVerifierSkill).toContain("Do not mark the project fully complete until a human-controlled Zepto account exercises the required live workflow");
     expect(liveVerifierSkill).toContain("`generatedAt` is a valid non-future ISO timestamp");
+    expect(liveVerifierSkill).toContain("satisfies any `--max-age-minutes` freshness window");
     expect(liveVerifierSkill).toContain("`note` matches the runner literal");
     expect(liveVerifierSkill).toContain("The report contains only accepted schema fields");
     expect(liveVerifierSkill).toContain("Stored step command strings match the redacted command contract");
@@ -149,10 +153,12 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`--production-scope` is the final readiness preset");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(liveVerifierSkill).toContain(
-      "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json"
+      "npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json"
     );
     expect(liveVerifierSkill).toContain("It only checks the saved report contract");
     expect(liveVerifierSkill).toContain("Use `--require-production-scope` for final readiness");
+    expect(liveVerifierSkill).toContain("Use `--max-age-minutes 1440` for final readiness");
+    expect(liveVerifierSkill).toContain("With `--max-age-minutes`, stale reports must be rejected");
     expect(liveVerifierSkill).toContain("browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass");
     expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --production-scope --search milk --address home --add");

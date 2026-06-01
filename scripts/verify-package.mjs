@@ -201,9 +201,11 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
-    "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json",
+    "npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json",
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
-    "sanitized non-future `generatedAt` plus data/report path metadata, the fixed runner note",
+    "sanitized non-future `generatedAt` plus data/report path metadata, optional `--max-age-minutes` freshness",
+    "the fixed runner note",
+    "Use `--max-age-minutes 1440` for the final readiness gate",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -388,6 +390,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(result.stdout.includes("live_command_timeout"), "expected installed verify:live command-timeout code guidance");
   assert(result.stdout.includes("live_summary_failed"), "expected installed verify:live summary-failure code guidance");
   assert(result.stdout.includes("command_failed"), "expected installed verify:live fallback code guidance");
+
+  const reportHelpResult = runNpm(
+    ["--silent", "run", "--prefix", packageDir, "verify:live:report", "--", "--help"],
+    { cwd: rootDir }
+  );
+  assert(
+    reportHelpResult.stdout.includes("--max-age-minutes <minutes>"),
+    "expected installed verify:live:report max-age option"
+  );
+  assert(
+    reportHelpResult.stdout.includes("Use --max-age-minutes for final readiness"),
+    "expected installed verify:live:report freshness guidance"
+  );
 
   const invalidPhoneResult = runNpmResult(
     installedVerifyLiveArgs(
@@ -1018,6 +1033,26 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       (issue) => issue.code === "live_report_expected_version_missing"
     ),
     "expected installed live report acceptance helper to require an expected package version"
+  );
+  assert(
+    validateLiveReportAcceptance(
+      {
+        ...acceptedLiveReport,
+        generatedAt: new Date().toISOString()
+      },
+      { expectedVersion: packageJson.version, maxAgeMs: 60_000 }
+    ).accepted === true,
+    "expected installed live report acceptance helper to accept fresh report evidence"
+  );
+  assert(
+    validateLiveReportAcceptance(
+      {
+        ...acceptedLiveReport,
+        generatedAt: new Date(Date.now() - 2 * 60 * 60 * 1_000).toISOString()
+      },
+      { expectedVersion: packageJson.version, maxAgeMs: 60 * 60 * 1_000 }
+    ).issues.some((issue) => issue.code === "live_report_stale"),
+    "expected installed live report acceptance helper to reject stale report evidence"
   );
   assert(
     validateLiveReportAcceptance(acceptedLiveReport, {
@@ -1864,6 +1899,59 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     acceptedLiveReportResult.stdout.includes("pass live verification report acceptance"),
     "expected installed live report validator to accept complete report"
+  );
+  const staleLiveReportPath = join(tempRoot, "stale-live-verification-report.json");
+  writeFileSync(
+    staleLiveReportPath,
+    `${JSON.stringify(
+      {
+        ...acceptedLiveReport,
+        generatedAt: new Date(Date.now() - 2 * 60 * 60 * 1_000).toISOString()
+      },
+      null,
+      2
+    )}\n`
+  );
+  const staleLiveReportResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--max-age-minutes",
+      "60",
+      staleLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    staleLiveReportResult.status === 1 && staleLiveReportResult.stderr.includes("live_report_stale"),
+    "expected installed live report validator to reject stale report evidence"
+  );
+  const freshLiveReportPath = join(tempRoot, "fresh-live-verification-report.json");
+  writeFileSync(
+    freshLiveReportPath,
+    `${JSON.stringify({ ...acceptedLiveReport, generatedAt: new Date().toISOString() }, null, 2)}\n`
+  );
+  const freshLiveReportResult = runNpm(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--max-age-minutes",
+      "60",
+      freshLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    freshLiveReportResult.stdout.includes("pass live verification report acceptance"),
+    "expected installed live report validator to accept fresh report evidence"
   );
   const partialScopeLiveReportResult = runNpmResult(
     [

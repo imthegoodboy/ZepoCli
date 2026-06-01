@@ -251,8 +251,12 @@ describe("live verification runner", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Usage: npm --silent run verify:live:report -- [--require-production-scope]");
+    expect(result.stdout).toContain(
+      "Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>]"
+    );
     expect(result.stdout).toContain("Use --require-production-scope for final readiness");
+    expect(result.stdout).toContain("Use --max-age-minutes for final readiness");
+    expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
     expect(result.stdout).toContain("core login/session, search, address, cart, checkout handoff, and track workflow");
   });
 
@@ -506,6 +510,30 @@ describe("live verification runner", () => {
     expect(validateLiveReportAcceptance(acceptedLiveReport()).issues.map((issue) => issue.code)).toContain(
       "live_report_expected_version_missing"
     );
+    expect(
+      validateLiveReportAcceptance(acceptedLiveReport({ generatedAt: new Date().toISOString() }), {
+        expectedVersion: packageJson.version,
+        maxAgeMs: 60_000
+      })
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
+    expect(
+      validateLiveReportAcceptance(
+        acceptedLiveReport({ generatedAt: new Date(Date.now() - 2 * 60 * 60 * 1_000).toISOString() }),
+        {
+          expectedVersion: packageJson.version,
+          maxAgeMs: 60 * 60 * 1_000
+        }
+      ).issues.map((issue) => issue.code)
+    ).toContain("live_report_stale");
+    expect(
+      validateLiveReportAcceptance(acceptedLiveReport(), {
+        expectedVersion: packageJson.version,
+        maxAgeMs: 0
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_max_age_invalid");
     expect(
       validateLiveReportAcceptance(acceptedLiveReport(), {
         expectedVersion: packageJson.version,
@@ -1487,6 +1515,40 @@ describe("live verification runner", () => {
       expect(pass.stdout).toContain("pass live verification report acceptance");
       expect(`${pass.stdout}\n${pass.stderr}`).not.toContain(tempDir);
 
+      const staleReportPath = join(tempDir, "stale-live-verification-report.json");
+      writeFileSync(
+        staleReportPath,
+        `${JSON.stringify(
+          acceptedLiveReport({
+            generatedAt: new Date(Date.now() - 2 * 60 * 60 * 1_000).toISOString()
+          }),
+          null,
+          2
+        )}\n`
+      );
+      const staleFail = spawnSync(process.execPath, [reportScriptPath, "--max-age-minutes", "60", staleReportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(staleFail.status).toBe(1);
+      expect(staleFail.stderr).toContain("live_report_stale");
+      expect(`${staleFail.stdout}\n${staleFail.stderr}`).not.toContain(tempDir);
+
+      const freshReportPath = join(tempDir, "fresh-live-verification-report.json");
+      writeFileSync(
+        freshReportPath,
+        `${JSON.stringify(acceptedLiveReport({ generatedAt: new Date().toISOString() }), null, 2)}\n`
+      );
+      const freshPass = spawnSync(process.execPath, [reportScriptPath, "--max-age-minutes", "60", freshReportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(freshPass.status).toBe(0);
+      expect(freshPass.stdout).toContain("pass live verification report acceptance");
+      expect(`${freshPass.stdout}\n${freshPass.stderr}`).not.toContain(tempDir);
+
       const partialScopeFail = spawnSync(process.execPath, [reportScriptPath, "--require-production-scope", reportPath], {
         cwd: rootDir,
         encoding: "utf8"
@@ -1511,6 +1573,15 @@ describe("live verification runner", () => {
       expect(productionPass.status).toBe(0);
       expect(productionPass.stdout).toContain("pass live verification report acceptance");
       expect(`${productionPass.stdout}\n${productionPass.stderr}`).not.toContain(tempDir);
+
+      const badMaxAge = spawnSync(process.execPath, [reportScriptPath, "--max-age-minutes", "0", reportPath], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(badMaxAge.status).toBe(1);
+      expect(badMaxAge.stderr).toContain("--max-age-minutes must be an integer from 1 to 10080.");
+      expect(`${badMaxAge.stdout}\n${badMaxAge.stderr}`).not.toContain(tempDir);
 
       const badReportPath = join(tempDir, "bad-live-verification-report.json");
       writeFileSync(
