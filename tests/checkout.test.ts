@@ -213,6 +213,18 @@ describe("checkout handoff detection", () => {
     ).toThrow("Zepto cart does not show any readable items for checkout.");
   });
 
+  it("rejects cart mutation controls as checkout cart proof", () => {
+    expect(() =>
+      assertReadableCheckoutCart(`
+        Cart
+        Remove
+        1 pack (500 ml)
+        ₹32
+        Checkout
+      `)
+    ).toThrow("Zepto cart does not show any readable items for checkout.");
+  });
+
   it("reports checkout handoff without claiming payment or order placement", () => {
     expect(checkoutHandoffOutput()).toEqual({
       status: "checkout_handoff_returned",

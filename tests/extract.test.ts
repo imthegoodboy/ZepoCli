@@ -459,6 +459,37 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not parse cart mutation controls as cart products", () => {
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Remove
+        1 pack (500 ml)
+        ₹32
+        Checkout
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Remove
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Grand Total ₹32
+      `)
+    ).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "1"
+      }
+    ]);
+  });
+
   it("parses common cart quantity variants", () => {
     expect(
       parseCartItemsFromText(`
