@@ -563,6 +563,14 @@ const checks = [
     }
   },
   {
+    name: "json equals flag parser error",
+    args: ["--json=true", "status", "--bad-option"],
+    expect: (result) => {
+      expectJsonError(result, "invalid_input", "error: unknown option '--json=true'", "invalid_input");
+      assert(result.stdout === "", "expected malformed --json value parser error to keep stdout empty");
+    }
+  },
+  {
     name: "json encoded sensitive unknown option redaction",
     args: ["--json", "status", "--phone=%2B91+98765+43210"],
     expect: (result) => {
