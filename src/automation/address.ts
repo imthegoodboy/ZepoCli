@@ -8,7 +8,7 @@ import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 const ADDRESS_DETAIL_PATTERN =
-  "\\b(house|flat|road|street|sector|phase|apartment|building|floor|tower|block|pin|pincode|india|bengaluru|bangalore|mumbai|delhi|pune|hyderabad|chennai|kolkata|ahmedabad|gurugram|gurgaon|noida)\\b|\\d{3,}";
+  "\\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\\s+code|india)\\b|\\b[a-z]\\s*[-/]\\s*\\d{2,}\\b|\\d{3,}";
 const ADDRESS_PLACEHOLDER_PATTERN =
   "^(add|select|enter|use|choose|set|change)\\b.*\\b(address|location)\\b|^(delivery address|saved addresses|select location|add address)$";
 const ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN =
@@ -19,6 +19,7 @@ const ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN =
   "\\b(cart|my cart|checkout|proceed(?:\\s+to)?|continue|payment|payments|pay(?:\\s+now)?|make payment|place order|confirm order|orders?|order history|track order|reorder|order again|repeat order|order summary|bill summary|view bill|item total|grand total|to pay|coupon|promo|voucher|delivery fee|delivery charge|handling fee|platform fee)\\b";
 const NON_ADDRESS_SURFACE_PATTERN =
   `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}`;
+const ADDRESS_CONTAINER_PREFIX_PATTERN = /^(saved|manage|my|select|delivery)\s+addresses?\b/i;
 export const ADDRESS_MANAGER_CLICK_LABELS = [
   /^deliver(?:ing)? to\b.*$/i,
   /^select location$/i,
@@ -193,8 +194,7 @@ export async function useAddress(page: Page, query: string): Promise<Address> {
       if (isAddressText(text) && !hasAddressDescendant(element, text)) {
         candidates.push({
           index,
-          text,
-          label: text.match(/\b(Home|Work|Other)\b/i)?.[1]
+          text
         });
       }
     }
@@ -303,8 +303,9 @@ export function requireSelectedAddress(addresses: Address[], query: string): Add
 
 export function addressMatchesQuery(address: Address, query: string): boolean {
   const queryText = normalizeText(query).toLowerCase();
+  const labelText = normalizeText(address.label ?? "").toLowerCase();
   const addressText = normalizeText([address.label, address.text].filter(Boolean).join(" ")).toLowerCase();
-  return queryText.length > 0 && (addressText.includes(queryText) || queryText.includes(addressText));
+  return queryText.length > 0 && (labelText === queryText || addressTextMatchesQuery(addressText, queryText));
 }
 
 export function chooseAddressSelectionCandidate(
@@ -370,7 +371,7 @@ export function isLikelyAddressText(text: string): boolean {
 }
 
 function addressFromText(text: string): Address {
-  const label = text.match(/\b(Home|Work|Other)\b/i)?.[1];
+  const label = extractAddressLabel(text);
   return {
     label,
     text,
@@ -379,12 +380,16 @@ function addressFromText(text: string): Address {
 }
 
 function isAddressContainerText(text: string, candidates: string[]): boolean {
-  if (addressLabelCount(text) < 2 && !/^saved addresses?\b/i.test(text)) {
+  const key = text.toLowerCase();
+  const containedAddressCount = candidates.filter(
+    (candidate) => candidate !== text && key.includes(candidate.toLowerCase())
+  ).length;
+
+  if (containedAddressCount === 0) {
     return false;
   }
 
-  const key = text.toLowerCase();
-  return candidates.some((candidate) => candidate !== text && key.includes(candidate.toLowerCase()));
+  return containedAddressCount > 1 || ADDRESS_CONTAINER_PREFIX_PATTERN.test(text);
 }
 
 function normalizeAddressSelectionCandidates(candidates: AddressSelectionCandidate[]): AddressSelectionCandidate[] {
@@ -402,7 +407,7 @@ function normalizeAddressSelectionCandidates(candidates: AddressSelectionCandida
     uniqueCandidates.push({
       ...candidate,
       text,
-      label: candidate.label ? normalizeText(candidate.label) : undefined
+      label: normalizeAddressLabel(candidate.label) ?? extractAddressLabel(text)
     });
   }
 
@@ -411,9 +416,10 @@ function normalizeAddressSelectionCandidates(candidates: AddressSelectionCandida
 }
 
 function addressSelectionCandidateMatchesQuery(candidate: AddressSelectionCandidate, queryText: string): boolean {
-  const text = normalizeText(candidate.text).toLowerCase();
-  const label = normalizeText(candidate.label ?? "").toLowerCase();
-  return text.includes(queryText) || label === queryText;
+  return (
+    addressTextMatchesQuery(candidate.text, queryText) ||
+    normalizeText(candidate.label ?? "").toLowerCase() === queryText
+  );
 }
 
 function addressSelectionMatchRank(candidate: AddressSelectionCandidate, queryText: string): number {
@@ -430,8 +436,92 @@ function addressSelectionMatchRank(candidate: AddressSelectionCandidate, queryTe
   return 2;
 }
 
-function addressLabelCount(text: string): number {
-  return (text.match(/\b(Home|Work|Other)\b/gi) ?? []).length;
+export function extractAddressLabel(text: string): string | undefined {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const addressDetail = new RegExp(ADDRESS_DETAIL_PATTERN, "i").exec(normalized);
+  if (!addressDetail?.index) {
+    return undefined;
+  }
+
+  const prefix = stripAddressLabelPrefix(normalized.slice(0, addressDetail.index));
+  return normalizeAddressLabel(prefix);
+}
+
+function normalizeAddressLabel(label: string | undefined): string | undefined {
+  if (!label) {
+    return undefined;
+  }
+
+  const normalized = stripAddressLabelPrefix(label).replace(/[:,-]+$/g, "").trim();
+  if (
+    normalized.length === 0 ||
+    normalized.length > 48 ||
+    normalized.split(/\s+/).length > 5 ||
+    new RegExp(ADDRESS_PLACEHOLDER_PATTERN, "i").test(normalized) ||
+    new RegExp(NON_ADDRESS_SURFACE_PATTERN, "i").test(normalized) ||
+    looksLikeUnit(normalized)
+  ) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
+function stripAddressLabelPrefix(value: string): string {
+  let label = normalizeText(value).replace(/^[\s:,-]+|[\s:,-]+$/g, "");
+  for (let index = 0; index < 4; index += 1) {
+    const next = label
+      .replace(/^(?:selected|default|current)\b[\s:,-]*/i, "")
+      .replace(/^deliver(?:ing)?\s+(?:to|here)\b[\s:,-]*/i, "")
+      .replace(/^delivery\s+(?:to|at)\b[\s:,-]*/i, "")
+      .replace(/^address(?:\s+selected)?\b[\s:,-]*/i, "")
+      .replace(/^saved\s+addresses?\b[\s:,-]*/i, "")
+      .trim();
+    if (next === label) {
+      return next;
+    }
+
+    label = next;
+  }
+
+  return label;
+}
+
+function addressTextMatchesQuery(text: string, queryText: string): boolean {
+  const normalizedText = normalizeText(text).toLowerCase();
+  const normalizedQuery = normalizeText(queryText).toLowerCase();
+  if (!normalizedText || !normalizedQuery) {
+    return false;
+  }
+
+  const queryTerms = addressMatchTerms(normalizedQuery);
+  if (queryTerms.length === 0) {
+    return false;
+  }
+
+  if (queryTerms.length > 1 && addressPhraseMatches(normalizedText, normalizedQuery)) {
+    return true;
+  }
+
+  const textTerms = addressMatchTerms(normalizedText);
+  return queryTerms.every((queryTerm) =>
+    textTerms.some((textTerm) => textTerm === queryTerm || (queryTerm.length >= 3 && textTerm.startsWith(queryTerm)))
+  );
+}
+
+function addressPhraseMatches(text: string, query: string): boolean {
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
+}
+
+function addressMatchTerms(text: string): string[] {
+  return normalizeText(text)
+    .toLowerCase()
+    .match(/[a-z0-9]+/g) ?? [];
 }
 
 export async function startAddAddress(page: Page): Promise<void> {

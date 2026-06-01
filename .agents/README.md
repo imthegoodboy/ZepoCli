@@ -106,6 +106,7 @@ Implementation consequence:
 - Phone prefill must target explicit phone/mobile/tel fields only; never use bare numeric input selectors because those can match OTP fields.
 - Failed re-login attempts must preserve a previously confirmed session by restoring both Playwright auth state and persistent browser profile data.
 - Address extraction should prefer specific saved address rows, avoid clicking broad containers that include multiple saved addresses, and reject label-only navigation/category text such as "Home" or "Work" without real address detail.
+- Saved-address labels must be derived from Zepto's visible saved-address row text instead of a fixed `Home`/`Work`/`Other` list, and address detection should use structural address detail rather than a hardcoded service-city allow-list.
 - Account-dependent commands should require confirmed local session state, not just leftover files.
 - Non-session search should not make status/doctor look partially logged in by writing auth state.
 - Browser profile files alone can exist after unauthenticated browser use; do not treat that as a partial Zepto login without auth state or a local login marker.

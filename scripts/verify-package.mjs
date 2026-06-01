@@ -190,6 +190,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "paymentStatus: \"not_observed_by_zepocli\"",
     "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
+    "Saved-address labels are derived from Zepto's visible saved-address row text",
+    "rather than a hardcoded service-city allow-list",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Terms of Use version 1.4",
@@ -296,12 +298,19 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "automation",
     "address.js"
   );
-  const { isAddAddressClickText, isAddressManagerClickText, isUnsafeAddressAutomationClickText } = await import(
-    pathToFileURL(addressAutomationModulePath).href
-  );
+  const {
+    extractAddressLabel,
+    isAddAddressClickText,
+    isAddressManagerClickText,
+    isUnsafeAddressAutomationClickText
+  } = await import(pathToFileURL(addressAutomationModulePath).href);
 
   assert(isAddressManagerClickText("Delivery Address") === true, "expected installed address-manager label to be accepted");
   assert(isAddAddressClickText("Add Address") === true, "expected installed add-address label to be accepted");
+  assert(
+    extractAddressLabel("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India") === "Parents",
+    "expected installed address parser to derive custom saved-address labels"
+  );
   for (const unsafeText of ["Checkout", "Pay Now", "Order Summary", "Bill Summary", "Cart"]) {
     assert(
       isUnsafeAddressAutomationClickText(unsafeText) === true,

@@ -32,6 +32,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("not explicit product-add labels");
       expect(guidance).toContain("product-specific accessible labels such as `Add <product> to cart`");
       expect(guidance).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
+      expect(guidance).toContain("Saved-address labels must be derived from Zepto's visible saved-address row text");
+      expect(guidance).toContain("rather than a hardcoded service-city allow-list");
       expect(guidance).toContain("Hidden Zepto API 403/429 responses without visible verification text");
       expect(guidance).toContain("`version`");
       expect(guidance).toContain("serviceability");
