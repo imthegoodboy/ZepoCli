@@ -59,8 +59,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");
     expect(readme).toContain("Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
-    expect(readme).toContain("auth/session/token URL parameters, and local-path values");
-    expect(readme).toContain("auth/session/token URL parameters");
+    expect(readme).toContain("auth/session/token/password/secret URL parameters, and local-path values");
+    expect(readme).toContain("auth/session/token/password/secret URL parameters");
     expect(readme).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
     expect(readme).toContain("npm-token-shaped values");
     expect(readme).toContain("Use ZepoCli only where permitted by Zepto and applicable law");
@@ -119,8 +119,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("Search cache stores redacted query text only");
     expect(readme).toContain("raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots");
     expect(readme).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
-    expect(readme).toContain("auth/session/token URL-parameter, and local-path rules");
-    expect(readme).toContain("auth/session/token URL-parameter");
+    expect(readme).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");
+    expect(readme).toContain("auth/session/token/password/secret URL-parameter");
     expect(readme).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
     expect(readme).toContain("They also redact npm-token-shaped values");
     expect(readme).toContain("It refuses to run while another ZepoCli browser command owns the current data directory lock");

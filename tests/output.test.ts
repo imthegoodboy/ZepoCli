@@ -214,7 +214,7 @@ describe("command JSON output", () => {
       type: "unexpected_error",
       code: "unexpected_error",
       message:
-        "Request failed at https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt and encoded https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Freport.json",
+        "Request failed at https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&password=hunter2&secret=client-secret-123&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt and encoded https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26password%3Dhunter2%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Freport.json",
       exitCode: 1
     });
 
@@ -227,6 +227,8 @@ describe("command JSON output", () => {
     expect(serialized).toContain("upi=<redacted-payment-handle>");
     expect(serialized).toContain("token=<redacted-auth-token>");
     expect(serialized).toContain("access_token=<redacted-auth-token>");
+    expect(serialized).toContain("password=<redacted-auth-token>");
+    expect(serialized).toContain("secret=<redacted-auth-token>");
     expect(serialized).toContain("file=<redacted-local-path>");
     expect(serialized).not.toContain("%2B91");
     expect(serialized).not.toContain("%31%32%33");
@@ -234,6 +236,8 @@ describe("command JSON output", () => {
     expect(serialized).not.toContain("abc%40upi");
     expect(serialized).not.toContain("raw-token-123");
     expect(serialized).not.toContain("abc.def.ghi");
+    expect(serialized).not.toContain("hunter2");
+    expect(serialized).not.toContain("client-secret-123");
     expect(serialized).not.toContain("C%3A%2FUsers");
     expect(serialized).not.toContain("https%3A%2F%2Fexample.test");
     expect(serialized).not.toContain("report.json");
