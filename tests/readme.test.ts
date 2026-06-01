@@ -58,7 +58,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");
-    expect(readme).toContain("Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+    expect(readme).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token/password/secret URL parameters, and local-path values");
     expect(readme).toContain("auth/session/token/password/secret URL parameters");
     expect(readme).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
@@ -118,7 +118,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("visible, enabled account/profile/login controls");
     expect(readme).toContain("Search cache stores redacted query text only");
     expect(readme).toContain("raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots");
-    expect(readme).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+    expect(readme).toContain("Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");
     expect(readme).toContain("auth/session/token/password/secret URL-parameter");
     expect(readme).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");

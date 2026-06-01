@@ -120,6 +120,7 @@ describe("global runtime options", () => {
           browserProfileDir: runtime.paths.browserProfileDir,
           nested: {
             payment: "card 4111 1111 1111 1111 and handle abc@upi",
+            "token=runtime-key-token-123": "sensitive keys are redacted too",
             encoded:
               "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&password=hunter2&secret=client-secret-123&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt",
             encodedBlob:
@@ -160,6 +161,7 @@ describe("global runtime options", () => {
       expect(serialized).toContain("<redacted-payment-handle>");
       expect(serialized).toContain("<redacted-npm-token>");
       expect(serialized).toContain("<redacted-local-path>");
+      expect(serialized).toContain("token=<redacted-auth-token>");
       expect(serialized).not.toContain("123456");
       expect(serialized).not.toContain("654321");
       expect(serialized).not.toContain("98765-43210");
@@ -175,6 +177,7 @@ describe("global runtime options", () => {
       expect(serialized).not.toContain("abc%40upi");
       expect(serialized).toContain("<redacted-auth-token>");
       expect(serialized).not.toContain("raw-token-123");
+      expect(serialized).not.toContain("runtime-key-token-123");
       expect(serialized).not.toContain("abc.def.ghi");
       expect(serialized).not.toContain("hunter2");
       expect(serialized).not.toContain("client-secret-123");
