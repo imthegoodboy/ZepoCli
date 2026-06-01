@@ -8,6 +8,7 @@ import {
   clickAddAddressButton,
   clickAddressManagerButton,
   clickTaggedAddressSelection,
+  extractAddressLabel,
   filterAddressTexts,
   isAddAddressClickText,
   isAddAddressFlowText,
@@ -29,6 +30,37 @@ describe("address automation helpers", () => {
     expect(addressMatchesQuery(address, "home")).toBe(true);
     expect(addressMatchesQuery(address, "Baker Street")).toBe(true);
     expect(addressMatchesQuery(address, "work")).toBe(false);
+  });
+
+  it("derives custom saved-address labels from Zepto row text", () => {
+    expect(
+      extractAddressLabel("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India")
+    ).toBe("Parents");
+    expect(extractAddressLabel("Selected Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India")).toBe(
+      "Office"
+    );
+
+    expect(
+      addressMatchesQuery(
+        {
+          label: extractAddressLabel("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India"),
+          text: "Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India"
+        },
+        "parents"
+      )
+    ).toBe(true);
+  });
+
+  it("does not treat tiny substrings as address matches", () => {
+    expect(
+      addressMatchesQuery(
+        {
+          label: "Home",
+          text: "221B Baker Street, Bengaluru, India"
+        },
+        "me"
+      )
+    ).toBe(false);
   });
 
   it("returns a selected address matching the requested query", () => {
@@ -87,6 +119,24 @@ describe("address automation helpers", () => {
           }
         ],
         "MG Road"
+      )?.index
+    ).toBe(7);
+  });
+
+  it("chooses saved-address candidates with custom labels from visible row text", () => {
+    expect(
+      chooseAddressSelectionCandidate(
+        [
+          {
+            index: 3,
+            text: "Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India"
+          },
+          {
+            index: 7,
+            text: "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India"
+          }
+        ],
+        "office"
       )?.index
     ).toBe(7);
   });
@@ -158,6 +208,9 @@ describe("address automation helpers", () => {
   it("accepts saved address text with location detail", () => {
     expect(isLikelyAddressText("Home 221B Baker Street, Bengaluru, Karnataka 560001 India")).toBe(true);
     expect(isLikelyAddressText("Work Flat 42, Tower B, MG Road, Bengaluru")).toBe(true);
+    expect(isLikelyAddressText("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India")).toBe(
+      true
+    );
   });
 
   it("rejects address placeholders without saved address detail", () => {
@@ -217,6 +270,19 @@ describe("address automation helpers", () => {
         "Home 221B Baker Street, Bengaluru, India"
       ])
     ).toEqual(["Home 221B Baker Street, Bengaluru, India", "Work Flat 42, Tower B, Bengaluru, India"]);
+  });
+
+  it("filters broad address containers without relying on fixed saved-address labels", () => {
+    expect(
+      filterAddressTexts([
+        "Saved Addresses Parents A-1204 Sunrise Society, Karnataka 560076 India Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India",
+        "Parents A-1204 Sunrise Society, Karnataka 560076 India",
+        "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India"
+      ])
+    ).toEqual([
+      "Parents A-1204 Sunrise Society, Karnataka 560076 India",
+      "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India"
+    ]);
   });
 
   it("filters a saved-address wrapper even when it contains one address label", () => {
