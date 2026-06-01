@@ -6,7 +6,15 @@ describe("sensitive value redaction", () => {
   it("redacts cyclic objects and errors without preserving circular references", () => {
     const root: Record<string, unknown> = {
       "phone=%2B91+98765+43210": "OTP 123456 near C:/Users/parth/.zepo-live/report.json",
-      diagnosticCount: BigInt(3)
+      diagnosticCount: BigInt(3),
+      diagnosticMessage: "OTP 123456 near C:/Users/parth/.zepo-live/report.json",
+      authorization: "Bearer raw-authorization-token",
+      cookie: "session=raw-cookie-value",
+      otp: "123456",
+      phoneNumber: 9876543210,
+      cardNumber: "4111111111111111",
+      upi: "abc@upi",
+      password: "hunter2"
     };
     const child: Record<string, unknown> = {
       parent: root,
@@ -36,12 +44,17 @@ describe("sensitive value redaction", () => {
     expect(serialized).toContain("<redacted-verification-code>");
     expect(serialized).toContain("<redacted-payment-number>");
     expect(serialized).toContain("<redacted-phone>");
+    expect(serialized).toContain("<redacted-payment-handle>");
     expect(serialized).toContain("<redacted-local-path>");
     expect(serialized).toContain("<redacted-auth-token>");
     expect(serialized).not.toContain("%2B91");
     expect(serialized).not.toContain("98765");
     expect(serialized).not.toContain("123456");
     expect(serialized).not.toContain("4111");
+    expect(serialized).not.toContain("raw-authorization-token");
+    expect(serialized).not.toContain("raw-cookie-value");
+    expect(serialized).not.toContain("hunter2");
+    expect(serialized).not.toContain("abc@upi");
     expect(serialized).not.toContain("ZEP1234");
     expect(serialized).not.toContain("C:/Users");
     expect(serialized).not.toContain("raw-token-123");

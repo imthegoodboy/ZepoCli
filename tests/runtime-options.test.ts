@@ -120,6 +120,13 @@ describe("global runtime options", () => {
           browserProfileDir: runtime.paths.browserProfileDir,
           nested: {
             diagnosticCount: BigInt(5),
+            authorization: "Bearer raw-authorization-token",
+            cookie: "session=raw-cookie-value",
+            otp: "654321",
+            phoneNumber: 9876543210,
+            cardNumber: "4111111111111111",
+            sessionToken: "plain-runtime-session-token",
+            password: "hunter2",
             payment: "card 4111 1111 1111 1111 and handle abc@upi",
             "token=runtime-key-token-123": "sensitive keys are redacted too",
             encoded:
@@ -178,8 +185,11 @@ describe("global runtime options", () => {
       expect(serialized).not.toContain("4111%201111");
       expect(serialized).not.toContain("abc%40upi");
       expect(serialized).toContain("<redacted-auth-token>");
+      expect(serialized).not.toContain("raw-authorization-token");
+      expect(serialized).not.toContain("raw-cookie-value");
       expect(serialized).not.toContain("raw-token-123");
       expect(serialized).not.toContain("runtime-key-token-123");
+      expect(serialized).not.toContain("plain-runtime-session-token");
       expect(serialized).not.toContain("abc.def.ghi");
       expect(serialized).not.toContain("hunter2");
       expect(serialized).not.toContain("client-secret-123");
