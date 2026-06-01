@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { Command, CommanderError } from "commander";
 import { ZodError } from "zod";
 
-import { DEFAULT_TIMEOUT_MS } from "./config/constants.js";
+import { DEFAULT_BROWSER_LOCALE, DEFAULT_BROWSER_TIMEZONE, DEFAULT_TIMEOUT_MS } from "./config/constants.js";
 import { PACKAGE_VERSION } from "./config/package.js";
 import { registerAddCommand } from "./commands/add.js";
 import { registerAddressCommand } from "./commands/address.js";
@@ -29,6 +29,8 @@ program
   .option("--json", "print machine-readable JSON when supported")
   .option("--no-input", "fail instead of prompting for interactive input")
   .option("--visible", "run supported browser automation in a visible browser")
+  .option("--browser-locale <locale>", "browser locale for Zepto automation", DEFAULT_BROWSER_LOCALE)
+  .option("--browser-timezone <timezone>", "browser time zone for Zepto automation", DEFAULT_BROWSER_TIMEZONE)
   .option("--timeout <ms>", "browser automation timeout", String(DEFAULT_TIMEOUT_MS));
 
 program.exitOverride();

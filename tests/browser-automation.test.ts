@@ -218,6 +218,20 @@ describe("browser automation helpers", () => {
     expect(options).not.toHaveProperty("userAgent");
   });
 
+  it("uses configured browser locale and timezone when launching Chromium", () => {
+    const options = buildPersistentContextOptions(false, {
+      browserLocale: "hi-IN",
+      browserTimezone: "UTC"
+    });
+
+    expect(options).toMatchObject({
+      headless: false,
+      locale: "hi-IN",
+      timezoneId: "UTC"
+    });
+    expect(options).not.toHaveProperty("userAgent");
+  });
+
   it("paces repeated browser automation runs", () => {
     expect(computeBrowserPacingDelay(undefined, 10_000)).toBe(0);
     expect(computeBrowserPacingDelay("not-a-timestamp", 10_000)).toBe(0);

@@ -111,6 +111,7 @@ zepo --data-dir ./.zepo-agent track --json
 
 `zepo search --limit` accepts integers from 1 to 50. Invalid limits fail before browser automation starts.
 `--timeout <ms>` accepts decimal integer milliseconds from 1000 to 300000. Invalid timeout values fail before runtime or browser automation starts and use stable `invalid_input` JSON issues for agents.
+`--browser-locale <locale>` and `--browser-timezone <timezone>` control the Playwright browser context for Zepto automation. They default to `en-IN` and `Asia/Kolkata`, are validated before browser launch, and do not add a custom user agent.
 
 ## Agent Runbook
 

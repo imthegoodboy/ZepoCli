@@ -55,6 +55,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("A lock with a still-running owner PID remains active even when it is old");
     expect(readme).toContain("Do not parallelize multiple data directories to bypass pacing or throttle signals");
     expect(readme).toContain("`zepo status --json` includes `version`");
+    expect(readme).toContain("`--browser-locale <locale>` and `--browser-timezone <timezone>`");
+    expect(readme).toContain("do not add a custom user agent");
     expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");

@@ -7,6 +7,8 @@ import { UserFacingError } from "../utils/errors.js";
 import { redactSensitiveText } from "../utils/redaction.js";
 
 export interface GlobalOptions {
+  browserLocale?: string;
+  browserTimezone?: string;
   dataDir?: string;
   debug?: boolean;
   json?: boolean;
@@ -18,7 +20,25 @@ export interface GlobalOptions {
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 300_000;
 
+const BrowserLocaleSchema = z
+  .string()
+  .trim()
+  .min(1, "must not be blank")
+  .refine(isValidBrowserLocale, "must be a valid BCP 47 locale")
+  .transform((value) => Intl.getCanonicalLocales(value)[0])
+  .optional();
+
+const BrowserTimezoneSchema = z
+  .string()
+  .trim()
+  .min(1, "must not be blank")
+  .refine(isValidBrowserTimezone, "must be a valid IANA time zone")
+  .transform(normalizeBrowserTimezone)
+  .optional();
+
 const RuntimeOptionsSchema = z.object({
+  browserLocale: BrowserLocaleSchema,
+  browserTimezone: BrowserTimezoneSchema,
   dataDir: z
     .string()
     .refine((value) => value.trim().length > 0, "must not be blank")
@@ -58,6 +78,8 @@ export async function withRuntime(command: Command, action: (runtime: AppRuntime
 export function createRuntimeOrThrow(options: ReturnType<typeof parseRuntimeOptions>): AppRuntime {
   try {
     return createRuntime({
+      browserLocale: options.browserLocale,
+      browserTimezone: options.browserTimezone,
       dataDir: options.dataDir,
       debug: options.debug,
       headless: !options.visible,
@@ -117,4 +139,25 @@ function firstErrorLine(error: unknown): string | undefined {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .find(Boolean);
+}
+
+function isValidBrowserLocale(value: string): boolean {
+  try {
+    return Intl.getCanonicalLocales(value).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function isValidBrowserTimezone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function normalizeBrowserTimezone(value: string): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone: value }).resolvedOptions().timeZone;
 }

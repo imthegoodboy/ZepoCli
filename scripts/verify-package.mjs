@@ -196,6 +196,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "not a fixed address-label list or service-city allow-list",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
+    "`--browser-locale <locale>` and `--browser-timezone <timezone>`",
+    "do not add a custom user agent",
     "Terms of Use version 1.4",
     "were checked on 2026-06-02",
     "Privacy Notice version 1.1",

@@ -63,7 +63,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Payment-method label matching should use `src/automation/payment-labels.ts`; do not add per-module payment regex copies that can drift across click surfaces.
    - Do not run concurrent browser commands against the same persistent profile; serialize browser automation per data directory.
    - Do not parallelize multiple data directories to bypass pacing or throttle signals.
-   - Do not hardcode stale browser identity such as fixed Chrome user agents; let Playwright Chromium report its real browser identity while keeping locale/timezone/user pacing human-controlled.
+   - Do not hardcode stale browser identity such as fixed Chrome user agents; let Playwright Chromium report its real browser identity while keeping locale/timezone/user pacing human-controlled. Browser locale/timezone must flow through validated runtime options such as `--browser-locale` and `--browser-timezone`.
    - Pace browser automation, keep headless burst limits conservative, and fail clearly if Zepto shows access challenges, rate limits, blocked-request pages, or suspicious empty Zepto responses.
    - Treat 403/429-style block pages, browser-check pages, temporary-restriction copy, and "enable JavaScript/cookies" checks as access challenges; stop or switch to a human-visible flow instead of trying to route around them.
    - Treat both `zepto.com` and legacy `zeptonow.com` origins as Zepto platform surfaces for access-challenge detection.

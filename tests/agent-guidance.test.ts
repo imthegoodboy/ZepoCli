@@ -37,6 +37,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Cart parsing must skip delivery-address blocks with custom saved-address labels");
       expect(guidance).toContain("not a fixed address-label list or service-city allow-list");
       expect(guidance).toContain("Hidden Zepto API 403/429 responses without visible verification text");
+      expect(guidance).toContain("`--browser-locale`");
+      expect(guidance).toContain("`--browser-timezone`");
       expect(guidance).toContain("`version`");
       expect(guidance).toContain("serviceability");
       expect(guidance).toContain("must not promise delivery timing");

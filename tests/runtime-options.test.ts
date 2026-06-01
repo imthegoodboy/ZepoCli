@@ -14,6 +14,8 @@ describe("global runtime options", () => {
   it("parses visible/debug/timeout flags", () => {
     expect(
       parseRuntimeOptions({
+        browserLocale: " hi-IN ",
+        browserTimezone: "utc",
         visible: true,
         debug: true,
         input: false,
@@ -21,6 +23,8 @@ describe("global runtime options", () => {
         dataDir: ".zepo-test"
       })
     ).toEqual({
+      browserLocale: "hi-IN",
+      browserTimezone: "UTC",
       visible: true,
       debug: true,
       input: false,
@@ -38,6 +42,13 @@ describe("global runtime options", () => {
 
   it("rejects blank data directories before runtime creation", () => {
     expect(() => parseRuntimeOptions({ dataDir: "   " })).toThrow(ZodError);
+  });
+
+  it("rejects invalid browser context options before runtime creation", () => {
+    expectRuntimeOptionIssue({ browserLocale: "not_a_locale" }, ["browserLocale"], "must be a valid BCP 47 locale");
+    expectRuntimeOptionIssue({ browserLocale: "   " }, ["browserLocale"], "must not be blank");
+    expectRuntimeOptionIssue({ browserTimezone: "Mars/Olympus" }, ["browserTimezone"], "must be a valid IANA time zone");
+    expectRuntimeOptionIssue({ browserTimezone: "   " }, ["browserTimezone"], "must not be blank");
   });
 
   it("converts runtime setup failures into actionable user errors", () => {
@@ -218,19 +229,33 @@ describe("global runtime options", () => {
   });
 });
 
-function expectRuntimeOptionIssue(timeout: string, message: string): void {
+function expectRuntimeOptionIssue(timeout: string, message: string): void;
+function expectRuntimeOptionIssue(options: Parameters<typeof parseRuntimeOptions>[0], path: string[], message: string): void;
+function expectRuntimeOptionIssue(
+  timeoutOrOptions: string | Parameters<typeof parseRuntimeOptions>[0],
+  pathOrMessage: string[] | string,
+  maybeMessage?: string
+): void {
+  const options = typeof timeoutOrOptions === "string" ? { timeout: timeoutOrOptions } : timeoutOrOptions;
+  const path = typeof pathOrMessage === "string" ? ["timeout"] : pathOrMessage;
+  const message = typeof pathOrMessage === "string" ? pathOrMessage : maybeMessage;
+
+  if (!message) {
+    throw new Error("Expected a runtime option issue message.");
+  }
+
   try {
-    parseRuntimeOptions({ timeout });
+    parseRuntimeOptions(options);
   } catch (error) {
     expect(error).toBeInstanceOf(ZodError);
     expect((error as ZodError).issues[0]).toMatchObject({
-      path: ["timeout"],
+      path,
       message
     });
     return;
   }
 
-  throw new Error(`Expected timeout ${timeout} to be rejected.`);
+  throw new Error(`Expected runtime options ${JSON.stringify(options)} to be rejected.`);
 }
 
 async function waitForLogDestinationReady(destination: { fd?: number; once(event: string, callback: () => void): void }): Promise<void> {

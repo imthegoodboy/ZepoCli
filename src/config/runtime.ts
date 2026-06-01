@@ -1,6 +1,6 @@
 import pino from "pino";
 
-import { DEFAULT_TIMEOUT_MS } from "./constants.js";
+import { DEFAULT_BROWSER_LOCALE, DEFAULT_BROWSER_TIMEZONE, DEFAULT_TIMEOUT_MS } from "./constants.js";
 import { type AppPaths, resolveAppPaths } from "./paths.js";
 import { PreferencesStore } from "../storage/preferences.js";
 import { SessionStore } from "../storage/session.js";
@@ -20,6 +20,8 @@ export interface AppRuntime {
 
 export function createRuntime(options: Partial<RuntimeOptions> = {}): AppRuntime {
   const runtimeOptions: RuntimeOptions = {
+    browserLocale: options.browserLocale ?? DEFAULT_BROWSER_LOCALE,
+    browserTimezone: options.browserTimezone ?? DEFAULT_BROWSER_TIMEZONE,
     dataDir: options.dataDir,
     debug: options.debug ?? false,
     headless: options.headless ?? true,

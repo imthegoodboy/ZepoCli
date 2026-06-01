@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { chromium, type Browser, type BrowserContext, type Page, type Response } from "playwright";
 
-import { BASE_URL } from "../config/constants.js";
+import { BASE_URL, DEFAULT_BROWSER_LOCALE, DEFAULT_BROWSER_TIMEZONE, DEFAULT_BROWSER_VIEWPORT } from "../config/constants.js";
 import type { AppRuntime } from "../config/runtime.js";
 import { hasVisibleLoginFormInput } from "./login-inputs.js";
 import type {
@@ -13,6 +13,7 @@ import type {
   BrowserAutomationReadinessReason,
   BrowserRunLockStatus,
   BrowserRunThrottleStatus,
+  RuntimeOptions,
   SessionStatus
 } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
@@ -102,7 +103,7 @@ export class BrowserAutomation {
       try {
         context = await chromium.launchPersistentContext(
           this.runtime.session.browserProfileDir,
-          buildPersistentContextOptions(headless)
+          buildPersistentContextOptions(headless, this.runtime.options)
         );
       } catch (error) {
         this.runtime.logger.error(
@@ -326,16 +327,14 @@ export function getBrowserAutomationReadiness(input: {
 }
 
 export function buildPersistentContextOptions(
-  headless: boolean
+  headless: boolean,
+  options?: Pick<RuntimeOptions, "browserLocale" | "browserTimezone">
 ): NonNullable<Parameters<typeof chromium.launchPersistentContext>[1]> {
   return {
     headless,
-    locale: "en-IN",
-    timezoneId: "Asia/Kolkata",
-    viewport: {
-      width: 1366,
-      height: 900
-    }
+    locale: options?.browserLocale ?? DEFAULT_BROWSER_LOCALE,
+    timezoneId: options?.browserTimezone ?? DEFAULT_BROWSER_TIMEZONE,
+    viewport: DEFAULT_BROWSER_VIEWPORT
   };
 }
 

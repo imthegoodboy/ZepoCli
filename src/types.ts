@@ -1,4 +1,6 @@
 export interface RuntimeOptions {
+  browserLocale: string;
+  browserTimezone: string;
   dataDir?: string;
   debug: boolean;
   headless: boolean;
