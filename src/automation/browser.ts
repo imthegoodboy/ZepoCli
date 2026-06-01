@@ -655,12 +655,8 @@ export function computeBrowserPacingDelay(lastRunAt: string | undefined, nowMs =
 }
 
 export function computeAccessChallengeCooldownDelay(lastChallengeAt: string | undefined, nowMs = Date.now()): number {
-  if (!lastChallengeAt) {
-    return 0;
-  }
-
-  const timestamp = Number.parseInt(lastChallengeAt, 10);
-  if (!Number.isFinite(timestamp)) {
+  const timestamp = parseMetaTimestamp(lastChallengeAt, nowMs);
+  if (timestamp === undefined) {
     return 0;
   }
 
@@ -727,7 +723,7 @@ export function getAccessChallengeCooldownStatus(
   lastChallengeAt: string | undefined,
   nowMs = Date.now()
 ): AccessChallengeStatus {
-  const timestamp = parseMetaTimestamp(lastChallengeAt);
+  const timestamp = parseMetaTimestamp(lastChallengeAt, nowMs);
   if (timestamp === undefined) {
     return {
       detected: false,
@@ -1055,13 +1051,21 @@ function expiredSessionError(): UserFacingError {
   });
 }
 
-function parseMetaTimestamp(value: string | undefined): number | undefined {
+function parseMetaTimestamp(value: string | undefined, nowMs = Date.now()): number | undefined {
   if (!value) {
     return undefined;
   }
 
   const timestamp = Number.parseInt(value, 10);
-  return Number.isFinite(timestamp) ? timestamp : undefined;
+  if (!Number.isFinite(timestamp) || timestamp < 0 || timestamp > 8.64e15) {
+    return undefined;
+  }
+
+  if (timestamp > nowMs + ACCESS_CHALLENGE_COOLDOWN_MS) {
+    return undefined;
+  }
+
+  return timestamp;
 }
 
 function recentHeadlessBrowserRuns(runHistory: string | undefined, nowMs: number): number[] {
@@ -1131,4 +1135,3 @@ function sentenceJoin(parts: string[]): string {
 
   return `${parts.slice(0, -1).join(", ")}, or ${parts[parts.length - 1]}`;
 }
-

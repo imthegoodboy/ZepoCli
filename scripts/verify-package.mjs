@@ -3088,6 +3088,18 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       }
     },
     {
+      name: "installed status malformed access cooldown metadata json",
+      args: () => {
+        setRuntimeMeta(runtimeModules, dataDir, "LAST_ACCESS_CHALLENGE_META_KEY", "999999999999999999999");
+        return ["--data-dir", dataDir, "status", "--json"];
+      },
+      expect: ({ status, stdout }) => {
+        assert(status === 0, "expected exit code 0");
+        const payload = parseJson(stdout, "stdout");
+        assertFreshStatus(payload, dataDir);
+      }
+    },
+    {
       name: "installed doctor skip browser json",
       args: ["--data-dir", dataDir, "doctor", "--skip-browser", "--json"],
       expect: ({ status, stdout }) => {
