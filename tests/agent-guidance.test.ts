@@ -30,6 +30,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Homepage fallback must not override explicit search-page no-results");
       expect(guidance).toContain("Zepto exposes as product-card control labels");
       expect(guidance).toContain("not explicit product-add labels");
+      expect(guidance).toContain("product-specific accessible labels such as `Add <product> to cart`");
       expect(guidance).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
       expect(guidance).toContain("Hidden Zepto API 403/429 responses without visible verification text");
       expect(guidance).toContain("`version`");

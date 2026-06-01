@@ -190,6 +190,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "paymentStatus: \"not_observed_by_zepocli\"",
     "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
+    "product-specific accessible labels such as `Add <product> to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Privacy Notice version 1.1",
     "Last updated: 17th June 2025",

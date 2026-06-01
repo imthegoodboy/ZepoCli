@@ -528,6 +528,38 @@ describe("search automation helpers", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("rediscovers the current product ADD control when Zepto re-renders and drops the old tag", async () => {
+    const page = createRediscoveredProductAddPage("Amul Milk\n500 ml\n₹32");
+
+    await expect(
+      clickProductAdd(page as never, {
+        index: 0,
+        automationId: 4,
+        name: "Amul Milk",
+        price: "₹32",
+        unit: "500 ml"
+      })
+    ).resolves.toBeUndefined();
+
+    expect(page.clicked).toBe(true);
+  });
+
+  it("does not click a rediscovered ADD control for a different product", async () => {
+    const page = createRediscoveredProductAddPage("Potato Chips\n52 g\n₹20");
+
+    await expect(
+      clickProductAdd(page as never, {
+        index: 0,
+        automationId: 4,
+        name: "Amul Milk",
+        price: "₹32",
+        unit: "500 ml"
+      })
+    ).rejects.toThrow("Could not find the ADD button for Amul Milk.");
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click tagged product controls that no longer expose an ADD label", async () => {
     const page = createProductAddButtonPage("Added\nAmul Milk\n500 ml\n₹32", "Added");
 
@@ -864,6 +896,80 @@ function createProductAddLocator(
       }
 
       return cardText;
+    },
+    scrollIntoViewIfNeeded: async () => undefined,
+    click
+  };
+}
+
+function createRediscoveredProductAddPage(cardText: string) {
+  const document = {
+    buttons: [] as FakeElement[],
+    querySelectorAll: (selector: string) => (selector === "button, [role='button']" ? document.buttons : []),
+    getElementById: () => null
+  };
+  const card = new FakeElement(cardText, {}, document);
+  const button = new FakeElement("", { "aria-label": "Add Amul Milk to cart" }, document);
+  card.appendChild(button);
+  document.buttons = [button];
+
+  const page = {
+    clicked: false,
+    locator: (selector: string) => {
+      if (selector.includes('data-zepo-add-id="4"')) {
+        return createInvisibleLocator();
+      }
+
+      if (selector.includes('data-zepo-add-id="0"')) {
+        return createFakeProductAddLocator(card, button, async () => {
+          page.clicked = true;
+        });
+      }
+
+      return createInvisibleLocator();
+    },
+    evaluate: async (callback: (input: unknown) => unknown, input: unknown) => {
+      installFakeDomGlobals(document);
+      return callback(input);
+    }
+  };
+
+  return page;
+}
+
+function createInvisibleLocator() {
+  return {
+    first() {
+      return this;
+    },
+    isVisible: async () => false,
+    innerText: async () => "",
+    getAttribute: async () => null,
+    evaluate: async () => "",
+    scrollIntoViewIfNeeded: async () => undefined,
+    click: async () => undefined
+  };
+}
+
+function createFakeProductAddLocator(card: FakeElement, button: FakeElement, click: () => Promise<void>) {
+  return {
+    first() {
+      return this;
+    },
+    isVisible: async () => true,
+    innerText: async () => button.innerText,
+    getAttribute: async (name: string) => button.getAttribute(name),
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("aria-labelledby") || source.includes("aria-describedby")) {
+        return [];
+      }
+
+      if (source.includes("hasDisabledState") || source.includes("HTMLButtonElement")) {
+        return false;
+      }
+
+      return card.innerText;
     },
     scrollIntoViewIfNeeded: async () => undefined,
     click
