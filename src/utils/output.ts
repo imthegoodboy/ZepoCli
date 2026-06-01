@@ -177,25 +177,55 @@ interface PublicJsonOptions {
 }
 
 function toPublicJsonValue(value: unknown, options: PublicJsonOptions = {}): unknown {
+  return toPublicJsonValueInternal(value, options, new WeakSet<object>());
+}
+
+function toPublicJsonValueInternal(
+  value: unknown,
+  options: PublicJsonOptions,
+  seen: WeakSet<object>
+): unknown {
   if (Array.isArray(value)) {
-    return value.map((child) => toPublicJsonValue(child, options));
+    if (seen.has(value)) {
+      return "[Circular]";
+    }
+
+    seen.add(value);
+    try {
+      return value.map((child) => toPublicJsonValueInternal(child, options, seen));
+    } finally {
+      seen.delete(value);
+    }
   }
 
   if (typeof value === "string") {
     return options.redactStrings ? redactSensitiveText(value) : value;
   }
 
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+
   if (!isPlainObject(value)) {
     return value;
   }
 
+  if (seen.has(value)) {
+    return "[Circular]";
+  }
+
+  seen.add(value);
   const output: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value)) {
-    if (key === "rawText" || key === "automationId") {
-      continue;
+  try {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "rawText" || key === "automationId") {
+        continue;
+      }
+      const publicKey = options.redactKeys ? redactSensitiveText(key) : key;
+      output[publicKey] = toPublicJsonValueInternal(child, options, seen);
     }
-    const publicKey = options.redactKeys ? redactSensitiveText(key) : key;
-    output[publicKey] = toPublicJsonValue(child, options);
+  } finally {
+    seen.delete(value);
   }
 
   return output;

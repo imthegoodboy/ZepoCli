@@ -323,6 +323,66 @@ describe("command JSON output", () => {
     expect(JSON.stringify(payload)).not.toContain("automationId");
   });
 
+  it("prints generic JSON output with cyclic values without leaking internal fields", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const root: Record<string, unknown> = {
+      keep: "workflow-state",
+      rawText: "raw Zepto page text",
+      automationId: 7,
+      count: BigInt(2)
+    };
+    const child: Record<string, unknown> = {
+      parent: root,
+      keepChild: true
+    };
+    const list: unknown[] = [child];
+    root.child = child;
+    root.list = list;
+    root.self = root;
+    list.push(list);
+
+    printJson(root);
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const serialized = JSON.stringify(payload);
+
+    expect(payload.keep).toBe("workflow-state");
+    expect(payload.count).toBe("2");
+    expect(serialized).toContain("[Circular]");
+    expect(serialized).not.toContain("raw Zepto page text");
+    expect(serialized).not.toContain("automationId");
+  });
+
+  it("prints JSON errors with cyclic values after redacting sensitive strings and keys", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const payload: Record<string, unknown> = {
+      type: "unexpected_error",
+      code: "unexpected_error",
+      message: "Order #ZEP1234 failed near C:/Users/parth/.zepo-live/report.json",
+      exitCode: 1,
+      "phone=%2B91+98765+43210": "OTP 123456",
+      amount: BigInt(4)
+    };
+    payload.self = payload;
+
+    printJsonError(payload as unknown as Parameters<typeof printJsonError>[0]);
+
+    const output = JSON.parse(String(error.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const serialized = JSON.stringify(output);
+
+    expect(serialized).toContain("[Circular]");
+    expect(serialized).toContain("phone=<redacted-phone>");
+    expect(serialized).toContain("<redacted-order-id>");
+    expect(serialized).toContain("<redacted-local-path>");
+    expect(serialized).toContain("<redacted-verification-code>");
+    expect(serialized).toContain("\"amount\":\"4\"");
+    expect(serialized).not.toContain("%2B91");
+    expect(serialized).not.toContain("98765");
+    expect(serialized).not.toContain("123456");
+    expect(serialized).not.toContain("ZEP1234");
+    expect(serialized).not.toContain("C:/Users");
+  });
+
   it("omits raw cart text and internal product automation ids from add JSON output", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
