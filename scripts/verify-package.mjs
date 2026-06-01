@@ -223,6 +223,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "stable failure error objects",
     "Use `--require-production-scope` for the final readiness gate",
     "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be explicitly requested and covered",
+    "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -406,6 +407,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     reportHelpResult.stdout.includes("workflow was requested and has passing coverage"),
     "expected installed verify:live:report production-scope request guidance"
+  );
+  assert(
+    reportHelpResult.stdout.includes("address-add, address-list, remove, clear, history, and reorder workflows"),
+    "expected installed verify:live:report production-scope focused-workflow exclusion guidance"
   );
 
   const invalidPhoneResult = runNpmResult(
@@ -1089,6 +1094,40 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       requireProductionScope: true
     }).issues.some((issue) => issue.code === "live_report_production_scope_missing"),
     "expected installed live report acceptance helper to reject unrequested production-scope evidence"
+  );
+  const extraProductionScopeLiveReport = {
+    ...productionScopeLiveReport,
+    requested: {
+      ...productionScopeLiveReport.requested,
+      history: true
+    },
+    steps: [
+      ...productionScopeLiveReport.steps,
+      {
+        name: "history",
+        command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+        exitCode: 0,
+        ok: true,
+        summary: {
+          orderCount: 1,
+          latestHasStatus: true,
+          latestHasEta: false
+        }
+      }
+    ]
+  };
+  extraProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(extraProductionScopeLiveReport.steps);
+  extraProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(extraProductionScopeLiveReport.steps);
+  extraProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    extraProductionScopeLiveReport.requested,
+    extraProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(extraProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true
+    }).issues.some((issue) => issue.code === "live_report_production_scope_extra"),
+    "expected installed live report acceptance helper to reject focused workflows in production-scope evidence"
   );
   const inconsistentAttemptedLiveReport = {
     ...acceptedLiveReport,
@@ -2037,6 +2076,26 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     unrequestedProductionScopeLiveReportResult.status === 1 &&
       unrequestedProductionScopeLiveReportResult.stderr.includes("live_report_production_scope_missing"),
     "expected installed live report validator to reject unrequested production-scope evidence"
+  );
+  const extraProductionScopeLiveReportPath = join(tempRoot, "extra-production-scope-live-verification-report.json");
+  writeFileSync(extraProductionScopeLiveReportPath, `${JSON.stringify(extraProductionScopeLiveReport, null, 2)}\n`);
+  const extraProductionScopeLiveReportResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--require-production-scope",
+      extraProductionScopeLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    extraProductionScopeLiveReportResult.status === 1 &&
+      extraProductionScopeLiveReportResult.stderr.includes("live_report_production_scope_extra"),
+    "expected installed live report validator to reject focused workflows in production-scope evidence"
   );
   const rejectedLiveReportPath = join(tempRoot, "rejected-live-verification-report.json");
   writeFileSync(

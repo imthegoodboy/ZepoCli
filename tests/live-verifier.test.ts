@@ -260,6 +260,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain(
       "core login/session, search, address, cart, checkout handoff, and track workflow was requested and has passing coverage"
     );
+    expect(result.stdout).toContain(
+      "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
+    );
   });
 
   it("waits for timed-out live commands to close before recording timeout failures", () => {
@@ -567,6 +570,37 @@ describe("live verification runner", () => {
         requireProductionScope: true
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_missing");
+    const extraProductionScope = productionScopeLiveReport();
+    extraProductionScope.steps = [
+      ...extraProductionScope.steps,
+      {
+        name: "history",
+        command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+        exitCode: 0,
+        ok: true,
+        summary: {
+          orderCount: 1,
+          latestHasStatus: true,
+          latestHasEta: false
+        }
+      }
+    ];
+    extraProductionScope.requested = {
+      ...extraProductionScope.requested,
+      history: true
+    };
+    extraProductionScope.attempted = summarizeLiveReportAttempts(extraProductionScope.steps);
+    extraProductionScope.coverage = summarizeLiveReportCoverage(extraProductionScope.steps);
+    extraProductionScope.missingCoverage = summarizeLiveReportMissingCoverage(
+      extraProductionScope.requested,
+      extraProductionScope.coverage
+    );
+    expect(
+      validateLiveReportAcceptance(extraProductionScope, {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_extra");
 
     const missingLiveSession = acceptedLiveReport();
     missingLiveSession.coverage = {

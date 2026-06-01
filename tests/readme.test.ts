@@ -187,6 +187,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be explicitly requested and covered"
     );
+    expect(readme).toContain(
+      "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
+    );
     expect(readme).toContain("Use `--max-age-minutes 1440` for the final readiness gate");
     expect(readme).toContain("stale saved reports are rejected");
     expect(readme).toContain(
