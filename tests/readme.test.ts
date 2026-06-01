@@ -10,6 +10,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Requires Node.js 20.19 or newer.");
     expect(readme).toContain("npm install -g zepocli");
     expect(readme).toContain("npx playwright install chromium");
+    expect(readme).toContain("npm ci --include=prod --include=dev");
     expect(readme).toContain("zepo doctor");
   });
 
@@ -240,6 +241,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("NPM_TOKEN");
     expect(readme).toContain("It does not run `verify:live`");
     expect(readme).toContain("npm run verify:secrets");
+    expect(readme).toContain("npm run verify:dependencies");
+    expect(readme).toContain("declared runtime packages load and required dev-tool binaries are present");
+    expect(readme).toContain("local npm config omitted dev dependencies");
     expect(readme).toContain("without printing the raw token");
     expect(readme).toContain("Never put npm tokens in the app, README, tests, or committed config.");
     expect(readme).toContain("GitHub Actions secret named `NPM_TOKEN`");

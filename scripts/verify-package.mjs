@@ -98,6 +98,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedCliPath = join(packageDir, "dist", "index.js");
   const installedCleanDistPath = join(packageDir, "scripts", "clean-dist.mjs");
   const installedNormalizeCliEntryPath = join(packageDir, "scripts", "normalize-cli-entry.mjs");
+  const installedVerifyDependenciesPath = join(packageDir, "scripts", "verify-dependencies.mjs");
   const installedVerifySecretsPath = join(packageDir, "scripts", "verify-secrets.mjs");
   const installedVerifyLiveReportPath = join(packageDir, "scripts", "verify-live-report.mjs");
   const installedEnvExamplePath = join(packageDir, ".env.example");
@@ -113,6 +114,10 @@ function verifyInstalledCliEntryContract(prefixDir) {
     "expected installed verify:secrets package script"
   );
   assert(
+    installedPackageJson.scripts?.["verify:dependencies"] === "node scripts/verify-dependencies.mjs",
+    "expected installed verify:dependencies package script"
+  );
+  assert(
     installedPackageJson.scripts?.["verify:live:report"] === "node scripts/verify-live-report.mjs",
     "expected installed verify:live:report package script"
   );
@@ -123,6 +128,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   assert(existsSync(installedCliPath), "expected installed dist/index.js");
   assert(existsSync(installedCleanDistPath), "expected installed clean-dist script");
   assert(existsSync(installedNormalizeCliEntryPath), "expected installed normalize-cli-entry script");
+  assert(existsSync(installedVerifyDependenciesPath), "expected installed verify-dependencies script");
   assert(existsSync(installedVerifySecretsPath), "expected installed verify-secrets script");
   assert(existsSync(installedVerifyLiveReportPath), "expected installed live report acceptance validator");
   assert(existsSync(installedEnvExamplePath), "expected installed .env.example");
@@ -175,6 +181,9 @@ function verifyInstalledReadmeContract(prefixDir) {
   const readme = readFileSync(readmePath, "utf8");
   for (const text of [
     "Requires Node.js 20.19 or newer.",
+    "npm ci --include=prod --include=dev",
+    "npm run verify:dependencies",
+    "declared runtime packages load and required dev-tool binaries are present",
     "zepo login",
     "zepo checkout",
     "cartPrecondition: \"non_empty_cart_verified\"",

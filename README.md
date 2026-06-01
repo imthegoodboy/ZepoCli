@@ -17,7 +17,7 @@ zepo doctor
 From this repository:
 
 ```bash
-npm install
+npm ci --include=prod --include=dev
 npm run build
 npm link
 npm run prepare:browsers
@@ -238,12 +238,13 @@ Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage
 
 ```bash
 npm run verify:secrets
+npm run verify:dependencies
 npm run check
 npm run verify:cli
 npm run verify:package
 ```
 
-`npm run verify:secrets` scans tracked and unignored project text for npm-token-shaped values without printing the raw token. `npm run check` runs that secret gate first, then builds, runs tests, verifies compiled CLI smoke behavior including the executable entry contract, runs both `doctor --skip-browser --json` and normal `doctor --json` browser-launch checks, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary through the same doctor checks, checks `node dist/index.js --help`, runs `npm audit --omit=dev`, and runs `npm pack --dry-run`.
+`npm run verify:secrets` scans tracked and unignored project text for npm-token-shaped values without printing the raw token. `npm run verify:dependencies` checks that declared runtime packages load and required dev-tool binaries are present, then tells you to run `npm ci --include=prod --include=dev` when local npm config omitted dev dependencies. `npm run check` runs those gates first, then builds, runs tests, verifies compiled CLI smoke behavior including the executable entry contract, runs both `doctor --skip-browser --json` and normal `doctor --json` browser-launch checks, installs the packed npm tarball into a disposable prefix, runs the installed `zepo` binary through the same doctor checks, checks `node dist/index.js --help`, runs `npm audit --omit=dev`, and runs `npm pack --dry-run`.
 
 ## Release
 
