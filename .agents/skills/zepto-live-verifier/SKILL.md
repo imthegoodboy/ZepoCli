@@ -40,7 +40,7 @@ npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-sco
 ```
 
 `--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
-`--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope`.
+`--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope --max-age-minutes 1440`.
 
 Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 
@@ -50,11 +50,11 @@ After a human-controlled run, validate the saved report:
 
 ```bash
 npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json
-npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json
+npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json
 ```
 
 `verify:live:report` does not contact Zepto or prove a fresh run happened. It only checks the saved report contract before agents treat the report as acceptance evidence.
-Use `--require-production-scope` for final readiness so a valid partial report cannot be mistaken for core production workflow proof.
+Use `--require-production-scope` for final readiness so a valid partial report cannot be mistaken for core production workflow proof. Use `--max-age-minutes 1440` for final readiness so stale saved reports cannot be reused as current evidence.
 
 Optional focused passes:
 
@@ -83,7 +83,7 @@ The live report is acceptable only when:
 
 - `ok` is true.
 - `version` matches `package.json`.
-- `generatedAt` is a valid non-future ISO timestamp, `dataDir`/`reportPath` use redacted markers, and `note` matches the runner literal.
+- `generatedAt` is a valid non-future ISO timestamp, satisfies any `--max-age-minutes` freshness window used for acceptance, `dataDir`/`reportPath` use redacted markers, and `note` matches the runner literal.
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - Stored step command strings match the redacted command contract.
 - Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.
@@ -112,6 +112,6 @@ The live report is acceptable only when:
 - `add` has both selected product evidence and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.
 - `checkout` preserves `paymentStatus: "not_observed_by_zepocli"`, `orderPlacement: "not_confirmed_by_zepocli"`, and `orderStatusCommand: "zepo track"`.
-- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass.
+- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass. With `--max-age-minutes`, stale reports must be rejected.
 
 If any step fails with a stable `live_*_contract_mismatch`, `live_command_timeout`, `command_failed`, or `live_verification_incomplete` code, the live workflow is not fully verified yet.

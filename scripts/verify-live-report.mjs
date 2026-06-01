@@ -6,6 +6,8 @@ import { validateLiveReportAcceptance } from "./live-report-utils.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
+const MIN_REPORT_MAX_AGE_MINUTES = 1;
+const MAX_REPORT_MAX_AGE_MINUTES = 7 * 24 * 60;
 const options = parseArgs(process.argv.slice(2));
 
 if (options.help) {
@@ -29,6 +31,7 @@ try {
 
 const result = validateLiveReportAcceptance(report, {
   expectedVersion: packageJson.version,
+  maxAgeMs: options.maxAgeMs,
   requireProductionScope: options.requireProductionScope
 });
 
@@ -45,11 +48,13 @@ console.log("pass live verification report acceptance");
 function parseArgs(args) {
   const parsed = {
     help: false,
+    maxAgeMs: undefined,
     requireProductionScope: false,
     reportPath: ""
   };
 
-  for (const arg of args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
     if (arg === "--help" || arg === "-h") {
       parsed.help = true;
       continue;
@@ -57,6 +62,27 @@ function parseArgs(args) {
 
     if (arg === "--require-production-scope") {
       parsed.requireProductionScope = true;
+      continue;
+    }
+
+    if (arg === "--max-age-minutes") {
+      const value = args[++index];
+      if (!value || value.startsWith("-")) {
+        return {
+          ...parsed,
+          error: "--max-age-minutes requires a value."
+        };
+      }
+
+      const maxAgeMinutes = parseMaxAgeMinutes(value);
+      if (maxAgeMinutes === undefined) {
+        return {
+          ...parsed,
+          error: `--max-age-minutes must be an integer from ${MIN_REPORT_MAX_AGE_MINUTES} to ${MAX_REPORT_MAX_AGE_MINUTES}.`
+        };
+      }
+
+      parsed.maxAgeMs = maxAgeMinutes * 60 * 1_000;
       continue;
     }
 
@@ -87,16 +113,35 @@ function parseArgs(args) {
   return parsed;
 }
 
+function parseMaxAgeMinutes(value) {
+  if (!/^\d+$/.test(value)) {
+    return undefined;
+  }
+
+  const minutes = Number.parseInt(value, 10);
+  if (
+    !Number.isInteger(minutes) ||
+    minutes < MIN_REPORT_MAX_AGE_MINUTES ||
+    minutes > MAX_REPORT_MAX_AGE_MINUTES
+  ) {
+    return undefined;
+  }
+
+  return minutes;
+}
+
 function printHelp() {
-  console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] <live-verification-report.json>
+  console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>] <live-verification-report.json>
 
 Validates that a human-controlled verify:live report is acceptable evidence for the requested scope.
 Use --require-production-scope for final readiness: it also requires browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage.
+Use --max-age-minutes for final readiness so old saved reports cannot be reused as current evidence.
 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
 - package version matches
 - ok is true
 - non-future generatedAt, data/report path metadata, and the fixed report note match the sanitized runner shape
+- when --max-age-minutes is used, generatedAt is not older than the requested freshness window
 - report fields match the accepted schema
 - requested, attempted, coverage, and missingCoverage are complete boolean capability maps
 - attempted and coverage summaries match the steps array
@@ -118,5 +163,5 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - when --require-production-scope is used, the core login/session, search, address, cart, checkout handoff, and track workflow has passing coverage
 
 Example:
-  npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json`);
+  npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json`);
 }

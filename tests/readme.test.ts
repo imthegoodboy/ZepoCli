@@ -162,10 +162,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("writes the same sanitized partial report when possible");
     expect(readme).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(readme).toContain(
-      "npm --silent run verify:live:report -- --require-production-scope ./.zepo-live/live-verification-report.json"
+      "npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json"
     );
     expect(readme).toContain("`verify:live:report` does not contact Zepto or prove a fresh run happened");
     expect(readme).toContain("sanitized non-future `generatedAt` plus data/report path metadata");
+    expect(readme).toContain("optional `--max-age-minutes` freshness");
     expect(readme).toContain("the fixed runner note");
     expect(readme).toContain("accepted report schema");
     expect(readme).toContain("complete boolean capability summaries");
@@ -183,6 +184,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("Use `--require-production-scope` for the final readiness gate");
+    expect(readme).toContain("Use `--max-age-minutes 1440` for the final readiness gate");
+    expect(readme).toContain("stale saved reports are rejected");
     expect(readme).toContain("live session, search, address selection, add, cart, checkout handoff, and track coverage");
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
