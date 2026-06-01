@@ -222,7 +222,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` for the final readiness gate",
-    "live session, search, address selection, add, cart, checkout handoff, and track coverage",
+    "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be explicitly requested and covered",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
     "Live report failures use stable `error.code` values.",
@@ -402,6 +402,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     reportHelpResult.stdout.includes("Use --max-age-minutes for final readiness"),
     "expected installed verify:live:report freshness guidance"
+  );
+  assert(
+    reportHelpResult.stdout.includes("workflow was requested and has passing coverage"),
+    "expected installed verify:live:report production-scope request guidance"
   );
 
   const invalidPhoneResult = runNpmResult(
@@ -1067,6 +1071,24 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       requireProductionScope: true
     }).accepted === true,
     "expected installed live report acceptance helper to accept production-scope report evidence"
+  );
+  const unrequestedProductionScopeLiveReport = {
+    ...productionScopeLiveReport,
+    requested: {
+      ...productionScopeLiveReport.requested,
+      search: false
+    }
+  };
+  unrequestedProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    unrequestedProductionScopeLiveReport.requested,
+    unrequestedProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(unrequestedProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true
+    }).issues.some((issue) => issue.code === "live_report_production_scope_missing"),
+    "expected installed live report acceptance helper to reject unrequested production-scope evidence"
   );
   const inconsistentAttemptedLiveReport = {
     ...acceptedLiveReport,
@@ -1989,6 +2011,32 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     productionScopeLiveReportResult.stdout.includes("pass live verification report acceptance"),
     "expected installed live report validator to accept production-scope report evidence"
+  );
+  const unrequestedProductionScopeLiveReportPath = join(
+    tempRoot,
+    "unrequested-production-scope-live-verification-report.json"
+  );
+  writeFileSync(
+    unrequestedProductionScopeLiveReportPath,
+    `${JSON.stringify(unrequestedProductionScopeLiveReport, null, 2)}\n`
+  );
+  const unrequestedProductionScopeLiveReportResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--require-production-scope",
+      unrequestedProductionScopeLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    unrequestedProductionScopeLiveReportResult.status === 1 &&
+      unrequestedProductionScopeLiveReportResult.stderr.includes("live_report_production_scope_missing"),
+    "expected installed live report validator to reject unrequested production-scope evidence"
   );
   const rejectedLiveReportPath = join(tempRoot, "rejected-live-verification-report.json");
   writeFileSync(

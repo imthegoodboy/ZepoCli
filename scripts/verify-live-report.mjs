@@ -134,7 +134,7 @@ function printHelp() {
   console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>] <live-verification-report.json>
 
 Validates that a human-controlled verify:live report is acceptable evidence for the requested scope.
-Use --require-production-scope for final readiness: it also requires browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage.
+Use --require-production-scope for final readiness: it also requires browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be requested and covered.
 Use --max-age-minutes for final readiness so old saved reports cannot be reused as current evidence.
 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
@@ -160,7 +160,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - requested capabilities have passing coverage
 - missingCoverage has no true values
 - required step summaries are present for browser preflight, live session, checkout handoff, and requested workflows
-- when --require-production-scope is used, the core login/session, search, address, cart, checkout handoff, and track workflow has passing coverage
+- when --require-production-scope is used, the core login/session, search, address, cart, checkout handoff, and track workflow was requested and has passing coverage
 
 Example:
   npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json`);

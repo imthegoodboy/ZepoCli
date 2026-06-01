@@ -112,6 +112,6 @@ The live report is acceptable only when:
 - `add` has both selected product evidence and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.
 - `checkout` preserves `paymentStatus: "not_observed_by_zepocli"`, `orderPlacement: "not_confirmed_by_zepocli"`, and `orderStatusCommand: "zepo track"`.
-- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass. With `--max-age-minutes`, stale reports must be rejected.
+- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track must be explicitly requested and have passing coverage. With `--max-age-minutes`, stale reports must be rejected.
 
 If any step fails with a stable `live_*_contract_mismatch`, `live_command_timeout`, `command_failed`, or `live_verification_incomplete` code, the live workflow is not fully verified yet.

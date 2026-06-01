@@ -403,8 +403,8 @@ export function validateLiveReportAcceptance(report, options = {}) {
     }
   }
 
-  if (options.requireProductionScope === true && isObject(coverage)) {
-    validateLiveReportProductionScopeCoverage(coverage, issues);
+  if (options.requireProductionScope === true && isObject(requested) && isObject(coverage)) {
+    validateLiveReportProductionScopeCoverage(requested, coverage, issues);
   }
 
   if (options.maxAgeMs !== undefined) {
@@ -417,11 +417,11 @@ export function validateLiveReportAcceptance(report, options = {}) {
   };
 }
 
-function validateLiveReportProductionScopeCoverage(coverage, issues) {
-  if (!LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES.every((key) => coverage[key] === true)) {
+function validateLiveReportProductionScopeCoverage(requested, coverage, issues) {
+  if (!LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES.every((key) => requested[key] === true && coverage[key] === true)) {
     issues.push({
       code: "live_report_production_scope_missing",
-      message: "Live report does not prove the required production workflow coverage."
+      message: "Live report does not prove the requested and passing production workflow coverage."
     });
   }
 }

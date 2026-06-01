@@ -65,6 +65,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>");
       expect(guidance).toContain("optional `--max-age-minutes` freshness");
       expect(guidance).toContain("stale saved reports are rejected");
+      expect(guidance).toContain(
+        "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track must be explicitly requested and covered"
+      );
       expect(guidance).toContain("The report validator does not contact Zepto or prove a fresh run happened");
       expect(guidance).toContain("Playwright Chromium launches");
       expect(guidance).toContain("require `browserAutomation.ready === true` and a passing `Playwright Chromium` check");
@@ -159,7 +162,9 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Use `--require-production-scope` for final readiness");
     expect(liveVerifierSkill).toContain("Use `--max-age-minutes 1440` for final readiness");
     expect(liveVerifierSkill).toContain("With `--max-age-minutes`, stale reports must be rejected");
-    expect(liveVerifierSkill).toContain("browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage must all pass");
+    expect(liveVerifierSkill).toContain(
+      "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track must be explicitly requested and have passing coverage"
+    );
     expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --production-scope --search milk --address home --add");
     expect(liveVerifierSkill).toContain("Do not combine `--clear` with `--checkout`");
