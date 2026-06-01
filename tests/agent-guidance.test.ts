@@ -49,7 +49,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
       expect(guidance).toContain("npm-token-shaped values");
       expect(guidance).toContain("doctor --json");
-      expect(guidance).toContain("2026-05-31");
+      expect(guidance).toContain("2026-06-02");
       expect(guidance).toContain("Privacy Notice version 1.1");
       expect(guidance).toContain("Last updated: 17th June 2025");
       expect(guidance).toContain("passwords and payment instrument details as sensitive personal information");
