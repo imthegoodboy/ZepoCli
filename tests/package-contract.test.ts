@@ -235,11 +235,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("Safe-click checks inspect visible text");
-    expect(verifier).toContain("Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+    expect(verifier).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token/password/secret URL parameters, and local-path values");
     expect(verifier).toContain("npm-token-shaped values");
     expect(verifier).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
-    expect(verifier).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+    expect(verifier).toContain("Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");
     expect(verifier).toContain("`checkout and pay`, or amount-bearing pay text");
     expect(verifier).toContain("unrelated cart/checkout/order/bill/payment text");

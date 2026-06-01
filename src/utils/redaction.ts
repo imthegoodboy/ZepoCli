@@ -87,7 +87,9 @@ export function redactSensitiveValue(value: unknown): unknown {
     return value;
   }
 
-  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, redactSensitiveValue(child)]));
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [redactSensitiveText(key), redactSensitiveValue(child)])
+  );
 }
 
 function redactSensitiveError(error: Error): Error {
@@ -103,7 +105,7 @@ function redactSensitiveError(error: Error): Error {
   }
 
   for (const [key, child] of Object.entries(error)) {
-    (redacted as Error & Record<string, unknown>)[key] = redactSensitiveValue(child);
+    (redacted as Error & Record<string, unknown>)[redactSensitiveText(key)] = redactSensitiveValue(child);
   }
 
   return redacted;

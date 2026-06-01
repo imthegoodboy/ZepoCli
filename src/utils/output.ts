@@ -28,7 +28,7 @@ export function printJsonError(error: JsonError): void {
       toPublicJsonValue({
         ok: false,
         error
-      }, { redactStrings: true }),
+      }, { redactStrings: true, redactKeys: true }),
       null,
       2
     )
@@ -173,6 +173,7 @@ function toPublicOrderSnapshot(order: OrderSnapshot): Omit<OrderSnapshot, "rawTe
 
 interface PublicJsonOptions {
   redactStrings?: boolean;
+  redactKeys?: boolean;
 }
 
 function toPublicJsonValue(value: unknown, options: PublicJsonOptions = {}): unknown {
@@ -193,7 +194,8 @@ function toPublicJsonValue(value: unknown, options: PublicJsonOptions = {}): unk
     if (key === "rawText" || key === "automationId") {
       continue;
     }
-    output[key] = toPublicJsonValue(child, options);
+    const publicKey = options.redactKeys ? redactSensitiveText(key) : key;
+    output[publicKey] = toPublicJsonValue(child, options);
   }
 
   return output;

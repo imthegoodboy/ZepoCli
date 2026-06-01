@@ -243,6 +243,33 @@ describe("command JSON output", () => {
     expect(serialized).not.toContain("report.json");
   });
 
+  it("redacts sensitive-looking keys from JSON errors", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    printJsonError({
+      type: "unexpected_error",
+      code: "unexpected_error",
+      message: "boom",
+      exitCode: 1,
+      "token=raw-token-123": "token key",
+      nested: {
+        "C:/Users/parth/.zepo-live/report.json": "path key",
+        "phone=%2B91+98765+43210": "phone key"
+      }
+    } as unknown as Parameters<typeof printJsonError>[0]);
+
+    const payload = JSON.parse(String(error.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const serialized = JSON.stringify(payload);
+
+    expect(serialized).toContain("token=<redacted-auth-token>");
+    expect(serialized).toContain("<redacted-local-path>");
+    expect(serialized).toContain("phone=<redacted-phone>");
+    expect(serialized).not.toContain("raw-token-123");
+    expect(serialized).not.toContain("C:/Users");
+    expect(serialized).not.toContain("%2B91");
+    expect(serialized).not.toContain("98765");
+  });
+
   it("omits internal automation ids from product JSON output", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
 

@@ -38,9 +38,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain('cartPrecondition: "non_empty_cart_verified"');
       expect(guidance).toContain("Human spinner/status text");
       expect(guidance).toContain("redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+      expect(guidance).toContain("JSON error object keys");
       expect(guidance).toContain("same sensitive-looking value redaction as terminal errors");
       expect(guidance).toContain("auth/session/token/password/secret URL parameters, and local-path values");
-      expect(guidance).toContain("Persistent runtime log object values, Error messages/stacks, and message strings should use the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
+      expect(guidance).toContain("Persistent runtime log object keys/values, Error messages/stacks, and message strings should use the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
       expect(guidance).toContain("auth/session/token/password/secret URL-parameter, and local-path redaction rules");
       expect(guidance).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
       expect(guidance).toContain("npm-token-shaped values");
