@@ -85,7 +85,7 @@ When `--json` is requested and a command fails, errors are emitted as JSON on st
 }
 ```
 
-Interactive prompt UI is written to stderr so stdout stays reserved for command results and machine-readable JSON. Product, cart, and order JSON output includes structured fields only; raw Zepto page text and internal automation IDs are kept internal and are not emitted for agents to scrape. Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle, auth/session/token URL parameters, and local-path values before printing, including URL/query-string encoded forms and standalone percent-encoded fragments of those values. They also redact npm-token-shaped values.
+Interactive prompt UI is written to stderr so stdout stays reserved for command results and machine-readable JSON. Product, cart, and order JSON output includes structured fields only; raw Zepto page text and internal automation IDs are kept internal and are not emitted for agents to scrape. Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle, auth/session/token/password/secret URL parameters, and local-path values before printing, including URL/query-string encoded forms and standalone percent-encoded fragments of those values. They also redact npm-token-shaped values.
 
 ## First Run
 
@@ -203,7 +203,7 @@ Stored data includes:
 - Playwright auth state
 - Persistent Chromium browser profile data for Zepto session continuity
 - SQLite metadata for sessions, search counts, cart snapshots, addresses, and order snapshots. Search cache stores redacted query text only. Cart and order caches persist parsed fields only; raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots.
-- Log file for debugging; Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle, auth/session/token URL-parameter, and local-path rules used for terminal errors, including URL/query-string encoded forms and standalone percent-encoded fragments of those values. They also redact npm-token-shaped values.
+- Log file for debugging; Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle, auth/session/token/password/secret URL-parameter, and local-path rules used for terminal errors, including URL/query-string encoded forms and standalone percent-encoded fragments of those values. They also redact npm-token-shaped values.
 - Debug HTML/screenshot artifacts when `--debug` is used and non-account browser automation fails
 
 Debug HTML/screenshot artifacts are disabled for account-dependent browser flows such as live session checks, login, cart, address, checkout, orders, and reorder so OTP, address, cart, order, or payment screens are not stored locally.

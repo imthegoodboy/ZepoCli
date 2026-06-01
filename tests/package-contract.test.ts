@@ -236,11 +236,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("Safe-click checks inspect visible text");
     expect(verifier).toContain("Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
-    expect(verifier).toContain("auth/session/token URL parameters, and local-path values");
+    expect(verifier).toContain("auth/session/token/password/secret URL parameters, and local-path values");
     expect(verifier).toContain("npm-token-shaped values");
     expect(verifier).toContain("including URL/query-string encoded forms and standalone percent-encoded fragments of those values");
     expect(verifier).toContain("Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
-    expect(verifier).toContain("auth/session/token URL-parameter, and local-path rules");
+    expect(verifier).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");
     expect(verifier).toContain("`checkout and pay`, or amount-bearing pay text");
     expect(verifier).toContain("unrelated cart/checkout/order/bill/payment text");
     expect(verifier).toContain("expected installed promotional checkout label to be rejected");
@@ -462,6 +462,7 @@ describe("package CLI contract", () => {
     expect(runtime).toContain("redactSensitiveValue");
     expect(redaction).toContain("redactSensitiveError");
     expect(redaction).toContain("redactEncodedSensitiveParameterValues");
+    expect(redaction).toContain("password|passwd|passphrase|pwd|secret|credential");
     expect(redaction).toContain("<redacted-npm-token>");
     expect(runtime).toContain("formatters");
     expect(runtime).toContain("hooks");

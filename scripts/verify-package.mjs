@@ -195,11 +195,11 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Last updated: 17th June 2025",
     "passwords and payment instrument details as sensitive personal information",
     "Human spinner/status text, human error text, and JSON error text redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
-    "auth/session/token URL parameters, and local-path values",
+    "auth/session/token/password/secret URL parameters, and local-path values",
     "npm-token-shaped values",
     "including URL/query-string encoded forms and standalone percent-encoded fragments of those values",
     "Persistent log object values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
-    "auth/session/token URL-parameter, and local-path rules",
+    "auth/session/token/password/secret URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
     'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
@@ -2447,7 +2447,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live console stderr redaction to omit URL-encoded workflow queries"
   );
   const encodedSensitiveLiveStderr = redactLiveConsoleText(
-    "Debug URL: https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&file=C%3A%5CUsers%5Cparth%5C.zepo-live%5Ctrace.txt",
+    "Debug URL: https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&password=hunter2&secret=client-secret-123&file=C%3A%5CUsers%5Cparth%5C.zepo-live%5Ctrace.txt",
     []
   );
   assert(
@@ -2457,25 +2457,31 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       encodedSensitiveLiveStderr.includes("upi=<redacted-payment-handle>") &&
       encodedSensitiveLiveStderr.includes("token=<redacted-auth-token>") &&
       encodedSensitiveLiveStderr.includes("access_token=<redacted-auth-token>") &&
+      encodedSensitiveLiveStderr.includes("password=<redacted-auth-token>") &&
+      encodedSensitiveLiveStderr.includes("secret=<redacted-auth-token>") &&
       encodedSensitiveLiveStderr.includes("file=<redacted-local-path>") &&
       !encodedSensitiveLiveStderr.includes("%2B91") &&
       !encodedSensitiveLiveStderr.includes("4111%201111") &&
       !encodedSensitiveLiveStderr.includes("abc%40upi") &&
       !encodedSensitiveLiveStderr.includes("raw-token-123") &&
       !encodedSensitiveLiveStderr.includes("abc.def.ghi") &&
+      !encodedSensitiveLiveStderr.includes("hunter2") &&
+      !encodedSensitiveLiveStderr.includes("client-secret-123") &&
       !encodedSensitiveLiveStderr.includes("C%3A%5CUsers"),
     "expected installed live console stderr redaction to omit URL-encoded sensitive values"
   );
   const encodedSensitiveBlobLiveStderr = redactLiveConsoleText(
-    "Encoded callback https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26card%3D4111%201111%201111%201111%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt and C%3A%2FUsers%2Fparth%2F.zepo-live%2Freport.json",
+    "Encoded callback https%3A%2F%2Fexample.test%2Fcallback%3Fphone%3D%2B91%2098765%2043210%26card%3D4111%201111%201111%201111%26password%3Dhunter2%26file%3DC%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt and C%3A%2FUsers%2Fparth%2F.zepo-live%2Freport.json",
     []
   );
   assert(
     encodedSensitiveBlobLiveStderr.includes("phone=<redacted-phone>") &&
       encodedSensitiveBlobLiveStderr.includes("card=<redacted-payment-number>") &&
+      encodedSensitiveBlobLiveStderr.includes("password=<redacted-auth-token>") &&
       encodedSensitiveBlobLiveStderr.includes("file=<redacted-local-path>") &&
       encodedSensitiveBlobLiveStderr.includes("<redacted-local-path>") &&
       !encodedSensitiveBlobLiveStderr.includes("https%3A%2F%2Fexample.test") &&
+      !encodedSensitiveBlobLiveStderr.includes("hunter2") &&
       !encodedSensitiveBlobLiveStderr.includes("C%3A%2FUsers") &&
       !encodedSensitiveBlobLiveStderr.includes("report.json") &&
       !encodedSensitiveBlobLiveStderr.includes("trace.txt"),

@@ -1790,14 +1790,14 @@ function redactGenericPlainSensitiveText(value) {
 
 function redactEncodedSensitiveParameterValues(value) {
   return String(value ?? "").replace(
-    /\b((?:phone|mobile|tel|otp|pin|cvv|cvc|card|payment|upi|auth|session|token|jwt|access[-_]?token|refresh[-_]?token|id[-_]?token|path|file|data[-_]?dir|report(?:[-_]?path)?)\s*(?:=|%3[Dd]))([^&\s"'<>]+)/gi,
+    /\b((?:phone|mobile|tel|otp|pin|cvv|cvc|card|payment|upi|auth|session|password|passwd|passphrase|pwd|secret|credential|token|jwt|access[-_]?token|refresh[-_]?token|id[-_]?token|path|file|data[-_]?dir|report(?:[-_]?path)?)\s*(?:=|%3[Dd]))([^&\s"'<>]+)/gi,
     (match, prefix, encodedValue) => {
       const decoded = decodeQueryValue(encodedValue);
       if (!decoded) {
         return match;
       }
 
-      if (/(?:auth|session|token|jwt)/i.test(prefix)) {
+      if (/(?:auth|session|password|passwd|passphrase|pwd|secret|credential|token|jwt)/i.test(prefix)) {
         return `${prefix}<redacted-auth-token>`;
       }
 
