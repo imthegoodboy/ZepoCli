@@ -255,7 +255,8 @@ describe("live verification runner", () => {
       "Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>]"
     );
     expect(result.stdout).toContain("Use --require-production-scope for final readiness");
-    expect(result.stdout).toContain("Use --max-age-minutes for final readiness");
+    expect(result.stdout).toContain("requires --max-age-minutes");
+    expect(result.stdout).toContain("Use --max-age-minutes so old saved reports cannot be reused as current evidence");
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
     expect(result.stdout).toContain(
       "core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage"
@@ -263,6 +264,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
     );
+    expect(result.stdout).toContain("--max-age-minutes is also used so the report is fresh evidence");
   });
 
   it("waits for timed-out live commands to close before recording timeout failures", () => {
@@ -540,21 +542,30 @@ describe("live verification runner", () => {
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_max_age_invalid");
     expect(
-      validateLiveReportAcceptance(acceptedLiveReport(), {
+      validateLiveReportAcceptance(acceptedLiveReport({ generatedAt: new Date().toISOString() }), {
         expectedVersion: packageJson.version,
-        requireProductionScope: true
+        requireProductionScope: true,
+        maxAgeMs: 60_000
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_missing");
     expect(
-      validateLiveReportAcceptance(productionScopeLiveReport(), {
+      validateLiveReportAcceptance(productionScopeLiveReport({ generatedAt: new Date().toISOString() }), {
         expectedVersion: packageJson.version,
-        requireProductionScope: true
+        requireProductionScope: true,
+        maxAgeMs: 60_000
       })
     ).toEqual({
       accepted: true,
       issues: []
     });
+    expect(
+      validateLiveReportAcceptance(productionScopeLiveReport({ generatedAt: new Date().toISOString() }), {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_freshness_missing");
     const unrequestedProductionScope = productionScopeLiveReport({
+      generatedAt: new Date().toISOString(),
       requested: {
         ...productionScopeLiveReport().requested,
         search: false
@@ -567,10 +578,11 @@ describe("live verification runner", () => {
     expect(
       validateLiveReportAcceptance(unrequestedProductionScope, {
         expectedVersion: packageJson.version,
-        requireProductionScope: true
+        requireProductionScope: true,
+        maxAgeMs: 60_000
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_missing");
-    const extraProductionScope = productionScopeLiveReport();
+    const extraProductionScope = productionScopeLiveReport({ generatedAt: new Date().toISOString() });
     extraProductionScope.steps = [
       ...extraProductionScope.steps,
       {
@@ -598,11 +610,13 @@ describe("live verification runner", () => {
     expect(
       validateLiveReportAcceptance(extraProductionScope, {
         expectedVersion: packageJson.version,
-        requireProductionScope: true
+        requireProductionScope: true,
+        maxAgeMs: 60_000
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_extra");
 
     const emptyCartProductionScope = productionScopeLiveReport({
+      generatedAt: new Date().toISOString(),
       steps: productionScopeLiveReport().steps.map((step) =>
         step.name === "cart"
           ? {
@@ -624,7 +638,8 @@ describe("live verification runner", () => {
     expect(
       validateLiveReportAcceptance(emptyCartProductionScope, {
         expectedVersion: packageJson.version,
-        requireProductionScope: true
+        requireProductionScope: true,
+        maxAgeMs: 60_000
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_cart_empty");
 
@@ -1627,21 +1642,41 @@ describe("live verification runner", () => {
       expect(freshPass.stdout).toContain("pass live verification report acceptance");
       expect(`${freshPass.stdout}\n${freshPass.stderr}`).not.toContain(tempDir);
 
-      const partialScopeFail = spawnSync(process.execPath, [reportScriptPath, "--require-production-scope", reportPath], {
-        cwd: rootDir,
-        encoding: "utf8"
-      });
+      const partialScopeFail = spawnSync(
+        process.execPath,
+        [reportScriptPath, "--require-production-scope", "--max-age-minutes", "60", reportPath],
+        {
+          cwd: rootDir,
+          encoding: "utf8"
+        }
+      );
 
       expect(partialScopeFail.status).toBe(1);
       expect(partialScopeFail.stderr).toContain("live_report_production_scope_missing");
       expect(`${partialScopeFail.stdout}\n${partialScopeFail.stderr}`).not.toContain(tempDir);
 
       const productionReportPath = join(tempDir, "production-live-verification-report.json");
-      writeFileSync(productionReportPath, `${JSON.stringify(productionScopeLiveReport(), null, 2)}\n`);
+      writeFileSync(
+        productionReportPath,
+        `${JSON.stringify(productionScopeLiveReport({ generatedAt: new Date().toISOString() }), null, 2)}\n`
+      );
+
+      const productionFreshnessFail = spawnSync(
+        process.execPath,
+        [reportScriptPath, "--require-production-scope", productionReportPath],
+        {
+          cwd: rootDir,
+          encoding: "utf8"
+        }
+      );
+
+      expect(productionFreshnessFail.status).toBe(1);
+      expect(productionFreshnessFail.stderr).toContain("live_report_production_scope_freshness_missing");
+      expect(`${productionFreshnessFail.stdout}\n${productionFreshnessFail.stderr}`).not.toContain(tempDir);
 
       const productionPass = spawnSync(
         process.execPath,
-        [reportScriptPath, "--require-production-scope", productionReportPath],
+        [reportScriptPath, "--require-production-scope", "--max-age-minutes", "60", productionReportPath],
         {
           cwd: rootDir,
           encoding: "utf8"

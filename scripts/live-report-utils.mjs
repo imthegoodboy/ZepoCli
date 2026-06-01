@@ -428,6 +428,13 @@ export function validateLiveReportAcceptance(report, options = {}) {
     validateLiveReportProductionScopeCartState(steps, issues);
   }
 
+  if (options.requireProductionScope === true && options.maxAgeMs === undefined) {
+    issues.push({
+      code: "live_report_production_scope_freshness_missing",
+      message: "Production-scope live report acceptance requires a max age freshness window."
+    });
+  }
+
   if (options.maxAgeMs !== undefined) {
     validateLiveReportFreshness(report, options.maxAgeMs, issues);
   }

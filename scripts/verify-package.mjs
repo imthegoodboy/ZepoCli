@@ -205,7 +205,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "sanitized non-future `generatedAt` plus data/report path metadata, optional `--max-age-minutes` freshness",
     "the fixed runner note",
-    "Use `--max-age-minutes 1440` for the final readiness gate",
+    "Production-scope acceptance rejects missing freshness windows",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -221,7 +221,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "login session evidence",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
-    "Use `--require-production-scope` for the final readiness gate",
+    "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
     "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
@@ -401,7 +401,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live:report max-age option"
   );
   assert(
-    reportHelpResult.stdout.includes("Use --max-age-minutes for final readiness"),
+    reportHelpResult.stdout.includes("requires --max-age-minutes") &&
+      reportHelpResult.stdout.includes("Use --max-age-minutes so old saved reports cannot be reused"),
     "expected installed verify:live:report freshness guidance"
   );
   assert(
@@ -1037,6 +1038,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     ),
     steps: productionScopeLiveReportSteps
   };
+  const freshProductionScopeLiveReport = {
+    ...productionScopeLiveReport,
+    generatedAt: new Date().toISOString()
+  };
   assert(
     validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept complete report evidence"
@@ -1068,23 +1073,38 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report acceptance helper to reject stale report evidence"
   );
   assert(
-    validateLiveReportAcceptance(acceptedLiveReport, {
-      expectedVersion: packageJson.version,
-      requireProductionScope: true
-    }).issues.some((issue) => issue.code === "live_report_production_scope_missing"),
+    validateLiveReportAcceptance(
+      {
+        ...acceptedLiveReport,
+        generatedAt: new Date().toISOString()
+      },
+      {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true,
+        maxAgeMs: 60_000
+      }
+    ).issues.some((issue) => issue.code === "live_report_production_scope_missing"),
     "expected installed live report acceptance helper to reject partial reports for production scope"
   );
   assert(
-    validateLiveReportAcceptance(productionScopeLiveReport, {
+    validateLiveReportAcceptance(freshProductionScopeLiveReport, {
       expectedVersion: packageJson.version,
-      requireProductionScope: true
+      requireProductionScope: true,
+      maxAgeMs: 60_000
     }).accepted === true,
     "expected installed live report acceptance helper to accept production-scope report evidence"
   );
+  assert(
+    validateLiveReportAcceptance(freshProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true
+    }).issues.some((issue) => issue.code === "live_report_production_scope_freshness_missing"),
+    "expected installed live report acceptance helper to reject production-scope evidence without freshness"
+  );
   const unrequestedProductionScopeLiveReport = {
-    ...productionScopeLiveReport,
+    ...freshProductionScopeLiveReport,
     requested: {
-      ...productionScopeLiveReport.requested,
+      ...freshProductionScopeLiveReport.requested,
       search: false
     }
   };
@@ -1095,18 +1115,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     validateLiveReportAcceptance(unrequestedProductionScopeLiveReport, {
       expectedVersion: packageJson.version,
-      requireProductionScope: true
+      requireProductionScope: true,
+      maxAgeMs: 60_000
     }).issues.some((issue) => issue.code === "live_report_production_scope_missing"),
     "expected installed live report acceptance helper to reject unrequested production-scope evidence"
   );
   const extraProductionScopeLiveReport = {
-    ...productionScopeLiveReport,
+    ...freshProductionScopeLiveReport,
     requested: {
-      ...productionScopeLiveReport.requested,
+      ...freshProductionScopeLiveReport.requested,
       history: true
     },
     steps: [
-      ...productionScopeLiveReport.steps,
+      ...freshProductionScopeLiveReport.steps,
       {
         name: "history",
         command: "zepo --data-dir <redacted-data-dir> --visible history --json",
@@ -1129,13 +1150,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     validateLiveReportAcceptance(extraProductionScopeLiveReport, {
       expectedVersion: packageJson.version,
-      requireProductionScope: true
+      requireProductionScope: true,
+      maxAgeMs: 60_000
     }).issues.some((issue) => issue.code === "live_report_production_scope_extra"),
     "expected installed live report acceptance helper to reject focused workflows in production-scope evidence"
   );
   const emptyCartProductionScopeLiveReport = {
-    ...productionScopeLiveReport,
-    steps: productionScopeLiveReport.steps.map((step) =>
+    ...freshProductionScopeLiveReport,
+    steps: freshProductionScopeLiveReport.steps.map((step) =>
       step.name === "cart"
         ? {
             ...step,
@@ -1158,7 +1180,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     validateLiveReportAcceptance(emptyCartProductionScopeLiveReport, {
       expectedVersion: packageJson.version,
-      requireProductionScope: true
+      requireProductionScope: true,
+      maxAgeMs: 60_000
     }).issues.some((issue) => issue.code === "live_report_production_scope_cart_empty"),
     "expected installed live report acceptance helper to reject empty cart evidence for production scope"
   );
@@ -2056,7 +2079,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "verify:live:report",
       "--",
       "--require-production-scope",
-      acceptedLiveReportPath
+      "--max-age-minutes",
+      "60",
+      freshLiveReportPath
     ],
     { cwd: rootDir }
   );
@@ -2066,7 +2091,25 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live report validator to reject partial reports when production scope is required"
   );
   const productionScopeLiveReportPath = join(tempRoot, "production-scope-live-verification-report.json");
-  writeFileSync(productionScopeLiveReportPath, `${JSON.stringify(productionScopeLiveReport, null, 2)}\n`);
+  writeFileSync(productionScopeLiveReportPath, `${JSON.stringify(freshProductionScopeLiveReport, null, 2)}\n`);
+  const productionScopeFreshnessResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--require-production-scope",
+      productionScopeLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    productionScopeFreshnessResult.status === 1 &&
+      productionScopeFreshnessResult.stderr.includes("live_report_production_scope_freshness_missing"),
+    "expected installed live report validator to reject production-scope evidence without freshness"
+  );
   const productionScopeLiveReportResult = runNpm(
     [
       "--silent",
@@ -2076,6 +2119,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "verify:live:report",
       "--",
       "--require-production-scope",
+      "--max-age-minutes",
+      "60",
       productionScopeLiveReportPath
     ],
     { cwd: rootDir }
@@ -2101,6 +2146,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "verify:live:report",
       "--",
       "--require-production-scope",
+      "--max-age-minutes",
+      "60",
       unrequestedProductionScopeLiveReportPath
     ],
     { cwd: rootDir }
@@ -2121,6 +2168,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "verify:live:report",
       "--",
       "--require-production-scope",
+      "--max-age-minutes",
+      "60",
       extraProductionScopeLiveReportPath
     ],
     { cwd: rootDir }
@@ -2147,6 +2196,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "verify:live:report",
       "--",
       "--require-production-scope",
+      "--max-age-minutes",
+      "60",
       emptyCartProductionScopeLiveReportPath
     ],
     { cwd: rootDir }
