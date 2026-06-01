@@ -158,8 +158,8 @@ describe("global runtime options", () => {
         values: string[];
         err?: { message?: string; stack?: string };
       }>;
-      const entry = entries[0];
-      const directErrorEntry = entries[1];
+      const entry = entries.find((candidate) => Array.isArray(candidate.values));
+      const directErrorEntry = entries.find((candidate) => candidate.err);
       const serialized = JSON.stringify(entries);
 
       expect(serialized).toContain("<redacted-verification-code>");

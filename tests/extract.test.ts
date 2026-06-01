@@ -257,6 +257,53 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("ignores Zepto product-card control labels when choosing product names", () => {
+    for (const controlLabel of [
+      "Notify Me",
+      "Notify when available",
+      "Sold out",
+      "Temporarily out of stock",
+      "Currently unavailable",
+      "View Similar",
+      "See similar products",
+      "Select Options",
+      "Choose Product Options",
+      "Add Item"
+    ]) {
+      expect(
+        parseProductCard(
+          {
+            imageAlt: "Image: Product image",
+            text: `${controlLabel}\n₹120\nProtein Bar\n50 g`,
+            ignoredText: [controlLabel]
+          },
+          0
+        )
+      ).toMatchObject({
+        index: 0,
+        name: "Protein Bar",
+        price: "₹120",
+        unit: "50 g"
+      });
+    }
+  });
+
+  it("does not ignore real product names just because they contain action words", () => {
+    expect(
+      parseProductCard(
+        {
+          imageAlt: "Image: Product image",
+          text: "Select Harvest Almonds\n250 g\n₹220"
+        },
+        0
+      )
+    ).toMatchObject({
+      name: "Select Harvest Almonds",
+      price: "₹220",
+      unit: "250 g"
+    });
+  });
+
   it("ignores delivery-speed and promo badges when choosing product names", () => {
     expect(
       parseProductCard(

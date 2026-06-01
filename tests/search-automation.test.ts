@@ -233,7 +233,6 @@ describe("search automation helpers", () => {
       "Add coupon",
       "Add one",
       "Added",
-      "Out of stock",
       "Payment Method",
       "UPI",
       "Credit Card",
@@ -246,6 +245,25 @@ describe("search automation helpers", () => {
       expect(isProductAddControlText(label)).toBe(false);
       expect(isUnsafeProductAddControlText(label)).toBe(label !== "");
     }
+
+    for (const label of [
+      "Out of stock",
+      "Notify Me",
+      "Notify when available",
+      "Sold out",
+      "Temporarily out of stock",
+      "Currently unavailable",
+      "View Similar",
+      "See similar products",
+      "Select Options",
+      "Choose Product Options"
+    ]) {
+      expect(isProductAddControlText(label)).toBe(false);
+      expect(isUnsafeProductAddControlText(label)).toBe(false);
+    }
+
+    expect(isProductAddControlText("Select Harvest Almonds")).toBe(false);
+    expect(isUnsafeProductAddControlText("Select Harvest Almonds")).toBe(false);
   });
 
   it("extracts product ADD controls from referenced accessible labels", async () => {
@@ -302,6 +320,13 @@ describe("search automation helpers", () => {
         buttonAttributes: {
           "aria-label": "Add to Cart",
           value: "Pay Now"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add to Cart",
+          title: "Notify when available"
         }
       })
     ]) {
