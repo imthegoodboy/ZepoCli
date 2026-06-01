@@ -3,7 +3,7 @@ import type { Locator, Page } from "playwright";
 import { BASE_URL } from "../config/constants.js";
 import type { Product } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
-import { textMatchesProductQuery } from "../utils/product-matching.js";
+import { normalizeProductMatchText, textMatchesProductQuery } from "../utils/product-matching.js";
 import { ACCESS_CHALLENGE_COOLDOWN_MS, assertNoAccessChallenge, gotoWithAccessProtection } from "./browser.js";
 import { isDisabledControl, isEditableTextInput, readControlLabels } from "./control-state.js";
 import { dedupeProducts, parseProductCard, type RawProductCard } from "./extract.js";
@@ -25,6 +25,7 @@ const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
 const SEARCH_SUBMIT_PAUSE_MS = 150;
 const SEARCH_TRIGGER_CONTROL_SCAN_LIMIT = 8;
+const PRODUCT_ADD_REDISCOVERY_PRODUCT_LIMIT = 20;
 
 export async function searchProducts(page: Page, query: string, limit: number): Promise<Product[]> {
   const searchedFromHome = await searchFromHome(page, query);
@@ -88,12 +89,16 @@ export async function clickProductAdd(page: Page, product: Product): Promise<voi
     });
   }
 
-  const button = page.locator(`[data-zepo-add-id="${product.automationId}"]`).first();
+  let button = page.locator(`[data-zepo-add-id="${product.automationId}"]`).first();
   if (!(await button.isVisible().catch(() => false))) {
-    throw new UserFacingError(`Could not find the ADD button for ${product.name}.`, {
-      code: "product_add_unavailable",
-      hint: "Run the search again. Zepto may have re-rendered the product list."
-    });
+    const rediscoveredButton = await rediscoverProductAddControl(page, product);
+    if (!rediscoveredButton) {
+      throw new UserFacingError(`Could not find the ADD button for ${product.name}.`, {
+        code: "product_add_unavailable",
+        hint: "Run the search again. Zepto may have re-rendered the product list."
+      });
+    }
+    button = rediscoveredButton;
   }
 
   if (await isDisabledControl(button)) {
@@ -111,6 +116,40 @@ export async function clickProductAdd(page: Page, product: Product): Promise<voi
   });
   await button.scrollIntoViewIfNeeded();
   await button.click();
+}
+
+async function rediscoverProductAddControl(page: Page, product: Product): Promise<Locator | undefined> {
+  const candidates = await extractProducts(page, PRODUCT_ADD_REDISCOVERY_PRODUCT_LIMIT).catch(() => []);
+  const matches = candidates.filter(
+    (candidate) => candidate.automationId !== undefined && isSameRediscoveredProduct(candidate, product)
+  );
+  const matched = matches.find((candidate) => candidate.index === product.index) ?? matches[0];
+  if (matched?.automationId === undefined) {
+    return undefined;
+  }
+
+  const button = page.locator(`[data-zepo-add-id="${matched.automationId}"]`).first();
+  return (await button.isVisible().catch(() => false)) ? button : undefined;
+}
+
+function isSameRediscoveredProduct(candidate: Product, product: Product): boolean {
+  if (normalizeProductMatchText(candidate.name) !== normalizeProductMatchText(product.name)) {
+    return false;
+  }
+
+  if (product.unit && normalizeProductMatchText(candidate.unit ?? "") !== normalizeProductMatchText(product.unit)) {
+    return false;
+  }
+
+  if (product.price && normalizeProductPrice(candidate.price) !== normalizeProductPrice(product.price)) {
+    return false;
+  }
+
+  return true;
+}
+
+function normalizeProductPrice(value: string | undefined): string {
+  return (value ?? "").replace(/\s+/g, "").trim().toLowerCase();
 }
 
 export async function waitForProductAddSettled(page: Page, waitMs = ADD_CLICK_SETTLE_MS): Promise<void> {
