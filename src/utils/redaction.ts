@@ -79,6 +79,10 @@ function redactSensitiveValueInternal(value: unknown, seen: WeakSet<object>): un
     return redactSensitiveText(value);
   }
 
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+
   if (value instanceof Error) {
     return redactSensitiveError(value, seen);
   }

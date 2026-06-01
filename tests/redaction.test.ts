@@ -5,7 +5,8 @@ import { redactSensitiveValue } from "../src/utils/redaction.js";
 describe("sensitive value redaction", () => {
   it("redacts cyclic objects and errors without preserving circular references", () => {
     const root: Record<string, unknown> = {
-      "phone=%2B91+98765+43210": "OTP 123456 near C:/Users/parth/.zepo-live/report.json"
+      "phone=%2B91+98765+43210": "OTP 123456 near C:/Users/parth/.zepo-live/report.json",
+      diagnosticCount: BigInt(3)
     };
     const child: Record<string, unknown> = {
       parent: root,
@@ -30,6 +31,7 @@ describe("sensitive value redaction", () => {
     expect((redactedError as Error).message).toContain("<redacted-order-id>");
     expect((redactedError as Error & { cause?: unknown }).cause).toBe("[Circular]");
     expect(serialized).toContain("[Circular]");
+    expect(serialized).toContain('"diagnosticCount":"3"');
     expect(serialized).toContain("phone=<redacted-phone>");
     expect(serialized).toContain("<redacted-verification-code>");
     expect(serialized).toContain("<redacted-payment-number>");
