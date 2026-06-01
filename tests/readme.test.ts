@@ -127,6 +127,7 @@ describe("README package guidance", () => {
     expect(readme).toContain('"code": "no_confirmed_session"');
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
+    expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
@@ -171,6 +172,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("accepted report schema");
     expect(readme).toContain("complete boolean capability summaries");
     expect(readme).toContain("redacted step command contract");
+    expect(readme).toContain("checkout cart precondition");
     expect(readme).toContain("`ok` reports containing only passing known workflow steps");
     expect(readme).toContain("unique workflow step names");
     expect(readme).toContain("runner workflow order");

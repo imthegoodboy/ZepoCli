@@ -233,6 +233,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed address automation label to be unsafe");
     expect(verifier).toContain("`browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
     expect(verifier).toContain('paymentStatus: \\"not_observed_by_zepocli\\"');
+    expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');
     expect(verifier).toContain("--choose-add");
     expect(verifier).toContain("--choose-add can only be used with --add.");
     expect(verifier).toContain("expected installed verify:live compatible phone to pass phone parsing");
@@ -397,6 +398,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("spawnSync(process.execPath, commandArgs");
     expect(verifier).toContain("buildLiveCommandTimeoutStep");
     expect(verifier).toContain("expected installed live command timeout redaction");
+    expect(verifier).toContain("expected installed checkout live report contract to require non-empty cart precondition");
     expect(verifier).toContain("createLiveConsoleTextRedactor");
     expect(verifier).toContain("redactArgsForLiveConsole");
     expect(verifier).toContain("redactLiveConsoleText");

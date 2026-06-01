@@ -107,6 +107,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
+        cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -799,6 +800,7 @@ describe("live verification runner", () => {
           ok: true,
           summary: {
             status: "checkout_handoff_returned",
+            cartPrecondition: "non_empty_cart_verified",
             paymentStatus: "paid",
             orderPlacement: "confirmed",
             orderStatusCommand: "zepo track"
@@ -1192,6 +1194,7 @@ describe("live verification runner", () => {
               ...step,
               summary: {
                 ...step.summary,
+                cartPrecondition: "non_empty_cart_verified",
                 paymentStatus: "paid",
                 orderPlacement: "confirmed"
               }
@@ -2449,6 +2452,7 @@ describe("live verification runner", () => {
       stdout: JSON.stringify({
         status: "checkout_handoff_returned",
         payment: "handled_by_zepto",
+        cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "paid",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -2461,6 +2465,7 @@ describe("live verification runner", () => {
 
     expect(payload).toMatchObject({
       status: "checkout_handoff_returned",
+      cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "paid"
     });
     expect(step).toEqual({
@@ -2470,12 +2475,12 @@ describe("live verification runner", () => {
       ok: false,
       error: {
         code: "live_checkout_contract_mismatch",
-        message: "Checkout JSON did not preserve the Zepto payment and order-placement handoff contract."
+        message: "Checkout JSON did not preserve the Zepto cart, payment, and order-placement handoff contract."
       }
     });
   });
 
-  it("accepts checkout live report steps that preserve the payment handoff contract", () => {
+  it("fails checkout live report steps without cart precondition evidence", () => {
     const { step } = buildLiveReportStep({
       name: "checkout",
       args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
@@ -2488,7 +2493,39 @@ describe("live verification runner", () => {
         orderStatusCommand: "zepo track"
       }),
       stderr: "",
-      summarizePayload: (_name: string, value: { orderStatusCommand?: string }) => ({
+      summarizePayload: () => {
+        throw new Error("checkout payload without cart proof should not be summarized");
+      }
+    });
+
+    expect(step).toEqual({
+      name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "live_checkout_contract_mismatch",
+        message: "Checkout JSON did not preserve the Zepto cart, payment, and order-placement handoff contract."
+      }
+    });
+  });
+
+  it("accepts checkout live report steps that preserve the payment handoff contract", () => {
+    const { step } = buildLiveReportStep({
+      name: "checkout",
+      args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+      status: 0,
+      stdout: JSON.stringify({
+        status: "checkout_handoff_returned",
+        payment: "handled_by_zepto",
+        cartPrecondition: "non_empty_cart_verified",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      }),
+      stderr: "",
+      summarizePayload: (_name: string, value: { cartPrecondition?: string; orderStatusCommand?: string }) => ({
+        cartPrecondition: value.cartPrecondition,
         orderStatusCommand: value.orderStatusCommand
       })
     });
@@ -2499,6 +2536,7 @@ describe("live verification runner", () => {
       exitCode: 0,
       ok: true,
       summary: {
+        cartPrecondition: "non_empty_cart_verified",
         orderStatusCommand: "zepo track"
       }
     });

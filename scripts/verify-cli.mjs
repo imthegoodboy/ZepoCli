@@ -913,6 +913,7 @@ function assertDoctorReport(payload, dataDir, options = { browser: false }) {
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected checkout handoff status");
   assert(payload.payment === "handled_by_zepto", "expected Zepto-handled payment marker");
+  assert(payload.cartPrecondition === "non_empty_cart_verified", "expected non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected track next command");
