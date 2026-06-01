@@ -51,14 +51,14 @@ const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
-  const fallbackMessage = firstLine(stderr) ?? "Command failed.";
+  const fallbackMessage = commandFailureMessage(undefined, stderr, redactions);
 
   if (isObject(error)) {
     const code = normalizeReportErrorCode(error.code);
-    const message = hasReadableText(error.message) ? error.message : fallbackMessage;
+    const message = commandFailureMessage(hasReadableText(error.message) ? error.message : undefined, stderr, redactions);
     return {
       code,
-      message: redactLiveReportText(message, redactions),
+      message,
       ...(hasReadableText(error.hint) ? { hint: redactLiveReportText(error.hint, redactions) } : {}),
       ...(Number.isFinite(error.retryAfterMs) ? { retryAfterMs: error.retryAfterMs } : {})
     };
@@ -66,7 +66,7 @@ export function summarizeCommandError(error, stderr, args = []) {
 
   return {
     code: "command_failed",
-    message: redactLiveReportText(fallbackMessage, redactions)
+    message: fallbackMessage
   };
 }
 
@@ -1587,6 +1587,41 @@ function hasReadableText(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function commandFailureMessage(preferred, stderr, redactions) {
+  const candidates = [];
+  if (hasReadableText(preferred)) {
+    candidates.push(preferred);
+  }
+  candidates.push(...stderrLines(stderr));
+
+  for (const candidate of candidates) {
+    const redacted = redactLiveReportText(candidate, redactions).trim();
+    if (isInformativeCommandFailureLine(redacted)) {
+      return redacted;
+    }
+  }
+
+  return "Command failed.";
+}
+
+function stderrLines(value) {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function isInformativeCommandFailureLine(value) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return false;
+  }
+
+  const withoutRedactedPaths = text.replace(/<redacted-(?:data-dir|report-path|local-path)>/g, "");
+  const remainingText = withoutRedactedPaths.replace(/[0-9\s:.,;!?()[\]{}'"<>\\/|`~^_-]+/g, "");
+  return /[A-Za-z]/.test(remainingText);
+}
+
 export function redactArgsForLiveConsole(args) {
   return redactArgsForLiveReport(args);
 }
@@ -1665,13 +1700,6 @@ function tryParseJson(text) {
   } catch {
     return undefined;
   }
-}
-
-function firstLine(value) {
-  return String(value ?? "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean);
 }
 
 function redactOptionValues(args, redactions) {

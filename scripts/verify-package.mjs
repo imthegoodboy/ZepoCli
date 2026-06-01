@@ -2679,6 +2679,31 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !String(runnerFailure.message).includes("parth"),
     "expected installed live runner failure redaction"
   );
+  const corruptCompiledCliStep = buildLiveReportStep({
+    name: "doctor",
+    args: ["--data-dir", "C:\\Users\\parth\\.zepo-live", "doctor", "--json"],
+    status: 1,
+    stdout: "",
+    stderr: [
+      "file:///C:/Users/parth/Desktop/ZepoCli/dist/config/constants.js:1",
+      "\u0000\u0000\u0000",
+      "^^^^",
+      "SyntaxError: Invalid or unexpected token",
+      "    at compileSourceTextModule (node:internal/modules/esm/utils:346:16)"
+    ].join("\n"),
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(corruptCompiledCliStep.ok === false, "expected installed corrupt compiled CLI step to fail");
+  assert(
+    corruptCompiledCliStep.error?.code === "command_failed" &&
+      corruptCompiledCliStep.error?.message === "SyntaxError: Invalid or unexpected token",
+    "expected installed live command failure to prefer actionable syntax errors over redacted path-only lines"
+  );
+  assert(
+    !JSON.stringify(corruptCompiledCliStep).includes("parth") &&
+      !JSON.stringify(corruptCompiledCliStep).includes("constants.js"),
+    "expected installed corrupt compiled CLI failure to omit local paths from the report"
+  );
   const commandLaunchFailure = buildLiveCommandLaunchFailureStep(
     "add",
     ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"],
