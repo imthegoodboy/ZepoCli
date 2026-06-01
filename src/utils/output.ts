@@ -1,7 +1,7 @@
 import chalk from "chalk";
 
 import type { Address, CartItem, CartSnapshot, OrderSnapshot, Product } from "../types.js";
-import { redactSensitiveText } from "./redaction.js";
+import { redactedStructuredValueForKey, redactSensitiveText } from "./redaction.js";
 
 export { redactSensitiveText } from "./redaction.js";
 
@@ -222,7 +222,10 @@ function toPublicJsonValueInternal(
         continue;
       }
       const publicKey = options.redactKeys ? redactSensitiveText(key) : key;
-      output[publicKey] = toPublicJsonValueInternal(child, options, seen);
+      const structuredRedaction = options.redactStrings
+        ? redactedStructuredValueForKey(key, child)
+        : undefined;
+      output[publicKey] = structuredRedaction ?? toPublicJsonValueInternal(child, options, seen);
     }
   } finally {
     seen.delete(value);

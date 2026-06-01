@@ -74,6 +74,20 @@ export function redactSensitiveValue(value: unknown): unknown {
   return redactSensitiveValueInternal(value, new WeakSet<object>());
 }
 
+export function redactedStructuredValueForKey(key: string, value: unknown): string | undefined {
+  const normalizedKey = normalizeStructuredKey(key);
+  const placeholder = sensitiveValuePlaceholderForKey(key);
+  if (!placeholder || !hasRedactableStructuredValue(value)) {
+    return undefined;
+  }
+
+  if (isPathLikeStructuredKey(normalizedKey) && typeof value === "string" && redactSensitiveText(value) !== value) {
+    return undefined;
+  }
+
+  return placeholder;
+}
+
 function redactSensitiveValueInternal(value: unknown, seen: WeakSet<object>): unknown {
   if (typeof value === "string") {
     return redactSensitiveText(value);
@@ -111,10 +125,13 @@ function redactSensitiveValueInternal(value: unknown, seen: WeakSet<object>): un
   seen.add(value);
   try {
     return Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [
-        redactSensitiveText(key),
-        redactSensitiveValueInternal(child, seen)
-      ])
+      Object.entries(value).map(([key, child]) => {
+        const structuredRedaction = redactedStructuredValueForKey(key, child);
+        return [
+          redactSensitiveText(key),
+          structuredRedaction ?? redactSensitiveValueInternal(child, seen)
+        ];
+      })
     );
   } finally {
     seen.delete(value);
@@ -141,10 +158,9 @@ function redactSensitiveError(error: Error, seen: WeakSet<object>): Error | stri
     }
 
     for (const [key, child] of Object.entries(error)) {
-      (redacted as Error & Record<string, unknown>)[redactSensitiveText(key)] = redactSensitiveValueInternal(
-        child,
-        seen
-      );
+      const structuredRedaction = redactedStructuredValueForKey(key, child);
+      (redacted as Error & Record<string, unknown>)[redactSensitiveText(key)] =
+        structuredRedaction ?? redactSensitiveValueInternal(child, seen);
     }
 
     return redacted;
@@ -176,4 +192,58 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
+}
+
+function sensitiveValuePlaceholderForKey(key: string): string | undefined {
+  const normalized = normalizeStructuredKey(key);
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (/\b(phone|mobile|telephone|tel)\b/i.test(normalized)) {
+    return "<redacted-phone>";
+  }
+
+  if (/\b(otp|one time password|verification code|cvv|cvc|upi pin|atm pin|passcode)\b/i.test(normalized)) {
+    return "<redacted-verification-code>";
+  }
+
+  if (/\b(upi|payment handle)\b/i.test(normalized)) {
+    return "<redacted-payment-handle>";
+  }
+
+  if (/\b(card|credit card|debit card|payment number)\b/i.test(normalized)) {
+    return "<redacted-payment-number>";
+  }
+
+  if (
+    /\b(authorization|proxy authorization|cookie|set cookie|auth|session|token|jwt|password|passwd|passphrase|pwd|secret|credential|api key|apikey|client secret|access token|refresh token|id token)\b/i.test(
+      normalized
+    )
+  ) {
+    return "<redacted-auth-token>";
+  }
+
+  return undefined;
+}
+
+function hasRedactableStructuredValue(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  return typeof value !== "string" || value.trim().length > 0;
+}
+
+function normalizeStructuredKey(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_\-.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isPathLikeStructuredKey(normalizedKey: string): boolean {
+  return /\b(path|dir|directory|file|folder)\b/i.test(normalizedKey);
 }

@@ -251,10 +251,18 @@ describe("command JSON output", () => {
       code: "unexpected_error",
       message: "boom",
       exitCode: 1,
+      authorization: "Bearer raw-authorization-token",
+      cookie: "session=raw-cookie-value",
+      otp: "123456",
+      phoneNumber: 9876543210,
+      cardNumber: "4111111111111111",
+      upi: "abc@upi",
+      password: "hunter2",
       "token=raw-token-123": "token key",
       nested: {
         "C:/Users/parth/.zepo-live/report.json": "path key",
-        "phone=%2B91+98765+43210": "phone key"
+        "phone=%2B91+98765+43210": "phone key",
+        accessToken: "nested-token-value"
       }
     } as unknown as Parameters<typeof printJsonError>[0]);
 
@@ -264,10 +272,21 @@ describe("command JSON output", () => {
     expect(serialized).toContain("token=<redacted-auth-token>");
     expect(serialized).toContain("<redacted-local-path>");
     expect(serialized).toContain("phone=<redacted-phone>");
+    expect(serialized).toContain("<redacted-verification-code>");
+    expect(serialized).toContain("<redacted-payment-number>");
+    expect(serialized).toContain("<redacted-payment-handle>");
+    expect(serialized).toContain("<redacted-auth-token>");
     expect(serialized).not.toContain("raw-token-123");
+    expect(serialized).not.toContain("raw-authorization-token");
+    expect(serialized).not.toContain("raw-cookie-value");
+    expect(serialized).not.toContain("nested-token-value");
+    expect(serialized).not.toContain("hunter2");
+    expect(serialized).not.toContain("abc@upi");
     expect(serialized).not.toContain("C:/Users");
     expect(serialized).not.toContain("%2B91");
     expect(serialized).not.toContain("98765");
+    expect(serialized).not.toContain("123456");
+    expect(serialized).not.toContain("411111");
   });
 
   it("omits internal automation ids from product JSON output", () => {
@@ -360,6 +379,7 @@ describe("command JSON output", () => {
       code: "unexpected_error",
       message: "Order #ZEP1234 failed near C:/Users/parth/.zepo-live/report.json",
       exitCode: 1,
+      detail: "OTP 123456",
       "phone=%2B91+98765+43210": "OTP 123456",
       amount: BigInt(4)
     };
