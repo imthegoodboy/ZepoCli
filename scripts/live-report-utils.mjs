@@ -40,6 +40,14 @@ const LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES = [
   "checkoutHandoff",
   "track"
 ];
+const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
+  "addressAdd",
+  "addressList",
+  "remove",
+  "clear",
+  "history",
+  "reorder"
+];
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
@@ -407,6 +415,15 @@ export function validateLiveReportAcceptance(report, options = {}) {
     validateLiveReportProductionScopeCoverage(requested, coverage, issues);
   }
 
+  if (
+    options.requireProductionScope === true &&
+    isObject(requested) &&
+    isObject(attempted) &&
+    isObject(coverage)
+  ) {
+    validateLiveReportProductionScopeExclusions(requested, attempted, coverage, issues);
+  }
+
   if (options.maxAgeMs !== undefined) {
     validateLiveReportFreshness(report, options.maxAgeMs, issues);
   }
@@ -422,6 +439,19 @@ function validateLiveReportProductionScopeCoverage(requested, coverage, issues) 
     issues.push({
       code: "live_report_production_scope_missing",
       message: "Live report does not prove the requested and passing production workflow coverage."
+    });
+  }
+}
+
+function validateLiveReportProductionScopeExclusions(requested, attempted, coverage, issues) {
+  if (
+    LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES.some(
+      (key) => requested[key] === true || attempted[key] === true || coverage[key] === true
+    )
+  ) {
+    issues.push({
+      code: "live_report_production_scope_extra",
+      message: "Live report includes focused workflows that are not part of the final production scope."
     });
   }
 }
