@@ -424,6 +424,10 @@ export function validateLiveReportAcceptance(report, options = {}) {
     validateLiveReportProductionScopeExclusions(requested, attempted, coverage, issues);
   }
 
+  if (options.requireProductionScope === true && steps) {
+    validateLiveReportProductionScopeCartState(steps, issues);
+  }
+
   if (options.maxAgeMs !== undefined) {
     validateLiveReportFreshness(report, options.maxAgeMs, issues);
   }
@@ -454,6 +458,18 @@ function validateLiveReportProductionScopeExclusions(requested, attempted, cover
       message: "Live report includes focused workflows that are not part of the final production scope."
     });
   }
+}
+
+function validateLiveReportProductionScopeCartState(steps, issues) {
+  const cartStep = steps.find((step) => step?.name === "cart" && step?.ok === true);
+  if (!cartStep || cartStep.summary?.cartItemCount > 0) {
+    return;
+  }
+
+  issues.push({
+    code: "live_report_production_scope_cart_empty",
+    message: "Live report production-scope cart evidence must show at least one cart item."
+  });
 }
 
 function validateLiveReportFreshness(report, maxAgeMs, issues) {

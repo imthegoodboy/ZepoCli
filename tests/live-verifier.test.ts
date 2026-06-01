@@ -239,7 +239,7 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).toContain(
-      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage."
+      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, non-empty cart, checkout handoff, and track coverage."
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
@@ -258,7 +258,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("Use --max-age-minutes for final readiness");
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
     expect(result.stdout).toContain(
-      "core login/session, search, address, cart, checkout handoff, and track workflow was requested and has passing coverage"
+      "core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -601,6 +601,32 @@ describe("live verification runner", () => {
         requireProductionScope: true
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_extra");
+
+    const emptyCartProductionScope = productionScopeLiveReport({
+      steps: productionScopeLiveReport().steps.map((step) =>
+        step.name === "cart"
+          ? {
+              ...step,
+              summary: {
+                cartItemCount: 0,
+                hasTotal: false
+              }
+            }
+          : step
+      )
+    });
+    emptyCartProductionScope.attempted = summarizeLiveReportAttempts(emptyCartProductionScope.steps);
+    emptyCartProductionScope.coverage = summarizeLiveReportCoverage(emptyCartProductionScope.steps);
+    emptyCartProductionScope.missingCoverage = summarizeLiveReportMissingCoverage(
+      emptyCartProductionScope.requested,
+      emptyCartProductionScope.coverage
+    );
+    expect(
+      validateLiveReportAcceptance(emptyCartProductionScope, {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_cart_empty");
 
     const missingLiveSession = acceptedLiveReport();
     missingLiveSession.coverage = {

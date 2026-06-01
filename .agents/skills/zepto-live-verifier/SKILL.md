@@ -40,7 +40,7 @@ npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-sco
 ```
 
 `--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
-`--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope --max-age-minutes 1440`.
+`--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope --max-age-minutes 1440`.
 
 Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 
@@ -112,6 +112,6 @@ The live report is acceptable only when:
 - `add` has both selected product evidence and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.
 - `checkout` preserves `paymentStatus: "not_observed_by_zepocli"`, `orderPlacement: "not_confirmed_by_zepocli"`, and `orderStatusCommand: "zepo track"`.
-- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track must be explicitly requested and have passing coverage, and focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence. With `--max-age-minutes`, stale reports must be rejected.
+- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage, and focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence. With `--max-age-minutes`, stale reports must be rejected.
 
 If any step fails with a stable `live_*_contract_mismatch`, `live_command_timeout`, `command_failed`, or `live_verification_incomplete` code, the live workflow is not fully verified yet.

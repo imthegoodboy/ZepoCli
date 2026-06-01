@@ -853,7 +853,7 @@ Required:
 
 Options:
   --login               Run visible zepo login if no confirmed session exists
-  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies cart, checkout handoff, and track
+  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart, checkout handoff, and track
   --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
   --search <query>      Run visible product search
   --address-list        Run visible address list
@@ -878,7 +878,7 @@ Example:
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
-Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track coverage.
+Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, non-empty cart, checkout handoff, and track coverage.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart

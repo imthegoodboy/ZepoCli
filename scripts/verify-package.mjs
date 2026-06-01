@@ -194,7 +194,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
     "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
-    "then requests cart, checkout handoff, and track coverage",
+    "then requests non-empty cart, checkout handoff, and track coverage",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
@@ -222,7 +222,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` for the final readiness gate",
-    "browser preflight, local status, live session, search, address selection, add, cart, checkout handoff, and track to be explicitly requested and covered",
+    "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
@@ -407,6 +407,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     reportHelpResult.stdout.includes("workflow was requested and has passing coverage"),
     "expected installed verify:live:report production-scope request guidance"
+  );
+  assert(
+    reportHelpResult.stdout.includes("non-empty cart"),
+    "expected installed verify:live:report production-scope cart-state guidance"
   );
   assert(
     reportHelpResult.stdout.includes("address-add, address-list, remove, clear, history, and reorder workflows"),
@@ -1128,6 +1132,35 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       requireProductionScope: true
     }).issues.some((issue) => issue.code === "live_report_production_scope_extra"),
     "expected installed live report acceptance helper to reject focused workflows in production-scope evidence"
+  );
+  const emptyCartProductionScopeLiveReport = {
+    ...productionScopeLiveReport,
+    steps: productionScopeLiveReport.steps.map((step) =>
+      step.name === "cart"
+        ? {
+            ...step,
+            summary: {
+              cartItemCount: 0,
+              hasTotal: false
+            }
+          }
+        : step
+    )
+  };
+  emptyCartProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(
+    emptyCartProductionScopeLiveReport.steps
+  );
+  emptyCartProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(emptyCartProductionScopeLiveReport.steps);
+  emptyCartProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    emptyCartProductionScopeLiveReport.requested,
+    emptyCartProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(emptyCartProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true
+    }).issues.some((issue) => issue.code === "live_report_production_scope_cart_empty"),
+    "expected installed live report acceptance helper to reject empty cart evidence for production scope"
   );
   const inconsistentAttemptedLiveReport = {
     ...acceptedLiveReport,
@@ -2096,6 +2129,32 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     extraProductionScopeLiveReportResult.status === 1 &&
       extraProductionScopeLiveReportResult.stderr.includes("live_report_production_scope_extra"),
     "expected installed live report validator to reject focused workflows in production-scope evidence"
+  );
+  const emptyCartProductionScopeLiveReportPath = join(
+    tempRoot,
+    "empty-cart-production-scope-live-verification-report.json"
+  );
+  writeFileSync(
+    emptyCartProductionScopeLiveReportPath,
+    `${JSON.stringify(emptyCartProductionScopeLiveReport, null, 2)}\n`
+  );
+  const emptyCartProductionScopeLiveReportResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--require-production-scope",
+      emptyCartProductionScopeLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    emptyCartProductionScopeLiveReportResult.status === 1 &&
+      emptyCartProductionScopeLiveReportResult.stderr.includes("live_report_production_scope_cart_empty"),
+    "expected installed live report validator to reject empty cart evidence for production-scope evidence"
   );
   const rejectedLiveReportPath = join(tempRoot, "rejected-live-verification-report.json");
   writeFileSync(
