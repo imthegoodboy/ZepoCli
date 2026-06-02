@@ -61,7 +61,12 @@ describe("checkout handoff detection", () => {
       "COD",
       "Order Now",
       "Review Order",
+      "Proceed",
+      "Proceed to Cart",
+      "Continue",
       "Continue to Pay",
+      "Continue to Payment",
+      "Continue to Checkout",
       "Pay ₹249",
       "Checkout and Pay",
       "Checkout Payment",
@@ -82,8 +87,8 @@ describe("checkout handoff detection", () => {
       "Checkout 2 items",
       "Checkout 1 product",
       "Proceed to Checkout",
-      "Proceed to Pay",
-      "Continue to Payment"
+      "Proceed to Payment",
+      "Proceed to Pay"
     ]) {
       expect(isCheckoutHandoffClickText(handoffText)).toBe(true);
     }
@@ -92,7 +97,10 @@ describe("checkout handoff detection", () => {
       "Proceed",
       "Continue",
       "Continue to Pay",
+      "Continue to Payment",
+      "Continue to Checkout",
       "Continue Shopping",
+      "Proceed to Cart",
       "Checkout these offers",
       "Checkout deals",
       "Checkout and save",
@@ -130,6 +138,9 @@ describe("checkout handoff detection", () => {
       createMixedLabelCheckoutPage("UPI Apps", "Proceed to Pay"),
       createMixedLabelCheckoutPage("Net Banking", "Proceed to Pay"),
       createMixedLabelCheckoutPage("PhonePe", "Proceed to Pay"),
+      createMixedLabelCheckoutPage("Proceed", "Checkout"),
+      createMixedLabelCheckoutPage("Continue", "Proceed to Checkout"),
+      createMixedLabelCheckoutPage("Continue to Payment", "Checkout"),
       createMixedLabelCheckoutPage("Checkout", "Proceed to Pay", { title: "Payment Method" }),
       createMixedLabelCheckoutPage("Checkout", "Pay Now")
     ]) {

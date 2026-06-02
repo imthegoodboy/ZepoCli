@@ -10,8 +10,7 @@ import { isPaymentMethodLabelText } from "./payment-labels.js";
 export const CHECKOUT_HANDOFF_CLICK_LABELS = [
   /^checkout$/i,
   /^checkout\s+\d+\s*(?:items?|products?)$/i,
-  /^proceed\s+to\s+(?:checkout|payment|pay)$/i,
-  /^continue\s+to\s+(?:checkout|payment)$/i
+  /^proceed\s+to\s+(?:checkout|payment|pay)$/i
 ] as const;
 const CHECKOUT_HANDOFF_CONTROL_SCAN_LIMIT = 8;
 
@@ -126,11 +125,12 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
     return false;
   }
 
-  if (/^proceed\s+to\s+pay$/i.test(normalized)) {
+  if (/^proceed\s+to\s+(?:checkout|payment|pay)$/i.test(normalized)) {
     return false;
   }
 
   return (
+    /^(?:continue|proceed)\b/i.test(normalized) ||
     /\b(place order|confirm order|pay now|make payment)\b/i.test(normalized) ||
     isPaymentMethodLabelText(normalized) ||
     /^(payment|payments)$/i.test(normalized) ||

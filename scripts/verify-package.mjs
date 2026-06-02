@@ -191,7 +191,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "zepo checkout",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "paymentStatus: \"not_observed_by_zepocli\"",
-    "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
+    "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
     "Those labels and disabled state are revalidated after any scroll into view before clicking.",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
     "Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.",
@@ -306,6 +306,11 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     isUnsafeCheckoutAutomationClickText("Continue to Pay") === true,
     "expected installed continue-to-pay label to be unsafe"
   );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Continue to Payment") === true,
+    "expected installed continue-to-payment label to be unsafe"
+  );
+  assert(isUnsafeCheckoutAutomationClickText("Proceed") === true, "expected installed bare proceed label to be unsafe");
   console.log("pass installed checkout handoff contract");
 }
 
