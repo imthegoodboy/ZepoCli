@@ -1195,7 +1195,10 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   {
     capability: "liveSession",
     step: "status live",
-    accepts: (step) => step.summary?.confirmedSession === true && step.summary?.liveSessionState === "logged-in"
+    accepts: (step) =>
+      step.summary?.confirmedSession === true &&
+      step.summary?.browserAutomationReady === true &&
+      step.summary?.liveSessionState === "logged-in"
   },
   {
     capability: "search",
@@ -1409,6 +1412,7 @@ function validateLiveStatusPayloadContract(payload) {
   if (
     isObject(payload) &&
     hasStatusDiagnostics(payload) &&
+    payload.browserAutomation.ready === true &&
     payload.confirmedSession === true &&
     payload.liveSession?.checked === true &&
     payload.liveSession?.state === "logged-in"

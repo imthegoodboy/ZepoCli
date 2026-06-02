@@ -109,7 +109,7 @@ The live report is acceptable only when:
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.
 - `login` confirms `sessionSaved: true` and `confirmedSession: true` when a login step actually runs.
 - Existing confirmed sessions with `--login` leave `requested.login` false and require `requested.liveSession` to pass instead.
-- `status live` reports `liveSession.state: "logged-in"`.
+- `status live` reports ready browser automation and `liveSession.state: "logged-in"`.
 - `search` has one or more product results when requested.
 - `add` has both selected product evidence and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.

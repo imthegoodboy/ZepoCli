@@ -1848,6 +1848,32 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept complete report evidence"
   );
+  const notReadyLiveSessionReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "status live"
+        ? {
+            ...step,
+            summary: {
+              ...step.summary,
+              browserAutomationReady: false
+            }
+          }
+        : step
+    )
+  };
+  notReadyLiveSessionReport.attempted = summarizeLiveReportAttempts(notReadyLiveSessionReport.steps);
+  notReadyLiveSessionReport.coverage = summarizeLiveReportCoverage(notReadyLiveSessionReport.steps);
+  notReadyLiveSessionReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    notReadyLiveSessionReport.requested,
+    notReadyLiveSessionReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(notReadyLiveSessionReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject live session without browser readiness"
+  );
   assert(
     validateLiveReportAcceptance(acceptedLiveReport).issues.some(
       (issue) => issue.code === "live_report_expected_version_missing"
@@ -3511,6 +3537,29 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     summarizePayload: () => ({ liveSessionState: "logged-in" })
   });
   assert(statusLiveStep.ok === true, "expected installed status live report contract to pass logged-in session");
+
+  const { step: notReadyStatusLiveStep } = buildLiveReportStep({
+    name: "status live",
+    args: ["--data-dir", ".zepo-live", "--visible", "status", "--live", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      confirmedSession: true,
+      ...installedLiveStatusDiagnosticsPayload(),
+      browserAutomation: {
+        ready: false,
+        reasons: ["browser_lock_active"],
+        retryAfterMs: 0
+      },
+      liveSession: { checked: true, state: "logged-in" }
+    }),
+    stderr: "",
+    summarizePayload: () => ({ liveSessionState: "logged-in" })
+  });
+  assert(
+    notReadyStatusLiveStep.ok === false &&
+      notReadyStatusLiveStep.error?.code === "live_status_contract_mismatch",
+    "expected installed status live report contract to require browser readiness"
+  );
 
   const { step: summaryFailureStep } = buildLiveReportStep({
     name: "cart",

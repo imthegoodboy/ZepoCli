@@ -934,6 +934,41 @@ describe("live verification runner", () => {
       "live_report_step_contract_mismatch"
     );
 
+    const badLiveSessionReadinessReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "status live"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                browserAutomationReady: false
+              }
+            }
+          : step
+      )
+    });
+    badLiveSessionReadinessReport.attempted = summarizeLiveReportAttempts(
+      badLiveSessionReadinessReport.steps
+    );
+    badLiveSessionReadinessReport.coverage = summarizeLiveReportCoverage(
+      badLiveSessionReadinessReport.steps
+    );
+    badLiveSessionReadinessReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      badLiveSessionReadinessReport.requested,
+      badLiveSessionReadinessReport.coverage
+    );
+
+    const badLiveSessionReadinessResult = validateLiveReportAcceptance(
+      badLiveSessionReadinessReport,
+      {
+        expectedVersion: packageJson.version
+      }
+    );
+    expect(badLiveSessionReadinessResult.accepted).toBe(false);
+    expect(badLiveSessionReadinessResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+
     const stringlySummaryReport = acceptedLiveReport({
       steps: acceptedLiveReport().steps.map((step) =>
         step.name === "search"
@@ -2454,6 +2489,24 @@ describe("live verification runner", () => {
         stdout: JSON.stringify({
           confirmedSession: true,
           liveSession: { checked: true, state: "login-required" }
+        }),
+        error: {
+          code: "live_status_contract_mismatch",
+          message: "Live status JSON did not verify a logged-in Zepto session."
+        }
+      },
+      {
+        name: "status live",
+        args: ["--data-dir", ".zepo-live", "--visible", "status", "--live", "--json"],
+        stdout: JSON.stringify({
+          confirmedSession: true,
+          ...statusDiagnosticsPayload(),
+          browserAutomation: {
+            ready: false,
+            reasons: ["browser_lock_active"],
+            retryAfterMs: 0
+          },
+          liveSession: { checked: true, state: "logged-in" }
         }),
         error: {
           code: "live_status_contract_mismatch",

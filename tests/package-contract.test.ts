@@ -427,6 +427,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live verifier to sanitize report write failures");
     expect(verifier).toContain("expected installed live verifier to write sanitized partial reports on interrupts");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
+    expect(verifier).toContain("expected installed status live report contract to require browser readiness");
     expect(verifier).toContain("expected installed verify:live no-session report to show browser automation readiness");
     expect(verifier).toContain("expected installed verify:live no-session report to show passing Playwright Chromium evidence");
     expect(verifier).toContain("expected installed verify:live no-session report coverage to distinguish preflight from account workflow");
@@ -489,6 +490,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject malformed error objects");
     expect(verifier).toContain("expected installed live report error rejection to omit raw values");
     expect(verifier).toContain("pass installed live report error object contract");
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject live session without browser readiness"
+    );
     expect(verifier).toContain("expected installed live report acceptance helper to require an expected package version");
     expect(verifier).toContain("expected installed live report acceptance helper to accept fresh report evidence");
     expect(verifier).toContain("expected installed live report acceptance helper to reject stale report evidence");

@@ -231,6 +231,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --production-scope --search milk --address home --add");
     expect(liveVerifierSkill).toContain("Do not combine `--clear` with `--checkout`");
     expect(liveVerifierSkill).toContain("Keep OTP, UPI PIN, card, CVV");
+    expect(liveVerifierSkill).toContain("`status live` reports ready browser automation");
     expect(liveVerifierSkill).toContain('liveSession.state: "logged-in"');
     expect(liveVerifierSkill).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(liveVerifierSkill).toContain('cartPrecondition: "non_empty_cart_verified"');
