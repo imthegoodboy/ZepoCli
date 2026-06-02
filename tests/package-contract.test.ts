@@ -302,6 +302,13 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");
     expect(verifier).toContain("expected installed item-count ADD label to be unsafe");
     expect(verifier).toContain("Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.");
+    expect(verifier).toContain("verifyInstalledOrderExtractionContract");
+    expect(verifier).toContain("expected installed order parser to keep active delivery ETA");
+    expect(verifier).toContain("expected installed order parser not to borrow delivery-speed ETA from delivered orders");
+    expect(verifier).toContain("expected installed order parser to reject eta-only delivery-speed copy");
+    expect(verifier).toContain(
+      "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status."
+    );
     expect(verifier).toContain("verifyInstalledAddressAutomationContract");
     expect(verifier).toContain("expected installed address-manager label to be accepted: ${label}");
     expect(verifier).toContain("expected installed add-address label to be accepted: ${label}");

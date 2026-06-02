@@ -1015,6 +1015,30 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not borrow delivery-speed copy as ETA for completed or incomplete orders", () => {
+    expect(parseOrdersFromText("Order #ZEP1234 Delivered Delivery in 6 mins Total ₹249")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Order #ZEP1234 Delivered Delivery in 6 mins Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Order #ZEP1234 Cancelled Arriving in 6 mins Total ₹249")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Cancelled",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Order #ZEP1234 Cancelled Arriving in 6 mins Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Order #ZEP1234 Delivery in 6 mins Total ₹249")).toEqual([]);
+  });
+
   it("does not include trailing order action labels in ETA text", () => {
     expect(parseOrdersFromText("Track order Out for delivery ETA: 8 mins Reorder Total ₹249")).toEqual([
       {

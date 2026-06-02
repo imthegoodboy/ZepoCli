@@ -105,7 +105,7 @@ export function parseOrdersFromText(rawText: string): OrderSnapshot[] {
   const parseBlocks = blocks.length > 0 ? blocks : [normalizedText];
   const orders = parseBlocks.map((block) => {
     const status = extractOrderStatus(block);
-    const eta = extractOrderEta(block);
+    const eta = extractOrderEta(block, status);
     const id = block.match(/\bOrder\s?#?\s?((?=[A-Z0-9-]*\d)[A-Z0-9-]{4,})\b/i)?.[1];
     const total = extractOrderTotal(block);
 
@@ -164,11 +164,19 @@ function isTerminalOrderStatus(status: string): boolean {
   return status === "Cancelled" || status === "Refunded";
 }
 
-function extractOrderEta(block: string): string | undefined {
-  return cleanOrderEta(
-    block.match(/\bETA[:\s]+(.+?)(?=\s+(?:Total|₹|Order|Delivered|Confirmed|Packed|Out|Cancelled)\b|$)/i)?.[1] ??
-      block.match(/\b(?:arriving|delivery)\s+in\s+(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b/i)?.[1]
+function extractOrderEta(block: string, status: string | undefined): string | undefined {
+  const labeledEta = cleanOrderEta(
+    block.match(/\bETA[:\s]+(.+?)(?=\s+(?:Total|₹|Order|Delivered|Confirmed|Packed|Out|Cancelled)\b|$)/i)?.[1]
   );
+  if (labeledEta) {
+    return labeledEta;
+  }
+
+  if (!isActiveOrderStatus(status)) {
+    return undefined;
+  }
+
+  return cleanOrderEta(block.match(/\b(?:arriving|delivery)\s+in\s+(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b/i)?.[1]);
 }
 
 function cleanOrderEta(value: string | undefined): string | undefined {
@@ -185,6 +193,10 @@ function cleanOrderEta(value: string | undefined): string | undefined {
   }
 
   return timeValue;
+}
+
+function isActiveOrderStatus(status: string | undefined): boolean {
+  return status !== undefined && status !== "Delivered" && !isTerminalOrderStatus(status);
 }
 
 function extractOrderTotal(block: string): string | undefined {

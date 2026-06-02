@@ -88,6 +88,7 @@ try {
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
   await verifyInstalledProductAutomationContract(installDir);
+  await verifyInstalledOrderExtractionContract(installDir);
   await verifyInstalledAddressAutomationContract(installDir);
   await verifyInstalledSessionContract(installDir);
   await verifyInstalledLiveVerifierContract(installDir);
@@ -220,6 +221,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
     "not a fixed address-label list or service-city allow-list",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
+    "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
     "including image alt/accessibility text",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
@@ -432,6 +434,51 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     "expected installed item-count ADD label to be unsafe"
   );
   console.log("pass installed product automation contract");
+}
+
+async function verifyInstalledOrderExtractionContract(prefixDir) {
+  const extractAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "extract.js"
+  );
+  const { parseOrdersFromText } = await import(pathToFileURL(extractAutomationModulePath).href);
+
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP9999 Out for delivery Delivery in 6 mins Total ₹320"),
+    [
+      {
+        id: "ZEP9999",
+        status: "Out for delivery",
+        eta: "6 mins",
+        total: "₹320",
+        rawText: "Order #ZEP9999 Out for delivery Delivery in 6 mins Total ₹320"
+      }
+    ],
+    "expected installed order parser to keep active delivery ETA"
+  );
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP1234 Delivered Delivery in 6 mins Total ₹249"),
+    [
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Order #ZEP1234 Delivered Delivery in 6 mins Total ₹249"
+      }
+    ],
+    "expected installed order parser not to borrow delivery-speed ETA from delivered orders"
+  );
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP1234 Delivery in 6 mins Total ₹249"),
+    [],
+    "expected installed order parser to reject eta-only delivery-speed copy"
+  );
+  console.log("pass installed order extraction contract");
 }
 
 async function verifyInstalledAddressAutomationContract(prefixDir) {
