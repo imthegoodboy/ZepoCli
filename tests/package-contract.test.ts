@@ -290,6 +290,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed continue-to-pay label to be unsafe");
     expect(verifier).toContain("expected installed continue-to-payment label to be unsafe");
     expect(verifier).toContain("expected installed card payment-method label to be unsafe");
+    expect(verifier).toContain("expected installed deferred payment-method label to be unsafe");
+    expect(verifier).toContain("expected installed wallet payment-method label to be unsafe");
     expect(verifier).toContain("expected installed bare proceed label to be unsafe");
     expect(verifier).toContain("verifyInstalledAddressAutomationContract");
     expect(verifier).toContain("expected installed address-manager label to be accepted: ${label}");

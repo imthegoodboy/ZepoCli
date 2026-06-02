@@ -330,6 +330,14 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     isUnsafeCheckoutAutomationClickText("Credit & Debit Cards") === true,
     "expected installed card payment-method label to be unsafe"
   );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Pay Later") === true,
+    "expected installed deferred payment-method label to be unsafe"
+  );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Amazon Pay") === true,
+    "expected installed wallet payment-method label to be unsafe"
+  );
   assert(isUnsafeCheckoutAutomationClickText("Proceed") === true, "expected installed bare proceed label to be unsafe");
   assert(
     isCheckoutHandoffText("Cart Bill Summary Item Total ₹249 Checkout Payment Methods Accepted UPI Cards") === false,
