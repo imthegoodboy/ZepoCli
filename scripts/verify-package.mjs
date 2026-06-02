@@ -219,6 +219,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
     "not a fixed address-label list or service-city allow-list",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
+    "including image alt/accessibility text",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.",
@@ -408,7 +409,7 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     isAddressManagerClickText,
     isUnsafeAddressAutomationClickText
   } = await import(pathToFileURL(addressAutomationModulePath).href);
-  const { parseCartItemsFromText } = await import(
+  const { parseCartItemsFromText, parseProductCard } = await import(
     pathToFileURL(
       join(prefixDir, "node_modules", packageJson.name, "dist", "automation", "extract.js")
     ).href
@@ -451,6 +452,27 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
   assert(
     cartItems.length === 1 && cartItems[0]?.name === "Protein Bar",
     "expected installed cart parser to ignore custom-label delivery address blocks"
+  );
+  const productFromControlAlt = parseProductCard(
+    {
+      imageAlt: "Image: Notify Me",
+      text: "Notify Me\n₹120\nProtein Bar\n50 g"
+    },
+    0
+  );
+  assert(
+    productFromControlAlt?.name === "Protein Bar",
+    "expected installed product parser to ignore product-card control image alt text"
+  );
+  assert(
+    parseProductCard(
+      {
+        imageAlt: "Image: Add Item",
+        text: "Add Item\n₹120\n50 g"
+      },
+      0
+    ) === undefined,
+    "expected installed product parser not to invent names from product-card controls"
   );
   for (const unsafeText of ["Checkout", "Pay Now", "Order Summary", "Bill Summary", "Cart"]) {
     assert(

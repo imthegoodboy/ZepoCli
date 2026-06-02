@@ -95,6 +95,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("the CLI tries the direct search URL before returning only query-matched homepage fallback cards");
     expect(readme).toContain("Homepage fallback never overrides explicit search-page no-results");
     expect(readme).toContain("Zepto exposes as product-card control labels");
+    expect(readme).toContain("including image alt/accessibility text");
     expect(readme).toContain("not explicit product-add labels");
     expect(readme).toContain("product-specific accessible labels such as `Add <product> to cart`");
     expect(readme).toContain("Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text");

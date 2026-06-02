@@ -318,6 +318,7 @@ function isGenericImageAlt(value: string): boolean {
 
 function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): boolean {
   return (
+    isProductCardControlLabel(line) ||
     isProductAddControlLine(line) ||
     ignoredLines.has(normalizedIgnoredProductLine(line)) ||
     /^(sponsored|ad|advertisement|best\s?seller|popular|trending|recommended|featured)$/i.test(line) ||
@@ -333,6 +334,12 @@ function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): 
 
 function isProductAddControlLine(line: string): boolean {
   return /^add(?:ed(?:\s+to\s+cart)?|\s+to\s+cart|\s+.+\s+to\s+cart)?$/i.test(normalizeText(line));
+}
+
+function isProductCardControlLabel(line: string): boolean {
+  return /^(?:notify me|notify when available|sold out|temporarily out of stock|currently unavailable|out of stock|view similar|see similar products|select options|choose product options|add item|add more)$/i.test(
+    normalizeText(line)
+  );
 }
 
 function ignoredProductLinesFrom(values: string[] | undefined): ReadonlySet<string> {

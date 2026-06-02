@@ -325,6 +325,47 @@ describe("Zepto page extraction helpers", () => {
     }
   });
 
+  it("ignores Zepto product-card control labels from image alt text", () => {
+    for (const controlLabel of [
+      "Notify Me",
+      "Notify when available",
+      "Sold out",
+      "Temporarily out of stock",
+      "Currently unavailable",
+      "View Similar",
+      "See similar products",
+      "Select Options",
+      "Choose Product Options",
+      "Add Item",
+      "Add More"
+    ]) {
+      expect(
+        parseProductCard(
+          {
+            imageAlt: `Image: ${controlLabel}`,
+            text: `${controlLabel}\n₹120\nProtein Bar\n50 g`
+          },
+          0
+        )
+      ).toMatchObject({
+        index: 0,
+        name: "Protein Bar",
+        price: "₹120",
+        unit: "50 g"
+      });
+
+      expect(
+        parseProductCard(
+          {
+            imageAlt: `Image: ${controlLabel}`,
+            text: `${controlLabel}\n₹120\n50 g`
+          },
+          0
+        )
+      ).toBeUndefined();
+    }
+  });
+
   it("does not ignore real product names just because they contain action words", () => {
     expect(
       parseProductCard(
