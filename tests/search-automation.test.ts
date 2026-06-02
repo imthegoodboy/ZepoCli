@@ -235,6 +235,9 @@ describe("search automation helpers", () => {
       "Add one",
       "Add one to cart",
       "Add 1 to cart",
+      "Add 2 to cart",
+      "Add 2 items to cart",
+      "Add ten to cart",
       "Added",
       "Add Address to Cart",
       "Payment Method",
@@ -351,6 +354,18 @@ describe("search automation helpers", () => {
         buttonAttributes: {
           "aria-label": "Add to Cart",
           title: "Notify when available"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add 2 to cart"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add 2 items to cart"
         }
       })
     ]) {

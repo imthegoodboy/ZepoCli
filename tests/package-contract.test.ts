@@ -297,6 +297,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed deferred payment-method label to be unsafe");
     expect(verifier).toContain("expected installed wallet payment-method label to be unsafe");
     expect(verifier).toContain("expected installed bare proceed label to be unsafe");
+    expect(verifier).toContain("verifyInstalledProductAutomationContract");
+    expect(verifier).toContain("expected installed product-specific ADD label to be accepted");
+    expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");
+    expect(verifier).toContain("expected installed item-count ADD label to be unsafe");
+    expect(verifier).toContain("Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.");
     expect(verifier).toContain("verifyInstalledAddressAutomationContract");
     expect(verifier).toContain("expected installed address-manager label to be accepted: ${label}");
     expect(verifier).toContain("expected installed add-address label to be accepted: ${label}");

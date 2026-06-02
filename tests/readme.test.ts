@@ -98,6 +98,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("including image alt/accessibility text");
     expect(readme).toContain("not explicit product-add labels");
     expect(readme).toContain("product-specific accessible labels such as `Add <product> to cart`");
+    expect(readme).toContain("Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.");
+    expect(readme).toContain("quantity-only add text such as `Add 2 items to cart`");
     expect(readme).toContain("Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text");
     expect(readme).toContain("Search, account/login, cart-navigation, order-history, account-menu, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.");

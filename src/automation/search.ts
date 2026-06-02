@@ -17,9 +17,11 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
 ] as const;
 const PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE =
   "address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order";
-const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = `^add(?:\\s+to\\s+cart|\\s+(?!(?:one\\b|1\\b|.*\\b(?:${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b)).+\\s+to\\s+cart)?$`;
+const PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE =
+  "(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d+)(?:\\s*(?:items?|pcs?|pieces?|qty|quantity))?";
+const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = `^add(?:\\s+to\\s+cart|\\s+(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$)(?!(?:.*\\b(?:${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b)).+\\s+to\\s+cart)?$`;
 const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
-  `^(?:remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+(?!(?:to\\s+cart|(?!one\\b|1\\b).+\\s+to\\s+cart)$).+|\\b(${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b`;
+  `^(?:remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE}\\s+to\\s+cart$|^add\\s+(?!(?:to\\s+cart|(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$).+\\s+to\\s+cart)$).+|\\b(${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b`;
 const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;

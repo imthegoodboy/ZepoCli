@@ -87,6 +87,7 @@ try {
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
+  await verifyInstalledProductAutomationContract(installDir);
   await verifyInstalledAddressAutomationContract(installDir);
   await verifyInstalledSessionContract(installDir);
   await verifyInstalledLiveVerifierContract(installDir);
@@ -221,6 +222,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "including image alt/accessibility text",
     "product-specific accessible labels such as `Add <product> to cart`",
+    "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
+    "quantity-only add text such as `Add 2 items to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.",
     "cart navigation labels plus disabled state are revalidated after any scroll into view before clicking",
@@ -392,6 +395,43 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "expected installed checkout detector to accept explicit payment selection text"
   );
   console.log("pass installed checkout handoff contract");
+}
+
+async function verifyInstalledProductAutomationContract(prefixDir) {
+  const searchAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "search.js"
+  );
+  const { isProductAddControlText, isUnsafeProductAddControlText } = await import(
+    pathToFileURL(searchAutomationModulePath).href
+  );
+
+  assert(isProductAddControlText("Add to Cart") === true, "expected installed generic product ADD label to be accepted");
+  assert(
+    isProductAddControlText("Add Amul Milk to Cart") === true,
+    "expected installed product-specific ADD label to be accepted"
+  );
+  assert(
+    isProductAddControlText("Add 2 to cart") === false,
+    "expected installed quantity-only ADD label not to be accepted as product ADD"
+  );
+  assert(
+    isUnsafeProductAddControlText("Add 2 to cart") === true,
+    "expected installed quantity-only ADD label to be unsafe"
+  );
+  assert(
+    isProductAddControlText("Add 2 items to cart") === false,
+    "expected installed item-count ADD label not to be accepted as product ADD"
+  );
+  assert(
+    isUnsafeProductAddControlText("Add 2 items to cart") === true,
+    "expected installed item-count ADD label to be unsafe"
+  );
+  console.log("pass installed product automation contract");
 }
 
 async function verifyInstalledAddressAutomationContract(prefixDir) {

@@ -39,6 +39,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("including image alt/accessibility text");
       expect(guidance).toContain("not explicit product-add labels");
       expect(guidance).toContain("product-specific accessible labels such as `Add <product> to cart`");
+      expect(guidance).toContain("quantity-only add text such as `Add 2 items to cart`");
+      expect(guidance).toContain("quantity-only labels such as `Add 2 to cart`");
       expect(guidance).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
       expect(guidance).toContain("revalidated against the current cart row before click, including after any scroll into view");
       expect(guidance).toContain("Tagged saved-address rows must be revalidated against Zepto's current visible row text before click, including after any scroll into view");
