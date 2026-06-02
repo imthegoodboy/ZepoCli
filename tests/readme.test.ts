@@ -88,7 +88,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("access protection");
     expect(readme).toContain("Hidden Zepto API 403/429 responses without a visible verification surface still stop the command");
     expect(readme).toContain(
-      "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text"
+      "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, support/help, invoice/receipt, refund/return/cancel, rating/review, `checkout and pay`, or amount-bearing pay text"
     );
     expect(readme).toContain("Those labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");

@@ -1052,6 +1052,14 @@ function assertCheckoutHandoffContract(payload) {
     "expected compiled wallet payment-method label to be unsafe"
   );
   assert(
+    isUnsafeCheckoutAutomationClickText("Customer Support") === true,
+    "expected compiled checkout order-action label to be unsafe"
+  );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Refunded") === true,
+    "expected compiled checkout refund label to be unsafe"
+  );
+  assert(
     isUnsafeCheckoutAutomationClickText("Proceed") === true,
     "expected compiled bare proceed label to be unsafe"
   );

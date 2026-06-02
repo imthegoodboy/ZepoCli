@@ -5,6 +5,7 @@ import { hasCartSurfaceEvidence, openCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
+import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const CHECKOUT_HANDOFF_CLICK_LABELS = [
@@ -132,6 +133,7 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
   return (
     /^(?:continue|proceed)\b/i.test(normalized) ||
     /\b(place order|confirm order|pay now|make payment)\b/i.test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized) ||
     /^(payment|payments)$/i.test(normalized) ||
     /\b(complete payment|confirm payment|pay securely|pay with|pay using|pay via|pay by|order now|review order)\b/i.test(

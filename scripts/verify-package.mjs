@@ -213,7 +213,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "zepo checkout",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "paymentStatus: \"not_observed_by_zepocli\"",
-    "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
+    "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, support/help, invoice/receipt, refund/return/cancel, rating/review, `checkout and pay`, or amount-bearing pay text",
     "Those labels and disabled state are revalidated after any scroll into view before clicking.",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
     "Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels",
@@ -395,6 +395,12 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     isUnsafeCheckoutAutomationClickText("Amazon Pay") === true,
     "expected installed wallet payment-method label to be unsafe"
   );
+  for (const label of ["Customer Support", "Help", "Invoice", "Refunded", "Cancel Order", "Review Order"]) {
+    assert(
+      isUnsafeCheckoutAutomationClickText(label) === true,
+      `expected installed checkout order-action label to be unsafe: ${label}`
+    );
+  }
   assert(isUnsafeCheckoutAutomationClickText("Proceed") === true, "expected installed bare proceed label to be unsafe");
   assert(
     isCheckoutHandoffText("Cart Bill Summary Item Total ₹249 Checkout Payment Methods Accepted UPI Cards") === false,
