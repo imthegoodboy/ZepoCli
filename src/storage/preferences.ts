@@ -5,9 +5,7 @@ export class PreferencesStore {
   constructor(private readonly sqlite: SqliteStore) {}
 
   saveAddresses(addresses: Address[]): void {
-    for (const address of addresses) {
-      this.sqlite.upsertAddress(address);
-    }
+    this.sqlite.saveAddresses(addresses);
   }
 
   cachedAddresses(): Address[] {

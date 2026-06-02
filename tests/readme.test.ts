@@ -137,6 +137,7 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "Search cache stores diagnostic result counts with a fixed redacted query marker only; raw search text is not passed into SQLite writes"
     );
+    expect(readme).toContain("Address cache rows use local cache markers instead of raw address labels or text.");
     expect(readme).toContain("Order cache rows use local cache IDs instead of raw Zepto order IDs.");
     expect(readme).toContain("No raw Zepto page HTML/screenshot artifacts for browser flows that may use the persistent profile");
     expect(readme).toContain(

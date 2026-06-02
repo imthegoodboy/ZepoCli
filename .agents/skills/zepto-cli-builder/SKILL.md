@@ -125,6 +125,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Account-dependent browser commands should demote the local login marker when a failed Zepto page clearly shows login/OTP prompts. The shared expired-session guard should trust explicit logged-in account/profile text before login input evidence and ignore bare numeric fields or unsafe phone-like payment/cart/address/search fields on ambiguous pages, so profile/payment/cart/search pages with phone fields are not demoted. Do not capture debug HTML/screenshots for Zepto browser pages that may use the persistent profile, including the expired-session failure path.
    - SQLite is for local metadata, snapshots, and cache only.
    - Search cache writes should keep diagnostic counts without storing raw user search query text, and service code should not pass raw search text into SQLite write APIs.
+   - Address cache writes should keep diagnostic counts without storing raw address labels or text.
    - Cart and order cache writes should persist parsed fields only; do not store raw Zepto cart/order page text or raw Zepto order IDs in SQLite snapshots.
    - Do not use cached data as proof that a live Zepto operation succeeded.
    - Status may expose browser lock state, headless browser throttle state, access-challenge cooldown state, and cache counts for diagnostics, but session confirmation must not depend on those diagnostics or cached metadata.

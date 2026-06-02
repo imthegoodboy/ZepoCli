@@ -203,7 +203,7 @@ Stored data includes:
 
 - Playwright auth state
 - Persistent Chromium browser profile data for Zepto session continuity
-- SQLite metadata for sessions, search counts, cart snapshots, addresses, and order snapshots. Search cache stores diagnostic result counts with a fixed redacted query marker only; raw search text is not passed into SQLite writes. Cart and order caches persist parsed fields only; raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots. Order cache rows use local cache IDs instead of raw Zepto order IDs.
+- SQLite metadata for sessions, search counts, cart snapshots, addresses, and order snapshots. Search cache stores diagnostic result counts with a fixed redacted query marker only; raw search text is not passed into SQLite writes. Address cache rows use local cache markers instead of raw address labels or text. Cart and order caches persist parsed fields only; raw cart/order page text is used in memory for parsing but is not saved to SQLite snapshots. Order cache rows use local cache IDs instead of raw Zepto order IDs.
 - Log file for debugging; Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle, auth/session/token/password/secret URL-parameter, and local-path rules used for terminal errors, including URL/query-string encoded forms and standalone percent-encoded fragments of those values. Credential-like structured keys such as authorization, cookie, token, password, OTP, phone, card, and UPI also redact their values. They also redact npm-token-shaped values.
 - No raw Zepto page HTML/screenshot artifacts for browser flows that may use the persistent profile
 

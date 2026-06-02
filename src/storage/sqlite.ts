@@ -3,6 +3,8 @@ import Database from "better-sqlite3";
 import type { Address, CartSnapshot, OrderSnapshot, UserDataCacheStatus } from "../types.js";
 
 export const REDACTED_SEARCH_QUERY = "<redacted-query>";
+export const ADDRESS_CACHE_TEXT_PREFIX = "cache-address-";
+export const REDACTED_ADDRESS_LABEL = "<redacted-address-label>";
 export const ORDER_CACHE_ID_PREFIX = "cache-order-";
 const SQLITE_BUSY_TIMEOUT_MS = 5_000;
 
@@ -112,17 +114,24 @@ export class SqliteStore {
       .run(JSON.stringify(snapshot.items), snapshot.total ?? null, null);
   }
 
-  upsertAddress(address: Address): void {
-    const label = address.label ?? "";
-    this.db
-      .prepare(
-        `insert into addresses (label, text, selected, updated_at)
-         values (?, ?, ?, datetime('now'))
-         on conflict(label, text) do update set
-           selected = excluded.selected,
-           updated_at = excluded.updated_at`
-      )
-      .run(label, address.text, address.selected ? 1 : 0);
+  saveAddresses(addresses: Address[]): void {
+    const statement = this.db.prepare(
+      `insert into addresses (label, text, selected, updated_at)
+       values (?, ?, ?, datetime('now'))`
+    );
+
+    const save = this.db.transaction((items: Address[]) => {
+      this.db.prepare("delete from addresses").run();
+      for (const [index, address] of items.entries()) {
+        statement.run(
+          address.label ? REDACTED_ADDRESS_LABEL : "",
+          `${ADDRESS_CACHE_TEXT_PREFIX}${index + 1}`,
+          address.selected ? 1 : 0
+        );
+      }
+    });
+
+    save(addresses);
   }
 
   listCachedAddresses(): Address[] {
@@ -215,6 +224,12 @@ export class SqliteStore {
       update orders
         set order_id = '${ORDER_CACHE_ID_PREFIX}legacy-' || rowid
         where order_id not like '${ORDER_CACHE_ID_PREFIX}%';
+      update addresses
+        set text = '${ADDRESS_CACHE_TEXT_PREFIX}' || id
+        where text not like '${ADDRESS_CACHE_TEXT_PREFIX}%';
+      update addresses
+        set label = '${REDACTED_ADDRESS_LABEL}'
+        where label <> '' and label <> '${REDACTED_ADDRESS_LABEL}';
     `);
     this.db
       .prepare("update searches set query = ? where query <> ?")
