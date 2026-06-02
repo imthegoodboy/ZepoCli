@@ -101,20 +101,9 @@ export async function clickProductAdd(page: Page, product: Product): Promise<voi
     button = rediscoveredButton;
   }
 
-  if (await isDisabledControl(button)) {
-    throw new UserFacingError(`The ADD button for ${product.name} is disabled.`, {
-      code: "product_unavailable",
-      hint: "The item may be unavailable at your current location. Rerun search with `--visible` or choose another product."
-    });
-  }
-
-  await assertTaggedProductControlIsStillAdd(button, product);
-  await assertTaggedProductControlMatches(button, product, {
-    code: "product_add_stale",
-    message: `The ADD button no longer matches ${product.name}.`,
-    hint: "Run the search again. Zepto may have re-rendered or reordered the product list."
-  });
-  await button.scrollIntoViewIfNeeded();
+  await assertProductAddControlReady(button, product);
+  await scrollControlIntoViewIfNeeded(button);
+  await assertProductAddControlReady(button, product);
   await button.click();
 }
 
@@ -188,17 +177,69 @@ export async function increaseProductQuantity(page: Page, product: Product, quan
       });
     }
 
-    if (await isDisabledControl(plus)) {
-      throw new UserFacingError(`Could not increase ${product.name} to quantity ${quantity}.`, {
-        code: "product_quantity_unavailable",
-        hint: "Zepto exposed a disabled quantity control, so the requested quantity may not be available."
-      });
-    }
+    await assertQuantityIncreaseControlReady(plus, product, quantity);
+    await scrollControlIntoViewIfNeeded(plus);
+    await assertTaggedProductControlMatches(button, product, {
+      code: "product_quantity_stale",
+      message: `The quantity controls no longer match ${product.name}.`,
+      hint: "Run the search again. Zepto may have re-rendered or reordered the product list."
+    });
+    await assertQuantityIncreaseControlReady(plus, product, quantity);
 
     await plus.click();
     await page.waitForTimeout(QUANTITY_CLICK_PAUSE_MS);
     await assertNoAccessChallenge(page);
   }
+}
+
+async function assertProductAddControlReady(locator: Locator, product: Product): Promise<void> {
+  if (!(await locator.isVisible().catch(() => false))) {
+    throw new UserFacingError(`The ADD button no longer appears available for ${product.name}.`, {
+      code: "product_add_stale",
+      hint: "Run the search again. Zepto may have re-rendered the product card or already changed its cart state."
+    });
+  }
+
+  if (await isDisabledControl(locator)) {
+    throw new UserFacingError(`The ADD button for ${product.name} is disabled.`, {
+      code: "product_unavailable",
+      hint: "The item may be unavailable at your current location. Rerun search with `--visible` or choose another product."
+    });
+  }
+
+  await assertTaggedProductControlIsStillAdd(locator, product);
+  await assertTaggedProductControlMatches(locator, product, {
+    code: "product_add_stale",
+    message: `The ADD button no longer matches ${product.name}.`,
+    hint: "Run the search again. Zepto may have re-rendered or reordered the product list."
+  });
+}
+
+async function assertQuantityIncreaseControlReady(
+  locator: Locator,
+  product: Product,
+  quantity: number
+): Promise<void> {
+  if (!(await locator.isVisible().catch(() => false)) || !(await isQuantityIncreaseControlCandidate(locator))) {
+    throw new UserFacingError(`Could not increase ${product.name} to quantity ${quantity}.`, {
+      code: "product_quantity_unavailable",
+      hint: "Zepto did not expose a plus control after adding the item. Open the cart with `zepo cart` and retry with a lower quantity."
+    });
+  }
+
+  if (await isDisabledControl(locator)) {
+    throw new UserFacingError(`Could not increase ${product.name} to quantity ${quantity}.`, {
+      code: "product_quantity_unavailable",
+      hint: "Zepto exposed a disabled quantity control, so the requested quantity may not be available."
+    });
+  }
+}
+
+async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
+  const scrollable = locator as {
+    scrollIntoViewIfNeeded?: () => Promise<void>;
+  };
+  await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
 async function openSearch(page: Page, query: string): Promise<void> {

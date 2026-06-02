@@ -528,6 +528,21 @@ describe("search automation helpers", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("revalidates product ADD controls after scrolling before clicking", async () => {
+    const page = createProductAddRerenderOnScrollPage();
+
+    await expect(
+      clickProductAdd(page as never, {
+        index: 0,
+        automationId: 4,
+        name: "Amul Milk",
+        unit: "500 ml"
+      })
+    ).rejects.toThrow("The ADD button no longer matches Amul Milk.");
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("rediscovers the current product ADD control when Zepto re-renders and drops the old tag", async () => {
     const page = createRediscoveredProductAddPage("Amul Milk\n500 ml\n₹32");
 
@@ -733,6 +748,25 @@ describe("search automation helpers", () => {
 
     expect(page.plusClicked).toBe(false);
   });
+
+  it("revalidates quantity controls after scrolling before clicking plus", async () => {
+    const page = createQuantityRerenderOnScrollPage();
+
+    await expect(
+      increaseProductQuantity(
+        page as never,
+        {
+          index: 0,
+          automationId: 1,
+          name: "Amul Milk",
+          unit: "500 ml"
+        },
+        2
+      )
+    ).rejects.toThrow("The quantity controls no longer match Amul Milk.");
+
+    expect(page.plusClicked).toBe(false);
+  });
 });
 
 function createPostMutationChallengePage() {
@@ -870,6 +904,37 @@ function createProductAddButtonPage(
     clicked: false,
     locator: () => createProductAddLocator(cardText, buttonText, attributes, async () => {
       page.clicked = true;
+    })
+  };
+
+  return page;
+}
+
+function createProductAddRerenderOnScrollPage() {
+  let cardText = "ADD\nAmul Milk\n500 ml\n₹32";
+  const page = {
+    clicked: false,
+    locator: () => ({
+      first() {
+        return this;
+      },
+      isVisible: async () => true,
+      innerText: async () => "ADD",
+      getAttribute: async () => null,
+      evaluate: async (fn?: unknown) => {
+        const source = String(fn ?? "");
+        if (source.includes("hasDisabledState") || source.includes("HTMLButtonElement")) {
+          return false;
+        }
+
+        return cardText;
+      },
+      scrollIntoViewIfNeeded: async () => {
+        cardText = "ADD\nPotato Chips\n52 g\n₹20";
+      },
+      click: async () => {
+        page.clicked = true;
+      }
     })
   };
 
@@ -1235,6 +1300,43 @@ function createStaleQuantityPage() {
       return this;
     },
     evaluate: async () => "Potato Chips 52 g ₹20",
+    locator: () => cardLocator
+  };
+  const page = {
+    plusClicked: false,
+    locator: () => addButtonLocator
+  };
+
+  return page;
+}
+
+function createQuantityRerenderOnScrollPage() {
+  let cardText = "Amul Milk 500 ml ₹32";
+  const plusLocator = {
+    last() {
+      return this;
+    },
+    isVisible: async () => true,
+    innerText: async () => "+",
+    getAttribute: async () => null,
+    evaluate: async () => false,
+    scrollIntoViewIfNeeded: async () => {
+      cardText = "Potato Chips 52 g ₹20";
+    },
+    click: async () => {
+      page.plusClicked = true;
+    }
+  };
+  const cardLocator = {
+    locator: () => ({
+      filter: () => plusLocator
+    })
+  };
+  const addButtonLocator = {
+    first() {
+      return this;
+    },
+    evaluate: async () => cardText,
     locator: () => cardLocator
   };
   const page = {
