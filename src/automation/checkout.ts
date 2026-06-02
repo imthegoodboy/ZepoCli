@@ -5,6 +5,7 @@ import { hasCartSurfaceEvidence, openCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
+import { isFinalCheckoutSurfaceText, isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
 import {
   isPaymentHandoffSurfaceText,
@@ -136,13 +137,10 @@ export function isUnsafeCheckoutAutomationClickText(text: string): boolean {
 
   return (
     /^(?:continue|proceed)\b/i.test(normalized) ||
-    /\b(place order|confirm order|pay now|make payment)\b/i.test(normalized) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized) ||
     /^(payment|payments)$/i.test(normalized) ||
-    /\b(complete payment|confirm payment|pay securely|pay with|pay using|pay via|pay by|order now|review order)\b/i.test(
-      normalized
-    ) ||
     /\b(pay|order)\b/i.test(normalized) ||
     /^continue\s+to\s+pay$/i.test(normalized) ||
     /\bcheckout\b.*\b(pay|payment|order)\b/i.test(normalized) ||
@@ -193,7 +191,7 @@ function isStrongCheckoutHandoffSurfaceText(text: string): boolean {
 function isExplicitCheckoutHandoffSurfaceText(text: string): boolean {
   return (
     isPaymentSelectionPromptText(text) ||
-    /\b(place order|confirm order|pay now|make payment|complete payment|confirm payment)\b/i.test(text)
+    isFinalCheckoutSurfaceText(text)
   );
 }
 

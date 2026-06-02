@@ -87,6 +87,7 @@ try {
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledPaymentLabelContract(installDir);
+  await verifyInstalledFinalActionLabelContract(installDir);
   await verifyInstalledOrderActionLabelContract(installDir);
   await verifyInstalledAuthAutomationContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
@@ -385,6 +386,52 @@ async function verifyInstalledPaymentLabelContract(prefixDir) {
   console.log("pass installed payment label contract");
 }
 
+async function verifyInstalledFinalActionLabelContract(prefixDir) {
+  const finalActionModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "final-action-labels.js"
+  );
+  const { isFinalCheckoutSurfaceText, isFinalPaymentOrOrderActionText } = await import(
+    pathToFileURL(finalActionModulePath).href
+  );
+
+  for (const label of [
+    "Place Order",
+    "Confirm Order",
+    "Pay Now",
+    "Make Payment",
+    "Pay ₹249",
+    "Checkout and Pay",
+    "Pay with UPI"
+  ]) {
+    assert(
+      isFinalPaymentOrOrderActionText(label) === true,
+      `expected installed final payment/order label to be unsafe: ${label}`
+    );
+  }
+  assert(
+    isFinalPaymentOrOrderActionText("Proceed to Pay") === false,
+    "expected installed proceed-to-pay handoff label not to be final action"
+  );
+  assert(
+    isFinalCheckoutSurfaceText("Confirm Payment") === true,
+    "expected installed final checkout surface label to match"
+  );
+  assert(
+    isFinalCheckoutSurfaceText("Checkout and Pay") === false,
+    "expected installed broad final action not to prove checkout surface"
+  );
+  assert(
+    isFinalCheckoutSurfaceText("Pay ₹249") === false,
+    "expected installed amount-bearing pay label not to prove checkout surface"
+  );
+  console.log("pass installed final action label contract");
+}
+
 async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   const checkoutModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "commands", "checkout.js");
   const checkoutAutomationModulePath = join(
@@ -607,6 +654,30 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
   assert(
     isUnsafeProductAddControlText("Add 2 items to cart") === true,
     "expected installed item-count ADD label to be unsafe"
+  );
+  assert(
+    isProductAddControlText("Add Amul Milk Pay ₹249 to Cart") === false,
+    "expected installed product ADD amount-pay label not to be accepted"
+  );
+  assert(
+    isUnsafeProductAddControlText("Add Amul Milk Pay ₹249 to Cart") === true,
+    "expected installed product ADD amount-pay label to be unsafe"
+  );
+  assert(
+    isUnsafeProductAddControlText("Checkout and Pay") === true,
+    "expected installed checkout-and-pay product ADD label to be unsafe"
+  );
+  assert(
+    isUnsafeProductAddControlText("Pay with UPI") === true,
+    "expected installed pay-with product ADD label to be unsafe"
+  );
+  assert(
+    isUnsafeQuantityIncreaseControlText("Checkout and Pay") === true,
+    "expected installed checkout-and-pay quantity label to be unsafe"
+  );
+  assert(
+    isUnsafeQuantityIncreaseControlText("Pay ₹249") === true,
+    "expected installed amount-pay quantity label to be unsafe"
   );
   for (const label of ["Customer Support", "Help", "Invoice", "Refunded", "Cancellation", "Rate & Review", "Review Your Order"]) {
     assert(

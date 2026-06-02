@@ -251,6 +251,13 @@ describe("checkout handoff detection", () => {
     );
   });
 
+  it("does not treat broad unsafe final actions as checkout handoff proof", () => {
+    expect(isCheckoutHandoffText("Review Order")).toBe(false);
+    expect(isCheckoutHandoffText("Checkout and Pay")).toBe(false);
+    expect(isCheckoutHandoffText("Pay ₹249")).toBe(false);
+    expect(isCheckoutHandoffText("Pay with UPI")).toBe(false);
+  });
+
   it("rejects ordinary cart text that contains product card copy", () => {
     expect(isCheckoutHandoffText("Cart Gift Card ₹249 Checkout View Bill")).toBe(false);
   });

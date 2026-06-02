@@ -304,6 +304,12 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed bare payment brands not to prove handoff surface");
     expect(verifier).toContain("expected installed generic payment heading not to match selection prompt");
     expect(verifier).toContain("pass installed payment label contract");
+    expect(verifier).toContain("verifyInstalledFinalActionLabelContract");
+    expect(verifier).toContain("expected installed final payment/order label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed proceed-to-pay handoff label not to be final action");
+    expect(verifier).toContain("expected installed broad final action not to prove checkout surface");
+    expect(verifier).toContain("expected installed amount-bearing pay label not to prove checkout surface");
+    expect(verifier).toContain("pass installed final action label contract");
     expect(verifier).toContain("expected installed checkout order-action label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed bare proceed label to be unsafe");
     expect(verifier).toContain("verifyInstalledOrderActionLabelContract");
@@ -322,6 +328,12 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed product-specific ADD label to be accepted");
     expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");
     expect(verifier).toContain("expected installed item-count ADD label to be unsafe");
+    expect(verifier).toContain("expected installed product ADD amount-pay label not to be accepted");
+    expect(verifier).toContain("expected installed product ADD amount-pay label to be unsafe");
+    expect(verifier).toContain("expected installed checkout-and-pay product ADD label to be unsafe");
+    expect(verifier).toContain("expected installed pay-with product ADD label to be unsafe");
+    expect(verifier).toContain("expected installed checkout-and-pay quantity label to be unsafe");
+    expect(verifier).toContain("expected installed amount-pay quantity label to be unsafe");
     expect(verifier).toContain("expected installed search input to reject order action label: ${label}");
     expect(verifier).toContain("expected installed search trigger to reject order action label: ${label}");
     expect(verifier).toContain("expected installed product ADD to reject order action label: ${label}");

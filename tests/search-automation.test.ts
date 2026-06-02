@@ -251,10 +251,16 @@ describe("search automation helpers", () => {
       "Add Address to Cart",
       "Add Help to Cart",
       "Add Review Order to Cart",
+      "Add Amul Milk Pay ₹249 to Cart",
+      "Add Amul Milk Checkout and Pay to Cart",
+      "Add Amul Milk Pay with UPI to Cart",
       "Customer Support",
       "Refunded",
       "Review Order",
       "Cancel Order",
+      "Pay ₹249",
+      "Checkout and Pay",
+      "Pay with UPI",
       "Payment Method",
       "UPI",
       "Credit Card",
@@ -375,6 +381,19 @@ describe("search automation helpers", () => {
         buttonText: "",
         buttonAttributes: {
           "aria-label": "Add to Cart",
+          title: "Pay ₹249"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add Amul Milk Pay ₹249 to Cart"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add to Cart",
           title: "Notify when available"
         }
       }),
@@ -415,6 +434,8 @@ describe("search automation helpers", () => {
       "Add coupon",
       "Checkout",
       "Pay",
+      "Pay ₹249",
+      "Checkout and Pay",
       "Payment Method",
       "UPI",
       "Credit Card",
