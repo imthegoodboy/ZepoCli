@@ -718,9 +718,11 @@ function validateLiveReportSummaryConsistencyContract(name, summary, issues) {
   }
 
   if (name === "track" || name === "history") {
+    const latestHasOrderEvidence = summary.latestHasStatus === true || summary.latestHasEta === true;
     if (
-      summary.orderCount === 0 &&
-      (summary.latestHasStatus === true || summary.latestHasEta === true)
+      Number.isInteger(summary.orderCount) &&
+      ((summary.orderCount === 0 && latestHasOrderEvidence) ||
+        (summary.orderCount > 0 && !latestHasOrderEvidence))
     ) {
       addLiveReportStepContractMismatchIssue(issues);
     }

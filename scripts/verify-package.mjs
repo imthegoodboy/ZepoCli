@@ -2419,6 +2419,28 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
           }
         }
       ]
+    },
+    {
+      ...acceptedLiveReport,
+      requested: summarizeLiveReportRequests({
+        search: "milk",
+        checkout: true,
+        history: true
+      }),
+      steps: [
+        ...acceptedLiveReport.steps,
+        {
+          name: "history",
+          command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            orderCount: 1,
+            latestHasStatus: false,
+            latestHasEta: false
+          }
+        }
+      ]
     }
   ];
   for (const inconsistentSummaryLiveReport of inconsistentSummaryLiveReports) {
