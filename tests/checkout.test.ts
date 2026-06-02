@@ -14,6 +14,7 @@ describe("checkout handoff detection", () => {
   it("detects payment handoff text", () => {
     expect(isCheckoutHandoffText("Order Summary To Pay ₹249 Select payment method UPI Card Wallet")).toBe(true);
     expect(isCheckoutHandoffText("Payment Method UPI Credit Card Wallet")).toBe(true);
+    expect(isCheckoutHandoffText("Payment Options UPI Credit Card Wallet")).toBe(true);
   });
 
   it("detects address and place-order checkout text", () => {
@@ -205,6 +206,7 @@ describe("checkout handoff detection", () => {
   });
 
   it("rejects ordinary cart text with payment-method promo copy", () => {
+    expect(isCheckoutHandoffText("UPI Cards Wallet Cash on Delivery")).toBe(false);
     expect(
       isCheckoutHandoffText(
         "Cart Bill Summary Item Total ₹249 To Pay ₹249 Checkout Pay using UPI and save on this order"

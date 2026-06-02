@@ -86,6 +86,7 @@ try {
   verifyInstalledBinShim(zepoBin);
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
+  await verifyInstalledPaymentLabelContract(installDir);
   await verifyInstalledOrderActionLabelContract(installDir);
   await verifyInstalledAuthAutomationContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
@@ -345,6 +346,43 @@ async function verifyInstalledEnvSanitizerContract(prefixDir) {
   assert(isNpmAuthEnvironmentKey("COREPACK_NPM_TOKEN") === true, "expected installed env sanitizer to match Corepack tokens");
   assert(isNpmAuthEnvironmentKey("COREPACK_HOME") === false, "expected installed env sanitizer to keep Corepack home");
   console.log("pass installed env sanitizer contract");
+}
+
+async function verifyInstalledPaymentLabelContract(prefixDir) {
+  const paymentLabelModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "payment-labels.js"
+  );
+  const {
+    isPaymentHandoffSurfaceText,
+    isPaymentMethodLabelText,
+    isPaymentSelectionPromptText
+  } = await import(pathToFileURL(paymentLabelModulePath).href);
+
+  assert(isPaymentMethodLabelText("Credit & Debit Cards") === true, "expected installed card payment label to match");
+  assert(isPaymentMethodLabelText("Amazon Pay") === true, "expected installed wallet payment label to match");
+  assert(isPaymentMethodLabelText("Delivery Address") === false, "expected installed address label not to match payment methods");
+  assert(
+    isPaymentHandoffSurfaceText("Payment Method UPI Cards") === true,
+    "expected installed payment handoff surface label to match"
+  );
+  assert(
+    isPaymentHandoffSurfaceText("UPI Cards Wallet") === false,
+    "expected installed bare payment brands not to prove handoff surface"
+  );
+  assert(
+    isPaymentSelectionPromptText("Select Payment Method") === true,
+    "expected installed payment selection prompt to match"
+  );
+  assert(
+    isPaymentSelectionPromptText("Payment Methods Accepted") === false,
+    "expected installed generic payment heading not to match selection prompt"
+  );
+  console.log("pass installed payment label contract");
 }
 
 async function verifyInstalledCheckoutHandoffContract(prefixDir) {

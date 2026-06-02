@@ -6,7 +6,11 @@ import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
-import { isPaymentMethodLabelText } from "./payment-labels.js";
+import {
+  isPaymentHandoffSurfaceText,
+  isPaymentMethodLabelText,
+  isPaymentSelectionPromptText
+} from "./payment-labels.js";
 
 export const CHECKOUT_HANDOFF_CLICK_LABELS = [
   /^checkout$/i,
@@ -181,14 +185,14 @@ function isOrdinaryCartSurfaceText(text: string): boolean {
 
 function isStrongCheckoutHandoffSurfaceText(text: string): boolean {
   return (
-    /\bpayment methods?\b/i.test(text) ||
+    isPaymentHandoffSurfaceText(text) ||
     isExplicitCheckoutHandoffSurfaceText(text)
   );
 }
 
 function isExplicitCheckoutHandoffSurfaceText(text: string): boolean {
   return (
-    /\b(select payment|choose payment|payment options?|payment mode)\b/i.test(text) ||
+    isPaymentSelectionPromptText(text) ||
     /\b(place order|confirm order|pay now|make payment|complete payment|confirm payment)\b/i.test(text)
   );
 }

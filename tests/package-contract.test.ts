@@ -299,6 +299,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed card payment-method label to be unsafe");
     expect(verifier).toContain("expected installed deferred payment-method label to be unsafe");
     expect(verifier).toContain("expected installed wallet payment-method label to be unsafe");
+    expect(verifier).toContain("verifyInstalledPaymentLabelContract");
+    expect(verifier).toContain("expected installed payment handoff surface label to match");
+    expect(verifier).toContain("expected installed bare payment brands not to prove handoff surface");
+    expect(verifier).toContain("expected installed generic payment heading not to match selection prompt");
+    expect(verifier).toContain("pass installed payment label contract");
     expect(verifier).toContain("expected installed checkout order-action label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed bare proceed label to be unsafe");
     expect(verifier).toContain("verifyInstalledOrderActionLabelContract");

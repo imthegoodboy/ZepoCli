@@ -4,7 +4,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  isPaymentHandoffSurfaceText,
   isPaymentMethodLabelText,
+  isPaymentSelectionPromptText,
   PAYMENT_METHOD_LABEL_PATTERN_SOURCE
 } from "../src/automation/payment-labels.js";
 
@@ -63,6 +65,33 @@ describe("payment label helpers", () => {
     }
   });
 
+  it("recognizes payment handoff surface copy without accepting bare payment brands as proof", () => {
+    for (const label of [
+      "Payment Method",
+      "Payment Methods",
+      "Payment Options",
+      "Payment Mode",
+      "Select Payment",
+      "Choose Payment"
+    ]) {
+      expect(isPaymentHandoffSurfaceText(label)).toBe(true);
+    }
+
+    for (const label of ["UPI", "Cards", "Wallet", "Cash on Delivery"]) {
+      expect(isPaymentHandoffSurfaceText(label)).toBe(false);
+    }
+  });
+
+  it("distinguishes selection prompts from generic payment-method headings", () => {
+    for (const label of ["Payment Options", "Payment Mode", "Select Payment", "Choose Payment"]) {
+      expect(isPaymentSelectionPromptText(label)).toBe(true);
+    }
+
+    for (const label of ["Payment Method", "Payment Methods", "Payment Methods Accepted"]) {
+      expect(isPaymentSelectionPromptText(label)).toBe(false);
+    }
+  });
+
   it("keeps payment label matching centralized across automation modules", () => {
     expect(PAYMENT_METHOD_LABEL_PATTERN_SOURCE).toContain("cash on delivery");
 
@@ -80,5 +109,11 @@ describe("payment label helpers", () => {
       expect(source).toContain("./payment-labels.js");
       expect(source).not.toMatch(/const PAYMENT_METHOD_LABEL_PATTERN(?:_SOURCE)?\s*=/);
     }
+
+    const checkoutSource = readFileSync(resolve(import.meta.dirname, "..", "src", "automation", "checkout.ts"), "utf8");
+    expect(checkoutSource).toContain("isPaymentHandoffSurfaceText");
+    expect(checkoutSource).toContain("isPaymentSelectionPromptText");
+    expect(checkoutSource).not.toMatch(/payment methods\?/);
+    expect(checkoutSource).not.toMatch(/select payment\|choose payment\|payment options/);
   });
 });
