@@ -102,6 +102,19 @@ describe("session storage", () => {
     expect(existsSync(paths.diagnosticsDir)).toBe(true);
   });
 
+  it("waits briefly for transient SQLite locks during same-data-dir command startup", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-sqlite-busy-timeout-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+
+    try {
+      const db = (sqlite as unknown as { db: Database.Database }).db;
+      expect(db.pragma("busy_timeout", { simple: true })).toBe(5_000);
+    } finally {
+      sqlite.close();
+    }
+  });
+
   it("clears saved auth state and persistent browser profile data on logout", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-session-"));
     const paths = resolveAppPaths(tempDir);

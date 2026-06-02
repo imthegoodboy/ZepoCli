@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import type { Address, CartSnapshot, OrderSnapshot, UserDataCacheStatus } from "../types.js";
 
 export const REDACTED_SEARCH_QUERY = "<redacted-query>";
+const SQLITE_BUSY_TIMEOUT_MS = 5_000;
 
 export interface SessionRecord {
   loggedIn: boolean;
@@ -15,6 +16,7 @@ export class SqliteStore {
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);
+    this.db.pragma(`busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
     this.db.pragma("journal_mode = WAL");
     this.migrate();
   }
