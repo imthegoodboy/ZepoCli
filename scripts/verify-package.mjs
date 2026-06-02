@@ -285,7 +285,7 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "checkout.js"
   );
   const { checkoutHandoffOutput } = await import(pathToFileURL(checkoutModulePath).href);
-  const { isCheckoutHandoffClickText, isUnsafeCheckoutAutomationClickText } = await import(
+  const { isCheckoutHandoffClickText, isCheckoutHandoffText, isUnsafeCheckoutAutomationClickText } = await import(
     pathToFileURL(checkoutAutomationModulePath).href
   );
   assertCheckoutHandoffContract(checkoutHandoffOutput());
@@ -311,6 +311,14 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "expected installed continue-to-payment label to be unsafe"
   );
   assert(isUnsafeCheckoutAutomationClickText("Proceed") === true, "expected installed bare proceed label to be unsafe");
+  assert(
+    isCheckoutHandoffText("Cart Bill Summary Item Total ₹249 Checkout Payment Methods Accepted UPI Cards") === false,
+    "expected installed checkout detector to reject cart payment-method promo text"
+  );
+  assert(
+    isCheckoutHandoffText("Cart Order Summary Bill Summary Select payment method UPI Cards") === true,
+    "expected installed checkout detector to accept explicit payment selection text"
+  );
   console.log("pass installed checkout handoff contract");
 }
 

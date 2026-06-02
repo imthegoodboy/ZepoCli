@@ -185,6 +185,24 @@ describe("checkout handoff detection", () => {
         "Cart Add more items Apply Coupon View Bill Checkout UPI Credit Card Wallet Cash on Delivery"
       )
     ).toBe(false);
+    expect(
+      isCheckoutHandoffText(
+        "Cart Bill Summary Item Total ₹249 Grand Total ₹249 Checkout Payment Methods Accepted UPI Cards Wallet"
+      )
+    ).toBe(false);
+  });
+
+  it("accepts cart-adjacent checkout pages only with explicit payment selection or final checkout controls", () => {
+    expect(
+      isCheckoutHandoffText(
+        "Cart Order Summary Bill Summary To Pay ₹249 Select payment method UPI Cards Wallet"
+      )
+    ).toBe(true);
+    expect(
+      isCheckoutHandoffText(
+        "Cart Order Summary Bill Summary To Pay ₹249 Place Order Cash on Delivery"
+      )
+    ).toBe(true);
   });
 
   it("rejects cart text with delivery address and totals but no payment handoff", () => {

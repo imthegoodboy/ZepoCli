@@ -12,7 +12,7 @@ const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "u
 const CLI_COMMAND_TIMEOUT_MS = 120_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
 const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "dist", "commands", "checkout.js")).href);
-const { isCheckoutHandoffClickText, isUnsafeCheckoutAutomationClickText } = await import(
+const { isCheckoutHandoffClickText, isCheckoutHandoffText, isUnsafeCheckoutAutomationClickText } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "checkout.js")).href
 );
 const { HEADLESS_BROWSER_RUN_HISTORY_META_KEY, LAST_ACCESS_CHALLENGE_META_KEY } = await import(
@@ -1000,6 +1000,14 @@ function assertCheckoutHandoffContract(payload) {
   assert(
     isUnsafeCheckoutAutomationClickText("Proceed") === true,
     "expected compiled bare proceed label to be unsafe"
+  );
+  assert(
+    isCheckoutHandoffText("Cart Bill Summary Item Total ₹249 Checkout Payment Methods Accepted UPI Cards") === false,
+    "expected compiled checkout detector to reject cart payment-method promo text"
+  );
+  assert(
+    isCheckoutHandoffText("Cart Order Summary Bill Summary Select payment method UPI Cards") === true,
+    "expected compiled checkout detector to accept explicit payment selection text"
   );
 }
 
