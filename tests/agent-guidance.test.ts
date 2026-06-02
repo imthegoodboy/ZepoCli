@@ -45,6 +45,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("`value`");
       expect(guidance).toContain("src/automation/payment-labels.ts");
       expect(guidance).toContain("do not add per-module payment regex copies");
+      expect(guidance).toContain("src/automation/order-action-labels.ts");
+      expect(guidance).toContain("do not add per-module copies that can drift");
       expect(guidance).toContain("try the direct search URL before returning only query-matched homepage fallback cards");
       expect(guidance).toContain("Homepage fallback must not override explicit search-page no-results");
       expect(guidance).toContain("Zepto exposes as product-card control labels");

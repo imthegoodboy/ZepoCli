@@ -86,6 +86,7 @@ try {
   verifyInstalledBinShim(zepoBin);
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
+  await verifyInstalledOrderActionLabelContract(installDir);
   await verifyInstalledAuthAutomationContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
   await verifyInstalledCartAutomationContract(installDir);
@@ -424,6 +425,32 @@ async function verifyInstalledAuthAutomationContract(prefixDir) {
   }
 
   console.log("pass installed auth automation contract");
+}
+
+async function verifyInstalledOrderActionLabelContract(prefixDir) {
+  const orderActionModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "order-action-labels.js"
+  );
+  const { ORDER_ACTION_LABEL_PATTERN_SOURCE, isOrderActionLabelText } = await import(
+    pathToFileURL(orderActionModulePath).href
+  );
+  const pattern = new RegExp(ORDER_ACTION_LABEL_PATTERN_SOURCE, "i");
+
+  for (const label of ["Help", "Support Ticket", "Refunded", "Cancel", "Rating", "Review Order"]) {
+    assert(isOrderActionLabelText(label) === true, `expected installed order-action label to be unsafe: ${label}`);
+    assert(pattern.test(label) === true, `expected installed order-action source to match: ${label}`);
+  }
+
+  for (const label of ["Account", "Login", "Search", "Cart", "Checkout", "Reorder", "Track Order"]) {
+    assert(isOrderActionLabelText(label) === false, `expected installed ordinary workflow label not to match: ${label}`);
+  }
+
+  console.log("pass installed order action label contract");
 }
 
 async function verifyInstalledCartAutomationContract(prefixDir) {

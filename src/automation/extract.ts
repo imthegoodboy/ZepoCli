@@ -8,6 +8,12 @@ import {
   splitVisibleLines,
   stripImagePrefix
 } from "../utils/format.js";
+import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
+
+const ORDER_ETA_TRAILING_ACTION_PATTERN = new RegExp(
+  `(?:\\b(reorder|order again|repeat order|track order|order summary|payment|paid)\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE}).*$`,
+  "i"
+);
 
 export interface RawProductCard {
   automationId?: number;
@@ -180,12 +186,7 @@ function extractOrderEta(block: string, status: string | undefined): string | un
 }
 
 function cleanOrderEta(value: string | undefined): string | undefined {
-  const cleaned = normalizeText(value ?? "")
-    .replace(
-      /\b(reorder|order again|repeat order|track order|order summary|rate order|help|support|invoice|receipt|cancel order|refund|refunded|payment|paid)\b.*$/i,
-      ""
-    )
-    .trim();
+  const cleaned = normalizeText(value ?? "").replace(ORDER_ETA_TRAILING_ACTION_PATTERN, "").trim();
   const timeValue = cleaned.match(/\b\d+\s*(?:mins?|minutes?|hrs?|hours?)\b/i)?.[0];
 
   if (!timeValue) {

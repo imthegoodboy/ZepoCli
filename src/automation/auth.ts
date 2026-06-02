@@ -3,6 +3,7 @@ import type { Locator, Page } from "playwright";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { findPhonePrefillInput, hasVisibleLoginFormInput } from "./login-inputs.js";
+import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export type LoginState = "logged-in" | "login-required" | "unknown";
@@ -28,8 +29,6 @@ const PHONE_PREFILL_TYPE_DELAY_MS = 45;
 const STRONG_LOGIN_REQUIRED_TEXT_PATTERN =
   /\b(enter (?:mobile|phone)|otp|verify otp|verify mobile|verify phone|sign in|login to continue|log in to continue|login to view|log in to view|login\s*\/\s*sign\s*up|login\/sign up|continue with phone|continue with mobile)\b/i;
 const LOGIN_FIELD_LABEL_TEXT_PATTERN = /\b(mobile number|phone number)\b/i;
-const ACCOUNT_ACTION_SURFACE_PATTERN =
-  /\b(customer support|help (?:centre|center)|support (?:centre|center|ticket)|contact support|invoice|receipt|refund|return|cancel(?: order)?|rate(?: order| your order)?|rating|review order)\b/i;
 
 export async function openLoginFlow(page: Page, phone?: string): Promise<void> {
   await openAccountSurface(page);
@@ -158,7 +157,7 @@ export function isUnsafeAccountSurfaceClickText(text: string): boolean {
     /\b(search results?|cart|my cart|checkout|proceed|continue|next|submit|verify|otp|mobile number|phone number|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
       normalized
     ) ||
-    ACCOUNT_ACTION_SURFACE_PATTERN.test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }

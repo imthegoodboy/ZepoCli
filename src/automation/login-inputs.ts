@@ -1,6 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { isEditableTextInput, readControlLabels } from "./control-state.js";
+import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const PHONE_PREFILL_INPUT_SELECTOR = [
@@ -46,8 +47,6 @@ const LOGIN_FORM_FALLBACK_INPUT_SELECTOR = [
 
 const DIRECT_INPUT_SCAN_LIMIT = 10;
 const FALLBACK_INPUT_SCAN_LIMIT = 20;
-const ACCOUNT_ACTION_SURFACE_PATTERN =
-  /\b(customer support|help (?:centre|center)|support (?:centre|center|ticket)|contact support|invoice|receipt|refund|return|cancel(?: order)?|rate(?: order| your order)?|rating|review order)\b/i;
 
 export async function findPhonePrefillInput(page: Page): Promise<Locator | undefined> {
   const directInput = await findSafePhonePrefillInput(page.locator(PHONE_PREFILL_INPUT_SELECTOR), DIRECT_INPUT_SCAN_LIMIT);
@@ -106,7 +105,7 @@ export function isUnsafePhonePrefillInputText(text: string): boolean {
     /\b(otp|one[-\s]*time|verification code|verify|pin|passcode|password|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
     ) ||
-    ACCOUNT_ACTION_SURFACE_PATTERN.test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }
@@ -237,7 +236,7 @@ function isUnsafeLoginFormInputText(text: string): boolean {
     /\b(password|passcode|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
     ) ||
-    ACCOUNT_ACTION_SURFACE_PATTERN.test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }

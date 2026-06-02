@@ -5,6 +5,7 @@ import { UserFacingError } from "../utils/errors.js";
 import { looksLikeUnit, normalizeText } from "../utils/format.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
+import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 const ADDRESS_DETAIL_PATTERN =
@@ -15,12 +16,10 @@ const ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN =
   "\\b(use (?:my |your |device )?current location|use device location|allow (?:browser |precise )?location|allow location access|share (?:my |your |current |device )?location|detect (?:my |your |current |device )?location|get current location|find (?:my |your |current )?location|enable (?:browser |precise )?location|enable location services|use precise location|grant location access|turn on location|locate me|use gps|enter current location)\\b";
 const ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN =
   "\\b(confirm address|confirm location|save\\s+(?:&|and)\\s+(?:continue|proceed)|save address|use this address|deliver here|select this location)\\b";
-const ADDRESS_ACCOUNT_ORDER_ACTION_SURFACE_PATTERN =
-  "\\b(customer support|help (?:centre|center)|support (?:centre|center|ticket)|contact support|invoice|receipt|refund|return|cancel order|rate order|rate your order|rating|review order)\\b";
 const ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN =
-  `\\b(cart|my cart|checkout|proceed(?:\\s+to)?|continue|payment|payments|pay(?:\\s+now)?|make payment|place order|confirm order|orders?|order history|track order|reorder|order again|repeat order|order summary|bill summary|view bill|item total|grand total|to pay|coupon|promo|voucher|delivery fee|delivery charge|handling fee|platform fee)\\b|${ADDRESS_ACCOUNT_ORDER_ACTION_SURFACE_PATTERN}`;
+  `\\b(cart|my cart|checkout|proceed(?:\\s+to)?|continue|payment|payments|pay(?:\\s+now)?|make payment|place order|confirm order|orders?|order history|track order|reorder|order again|repeat order|order summary|bill summary|view bill|item total|grand total|to pay|coupon|promo|voucher|delivery fee|delivery charge|handling fee|platform fee)\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 const NON_ADDRESS_SURFACE_PATTERN =
-  `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}|${ADDRESS_ACCOUNT_ORDER_ACTION_SURFACE_PATTERN}`;
+  `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 const ADDRESS_CONTAINER_PREFIX_PATTERN = /^(saved|manage|my|select|delivery)\s+addresses?\b/i;
 export const ADDRESS_MANAGER_CLICK_LABELS = [
   /^deliver(?:ing)? to\b.*$/i,

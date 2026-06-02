@@ -6,14 +6,13 @@ import { parseOrdersFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { readCart } from "./cart.js";
+import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
 export const ORDERS_OPEN_CLICK_LABELS = [/^my orders$/i, /^orders$/i, /^order history$/i, /^past orders$/i] as const;
 export const ACCOUNT_MENU_CLICK_LABELS = [/^account$/i, /^profile$/i] as const;
 export const REORDER_ACTION_CLICK_LABELS = [/^reorder$/i, /^order again$/i, /^repeat order$/i] as const;
 const ORDER_CONTROL_SCAN_LIMIT = 8;
-const ORDER_ACCOUNT_ACTION_SURFACE_PATTERN =
-  "\\b(customer support|help (?:centre|center)|support (?:centre|center|ticket)|contact support|invoice|receipt|refund|return|cancel(?: order)?|rate(?: order| your order)?|rating|review order)\\b";
 
 export async function openOrders(page: Page): Promise<void> {
   await gotoZepto(page, "/orders");
@@ -314,7 +313,7 @@ export function isUnsafeOrdersOpenClickText(text: string): boolean {
     /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order|cancel order)\b/i.test(
       normalized
     ) ||
-    new RegExp(ORDER_ACCOUNT_ACTION_SURFACE_PATTERN, "i").test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }
@@ -333,7 +332,7 @@ export function isUnsafeAccountMenuClickText(text: string): boolean {
     /\b(wallet|cart|my cart|search results?|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
       normalized
     ) ||
-    new RegExp(ORDER_ACCOUNT_ACTION_SURFACE_PATTERN, "i").test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }
@@ -352,7 +351,7 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
     /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
       normalized
     ) ||
-    new RegExp(ORDER_ACCOUNT_ACTION_SURFACE_PATTERN, "i").test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }
