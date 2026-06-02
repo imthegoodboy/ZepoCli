@@ -190,6 +190,14 @@ describe("checkout handoff detection", () => {
         "Cart Bill Summary Item Total ₹249 Grand Total ₹249 Checkout Payment Methods Accepted UPI Cards Wallet"
       )
     ).toBe(false);
+    expect(
+      isCheckoutHandoffText(
+        "Bill Summary Item Total ₹249 To Pay ₹249 Checkout Payment Methods Accepted UPI Cards Wallet"
+      )
+    ).toBe(false);
+    expect(
+      isCheckoutHandoffText("Order Summary To Pay ₹249 Payment Methods Accepted UPI Cards Wallet")
+    ).toBe(false);
   });
 
   it("accepts cart-adjacent checkout pages only with explicit payment selection or final checkout controls", () => {

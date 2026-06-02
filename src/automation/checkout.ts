@@ -167,9 +167,13 @@ export function isCheckoutHandoffText(text: string): boolean {
 }
 
 function isOrdinaryCartSurfaceText(text: string): boolean {
+  const hasCartHeading = /\bcart\b/i.test(text);
+  const hasCartAction = /\b(add more|apply coupon|view bill|checkout)\b/i.test(text);
+  const hasCartSummary = /\b(bill summary|order summary|item total|grand total|to pay|payable)\b/i.test(text);
+
   return (
-    /\bcart\b/i.test(text) &&
-    /\b(add more|apply coupon|view bill|bill summary|item total|grand total|checkout)\b/i.test(text)
+    (hasCartHeading && (hasCartAction || hasCartSummary)) ||
+    (hasCartSummary && (hasCartAction || isPaymentMethodLabelText(text)))
   );
 }
 
