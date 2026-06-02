@@ -380,6 +380,24 @@ describe("order automation helpers", () => {
     expect(page.clicks).toEqual(["latest"]);
   });
 
+  it("revalidates reorder controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedReorderPage(
+      "Order #ZEP1234 Delivered Total ₹249 Reorder",
+      "Order #ZEP9999 Delivered Total ₹249 Reorder"
+    );
+
+    await expect(
+      clickReorderActionButton(page as never, {
+        id: "ZEP1234",
+        status: "Delivered",
+        total: "₹249",
+        rawText: "Order #ZEP1234 Delivered Total ₹249"
+      })
+    ).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click a reorder control for a different readable order when reordering last", async () => {
     const page = createReorderForOlderOrderPage();
 
@@ -595,6 +613,27 @@ function createReorderCollectionPage() {
   return page;
 }
 
+function createScrollRerenderedReorderPage(cardTextBeforeScroll: string, cardTextAfterScroll: string) {
+  let cardText = cardTextBeforeScroll;
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Reorder")) {
+        return createVisibleLocator("Reorder", async () => {
+          page.clicked = true;
+        }, undefined, () => cardText, {}, async () => {
+          cardText = cardTextAfterScroll;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createReorderForOlderOrderPage() {
   const page = {
     clicked: false,
@@ -656,8 +695,9 @@ function createVisibleLocator(
   text: string,
   click: () => Promise<void>,
   ariaLabel?: string,
-  cardText = text,
-  attributes: Record<string, string | null> = {}
+  cardText: string | (() => string) = text,
+  attributes: Record<string, string | null> = {},
+  scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
 ) {
   return {
     first() {
@@ -675,8 +715,9 @@ function createVisibleLocator(
         return false;
       }
 
-      return cardText;
+      return typeof cardText === "function" ? cardText() : cardText;
     },
+    scrollIntoViewIfNeeded,
     click
   };
 }
@@ -693,6 +734,7 @@ function createHiddenLocator() {
     innerText: async () => "",
     getAttribute: async () => null,
     evaluate: async () => "",
+    scrollIntoViewIfNeeded: async () => undefined,
     click: async () => undefined
   };
 }
@@ -708,6 +750,7 @@ function createTextLocator(text: string) {
     isVisible: async () => true,
     innerText: async () => text,
     getAttribute: async () => null,
+    scrollIntoViewIfNeeded: async () => undefined,
     click: async () => undefined
   };
 }
@@ -731,6 +774,7 @@ function createLocatorCollection(
     innerText: async () => collection.first().innerText(),
     getAttribute: async (name: string) => collection.first().getAttribute(name),
     evaluate: async (fn?: unknown) => collection.first().evaluate(fn),
+    scrollIntoViewIfNeeded: async () => collection.first().scrollIntoViewIfNeeded(),
     click: async () => collection.first().click()
   };
 

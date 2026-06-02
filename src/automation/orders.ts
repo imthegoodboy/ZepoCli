@@ -207,6 +207,20 @@ async function clickFirstSafeReorderControl(
 }
 
 async function clickSafeReorderControl(locator: Locator, latestOrder: OrderSnapshot | undefined): Promise<boolean> {
+  if (!(await isSafeReorderControl(locator, latestOrder))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+  if (!(await isSafeReorderControl(locator, latestOrder))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeReorderControl(locator: Locator, latestOrder: OrderSnapshot | undefined): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -233,8 +247,14 @@ async function clickSafeReorderControl(locator: Locator, latestOrder: OrderSnaps
     return false;
   }
 
-  await locator.click();
   return true;
+}
+
+async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
+  const scrollable = locator as {
+    scrollIntoViewIfNeeded?: () => Promise<void>;
+  };
+  await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
 export function requireReorderCart(cart: CartSnapshot): CartSnapshot {

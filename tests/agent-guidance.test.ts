@@ -95,6 +95,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("runner-known");
       expect(guidance).toContain("when `--login` is supplied but the data directory already has a confirmed session");
       expect(guidance).toContain("must not claim login coverage and must require `liveSession` coverage instead");
+      expect(guidance).toContain("whose readable order-card text matches the latest detected order, including after any scroll into view before clicking");
       for (const code of [
         "live_doctor_contract_mismatch",
         "live_login_contract_mismatch",

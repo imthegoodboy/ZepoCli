@@ -121,6 +121,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Order-history navigation clicks only visible, enabled, explicit orders/history controls");
     expect(readme).toContain("unrelated cart, account, address, checkout, payment-method/payment, tracking, reorder, or final-order actions are rejected");
     expect(readme).toContain("visible, enabled, explicit reorder/order-again/repeat-order control");
+    expect(readme).toContain("whose readable order-card text matches the latest detected order, including after any scroll into view before clicking");
     expect(readme).toContain("legacy `zeptonow.com` responses");
     expect(readme).toContain("Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage");
     expect(readme).toContain(

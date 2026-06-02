@@ -196,6 +196,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
     "not a fixed address-label list or service-city allow-list",
+    "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "`--browser-locale <locale>` and `--browser-timezone <timezone>`",
