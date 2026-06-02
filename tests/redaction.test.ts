@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { redactSensitiveValue } from "../src/utils/redaction.js";
+import { redactSensitiveText, redactSensitiveValue } from "../src/utils/redaction.js";
 
 describe("sensitive value redaction", () => {
   it("redacts cyclic objects and errors without preserving circular references", () => {
@@ -58,5 +58,19 @@ describe("sensitive value redaction", () => {
     expect(serialized).not.toContain("ZEP1234");
     expect(serialized).not.toContain("C:/Users");
     expect(serialized).not.toContain("raw-token-123");
+  });
+
+  it("redacts relative Zepo data paths after value separators", () => {
+    const redacted = redactSensitiveText(
+      "bad option --bad=.zepo-live/report.json, retry path:../.zepo-agent/report.json, and bare=.zepo-current-smoke"
+    );
+
+    expect(redacted).toContain("--bad=<redacted-local-path>");
+    expect(redacted).toContain("path:<redacted-local-path>");
+    expect(redacted).toContain("bare=<redacted-local-path>");
+    expect(redacted).not.toContain(".zepo-live");
+    expect(redacted).not.toContain(".zepo-agent");
+    expect(redacted).not.toContain(".zepo-current-smoke");
+    expect(redacted).not.toContain("report.json");
   });
 });

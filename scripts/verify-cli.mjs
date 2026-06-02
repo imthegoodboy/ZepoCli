@@ -625,6 +625,20 @@ const checks = [
     }
   },
   {
+    name: "json relative path assignment unknown option redaction",
+    args: ["--json", "status", "--bad=.zepo-live/report.json"],
+    expect: (result) => {
+      expectJsonError(
+        result,
+        "invalid_input",
+        "error: unknown option '--bad=<redacted-local-path>'",
+        "invalid_input"
+      );
+      assert(!result.stderr.includes(".zepo-live"), "expected JSON parser error to omit relative Zepo data path");
+      assert(!result.stderr.includes("report.json"), "expected JSON parser error to omit relative path tail");
+    }
+  },
+  {
     name: "json npm token unknown option redaction",
     args: ["--json", "status", `--bad-${FAKE_NPM_TOKEN}`],
     expect: (result) => {
