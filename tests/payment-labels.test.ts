@@ -20,6 +20,8 @@ describe("payment label helpers", () => {
       "Credit Card",
       "Debit Card",
       "Wallet",
+      "Credit & Debit Cards",
+      "Debit & Credit Cards",
       "Net Banking",
       "Cash on Delivery",
       "COD",

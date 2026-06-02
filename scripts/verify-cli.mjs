@@ -1026,6 +1026,10 @@ function assertCheckoutHandoffContract(payload) {
     "expected compiled continue-to-payment label to be unsafe"
   );
   assert(
+    isUnsafeCheckoutAutomationClickText("Credit & Debit Cards") === true,
+    "expected compiled card payment-method label to be unsafe"
+  );
+  assert(
     isUnsafeCheckoutAutomationClickText("Proceed") === true,
     "expected compiled bare proceed label to be unsafe"
   );
