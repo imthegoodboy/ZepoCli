@@ -170,9 +170,12 @@ function redactSensitiveError(error: Error, seen: WeakSet<object>): Error | stri
 }
 
 function redactRelativeLocalPaths(value: string): string {
-  return value.replace(/(^|[\s("'`])((?:\.{1,2}|\.zepo-live)[\\/][^\r\n"',;<>|]*)/g, (_match, prefix: string, path: string) => {
-    return `${prefix}${redactLocalPathMatch(path)}`;
-  });
+  return value.replace(
+    /(^|[\s("'`])((?:\.{1,2}[\\/][^\r\n"',;<>|]*)|(?:\.zepo(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]*)?))/g,
+    (_match, prefix: string, path: string) => {
+      return `${prefix}${redactLocalPathMatch(path)}`;
+    }
+  );
 }
 
 function redactLocalPathMatch(value: string): string {

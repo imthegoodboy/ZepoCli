@@ -158,7 +158,7 @@ describe("command JSON output", () => {
       type: "invalid_input",
       code: "invalid_input",
       message:
-        `Order #ZEP1234 OTP 123456 for +91 98765 43210 failed with ${fakeNpmToken} near C:\\Users\\parth\\Desktop\\ZepoCli\\.zepo-live\\report.json and C:/Users/parth/Desktop/ZepoCli/.zepo-live/report.json`,
+        `Order #ZEP1234 OTP 123456 for +91 98765 43210 failed with ${fakeNpmToken} near C:\\Users\\parth\\Desktop\\ZepoCli\\.zepo-live\\report.json, C:/Users/parth/Desktop/ZepoCli/.zepo-live/report.json, .zepo-live, and .zepo-agent/report.json`,
       hint:
         "Inspect order ZEP9999 in Zepto; do not paste card 4111 1111 1111 1111, abc@upi, or file:///C:/Users/parth/.zepo-live/trace.txt into CLI logs.",
       exitCode: 2,
@@ -203,6 +203,8 @@ describe("command JSON output", () => {
     expect(serialized).not.toContain("Users");
     expect(serialized).not.toContain("file:///");
     expect(serialized).not.toContain("local-report.json");
+    expect(serialized).not.toContain(".zepo-live");
+    expect(serialized).not.toContain(".zepo-agent");
     expect(serialized).not.toContain("ZEP1234");
     expect(serialized).not.toContain("ZEP9999");
   });

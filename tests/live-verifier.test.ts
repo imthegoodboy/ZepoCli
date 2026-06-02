@@ -3341,6 +3341,18 @@ describe("live verification runner", () => {
     });
   });
 
+  it("redacts bare relative Zepo data directories from live report text", () => {
+    const redacted = redactLiveConsoleText(
+      "Report paths: .zepo-live, .zepo-agent/report.json, and .zepo-current-smoke\\trace.txt.",
+      []
+    );
+
+    expect(redacted).toContain("<redacted-local-path>");
+    expect(redacted).not.toContain(".zepo-live");
+    expect(redacted).not.toContain(".zepo-agent");
+    expect(redacted).not.toContain(".zepo-current-smoke");
+  });
+
   it("redacts sensitive workflow arguments from stored report commands", () => {
     expect(
       redactArgsForLiveReport([
