@@ -639,6 +639,20 @@ const checks = [
     }
   },
   {
+    name: "json encoded relative path assignment unknown option redaction",
+    args: ["--json", "status", "--bad=%2Ezepto-live%2Freport.json"],
+    expect: (result) => {
+      expectJsonError(
+        result,
+        "invalid_input",
+        "error: unknown option '--bad=<redacted-local-path>'",
+        "invalid_input"
+      );
+      assert(!result.stderr.includes("%2Ezepto-live"), "expected JSON parser error to omit encoded relative path");
+      assert(!result.stderr.includes("report.json"), "expected JSON parser error to omit encoded relative path tail");
+    }
+  },
+  {
     name: "json npm token unknown option redaction",
     args: ["--json", "status", `--bad-${FAKE_NPM_TOKEN}`],
     expect: (result) => {

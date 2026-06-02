@@ -1868,7 +1868,7 @@ const LIVE_CONSOLE_SENSITIVE_TAIL_PATTERNS = [
   /(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*$/,
   /\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"',;<>|]*$/,
   /(?<![\w.-])\.{1,2}[\\/][^\r\n"',;<>|]*$/,
-  /(?<![\w.-])\.zepo(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]*)?$/,
+  /(?<![\w.-])\.zept?o(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]*)?$/,
   /\b(?:phone|mobile|tel|otp|pin|cvv|cvc|card|payment|upi|auth|session|password|passwd|passphrase|pwd|secret|credential|token|jwt|access[-_]?token|refresh[-_]?token|id[-_]?token|path|file|data[-_]?dir|report(?:[-_]?path)?)\s*(?:=|%3[Dd])[^&\s"'<>]*$/i,
   /[^\s"',;<>]*%[0-9A-Fa-f]{0,2}[^\s"',;<>]*$/
 ];
@@ -1895,7 +1895,7 @@ function redactGenericPlainSensitiveText(value) {
     .replace(/(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]+/g, redactLocalPathMatch)
     .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"',;<>|]+/g, redactLocalPathMatch)
     .replace(/(?<![\w.-])\.{1,2}[\\/][^\r\n"',;<>|]+/g, redactLocalPathMatch)
-    .replace(/(?<![\w.-])\.zepo(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]+)?/g, redactLocalPathMatch);
+    .replace(/(?<![\w.-])\.zept?o(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]+)?/g, redactLocalPathMatch);
 }
 
 function redactEncodedSensitiveParameterValues(value) {

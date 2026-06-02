@@ -3343,14 +3343,16 @@ describe("live verification runner", () => {
 
   it("redacts bare relative Zepo data directories from live report text", () => {
     const redacted = redactLiveConsoleText(
-      "Report paths: .zepo-live, .zepo-agent/report.json, and .zepo-current-smoke\\trace.txt.",
+      "Report paths: .zepo-live, .zepto-live, .zepo-agent/report.json, .zepto-current-smoke\\trace.txt, and --bad=%2Ezepto-live%2Freport.json.",
       []
     );
 
     expect(redacted).toContain("<redacted-local-path>");
     expect(redacted).not.toContain(".zepo-live");
+    expect(redacted).not.toContain(".zepto-live");
     expect(redacted).not.toContain(".zepo-agent");
-    expect(redacted).not.toContain(".zepo-current-smoke");
+    expect(redacted).not.toContain(".zepto-current-smoke");
+    expect(redacted).not.toContain("%2Ezepto-live");
   });
 
   it("redacts sensitive workflow arguments from stored report commands", () => {

@@ -62,15 +62,17 @@ describe("sensitive value redaction", () => {
 
   it("redacts relative Zepo data paths after value separators", () => {
     const redacted = redactSensitiveText(
-      "bad option --bad=.zepo-live/report.json, retry path:../.zepo-agent/report.json, and bare=.zepo-current-smoke"
+      "bad option --bad=.zepo-live/report.json, encoded=--bad=%2Ezepto-live%2Freport.json, retry path:../.zepto-agent/report.json, and bare=.zepto-current-smoke"
     );
 
     expect(redacted).toContain("--bad=<redacted-local-path>");
+    expect(redacted).toContain("encoded=--bad=<redacted-local-path>");
     expect(redacted).toContain("path:<redacted-local-path>");
     expect(redacted).toContain("bare=<redacted-local-path>");
     expect(redacted).not.toContain(".zepo-live");
-    expect(redacted).not.toContain(".zepo-agent");
-    expect(redacted).not.toContain(".zepo-current-smoke");
+    expect(redacted).not.toContain("%2Ezepto-live");
+    expect(redacted).not.toContain(".zepto-agent");
+    expect(redacted).not.toContain(".zepto-current-smoke");
     expect(redacted).not.toContain("report.json");
   });
 });

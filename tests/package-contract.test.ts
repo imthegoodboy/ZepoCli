@@ -421,6 +421,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed JSON parser error to omit Windows path");
     expect(verifier).toContain("installed json relative path assignment unknown option redaction");
     expect(verifier).toContain("expected installed JSON parser error to omit relative Zepo data path");
+    expect(verifier).toContain("installed json encoded relative path assignment unknown option redaction");
+    expect(verifier).toContain("expected installed JSON parser error to omit encoded relative path");
     expect(verifier).toContain("installed json npm token unknown option redaction");
     expect(verifier).toContain("expected installed JSON parser error to omit npm-token-shaped value");
     expect(verifier).toContain("installed json equals flag parser error");
@@ -470,6 +472,8 @@ describe("package CLI contract", () => {
     expect(cliVerifier).toContain("expected JSON parser error to omit Windows forward-slash path");
     expect(cliVerifier).toContain("json relative path assignment unknown option redaction");
     expect(cliVerifier).toContain("expected JSON parser error to omit relative Zepo data path");
+    expect(cliVerifier).toContain("json encoded relative path assignment unknown option redaction");
+    expect(cliVerifier).toContain("expected JSON parser error to omit encoded relative path");
     expect(cliVerifier).toContain("json npm token unknown option redaction");
     expect(cliVerifier).toContain("expected JSON parser error to omit npm-token-shaped value");
     expect(cliVerifier).toContain("json equals flag parser error");
