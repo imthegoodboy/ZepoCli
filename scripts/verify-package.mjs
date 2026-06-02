@@ -208,6 +208,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
     "Those labels and disabled state are revalidated after any scroll into view before clicking.",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
+    "explicit select/change/set/choose delivery address or location labels",
+    "explicit add/enter delivery address or location labels",
     "Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.",
     "Saved-address labels are derived from Zepto's visible saved-address row text",
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
@@ -357,8 +359,24 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     ).href
   );
 
-  assert(isAddressManagerClickText("Delivery Address") === true, "expected installed address-manager label to be accepted");
-  assert(isAddAddressClickText("Add Address") === true, "expected installed add-address label to be accepted");
+  for (const label of [
+    "Delivery Address",
+    "Select Location",
+    "Change Delivery Address",
+    "Set Delivery Location",
+    "Choose Delivery Address"
+  ]) {
+    assert(isAddressManagerClickText(label) === true, `expected installed address-manager label to be accepted: ${label}`);
+  }
+  for (const label of [
+    "Add Address",
+    "Add New Delivery Address",
+    "Add Delivery Location",
+    "Enter Complete Address",
+    "Enter Delivery Location"
+  ]) {
+    assert(isAddAddressClickText(label) === true, `expected installed add-address label to be accepted: ${label}`);
+  }
   assert(
     extractAddressLabel("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India") === "Parents",
     "expected installed address parser to derive custom saved-address labels"
@@ -384,13 +402,26 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
       isUnsafeAddressAutomationClickText(unsafeText) === true,
       `expected installed address automation label to be unsafe: ${unsafeText}`
     );
+  }
+  for (const rejectedText of [
+    "Checkout",
+    "Pay Now",
+    "Order Summary",
+    "Bill Summary",
+    "Cart",
+    "Use Current Location",
+    "Change to current location",
+    "Save Address",
+    "Confirm Address",
+    "Address selected"
+  ]) {
     assert(
-      isAddressManagerClickText(unsafeText) === false,
-      `expected installed address manager label to be rejected: ${unsafeText}`
+      isAddressManagerClickText(rejectedText) === false,
+      `expected installed address manager label to be rejected: ${rejectedText}`
     );
     assert(
-      isAddAddressClickText(unsafeText) === false,
-      `expected installed add-address label to be rejected: ${unsafeText}`
+      isAddAddressClickText(rejectedText) === false,
+      `expected installed add-address label to be rejected: ${rejectedText}`
     );
   }
   console.log("pass installed address automation contract");
