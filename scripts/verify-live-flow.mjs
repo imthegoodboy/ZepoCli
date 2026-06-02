@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
+import { sanitizedChildEnv } from "./env-utils.mjs";
 import {
   adjustLiveReportRequestsForConfirmedSession,
   buildLiveCommandLaunchFailureStep,
@@ -311,11 +312,10 @@ function runCli(args) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(process.execPath, [cliPath, ...args], {
       cwd: rootDir,
-      env: {
-        ...process.env,
+      env: sanitizedChildEnv(process.env, {
         FORCE_COLOR: "0",
         NO_COLOR: "1"
-      },
+      }),
       stdio: ["inherit", "pipe", "pipe"]
     });
     activeChild = child;

@@ -175,6 +175,7 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("scripts/clean-dist.mjs");
     expect(packageJson.files).toContain("scripts/normalize-cli-entry.mjs");
     expect(packageJson.files).toContain("scripts/verify-dependencies.mjs");
+    expect(packageJson.files).toContain("scripts/env-utils.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-report.mjs");

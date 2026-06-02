@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { sanitizedChildEnv } from "./env-utils.mjs";
+
 const rootDir = resolve(import.meta.dirname, "..");
 const cliPath = resolve(rootDir, "dist", "index.js");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
@@ -842,11 +844,10 @@ function runCli(args) {
     encoding: "utf8",
     killSignal: "SIGTERM",
     timeout: CLI_COMMAND_TIMEOUT_MS,
-    env: {
-      ...process.env,
+    env: sanitizedChildEnv(process.env, {
       FORCE_COLOR: "0",
       NO_COLOR: "1"
-    }
+    })
   });
 
   if (result.error) {

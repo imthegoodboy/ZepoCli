@@ -11,6 +11,7 @@
     "scripts/clean-dist.mjs",
     "scripts/normalize-cli-entry.mjs",
     "scripts/verify-dependencies.mjs",
+    "scripts/env-utils.mjs",
     "scripts/live-report-utils.mjs",
     "scripts/verify-live-flow.mjs",
     "scripts/verify-live-report.mjs",

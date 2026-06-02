@@ -1827,6 +1827,13 @@ describe("live verification runner", () => {
     expect(script).toContain("shouldStreamLiveStderrImmediately");
   });
 
+  it("does not pass npm publish credentials to live child commands", () => {
+    const script = readFileSync(scriptPath, "utf8");
+
+    expect(script).toContain('import { sanitizedChildEnv } from "./env-utils.mjs"');
+    expect(script).toContain("env: sanitizedChildEnv(process.env");
+  });
+
   it("sanitizes live report write failures instead of throwing raw filesystem errors", () => {
     const script = readFileSync(scriptPath, "utf8");
 

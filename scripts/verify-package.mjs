@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { sanitizedChildEnv } from "./env-utils.mjs";
+
 const rootDir = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
 const npmExecPath = process.env.npm_execpath;
@@ -99,6 +101,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedCleanDistPath = join(packageDir, "scripts", "clean-dist.mjs");
   const installedNormalizeCliEntryPath = join(packageDir, "scripts", "normalize-cli-entry.mjs");
   const installedVerifyDependenciesPath = join(packageDir, "scripts", "verify-dependencies.mjs");
+  const installedEnvUtilsPath = join(packageDir, "scripts", "env-utils.mjs");
   const installedVerifySecretsPath = join(packageDir, "scripts", "verify-secrets.mjs");
   const installedVerifyLiveReportPath = join(packageDir, "scripts", "verify-live-report.mjs");
   const installedEnvExamplePath = join(packageDir, ".env.example");
@@ -129,6 +132,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   assert(existsSync(installedCleanDistPath), "expected installed clean-dist script");
   assert(existsSync(installedNormalizeCliEntryPath), "expected installed normalize-cli-entry script");
   assert(existsSync(installedVerifyDependenciesPath), "expected installed verify-dependencies script");
+  assert(existsSync(installedEnvUtilsPath), "expected installed env sanitizer script");
   assert(existsSync(installedVerifySecretsPath), "expected installed verify-secrets script");
   assert(existsSync(installedVerifyLiveReportPath), "expected installed live report acceptance validator");
   assert(existsSync(installedEnvExamplePath), "expected installed .env.example");
@@ -156,11 +160,10 @@ function verifyInstalledBinShim(zepoBin) {
     encoding: "utf8",
     killSignal: "SIGTERM",
     timeout: INSTALLED_CLI_COMMAND_TIMEOUT_MS,
-    env: {
-      ...process.env,
+    env: sanitizedChildEnv(process.env, {
       FORCE_COLOR: "0",
       NO_COLOR: "1"
-    }
+    })
   });
 
   if (result.error) {
@@ -674,11 +677,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     ),
     {
       cwd: rootDir,
-      env: {
-        ...process.env,
+      env: sanitizedChildEnv(process.env, {
         FORCE_COLOR: "0",
         NO_COLOR: "1"
-      }
+      })
     }
   );
   assert(noSessionResult.status === 1, "expected installed verify:live no-session run to fail intentionally");
@@ -754,11 +756,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     ),
     {
       cwd: rootDir,
-      env: {
-        ...process.env,
+      env: sanitizedChildEnv(process.env, {
         FORCE_COLOR: "0",
         NO_COLOR: "1"
-      }
+      })
     }
   );
   assert(
@@ -814,11 +815,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     ),
     {
       cwd: rootDir,
-      env: {
-        ...process.env,
+      env: sanitizedChildEnv(process.env, {
         FORCE_COLOR: "0",
         NO_COLOR: "1"
-      }
+      })
     }
   );
   assert(
@@ -3656,11 +3656,10 @@ function runInstalledCli(installedCliPath, args) {
     encoding: "utf8",
     killSignal: "SIGTERM",
     timeout: INSTALLED_CLI_COMMAND_TIMEOUT_MS,
-    env: {
-      ...process.env,
+    env: sanitizedChildEnv(process.env, {
       FORCE_COLOR: "0",
       NO_COLOR: "1"
-    }
+    })
   });
 
   if (result.error) {
@@ -3800,11 +3799,10 @@ function setRuntimeMeta(runtimeModules, targetDataDir, keyExportName, value) {
 
   run(process.execPath, ["--input-type=module", "--eval", script], {
     cwd: rootDir,
-    env: {
-      ...process.env,
+    env: sanitizedChildEnv(process.env, {
       FORCE_COLOR: "0",
       NO_COLOR: "1"
-    }
+    })
   });
 }
 
