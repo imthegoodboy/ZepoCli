@@ -10,6 +10,7 @@ import { resolveAppPaths } from "../src/config/paths.js";
 import { SessionStore } from "../src/storage/session.js";
 import {
   ADDRESS_CACHE_TEXT_PREFIX,
+  CART_CACHE_ITEM_PREFIX,
   ORDER_CACHE_ID_PREFIX,
   REDACTED_ADDRESS_LABEL,
   REDACTED_SEARCH_QUERY,
@@ -298,7 +299,7 @@ describe("session storage", () => {
     });
   });
 
-  it("does not persist raw search query text, address text, or raw cart/order page text in SQLite snapshots", () => {
+  it("does not persist raw search query text, cart details, address text, or raw cart/order page text in SQLite snapshots", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-cache-privacy-"));
     const paths = resolveAppPaths(tempDir);
     const sqlite = new SqliteStore(paths.dbPath);
@@ -338,6 +339,8 @@ describe("session storage", () => {
     sqlite.close();
 
     const searchQuery = readSingleColumn(paths.dbPath, "select query as raw_text from searches limit 1");
+    const cartItemsJson = readSingleColumn(paths.dbPath, "select items_json as raw_text from cart_snapshots limit 1");
+    const cartTotal = readSingleColumn(paths.dbPath, "select total as raw_text from cart_snapshots limit 1");
     const cartRawText = readSingleColumn(paths.dbPath, "select raw_text from cart_snapshots limit 1");
     const addressLabels = readColumnValues(paths.dbPath, "select label as raw_text from addresses order by text");
     const addressTexts = readColumnValues(paths.dbPath, "select text as raw_text from addresses order by text");
@@ -346,6 +349,12 @@ describe("session storage", () => {
 
     expect(searchQuery).toBe(REDACTED_SEARCH_QUERY);
     expect(String(searchQuery)).not.toContain("private snacks");
+    expect(cartItemsJson).toBe(JSON.stringify([{ name: `${CART_CACHE_ITEM_PREFIX}1` }]));
+    expect(String(cartItemsJson)).not.toContain("Amul");
+    expect(String(cartItemsJson)).not.toContain("Milk");
+    expect(String(cartItemsJson)).not.toContain("500 ml");
+    expect(String(cartItemsJson)).not.toContain("₹32");
+    expect(cartTotal).toBeNull();
     expect(cartRawText).toBeNull();
     expect(addressLabels).toEqual([REDACTED_ADDRESS_LABEL, REDACTED_ADDRESS_LABEL]);
     expect(addressTexts).toEqual([`${ADDRESS_CACHE_TEXT_PREFIX}1`, `${ADDRESS_CACHE_TEXT_PREFIX}2`]);
@@ -383,7 +392,7 @@ describe("session storage", () => {
     expect(countRows(paths.dbPath, "orders")).toBe(0);
   });
 
-  it("scrubs raw search, cart, and order page text from existing SQLite caches during migration", () => {
+  it("scrubs raw search, cart details, and order page text from existing SQLite caches during migration", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-cache-migration-"));
     const paths = resolveAppPaths(tempDir);
     const db = new Database(paths.dbPath);
@@ -426,7 +435,7 @@ describe("session storage", () => {
       values ('private snacks 500', 4, datetime('now'));
 
       insert into cart_snapshots (items_json, total, raw_text, created_at)
-      values ('[]', '₹32', 'Cart Delivery address 221B Test Street', datetime('now'));
+      values ('[{"name":"Amul Milk","unit":"500 ml","price":"₹32"}]', '₹32', 'Cart Delivery address 221B Test Street', datetime('now'));
 
       insert into orders (order_id, status, eta, total, placed_at, raw_text, updated_at)
       values ('ZEP1234', 'Delivered', null, '₹32', null, 'Order Home 221B Test Street', datetime('now'));
@@ -442,6 +451,8 @@ describe("session storage", () => {
     expect(readSingleColumn(paths.dbPath, "select query as raw_text from searches limit 1")).toBe(
       REDACTED_SEARCH_QUERY
     );
+    expect(readSingleColumn(paths.dbPath, "select items_json as raw_text from cart_snapshots limit 1")).toBe("[]");
+    expect(readSingleColumn(paths.dbPath, "select total as raw_text from cart_snapshots limit 1")).toBeNull();
     expect(readSingleColumn(paths.dbPath, "select raw_text from cart_snapshots limit 1")).toBeNull();
     const migratedOrderId = readSingleColumn(paths.dbPath, "select order_id as raw_text from orders limit 1");
     expect(migratedOrderId).toMatch(new RegExp(`^${ORDER_CACHE_ID_PREFIX}legacy-\\d+$`));

@@ -135,6 +135,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("non-empty auth/session-like Zepto cookies or non-empty auth/session-like Zepto localStorage keys");
       expect(guidance).toContain("raw search text");
       expect(guidance).toContain("raw address labels or text");
+      expect(guidance).toContain("local item markers only");
+      expect(guidance).toContain("cart item names, units, prices, totals");
       expect(guidance).toContain("raw Zepto order IDs");
     }
   });

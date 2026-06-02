@@ -126,7 +126,8 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - SQLite is for local metadata, snapshots, and cache only.
    - Search cache writes should keep diagnostic counts without storing raw user search query text, and service code should not pass raw search text into SQLite write APIs.
    - Address cache writes should keep diagnostic counts without storing raw address labels or text.
-   - Cart and order cache writes should persist parsed fields only; do not store raw Zepto cart/order page text or raw Zepto order IDs in SQLite snapshots.
+   - Cart cache writes should keep local item markers only and must not store cart item names, units, prices, totals, or raw Zepto page text in SQLite snapshots.
+   - Order cache writes should use local cache IDs instead of raw Zepto order IDs and must not store raw Zepto order page text in SQLite snapshots.
    - Do not use cached data as proof that a live Zepto operation succeeded.
    - Status may expose browser lock state, headless browser throttle state, access-challenge cooldown state, and cache counts for diagnostics, but session confirmation must not depend on those diagnostics or cached metadata.
    - Logout must clear cached user metadata snapshots as well as auth state and browser profile data, but it must refuse while a non-stale browser automation lock is active for the configured data directory.

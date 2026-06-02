@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import type { Address, CartSnapshot, OrderSnapshot, UserDataCacheStatus } from "../types.js";
 
 export const REDACTED_SEARCH_QUERY = "<redacted-query>";
+export const CART_CACHE_ITEM_PREFIX = "cache-cart-item-";
 export const ADDRESS_CACHE_TEXT_PREFIX = "cache-address-";
 export const REDACTED_ADDRESS_LABEL = "<redacted-address-label>";
 export const ORDER_CACHE_ID_PREFIX = "cache-order-";
@@ -108,10 +109,14 @@ export class SqliteStore {
   }
 
   saveCartSnapshot(snapshot: CartSnapshot): void {
-    // Keep parsed cache fields only; raw page text can contain address or order copy.
+    // Keep local markers only; cart item names, prices, units, totals, and raw page text stay in memory.
+    const cachedItems = snapshot.items.map((_, index) => ({
+      name: `${CART_CACHE_ITEM_PREFIX}${index + 1}`
+    }));
+
     this.db
       .prepare("insert into cart_snapshots (items_json, total, raw_text, created_at) values (?, ?, ?, datetime('now'))")
-      .run(JSON.stringify(snapshot.items), snapshot.total ?? null, null);
+      .run(JSON.stringify(cachedItems), null, null);
   }
 
   saveAddresses(addresses: Address[]): void {
@@ -219,6 +224,10 @@ export class SqliteStore {
         updated_at text not null
       );
 
+      update cart_snapshots
+        set items_json = '[]'
+        where items_json <> '[]' and items_json not like '[{"name":"${CART_CACHE_ITEM_PREFIX}%';
+      update cart_snapshots set total = null where total is not null;
       update cart_snapshots set raw_text = null where raw_text is not null;
       update orders set raw_text = '' where raw_text is not null and raw_text <> '';
       update orders
