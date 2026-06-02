@@ -383,6 +383,19 @@ describe("cart automation helpers", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("revalidates tagged cart remove controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedTaggedCartRemovePage(
+      "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove",
+      "Potato Chips 52 g ₹20 Qty 1 Remove"
+    );
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "milk")).rejects.toThrow(
+      "Zepto cart remove control no longer matches a removable cart item."
+    );
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click stale tagged cart remove controls that no longer match the requested item", async () => {
     const page = createTaggedCartRemovePage({}, "Potato Chips 52 g ₹20 Qty 1 Remove");
 
@@ -542,6 +555,21 @@ function createTaggedCartRemovePage(
   return page;
 }
 
+function createScrollRerenderedTaggedCartRemovePage(cardTextBeforeScroll: string, cardTextAfterScroll: string) {
+  let cardText = cardTextBeforeScroll;
+  const page = {
+    clicked: false,
+    locator: () =>
+      createVisibleLocator("Remove", async () => {
+        page.clicked = true;
+      }, {}, () => cardText, async () => {
+        cardText = cardTextAfterScroll;
+      })
+  };
+
+  return page;
+}
+
 function createHiddenTaggedCartRemovePage() {
   return {
     clicked: false,
@@ -553,7 +581,8 @@ function createVisibleLocator(
   text: string,
   click: () => Promise<void>,
   attributes: Record<string, string | null> = {},
-  cardText = text
+  cardText: string | (() => string) = text,
+  scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
 ) {
   return {
     first() {
@@ -571,8 +600,9 @@ function createVisibleLocator(
         return false;
       }
 
-      return cardText;
+      return typeof cardText === "function" ? cardText() : cardText;
     },
+    scrollIntoViewIfNeeded,
     click
   };
 }
@@ -589,6 +619,7 @@ function createHiddenLocator() {
     innerText: async () => "",
     getAttribute: async () => null,
     evaluate: async () => false,
+    scrollIntoViewIfNeeded: async () => undefined,
     click: async () => undefined
   };
 }
@@ -612,6 +643,7 @@ function createLocatorCollection(
     innerText: async () => collection.first().innerText(),
     getAttribute: async (name: string) => collection.first().getAttribute(name),
     evaluate: async (fn?: unknown) => collection.first().evaluate(fn),
+    scrollIntoViewIfNeeded: async () => collection.first().scrollIntoViewIfNeeded(),
     click: async () => collection.first().click()
   };
 

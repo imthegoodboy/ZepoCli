@@ -507,21 +507,28 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
 
 export async function clickTaggedCartRemoveButton(page: Page, removeId: number, query?: string): Promise<void> {
   const button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
-  if (!(await button.isVisible().catch(() => false))) {
+  await assertCartRemoveControlReady(button, query);
+  await scrollControlIntoViewIfNeeded(button);
+  await assertCartRemoveControlReady(button, query);
+  await button.click();
+}
+
+async function assertCartRemoveControlReady(locator: Locator, query?: string): Promise<void> {
+  if (!(await locator.isVisible().catch(() => false))) {
     throw new UserFacingError("Zepto cart remove control changed before it could be clicked.", {
       code: "cart_remove_control_unavailable",
       hint: "Rerun with `--visible` to inspect the current cart controls before retrying."
     });
   }
 
-  if (await isDisabledControl(button)) {
+  if (await isDisabledControl(locator)) {
     throw new UserFacingError("Zepto cart remove control is disabled.", {
       code: "cart_remove_control_disabled",
       hint: "The item may no longer be removable from the current cart state. Rerun `zepo cart` or inspect with `--visible`."
     });
   }
 
-  const labels = await readControlLabels(button);
+  const labels = await readControlLabels(locator);
   if (!labels.some(isCartRemoveControlText) || labels.some(isUnsafeCartRemoveControlText)) {
     throw new UserFacingError("Zepto cart remove control no longer appears to be a safe item remove action.", {
       code: "cart_remove_control_stale",
@@ -529,15 +536,20 @@ export async function clickTaggedCartRemoveButton(page: Page, removeId: number, 
     });
   }
 
-  const cardText = String(await button.evaluate(readClosestCartRemoveCardText).catch(() => ""));
+  const cardText = String(await locator.evaluate(readClosestCartRemoveCardText).catch(() => ""));
   if (!isLikelyRemovableCartItemText(cardText, query)) {
     throw new UserFacingError("Zepto cart remove control no longer matches a removable cart item.", {
       code: "cart_remove_control_stale",
       hint: "Rerun `zepo cart` or inspect with `--visible`; Zepto may have re-rendered or reordered the cart."
     });
   }
+}
 
-  await button.click();
+async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
+  const scrollable = locator as {
+    scrollIntoViewIfNeeded?: () => Promise<void>;
+  };
+  await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
 function readClosestCartRemoveCardText(element: Element): string {
