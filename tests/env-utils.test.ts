@@ -7,12 +7,18 @@ describe("verifier child environment sanitizer", () => {
     const env = sanitizedChildEnv(
       {
         APPDATA: "C:\\Users\\parth\\AppData\\Roaming",
+        COREPACK_NPM_TOKEN: "npm_secret",
         NODE_AUTH_TOKEN: "npm_secret",
+        NPM_AUTH_IDENT: "user:secret",
+        NPM_AUTH_TOKEN: "npm_secret",
         NPM_CONFIG_CACHE: "C:\\npm-cache",
         NPM_CONFIG__AUTH: "secret",
         "NPM_CONFIG_//REGISTRY.NPMJS.ORG/:_AUTHTOKEN": "secret",
         NPM_TOKEN: "npm_secret",
-        PATH: "C:\\Windows\\System32"
+        PATH: "C:\\Windows\\System32",
+        YARN_NPM_AUTH: "secret",
+        YARN_NPM_AUTH_IDENT: "user:secret",
+        YARN_NPM_AUTH_TOKEN: "npm_secret"
       },
       {
         FORCE_COLOR: "0",
@@ -32,9 +38,16 @@ describe("verifier child environment sanitizer", () => {
   it("matches npm auth keys without treating ordinary npm config as auth", () => {
     expect(isNpmAuthEnvironmentKey("NPM_TOKEN")).toBe(true);
     expect(isNpmAuthEnvironmentKey("NODE_AUTH_TOKEN")).toBe(true);
+    expect(isNpmAuthEnvironmentKey("NPM_AUTH_TOKEN")).toBe(true);
+    expect(isNpmAuthEnvironmentKey("NPM_AUTH_IDENT")).toBe(true);
+    expect(isNpmAuthEnvironmentKey("YARN_NPM_AUTH_TOKEN")).toBe(true);
+    expect(isNpmAuthEnvironmentKey("YARN_NPM_AUTH_IDENT")).toBe(true);
+    expect(isNpmAuthEnvironmentKey("YARN_NPM_AUTH")).toBe(true);
+    expect(isNpmAuthEnvironmentKey("COREPACK_NPM_TOKEN")).toBe(true);
     expect(isNpmAuthEnvironmentKey("npm_config__authToken")).toBe(true);
     expect(isNpmAuthEnvironmentKey("npm_config_//registry.npmjs.org/:_authToken")).toBe(true);
     expect(isNpmAuthEnvironmentKey("npm_config_cache")).toBe(false);
+    expect(isNpmAuthEnvironmentKey("COREPACK_HOME")).toBe(false);
     expect(isNpmAuthEnvironmentKey("PATH")).toBe(false);
   });
 });

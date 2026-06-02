@@ -16,8 +16,18 @@ export function sanitizedChildEnv(sourceEnv = process.env, overrides = {}) {
 export function isNpmAuthEnvironmentKey(key) {
   const normalized = String(key ?? "").toLowerCase();
   return (
-    normalized === "npm_token" ||
-    normalized === "node_auth_token" ||
+    packageManagerAuthEnvironmentKeys.has(normalized) ||
     (normalized.startsWith("npm_config_") && /\b(?:auth|token)\b|_auth|authtoken/.test(normalized))
   );
 }
+
+const packageManagerAuthEnvironmentKeys = new Set([
+  "corepack_npm_token",
+  "node_auth_token",
+  "npm_auth_ident",
+  "npm_auth_token",
+  "npm_token",
+  "yarn_npm_auth",
+  "yarn_npm_auth_ident",
+  "yarn_npm_auth_token"
+]);

@@ -272,6 +272,10 @@ describe("package CLI contract", () => {
     const verifier = readFileSync(resolve(rootDir, "scripts", "verify-package.mjs"), "utf8");
 
     expect(verifier).toContain("verifyInstalledReadmeContract");
+    expect(verifier).toContain("verifyInstalledEnvSanitizerContract");
+    expect(verifier).toContain("expected installed env sanitizer to remove Yarn npm auth tokens");
+    expect(verifier).toContain("expected installed env sanitizer to remove Corepack npm tokens");
+    expect(verifier).toContain("pass installed env sanitizer contract");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");

@@ -85,6 +85,7 @@ try {
   const installedCliPath = verifyInstalledCliEntryContract(installDir);
   verifyInstalledBinShim(zepoBin);
   verifyInstalledReadmeContract(installDir);
+  await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
   await verifyInstalledAddressAutomationContract(installDir);
   await verifyInstalledSessionContract(installDir);
@@ -289,6 +290,47 @@ function verifyInstalledReadmeContract(prefixDir) {
   }
 
   console.log("pass installed README contract");
+}
+
+async function verifyInstalledEnvSanitizerContract(prefixDir) {
+  const envUtilsPath = join(prefixDir, "node_modules", packageJson.name, "scripts", "env-utils.mjs");
+  const { isNpmAuthEnvironmentKey, sanitizedChildEnv } = await import(pathToFileURL(envUtilsPath).href);
+  const env = sanitizedChildEnv({
+    COREPACK_HOME: "C:\\corepack",
+    COREPACK_NPM_TOKEN: "secret",
+    NODE_AUTH_TOKEN: "secret",
+    NPM_AUTH_IDENT: "user:secret",
+    NPM_AUTH_TOKEN: "secret",
+    NPM_CONFIG_CACHE: "C:\\npm-cache",
+    NPM_CONFIG__AUTH: "secret",
+    "NPM_CONFIG_//REGISTRY.NPMJS.ORG/:_AUTHTOKEN": "secret",
+    NPM_TOKEN: "secret",
+    PATH: "C:\\Windows\\System32",
+    YARN_NPM_AUTH: "secret",
+    YARN_NPM_AUTH_IDENT: "user:secret",
+    YARN_NPM_AUTH_TOKEN: "secret"
+  });
+
+  assert(!("COREPACK_NPM_TOKEN" in env), "expected installed env sanitizer to remove Corepack npm tokens");
+  assert(!("NODE_AUTH_TOKEN" in env), "expected installed env sanitizer to remove Node npm auth tokens");
+  assert(!("NPM_AUTH_IDENT" in env), "expected installed env sanitizer to remove npm auth identities");
+  assert(!("NPM_AUTH_TOKEN" in env), "expected installed env sanitizer to remove npm auth tokens");
+  assert(!("NPM_CONFIG__AUTH" in env), "expected installed env sanitizer to remove npm config auth");
+  assert(
+    !("NPM_CONFIG_//REGISTRY.NPMJS.ORG/:_AUTHTOKEN" in env),
+    "expected installed env sanitizer to remove registry-scoped npm config auth"
+  );
+  assert(!("NPM_TOKEN" in env), "expected installed env sanitizer to remove npm publish tokens");
+  assert(!("YARN_NPM_AUTH" in env), "expected installed env sanitizer to remove Yarn npm auth");
+  assert(!("YARN_NPM_AUTH_IDENT" in env), "expected installed env sanitizer to remove Yarn npm auth identities");
+  assert(!("YARN_NPM_AUTH_TOKEN" in env), "expected installed env sanitizer to remove Yarn npm auth tokens");
+  assert(env.COREPACK_HOME === "C:\\corepack", "expected installed env sanitizer to keep ordinary Corepack env");
+  assert(env.NPM_CONFIG_CACHE === "C:\\npm-cache", "expected installed env sanitizer to keep ordinary npm config");
+  assert(env.PATH === "C:\\Windows\\System32", "expected installed env sanitizer to keep PATH");
+  assert(isNpmAuthEnvironmentKey("YARN_NPM_AUTH_TOKEN") === true, "expected installed env sanitizer to match Yarn tokens");
+  assert(isNpmAuthEnvironmentKey("COREPACK_NPM_TOKEN") === true, "expected installed env sanitizer to match Corepack tokens");
+  assert(isNpmAuthEnvironmentKey("COREPACK_HOME") === false, "expected installed env sanitizer to keep Corepack home");
+  console.log("pass installed env sanitizer contract");
 }
 
 async function verifyInstalledCheckoutHandoffContract(prefixDir) {
