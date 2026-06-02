@@ -101,6 +101,25 @@ async function clickSafeLabeledControl(
   isSafeText: (text: string) => boolean,
   isUnsafeText: (text: string) => boolean
 ): Promise<boolean> {
+  if (!(await isSafeLabeledControl(locator, isSafeText, isUnsafeText))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+
+  if (!(await isSafeLabeledControl(locator, isSafeText, isUnsafeText))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeLabeledControl(
+  locator: Locator,
+  isSafeText: (text: string) => boolean,
+  isUnsafeText: (text: string) => boolean
+): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -118,7 +137,6 @@ async function clickSafeLabeledControl(
     return false;
   }
 
-  await locator.click();
   return true;
 }
 

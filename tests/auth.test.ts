@@ -141,6 +141,14 @@ describe("login state inference", () => {
     expect(page.clicks).toEqual(["safe"]);
   });
 
+  it("revalidates account or login controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedAccountSurfacePage("Login", "Checkout");
+
+    await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("prefills phone only into explicit phone or mobile fields", () => {
     expect(PHONE_PREFILL_INPUT_SELECTOR).toContain("input[type='tel']");
     expect(PHONE_PREFILL_INPUT_SELECTOR).toContain("autocomplete='tel'");
@@ -442,6 +450,32 @@ function createAccountSurfaceCollectionPage() {
   return page;
 }
 
+function createScrollRerenderedAccountSurfacePage(textBeforeScroll: string, textAfterScroll: string) {
+  let text = textBeforeScroll;
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocator(
+          () => text,
+          async () => {
+            page.clicked = true;
+          },
+          {},
+          async () => {
+            text = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createLoginFlowPage(attributes: Record<string, string | null> = {}) {
   const phone = createPhoneInputLocator({ type: "tel", ...attributes });
   const page = {
@@ -590,9 +624,10 @@ function createBodyLocator(text: string) {
 }
 
 function createVisibleLocator(
-  text: string,
+  text: string | (() => string),
   click: () => Promise<void>,
-  attributes: Record<string, string | null> = {}
+  attributes: Record<string, string | null> = {},
+  scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
 ) {
   return {
     first() {
@@ -602,11 +637,16 @@ function createVisibleLocator(
       return createHiddenLocator();
     },
     isVisible: async () => true,
-    innerText: async () => text,
+    innerText: async () => resolveLocatorText(text),
     getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async () => false,
+    scrollIntoViewIfNeeded,
     click
   };
+}
+
+function resolveLocatorText(text: string | (() => string)): string {
+  return typeof text === "function" ? text() : text;
 }
 
 function createHiddenLocator() {
@@ -621,6 +661,7 @@ function createHiddenLocator() {
     innerText: async () => "",
     getAttribute: async () => null,
     evaluate: async () => false,
+    scrollIntoViewIfNeeded: async () => undefined,
     click: async () => undefined
   };
 }

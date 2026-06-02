@@ -311,6 +311,14 @@ describe("order automation helpers", () => {
     expect(page.clicks).toEqual(["safe"]);
   });
 
+  it("revalidates order navigation controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedOrdersNavigationPage("My Orders", "Checkout");
+
+    await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click account menu controls when any visible or accessible label is unsafe", async () => {
     for (const page of [
       createMixedLabelAccountMenuPage("My Orders", "Account"),
@@ -332,6 +340,14 @@ describe("order automation helpers", () => {
     await expect(clickAccountMenuControl(page as never)).resolves.toBe(true);
 
     expect(page.clicks).toEqual(["safe"]);
+  });
+
+  it("revalidates account menu controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedAccountMenuPage("Account", "Cart");
+
+    await expect(clickAccountMenuControl(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
   });
 
   it("does not click disabled reorder controls", async () => {
@@ -528,6 +544,34 @@ function createOrdersNavigationCollectionPage() {
   return page;
 }
 
+function createScrollRerenderedOrdersNavigationPage(textBeforeScroll: string, textAfterScroll: string) {
+  let text = textBeforeScroll;
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocator(
+          () => text,
+          async () => {
+            page.clicked = true;
+          },
+          () => text,
+          () => text,
+          {},
+          async () => {
+            text = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createAccountMenuCollectionPage() {
   const clicks: string[] = [];
   const locators = createLocatorCollection([
@@ -542,6 +586,34 @@ function createAccountMenuCollectionPage() {
     clicks,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
       role === "button" && matchesLocatorName(options.name, "Account") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createScrollRerenderedAccountMenuPage(textBeforeScroll: string, textAfterScroll: string) {
+  let text = textBeforeScroll;
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocator(
+          () => text,
+          async () => {
+            page.clicked = true;
+          },
+          () => text,
+          () => text,
+          {},
+          async () => {
+            text = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
     locator: () => createHiddenLocator()
   };
 
@@ -692,9 +764,9 @@ function createUnreadableReorderPage() {
 }
 
 function createVisibleLocator(
-  text: string,
+  text: string | (() => string),
   click: () => Promise<void>,
-  ariaLabel?: string,
+  ariaLabel?: string | (() => string),
   cardText: string | (() => string) = text,
   attributes: Record<string, string | null> = {},
   scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
@@ -707,8 +779,9 @@ function createVisibleLocator(
       return createHiddenLocator();
     },
     isVisible: async () => true,
-    innerText: async () => text,
-    getAttribute: async (name: string) => (name === "aria-label" ? ariaLabel : attributes[name] ?? null),
+    innerText: async () => resolveLocatorText(text),
+    getAttribute: async (name: string) =>
+      name === "aria-label" ? resolveOptionalLocatorText(ariaLabel) : attributes[name] ?? null,
     evaluate: async (fn?: unknown) => {
       const source = String(fn ?? "");
       if (source.includes("HTMLButtonElement") || source.includes("aria-disabled")) {
@@ -720,6 +793,14 @@ function createVisibleLocator(
     scrollIntoViewIfNeeded,
     click
   };
+}
+
+function resolveLocatorText(text: string | (() => string)): string {
+  return typeof text === "function" ? text() : text;
+}
+
+function resolveOptionalLocatorText(text: string | (() => string) | undefined): string | undefined {
+  return typeof text === "function" ? text() : text;
 }
 
 function createHiddenLocator() {

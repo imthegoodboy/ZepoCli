@@ -343,6 +343,21 @@ async function clickFirstSafeSearchTrigger(locator: Locator): Promise<boolean> {
 }
 
 async function clickSafeSearchTrigger(locator: Locator): Promise<boolean> {
+  if (!(await isSafeSearchTrigger(locator))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+
+  if (!(await isSafeSearchTrigger(locator))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeSearchTrigger(locator: Locator): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -360,7 +375,6 @@ async function clickSafeSearchTrigger(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  await locator.click();
   return true;
 }
 

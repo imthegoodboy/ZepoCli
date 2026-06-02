@@ -21,6 +21,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain("cart/checkout/order/bill/payment controls");
       expect(guidance).toContain("`checkout and pay`, or amount-bearing pay text");
       expect(guidance).toContain("after any scroll into view before clicking");
+      expect(guidance).toContain("Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls");
+      expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");
+      expect(guidance).toContain("search-trigger labels plus disabled state");
+      expect(guidance).toContain("Order-history and account-menu labels plus disabled state must be revalidated after any scroll into view before clicking");
       expect(guidance).toContain("Address manager/add-address labels and disabled state must be revalidated after any scroll into view before clicking");
       expect(guidance).toContain(
         "location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment copy, and payment-method/payment copy"

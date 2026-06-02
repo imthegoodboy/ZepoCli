@@ -81,6 +81,21 @@ async function clickFirstSafeAccountSurfaceControl(locator: Locator): Promise<bo
 }
 
 async function clickSafeAccountSurfaceControl(locator: Locator): Promise<boolean> {
+  if (!(await isSafeAccountSurfaceControl(locator))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+
+  if (!(await isSafeAccountSurfaceControl(locator))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeAccountSurfaceControl(locator: Locator): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -98,8 +113,14 @@ async function clickSafeAccountSurfaceControl(locator: Locator): Promise<boolean
     return false;
   }
 
-  await locator.click();
   return true;
+}
+
+async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
+  const scrollable = locator as {
+    scrollIntoViewIfNeeded?: () => Promise<void>;
+  };
+  await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
 export async function detectLoginState(page: Page): Promise<LoginState> {

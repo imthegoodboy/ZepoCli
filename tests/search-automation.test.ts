@@ -421,6 +421,14 @@ describe("search automation helpers", () => {
     expect(page.clicks).toEqual(["safe"]);
   });
 
+  it("revalidates search trigger controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedSearchTriggerPage("Search", "Cart");
+
+    await expect(clickSearchTrigger(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("detects delivery-location setup copy without treating normal search text as setup", () => {
     expect(isLocationSetupRequiredText("Select location to see products near you")).toBe(true);
     expect(isLocationSetupRequiredText("Enter delivery location to continue")).toBe(true);
@@ -1420,6 +1428,32 @@ function createSearchTriggerCollectionPage() {
   return page;
 }
 
+function createScrollRerenderedSearchTriggerPage(textBeforeScroll: string, textAfterScroll: string) {
+  let text = textBeforeScroll;
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocator(
+          () => text,
+          async () => {
+            page.clicked = true;
+          },
+          {},
+          async () => {
+            text = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDisabledInputAfterSearchTriggerPage() {
   return createInputAfterSearchTriggerPage({ "aria-disabled": "true" });
 }
@@ -1719,22 +1753,33 @@ function createHiddenLocator() {
     isVisible: async () => false,
     innerText: async () => "",
     getAttribute: async () => null,
-    evaluate: async () => false
+    evaluate: async () => false,
+    scrollIntoViewIfNeeded: async () => undefined,
+    click: async () => undefined
   };
 }
 
-function createVisibleLocator(text: string, click: () => Promise<void>, attributes: Record<string, string | null> = {}) {
+function createVisibleLocator(
+  text: string | (() => string),
+  click: () => Promise<void>,
+  attributes: Record<string, string | null> = {},
+  scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
+) {
   return {
     first() {
       return this;
     },
     isVisible: async () => true,
-    innerText: async () => text,
+    innerText: async () => resolveLocatorText(text),
     getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async () => false,
-    scrollIntoViewIfNeeded: async () => undefined,
+    scrollIntoViewIfNeeded,
     click
   };
+}
+
+function resolveLocatorText(text: string | (() => string)): string {
+  return typeof text === "function" ? text() : text;
 }
 
 function matchesLocatorName(name: RegExp | string | undefined, text: string): boolean {

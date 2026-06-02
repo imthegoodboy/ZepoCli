@@ -73,6 +73,21 @@ async function clickFirstSafeCartOpenControl(locator: Locator): Promise<boolean>
 }
 
 async function clickSafeCartOpenControl(locator: Locator): Promise<boolean> {
+  if (!(await isSafeCartOpenControl(locator))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+
+  if (!(await isSafeCartOpenControl(locator))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeCartOpenControl(locator: Locator): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -90,7 +105,6 @@ async function clickSafeCartOpenControl(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  await locator.click();
   return true;
 }
 

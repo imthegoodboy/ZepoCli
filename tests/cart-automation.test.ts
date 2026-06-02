@@ -335,6 +335,14 @@ describe("cart automation helpers", () => {
     expect(page.clicks).toEqual(["safe"]);
   });
 
+  it("revalidates cart navigation controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedCartOpenPage("Cart", "Checkout");
+
+    await expect(clickCartOpenButton(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click disabled tagged cart remove controls", async () => {
     const page = createTaggedCartRemovePage({ "data-disabled": "true" });
 
@@ -540,6 +548,33 @@ function createCartOpenCollectionPage() {
   return page;
 }
 
+function createScrollRerenderedCartOpenPage(textBeforeScroll: string, textAfterScroll: string) {
+  let text = textBeforeScroll;
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocator(
+          () => text,
+          async () => {
+            page.clicked = true;
+          },
+          {},
+          () => text,
+          async () => {
+            text = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createTaggedCartRemovePage(
   attributes: Record<string, string | null> = {},
   cardText = "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove"
@@ -578,7 +613,7 @@ function createHiddenTaggedCartRemovePage() {
 }
 
 function createVisibleLocator(
-  text: string,
+  text: string | (() => string),
   click: () => Promise<void>,
   attributes: Record<string, string | null> = {},
   cardText: string | (() => string) = text,
@@ -592,7 +627,7 @@ function createVisibleLocator(
       return createHiddenLocator();
     },
     isVisible: async () => true,
-    innerText: async () => text,
+    innerText: async () => resolveLocatorText(text),
     getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async (fn?: unknown) => {
       const source = String(fn ?? "");
@@ -605,6 +640,10 @@ function createVisibleLocator(
     scrollIntoViewIfNeeded,
     click
   };
+}
+
+function resolveLocatorText(text: string | (() => string)): string {
+  return typeof text === "function" ? text() : text;
 }
 
 function createHiddenLocator() {

@@ -98,7 +98,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("not explicit product-add labels");
     expect(readme).toContain("product-specific accessible labels such as `Add <product> to cart`");
     expect(readme).toContain("Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text");
-    expect(readme).toContain("Search, account/login, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
+    expect(readme).toContain("Search, account/login, cart-navigation, order-history, account-menu, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
+    expect(readme).toContain("Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("visible, enabled address controls");
     expect(readme).toContain("Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("Saved-address labels are derived from Zepto's visible saved-address row text");
@@ -110,7 +111,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, or verification actions");
     expect(readme).toContain("payment-method/payment, coupon, or order actions");
     expect(readme).toContain("checkout, payment-method/payment, or final-order action");
-    expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text");
+    expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text, and cart navigation labels plus disabled state are revalidated after any scroll into view before clicking");
     expect(readme).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
@@ -121,6 +122,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("no-id history rows need stronger evidence than a bare status word");
     expect(readme).toContain("Order-history navigation clicks only visible, enabled, explicit orders/history controls");
     expect(readme).toContain("unrelated cart, account, address, checkout, payment-method/payment, tracking, reorder, or final-order actions are rejected");
+    expect(readme).toContain("Order navigation also requires visible, enabled controls and revalidates labels plus disabled state after any scroll into view before clicking.");
     expect(readme).toContain("visible, enabled, explicit reorder/order-again/repeat-order control");
     expect(readme).toContain("whose readable order-card text matches the latest detected order, including after any scroll into view before clicking");
     expect(readme).toContain("legacy `zeptonow.com` responses");
