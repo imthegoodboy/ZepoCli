@@ -90,6 +90,7 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "Checkout handoff controls are rejected if any visible or accessible label contains payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text"
     );
+    expect(readme).toContain("Those labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("Search uses visible, enabled, editable search inputs or explicit search controls");
     expect(readme).toContain("the CLI tries the direct search URL before returning only query-matched homepage fallback cards");
     expect(readme).toContain("Homepage fallback never overrides explicit search-page no-results");

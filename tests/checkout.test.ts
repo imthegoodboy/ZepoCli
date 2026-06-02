@@ -147,6 +147,14 @@ describe("checkout handoff detection", () => {
     expect(page.clicks).toEqual(["safe"]);
   });
 
+  it("revalidates checkout handoff controls after scrolling before clicking", async () => {
+    const page = createCheckoutRerenderOnScrollPage();
+
+    await expect(clickCheckoutHandoffButton(page as never)).resolves.toBe(false);
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("rejects ordinary cart text", () => {
     expect(isCheckoutHandoffText("Cart Add more items Apply coupon Saved for later")).toBe(false);
   });
@@ -313,6 +321,31 @@ function createCheckoutCollectionPage() {
     clicks,
     getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
       role === "button" && matchesLocatorName(options.name, "Checkout") ? locators : createHiddenLocator(),
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCheckoutRerenderOnScrollPage() {
+  let label = "Checkout";
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, "Checkout")) {
+        return {
+          ...createVisibleLocator(label, async () => {
+            page.clicked = true;
+          }),
+          innerText: async () => label,
+          scrollIntoViewIfNeeded: async () => {
+            label = "Pay Now";
+          }
+        };
+      }
+
+      return createHiddenLocator();
+    },
     locator: () => createHiddenLocator()
   };
 

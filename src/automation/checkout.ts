@@ -72,6 +72,20 @@ async function clickFirstSafeCheckoutButton(locator: Locator): Promise<boolean> 
 }
 
 async function clickSafeCheckoutButton(locator: Locator): Promise<boolean> {
+  if (!(await isSafeCheckoutButton(locator))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+  if (!(await isSafeCheckoutButton(locator))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeCheckoutButton(locator: Locator): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -85,12 +99,14 @@ async function clickSafeCheckoutButton(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  if (await isDisabledControl(locator)) {
-    return false;
-  }
+  return !(await isDisabledControl(locator));
+}
 
-  await locator.click();
-  return true;
+async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
+  const scrollable = locator as {
+    scrollIntoViewIfNeeded?: () => Promise<void>;
+  };
+  await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
 export function assertReadableCheckoutCart(text: string): void {
