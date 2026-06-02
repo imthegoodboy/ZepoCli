@@ -1475,13 +1475,13 @@ function validateAddPayloadContract(payload) {
 }
 
 function validateAddressListPayloadContract(payload) {
-  if (Array.isArray(payload) && payload.some((address) => hasReadableText(address?.text))) {
+  if (Array.isArray(payload) && payload.length > 0 && payload.every(hasReadableAddressPayload)) {
     return undefined;
   }
 
   return {
     code: "live_address_contract_mismatch",
-    message: "Address JSON did not include any readable addresses."
+    message: "Address JSON did not include readable address records."
   };
 }
 
@@ -1565,6 +1565,10 @@ function isReadableCartSnapshotPayload(payload) {
 
 function hasReadableCartItemPayload(value) {
   return isObject(value) && hasReadableText(value.name);
+}
+
+function hasReadableAddressPayload(value) {
+  return isObject(value) && hasReadableText(value.text);
 }
 
 function isReadableHistoryOrderPayload(value) {

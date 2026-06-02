@@ -185,7 +185,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Workflow step summaries include every runner-defined key");
     expect(liveVerifierSkill).toContain("Workflow step summary values keep the runner's expected types");
     expect(liveVerifierSkill).toContain(
-      "Product and cart count summaries count readable named records only, and order count summaries count status/ETA-bearing records only"
+      "Address, product, and cart count summaries count readable records only, and order count summaries count status/ETA-bearing records only"
     );
     expect(liveVerifierSkill).toContain("String and string-array workflow step summary values stay within runner-known values");
     expect(liveVerifierSkill).toContain("Related workflow step summary fields are internally consistent");

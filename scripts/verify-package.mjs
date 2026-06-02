@@ -266,7 +266,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "<redacted-browser-timezone>",
     "browser locale/timezone values",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
-    "counts of readable product/cart records and status/ETA-bearing order records",
+    "counts of readable address/product/cart records and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -1135,6 +1135,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     liveVerifierSource.includes("productCount: readableProductCount(payload)") &&
+      liveVerifierSource.includes("addressCount: readableAddressCount(addresses)") &&
+      liveVerifierSource.includes("selectedCount: readableSelectedAddressCount(addresses)") &&
       liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload)") &&
       liveVerifierSource.includes("orderCount: readableOrderCount(orders)"),
     "expected installed live verifier summaries to count readable records"
@@ -3565,6 +3567,20 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     unreadableSearchStep.ok === false &&
       unreadableSearchStep.error?.code === "live_search_contract_mismatch",
     "expected installed search live report contract to require readable products"
+  );
+
+  const unreadableAddressStep = buildLiveReportStep({
+    name: "address list",
+    args: ["--data-dir", ".zepo-live", "--visible", "address", "list", "--json"],
+    status: 0,
+    stdout: JSON.stringify([{ text: "Home" }, {}]),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    unreadableAddressStep.ok === false &&
+      unreadableAddressStep.error?.code === "live_address_contract_mismatch",
+    "expected installed address live report contract to require readable address records"
   );
 
   const unreadableAddStep = buildLiveReportStep({

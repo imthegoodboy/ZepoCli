@@ -304,6 +304,8 @@ describe("live verification runner", () => {
     expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
     expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
     expect(script).toContain("productCount: readableProductCount(payload)");
+    expect(script).toContain("addressCount: readableAddressCount(addresses)");
+    expect(script).toContain("selectedCount: readableSelectedAddressCount(addresses)");
     expect(script).toContain("cartItemCount: readableCartItemCount(payload)");
     expect(script).toContain("orderCount: readableOrderCount(orders)");
     expect(script).toContain('const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium")');
@@ -2919,23 +2921,25 @@ describe("live verification runner", () => {
 
   it("fails address list live report steps without readable addresses", () => {
     for (const name of ["address add", "address list"]) {
-      const { step } = buildLiveReportStep({
-        name,
-        args: ["--data-dir", ".zepo-live", "--visible", "address", name.endsWith("add") ? "add" : "list", "--json"],
-        status: 0,
-        stdout: "[]",
-        stderr: "",
-        summarizePayload: () => {
-          throw new Error("empty address payload should not be summarized");
-        }
-      });
+      for (const stdout of ["[]", JSON.stringify([{}]), JSON.stringify([{ text: "Home" }, {}])]) {
+        const { step } = buildLiveReportStep({
+          name,
+          args: ["--data-dir", ".zepo-live", "--visible", "address", name.endsWith("add") ? "add" : "list", "--json"],
+          status: 0,
+          stdout,
+          stderr: "",
+          summarizePayload: () => {
+            throw new Error("unreadable address payload should not be summarized");
+          }
+        });
 
-      expect(step.exitCode).toBe(1);
-      expect(step.ok).toBe(false);
-      expect(step.error).toEqual({
-        code: "live_address_contract_mismatch",
-        message: "Address JSON did not include any readable addresses."
-      });
+        expect(step.exitCode).toBe(1);
+        expect(step.ok).toBe(false);
+        expect(step.error).toEqual({
+          code: "live_address_contract_mismatch",
+          message: "Address JSON did not include readable address records."
+        });
+      }
     }
   });
 

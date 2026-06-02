@@ -95,7 +95,7 @@ The live report is acceptable only when:
 - Ok report workflow steps follow the live runner order.
 - Workflow step summaries include every runner-defined key.
 - Workflow step summary values keep the runner's expected types.
-- Product and cart count summaries count readable named records only, and order count summaries count status/ETA-bearing records only; placeholder objects such as `{}`, total-only rows, and date-only rows are not live evidence.
+- Address, product, and cart count summaries count readable records only, and order count summaries count status/ETA-bearing records only; placeholder objects such as `{}`, total-only rows, and date-only rows are not live evidence.
 - String and string-array workflow step summary values stay within runner-known values.
 - Related workflow step summary fields are internally consistent.
 - Numeric workflow step summaries stay within runner-supported ranges.

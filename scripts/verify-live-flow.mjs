@@ -564,8 +564,8 @@ function summarizePayload(name, payload) {
   if (name === "address add" || name === "address list") {
     const addresses = Array.isArray(payload) ? payload : [];
     return {
-      addressCount: addresses.length,
-      selectedCount: addresses.filter((address) => address.selected === true).length
+      addressCount: readableAddressCount(addresses),
+      selectedCount: readableSelectedAddressCount(addresses)
     };
   }
 
@@ -618,6 +618,16 @@ function readableProductCount(payload) {
   return Array.isArray(payload) ? payload.filter(hasReadableRecordName).length : 0;
 }
 
+function readableAddressCount(payload) {
+  return Array.isArray(payload) ? payload.filter(hasReadableAddressText).length : 0;
+}
+
+function readableSelectedAddressCount(payload) {
+  return Array.isArray(payload)
+    ? payload.filter((address) => address?.selected === true && hasReadableAddressText(address)).length
+    : 0;
+}
+
 function readableCartItemCount(payload) {
   return Array.isArray(payload?.items) ? payload.items.filter(hasReadableRecordName).length : 0;
 }
@@ -628,6 +638,10 @@ function readableOrderCount(orders) {
 
 function hasReadableRecordName(value) {
   return hasReadableText(value?.name);
+}
+
+function hasReadableAddressText(value) {
+  return hasReadableText(value?.text);
 }
 
 function hasReadableText(value) {
