@@ -3263,10 +3263,13 @@ describe("live verification runner", () => {
     redactor.write("Visible prompt: choose item > ");
     expect(chunks.join("")).toBe("Visible prompt: choose item > ");
 
-    redactor.write(`token ${fakeNpmToken.slice(0, 8)}`);
-    expect(chunks.join("")).not.toContain(fakeNpmToken.slice(0, 8));
+    redactor.write("token n");
+    expect(chunks.join("")).not.toContain("token n");
 
-    redactor.write(`${fakeNpmToken.slice(8)} and query "Amul `);
+    redactor.write("pm");
+    expect(chunks.join("")).not.toContain("token npm");
+
+    redactor.write(`${fakeNpmToken.slice(3)} and query "Amul `);
     redactor.write('Milk 500ml" near C:\\Users\\parth\\.');
     redactor.write("zepo-live\\trace.txt for +91 ");
     redactor.write("98765 43210.");
@@ -3279,6 +3282,8 @@ describe("live verification runner", () => {
     expect(output).toContain("<redacted-local-path>");
     expect(output).toContain("<redacted-phone>");
     expect(output).not.toContain(fakeNpmToken);
+    expect(output).not.toContain("token npm");
+    expect(output).not.toContain("+91");
     expect(output).not.toContain("Amul Milk 500ml");
     expect(output).not.toContain("Users");
     expect(output).not.toContain(".zepo-live");

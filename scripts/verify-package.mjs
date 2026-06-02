@@ -2576,12 +2576,17 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     immediateLiveStderrChunks.join("") === "Visible prompt: choose item > ",
     "expected installed immediate live console stderr redaction to stream non-sensitive prompt text"
   );
-  immediateLiveStderrRedactor.write(`token ${fakeNpmToken.slice(0, 8)}`);
+  immediateLiveStderrRedactor.write("token n");
   assert(
-    !immediateLiveStderrChunks.join("").includes(fakeNpmToken.slice(0, 8)),
+    !immediateLiveStderrChunks.join("").includes("token n"),
     "expected installed immediate live console stderr redaction to hold split npm-token-shaped values"
   );
-  immediateLiveStderrRedactor.write(`${fakeNpmToken.slice(8)} and query "Amul `);
+  immediateLiveStderrRedactor.write("pm");
+  assert(
+    !immediateLiveStderrChunks.join("").includes("token npm"),
+    "expected installed immediate live console stderr redaction to hold npm-token-shaped prefixes"
+  );
+  immediateLiveStderrRedactor.write(`${fakeNpmToken.slice(3)} and query "Amul `);
   immediateLiveStderrRedactor.write('Milk 500ml" near C:\\Users\\parth\\.');
   immediateLiveStderrRedactor.write("zepo-live\\trace.txt for +91 ");
   immediateLiveStderrRedactor.write("98765 43210.");
@@ -2594,6 +2599,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       immediateLiveStderr.includes("<redacted-local-path>") &&
       immediateLiveStderr.includes("<redacted-phone>") &&
       !immediateLiveStderr.includes(fakeNpmToken) &&
+      !immediateLiveStderr.includes("token npm") &&
+      !immediateLiveStderr.includes("+91") &&
       !immediateLiveStderr.includes("Amul Milk 500ml") &&
       !immediateLiveStderr.includes("Users") &&
       !immediateLiveStderr.includes(".zepo-live") &&

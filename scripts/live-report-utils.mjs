@@ -1855,10 +1855,12 @@ function redactionPrefixTailLength(text, redactionValue) {
 }
 
 const LIVE_CONSOLE_SENSITIVE_TAIL_PATTERNS = [
+  /\bn(?:p(?:m_?)?)?$/,
   /\bnpm_[A-Za-z0-9]*$/,
   /\border\s*(?:#|ID:?)\s*[A-Z0-9-]*$/i,
   /\bZEP[A-Z0-9-]*$/i,
   /\b(?:otp|one[-\s]*time(?:\s+(?:password|code))?|verification code|passcode|upi\s*pin|atm\s*pin|cvv|cvc)\s*(?:is|:|=|-)?\s*\d{0,8}$/i,
+  /(?<!\d)(?:\+?9(?:1[\s-]?)?|0)$/,
   /(?<!\d)(?:\+?91[\s-]?|0)?[6-9][\d\s-]*$/,
   /\b\d(?:[ -]?\d){3,18}$/,
   /(?<![\w.-])[\w.-]{2,}@[A-Za-z]?[A-Za-z0-9.-]*$/,
