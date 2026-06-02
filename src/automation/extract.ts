@@ -135,6 +135,7 @@ function extractOrderStatus(block: string): string | undefined {
     "Cancelled",
     "Refunded"
   ];
+  const matches: Array<{ status: string; index: number }> = [];
   for (const status of statuses) {
     const match = block.match(new RegExp(`\\b${status}\\b`, "i"));
     if (!match || match.index === undefined) {
@@ -149,10 +150,18 @@ function extractOrderStatus(block: string): string | undefined {
       continue;
     }
 
-    return status;
+    matches.push({ status, index: match.index });
   }
 
-  return undefined;
+  const terminalMatch = matches
+    .filter((match) => isTerminalOrderStatus(match.status))
+    .sort((first, second) => second.index - first.index)[0];
+
+  return terminalMatch?.status ?? matches[0]?.status;
+}
+
+function isTerminalOrderStatus(status: string): boolean {
+  return status === "Cancelled" || status === "Refunded";
 }
 
 function extractOrderEta(block: string): string | undefined {

@@ -901,6 +901,28 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not hide terminal order states behind earlier progress text", () => {
+    expect(parseOrdersFromText("Order #ZEP1234 Placed Confirmed Cancelled Total ₹249")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Cancelled",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Order #ZEP1234 Placed Confirmed Cancelled Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Track order Confirmed Packed Refunded Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Refunded",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Track order Confirmed Packed Refunded Total ₹249"
+      }
+    ]);
+  });
+
   it("parses delivery-in ETA text for active orders", () => {
     const orders = parseOrdersFromText("Order #ZEP9999 Out for delivery Delivery in 6 mins Total ₹320");
 
