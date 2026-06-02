@@ -155,6 +155,11 @@ describe("order automation helpers", () => {
     expect(isUnsafeOrdersOpenClickText("UPI")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Cash on Delivery")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("COD")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Customer Support")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Invoice")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Refund")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Return")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Rating")).toBe(true);
     expect(isAccountMenuClickText("Account")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Account")).toBe(false);
     expect(isAccountMenuClickText("Account settings are secure")).toBe(false);
@@ -165,6 +170,11 @@ describe("order automation helpers", () => {
     expect(isUnsafeAccountMenuClickText("UPI")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Cash on Delivery")).toBe(true);
     expect(isUnsafeAccountMenuClickText("COD")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Customer Support")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Invoice")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Refund")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Return")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Rating")).toBe(true);
   });
 
   it("clicks only explicit reorder action labels", () => {
@@ -197,7 +207,9 @@ describe("order automation helpers", () => {
       "Support",
       "Invoice",
       "Receipt",
-      "Rate Order"
+      "Rate Order",
+      "Rating",
+      "Review Order"
     ]) {
       expect(REORDER_ACTION_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isReorderActionClickText(label)).toBe(false);
@@ -218,6 +230,8 @@ describe("order automation helpers", () => {
     expect(isUnsafeReorderActionClickText("Invoice")).toBe(true);
     expect(isUnsafeReorderActionClickText("Receipt")).toBe(true);
     expect(isUnsafeReorderActionClickText("Rate Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Rating")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Review Order")).toBe(true);
     expect(isUnsafeReorderActionClickText("Again")).toBe(true);
     expect(isUnsafeReorderActionClickText("Open")).toBe(true);
   });
@@ -293,8 +307,13 @@ describe("order automation helpers", () => {
       createMixedLabelOrdersNavigationPage("Checkout", "My Orders"),
       createMixedLabelOrdersNavigationPage("Open", "My Orders"),
       createMixedLabelOrdersNavigationPage("UPI", "My Orders"),
+      createMixedLabelOrdersNavigationPage("Customer Support", "My Orders"),
+      createMixedLabelOrdersNavigationPage("Invoice", "My Orders"),
+      createMixedLabelOrdersNavigationPage("Rating", "My Orders"),
       createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { title: "Checkout" }),
       createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { "aria-description": "Cash on Delivery" }),
+      createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { title: "Customer Support" }),
+      createMixedLabelOrdersNavigationPage("My Orders", "My Orders", { "aria-description": "Invoice" }),
       createMixedLabelOrdersNavigationPage("My Orders", "Track Order")
     ]) {
       await expect(clickOrdersNavigationControl(page as never)).resolves.toBe(false);
@@ -324,8 +343,13 @@ describe("order automation helpers", () => {
       createMixedLabelAccountMenuPage("My Orders", "Account"),
       createMixedLabelAccountMenuPage("Open", "Account"),
       createMixedLabelAccountMenuPage("UPI", "Account"),
+      createMixedLabelAccountMenuPage("Customer Support", "Account"),
+      createMixedLabelAccountMenuPage("Invoice", "Account"),
+      createMixedLabelAccountMenuPage("Rating", "Account"),
       createMixedLabelAccountMenuPage("Account", "Account", { title: "Cart" }),
       createMixedLabelAccountMenuPage("Account", "Account", { "aria-description": "Cash on Delivery" }),
+      createMixedLabelAccountMenuPage("Account", "Account", { title: "Customer Support" }),
+      createMixedLabelAccountMenuPage("Account", "Account", { "aria-description": "Invoice" }),
       createMixedLabelAccountMenuPage("Account", "Cart")
     ]) {
       await expect(clickAccountMenuControl(page as never)).resolves.toBe(false);
@@ -373,7 +397,9 @@ describe("order automation helpers", () => {
       createMixedLabelReorderPage("Reorder", "Reorder", { title: "Support" }),
       createMixedLabelReorderPage("Reorder", "Invoice"),
       createMixedLabelReorderPage("Reorder", "Receipt"),
-      createMixedLabelReorderPage("Reorder", "Rate Order")
+      createMixedLabelReorderPage("Reorder", "Rate Order"),
+      createMixedLabelReorderPage("Reorder", "Rating"),
+      createMixedLabelReorderPage("Reorder", "Review Order")
     ]) {
       await expect(clickReorderActionButton(page as never)).resolves.toBe(false);
 

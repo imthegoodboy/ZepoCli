@@ -121,7 +121,9 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, or verification actions");
     expect(readme).toContain("payment-method/payment, coupon, or order actions");
-    expect(readme).toContain("checkout, payment-method/payment, or final-order action");
+    expect(readme).toContain(
+      "checkout, payment-method/payment, final-order, support, invoice/receipt, refund/return/cancel, or rating/review action"
+    );
     expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text, and cart navigation labels plus disabled state are revalidated after any scroll into view before clicking");
     expect(readme).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
@@ -133,10 +135,13 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("no-id history rows need stronger evidence than a bare status word");
     expect(readme).toContain("Order-history navigation clicks only visible, enabled, explicit orders/history controls");
-    expect(readme).toContain("unrelated cart, account, address, checkout, payment-method/payment, tracking, reorder, or final-order actions are rejected");
+    expect(readme).toContain(
+      "unrelated cart, account, address, checkout, payment-method/payment, tracking, reorder, final-order, support, invoice/receipt, refund/return/cancel, or rating/review actions are rejected"
+    );
     expect(readme).toContain("Order navigation also requires visible, enabled controls and revalidates labels plus disabled state after any scroll into view before clicking.");
     expect(readme).toContain("visible, enabled, explicit reorder/order-again/repeat-order control");
     expect(readme).toContain("whose readable order-card text matches the latest detected order, including after any scroll into view before clicking");
+    expect(readme).toContain("rate, rating, review, track, cancel, payment-method/payment, checkout, or order summary");
     expect(readme).toContain("legacy `zeptonow.com` responses");
     expect(readme).toContain("Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage");
     expect(readme).toContain(

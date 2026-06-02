@@ -26,6 +26,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");
       expect(guidance).toContain("search-trigger labels plus disabled state");
       expect(guidance).toContain("Order-history and account-menu labels plus disabled state must be revalidated after any scroll into view before clicking");
+      expect(guidance).toContain(
+        "final-order, support, invoice/receipt, refund/return/cancel, or rating/review actions"
+      );
+      expect(guidance).toContain("rate/rating/review/order-placement");
       expect(guidance).toContain("Address manager/add-address labels and disabled state must be revalidated after any scroll into view before clicking");
       expect(guidance).toContain(
         "location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment copy, and payment-method/payment copy"

@@ -313,6 +313,14 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed order parser to keep active delivery ETA");
     expect(verifier).toContain("expected installed order parser not to borrow delivery-speed ETA from delivered orders");
     expect(verifier).toContain("expected installed order parser to reject eta-only delivery-speed copy");
+    expect(verifier).toContain("verifyInstalledOrderAutomationContract");
+    expect(verifier).toContain("expected installed order navigation label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed account-menu label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed reorder label to be unsafe: ${label}");
+    expect(verifier).toContain(
+      "final-order, support, invoice/receipt, refund/return/cancel, or rating/review actions are rejected"
+    );
+    expect(verifier).toContain("rate, rating, review, track, cancel, payment-method/payment, checkout, or order summary");
     expect(verifier).toContain(
       "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status."
     );

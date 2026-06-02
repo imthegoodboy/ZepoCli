@@ -90,6 +90,7 @@ try {
   await verifyInstalledCartAutomationContract(installDir);
   await verifyInstalledProductAutomationContract(installDir);
   await verifyInstalledOrderExtractionContract(installDir);
+  await verifyInstalledOrderAutomationContract(installDir);
   await verifyInstalledAddressAutomationContract(installDir);
   await verifyInstalledSessionContract(installDir);
   await verifyInstalledLiveVerifierContract(installDir);
@@ -233,6 +234,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.",
     "cart navigation labels plus disabled state are revalidated after any scroll into view before clicking",
     "Order navigation also requires visible, enabled controls and revalidates labels plus disabled state after any scroll into view before clicking.",
+    "final-order, support, invoice/receipt, refund/return/cancel, or rating/review actions are rejected",
+    "rate, rating, review, track, cancel, payment-method/payment, checkout, or order summary",
     "`--browser-locale <locale>` and `--browser-timezone <timezone>`",
     "do not add a custom user agent",
     "Terms of Use version 1.4",
@@ -508,6 +511,42 @@ async function verifyInstalledOrderExtractionContract(prefixDir) {
     "expected installed order parser to reject eta-only delivery-speed copy"
   );
   console.log("pass installed order extraction contract");
+}
+
+async function verifyInstalledOrderAutomationContract(prefixDir) {
+  const ordersAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "orders.js"
+  );
+  const {
+    isUnsafeAccountMenuClickText,
+    isUnsafeOrdersOpenClickText,
+    isUnsafeReorderActionClickText
+  } = await import(pathToFileURL(ordersAutomationModulePath).href);
+
+  for (const label of ["Customer Support", "Invoice", "Refund", "Return", "Rating"]) {
+    assert(
+      isUnsafeOrdersOpenClickText(label) === true,
+      `expected installed order navigation label to be unsafe: ${label}`
+    );
+    assert(
+      isUnsafeAccountMenuClickText(label) === true,
+      `expected installed account-menu label to be unsafe: ${label}`
+    );
+  }
+
+  for (const label of ["Customer Support", "Invoice", "Refund", "Return", "Rating", "Review Order"]) {
+    assert(
+      isUnsafeReorderActionClickText(label) === true,
+      `expected installed reorder label to be unsafe: ${label}`
+    );
+  }
+
+  console.log("pass installed order automation contract");
 }
 
 async function verifyInstalledAddressAutomationContract(prefixDir) {
