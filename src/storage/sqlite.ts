@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import type { Address, CartSnapshot, OrderSnapshot, UserDataCacheStatus } from "../types.js";
 
 export const REDACTED_SEARCH_QUERY = "<redacted-query>";
+export const ORDER_CACHE_ID_PREFIX = "cache-order-";
 const SQLITE_BUSY_TIMEOUT_MS = 5_000;
 
 export interface SessionRecord {
@@ -139,20 +140,14 @@ export class SqliteStore {
   saveOrders(orders: OrderSnapshot[]): void {
     const statement = this.db.prepare(
       `insert into orders (order_id, status, eta, total, placed_at, raw_text, updated_at)
-       values (?, ?, ?, ?, ?, ?, datetime('now'))
-       on conflict(order_id) do update set
-        status = excluded.status,
-        eta = excluded.eta,
-        total = excluded.total,
-        placed_at = excluded.placed_at,
-        raw_text = excluded.raw_text,
-        updated_at = excluded.updated_at`
+       values (?, ?, ?, ?, ?, ?, datetime('now'))`
     );
 
     const save = this.db.transaction((items: OrderSnapshot[]) => {
+      this.db.prepare("delete from orders").run();
       for (const [index, order] of items.entries()) {
         statement.run(
-          order.id ?? `latest-${index}`,
+          `${ORDER_CACHE_ID_PREFIX}${index + 1}`,
           order.status ?? null,
           order.eta ?? null,
           order.total ?? null,
@@ -217,6 +212,9 @@ export class SqliteStore {
 
       update cart_snapshots set raw_text = null where raw_text is not null;
       update orders set raw_text = '' where raw_text is not null and raw_text <> '';
+      update orders
+        set order_id = '${ORDER_CACHE_ID_PREFIX}legacy-' || rowid
+        where order_id not like '${ORDER_CACHE_ID_PREFIX}%';
     `);
     this.db
       .prepare("update searches set query = ? where query <> ?")

@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import packageJson from "../package.json" with { type: "json" };
 import { resolveAppPaths } from "../src/config/paths.js";
 import { SessionStore } from "../src/storage/session.js";
-import { REDACTED_SEARCH_QUERY, SqliteStore } from "../src/storage/sqlite.js";
+import { ORDER_CACHE_ID_PREFIX, REDACTED_SEARCH_QUERY, SqliteStore } from "../src/storage/sqlite.js";
 
 const AUTH_STATE = JSON.stringify({
   cookies: [
@@ -317,14 +317,40 @@ describe("session storage", () => {
 
     const searchQuery = readSingleColumn(paths.dbPath, "select query as raw_text from searches limit 1");
     const cartRawText = readSingleColumn(paths.dbPath, "select raw_text from cart_snapshots limit 1");
-    const orderRawText = readSingleColumn(paths.dbPath, "select raw_text from orders where order_id = 'ZEP1234'");
+    const orderCacheId = readSingleColumn(paths.dbPath, "select order_id as raw_text from orders limit 1");
+    const orderRawText = readSingleColumn(paths.dbPath, "select raw_text from orders limit 1");
 
     expect(searchQuery).toBe(REDACTED_SEARCH_QUERY);
     expect(String(searchQuery)).not.toContain("private snacks");
     expect(cartRawText).toBeNull();
+    expect(orderCacheId).toBe(`${ORDER_CACHE_ID_PREFIX}1`);
+    expect(String(orderCacheId)).not.toContain("ZEP1234");
     expect(orderRawText).toBe("");
     expect(String(cartRawText)).not.toContain("221B Test Street");
     expect(String(orderRawText)).not.toContain("221B Test Street");
+  });
+
+  it("replaces cached order snapshots instead of retaining stale order rows", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-order-cache-replace-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+
+    sqlite.saveOrders([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        rawText: "Order #ZEP1234 Delivered"
+      },
+      {
+        id: "ZEP5678",
+        status: "Cancelled",
+        rawText: "Order #ZEP5678 Cancelled"
+      }
+    ]);
+    sqlite.saveOrders([]);
+    sqlite.close();
+
+    expect(countRows(paths.dbPath, "orders")).toBe(0);
   });
 
   it("scrubs raw search, cart, and order page text from existing SQLite caches during migration", () => {
@@ -375,7 +401,10 @@ describe("session storage", () => {
       REDACTED_SEARCH_QUERY
     );
     expect(readSingleColumn(paths.dbPath, "select raw_text from cart_snapshots limit 1")).toBeNull();
-    expect(readSingleColumn(paths.dbPath, "select raw_text from orders where order_id = 'ZEP1234'")).toBe("");
+    const migratedOrderId = readSingleColumn(paths.dbPath, "select order_id as raw_text from orders limit 1");
+    expect(migratedOrderId).toMatch(new RegExp(`^${ORDER_CACHE_ID_PREFIX}legacy-\\d+$`));
+    expect(String(migratedOrderId)).not.toContain("ZEP1234");
+    expect(readSingleColumn(paths.dbPath, "select raw_text from orders limit 1")).toBe("");
   });
 
   it("requires auth state, browser profile data, and confirmed login for a usable session", () => {
