@@ -284,7 +284,10 @@ describe("cart automation helpers", () => {
       "Continue",
       "Proceed to Pay",
       "Pay Now",
+      "Order Now",
       "Pay ₹249",
+      "Checkout and Pay",
+      "Pay with UPI",
       "Payment Method",
       "UPI",
       "Credit Card",
@@ -326,6 +329,9 @@ describe("cart automation helpers", () => {
       createMixedLabelCartOpenPage("Open", "Cart"),
       createMixedLabelCartOpenPage("Cart", "Cart", { title: "Checkout" }),
       createMixedLabelCartOpenPage("Cart", "To Pay ₹249"),
+      createMixedLabelCartOpenPage("Order Now", "Cart"),
+      createMixedLabelCartOpenPage("Cart", "Checkout and Pay"),
+      createMixedLabelCartOpenPage("Cart", "Cart", { "aria-description": "Pay with UPI" }),
       createMixedLabelCartOpenPage("Customer Support", "Cart"),
       createMixedLabelCartOpenPage("Cart", "Invoice"),
       createMixedLabelCartOpenPage("Cart", "Cart", { title: "Refunded" }),
@@ -376,6 +382,10 @@ describe("cart automation helpers", () => {
       "Pay",
       "Payment",
       "Payment Method",
+      "Order Now",
+      "Checkout and Pay",
+      "Pay with UPI",
+      "Pay ₹249",
       "UPI",
       "Credit Card",
       "Debit Card",
@@ -457,6 +467,9 @@ describe("cart automation helpers", () => {
       { "aria-label": "Order Summary" },
       { title: "Track Order" },
       { "aria-description": "Reorder" },
+      { title: "Order Now" },
+      { "aria-label": "Checkout and Pay" },
+      { "aria-description": "Pay with UPI" },
       { title: "Invoice" },
       { "aria-label": "Support" },
       { value: "Pay Now" }
@@ -510,6 +523,10 @@ describe("cart automation helpers", () => {
     expect(isLikelyRemovableCartItemText("Order Summary Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Track Order Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Reorder Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Order Now Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Checkout and Pay Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Pay with UPI Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Pay ₹249 Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Invoice Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Support Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Cancellation Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(

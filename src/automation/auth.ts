@@ -2,6 +2,7 @@ import type { Locator, Page } from "playwright";
 
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
+import { isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
 import { findPhonePrefillInput, hasVisibleLoginFormInput } from "./login-inputs.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
@@ -157,6 +158,7 @@ export function isUnsafeAccountSurfaceClickText(text: string): boolean {
     /\b(search results?|cart|my cart|checkout|proceed|continue|next|submit|verify|otp|mobile number|phone number|payment|pay|view bill|bill summary|to pay|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to)\b/i.test(
       normalized
     ) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );

@@ -319,11 +319,16 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("verifyInstalledAuthAutomationContract");
     expect(verifier).toContain("expected installed account-surface label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed phone prefill label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed account-surface final action label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed phone prefill final action label to be unsafe: ${label}");
     expect(verifier).toContain("pass installed auth automation contract");
     expect(verifier).toContain("verifyInstalledCartAutomationContract");
     expect(verifier).toContain("expected installed cart remove label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed cart remove row parser to reject order summary rows");
     expect(verifier).toContain("expected installed cart remove row parser to reject tracking rows");
+    expect(verifier).toContain("expected installed cart remove row parser to reject final order action rows");
+    expect(verifier).toContain("expected installed cart remove row parser to reject checkout-and-pay rows");
+    expect(verifier).toContain("expected installed cart remove row parser to reject pay-with rows");
     expect(verifier).toContain("verifyInstalledProductAutomationContract");
     expect(verifier).toContain("expected installed product-specific ADD label to be accepted");
     expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");
@@ -344,10 +349,14 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed order parser to keep active delivery ETA");
     expect(verifier).toContain("expected installed order parser not to borrow delivery-speed ETA from delivered orders");
     expect(verifier).toContain("expected installed order parser to reject eta-only delivery-speed copy");
+    expect(verifier).toContain("expected installed order parser to trim final action text from ETA");
     expect(verifier).toContain("verifyInstalledOrderAutomationContract");
     expect(verifier).toContain("expected installed order navigation label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed account-menu label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed reorder label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed order navigation final action label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed account-menu final action label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed reorder final action label to be unsafe: ${label}");
     expect(verifier).toContain(
       "final-order, support, invoice/receipt, refund/return/cancel, or rating/review actions are rejected"
     );
@@ -367,6 +376,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Cancel Order");
     expect(verifier).toContain("Rate Order");
     expect(verifier).toContain("expected installed address automation label to be unsafe");
+    expect(verifier).toContain("expected installed address parser to reject final action address copy: ${rejectedText}");
     expect(verifier).toContain("expected installed address manager label to be rejected: ${rejectedText}");
     expect(verifier).toContain("expected installed add-address label to be rejected: ${rejectedText}");
     expect(verifier).toContain("verifyInstalledSessionContract");

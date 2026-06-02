@@ -6,6 +6,7 @@ import { parseOrdersFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { readCart } from "./cart.js";
+import { isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
@@ -313,6 +314,7 @@ export function isUnsafeOrdersOpenClickText(text: string): boolean {
     /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order)\b/i.test(
       normalized
     ) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
@@ -332,6 +334,7 @@ export function isUnsafeAccountMenuClickText(text: string): boolean {
     /\b(wallet|cart|my cart|search results?|orders?|order history|track order|reorder|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay)\b/i.test(
       normalized
     ) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
@@ -351,6 +354,7 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
     /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary)\b/i.test(
       normalized
     ) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );

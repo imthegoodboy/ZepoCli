@@ -5,6 +5,10 @@ import { UserFacingError } from "../utils/errors.js";
 import { looksLikeUnit, normalizeText } from "../utils/format.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
+import {
+  FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE,
+  isFinalPaymentOrOrderActionText
+} from "./final-action-labels.js";
 import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
@@ -17,9 +21,9 @@ const ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN =
 const ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN =
   "\\b(confirm address|confirm location|save\\s+(?:&|and)\\s+(?:continue|proceed)|save address|use this address|deliver here|select this location)\\b";
 const ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN =
-  `\\b(cart|my cart|checkout|proceed(?:\\s+to)?|continue|payment|payments|pay(?:\\s+now)?|make payment|place order|confirm order|orders?|order history|track order|reorder|order again|repeat order|order summary|bill summary|view bill|item total|grand total|to pay|coupon|promo|voucher|delivery fee|delivery charge|handling fee|platform fee)\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
+  `\\b(cart|my cart|checkout|proceed(?:\\s+to)?|continue|payment|payments|pay(?:\\s+now)?|make payment|place order|confirm order|orders?|order history|track order|reorder|order again|repeat order|order summary|bill summary|view bill|item total|grand total|to pay|coupon|promo|voucher|delivery fee|delivery charge|handling fee|platform fee)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 const NON_ADDRESS_SURFACE_PATTERN =
-  `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
+  `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 const ADDRESS_CONTAINER_PREFIX_PATTERN = /^(saved|manage|my|select|delivery)\s+addresses?\b/i;
 export const ADDRESS_MANAGER_CLICK_LABELS = [
   /^deliver(?:ing)? to\b.*$/i,
@@ -701,6 +705,7 @@ export function isUnsafeAddressAutomationClickText(text: string): boolean {
   return (
     isUserLocationConsentText(normalized) ||
     isPaymentMethodLabelText(normalized) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     new RegExp(ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN, "i").test(normalized) ||
     new RegExp(ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN, "i").test(normalized) ||
     /\b(save|confirm|continue|proceed|done|submit)\b/i.test(

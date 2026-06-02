@@ -226,6 +226,10 @@ describe("address automation helpers", () => {
     expect(isLikelyAddressText("Customer Support Home 221B Baker Street, Bengaluru, India")).toBe(false);
     expect(isLikelyAddressText("Invoice Home 221B Baker Street, Bengaluru, India")).toBe(false);
     expect(isLikelyAddressText("Cancel Order Work Flat 42, Tower B, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Order Now Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Checkout and Pay Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Pay with UPI Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Pay ₹249 Home 221B Baker Street, Bengaluru, India")).toBe(false);
   });
 
   it("rejects payment-method copy as saved addresses", () => {
@@ -390,6 +394,10 @@ describe("address automation helpers", () => {
       "Proceed to Checkout",
       "Pay",
       "Pay Now",
+      "Order Now",
+      "Checkout and Pay",
+      "Pay with UPI",
+      "Pay ₹249",
       "Make Payment",
       "Place Order",
       "Order Summary",
@@ -467,6 +475,9 @@ describe("address automation helpers", () => {
       createMixedLabelAddressManagerPage("UPI", "Delivery Address"),
       createMixedLabelAddressManagerPage("Delivery Address", "Checkout"),
       createMixedLabelAddressManagerPage("Delivery Address", "Pay"),
+      createMixedLabelAddressManagerPage("Order Now", "Delivery Address"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Checkout and Pay"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Pay with UPI" }),
       createMixedLabelAddressManagerPage("Delivery Address", "Order Summary"),
       createMixedLabelAddressManagerPage("Delivery Address", "Customer Support"),
       createMixedLabelAddressManagerPage("Delivery Address", "Invoice"),
@@ -554,6 +565,9 @@ describe("address automation helpers", () => {
       createMixedLabelAddAddressPage("UPI", "Add Address"),
       createMixedLabelAddAddressPage("Checkout", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Pay Now"),
+      createMixedLabelAddAddressPage("Order Now", "Add Address"),
+      createMixedLabelAddAddressPage("Add Address", "Checkout and Pay"),
+      createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Pay with UPI" }),
       createMixedLabelAddAddressPage("Add Address", "Order History"),
       createMixedLabelAddAddressPage("Add Address", "Customer Support"),
       createMixedLabelAddAddressPage("Add Address", "Invoice"),

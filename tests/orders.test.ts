@@ -158,6 +158,10 @@ describe("order automation helpers", () => {
     expect(isUnsafeOrdersOpenClickText("Customer Support")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Invoice")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Refund")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Order Now")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Checkout and Pay")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Pay with UPI")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Pay ₹249")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Return")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Return Request")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Cancellation")).toBe(true);
@@ -176,6 +180,10 @@ describe("order automation helpers", () => {
     expect(isUnsafeAccountMenuClickText("Customer Support")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Invoice")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Refund")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Order Now")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Checkout and Pay")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Pay with UPI")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Pay ₹249")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Return")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Return Request")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Cancellation")).toBe(true);
@@ -201,6 +209,10 @@ describe("order automation helpers", () => {
       "Debit Card",
       "Debit/Credit Card",
       "Wallet",
+      "Order Now",
+      "Checkout and Pay",
+      "Pay with UPI",
+      "Pay ₹249",
       "Net Banking",
       "Cash on Delivery",
       "COD",
@@ -223,6 +235,10 @@ describe("order automation helpers", () => {
 
     expect(isUnsafeReorderActionClickText("Reorder")).toBe(false);
     expect(isUnsafeReorderActionClickText("Proceed to Pay")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Order Now")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Checkout and Pay")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Pay with UPI")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Pay ₹249")).toBe(true);
     expect(isUnsafeReorderActionClickText("Payment Method")).toBe(true);
     expect(isUnsafeReorderActionClickText("UPI")).toBe(true);
     expect(isUnsafeReorderActionClickText("Credit Card")).toBe(true);
@@ -317,6 +333,8 @@ describe("order automation helpers", () => {
       createMixedLabelOrdersNavigationPage("Checkout", "My Orders"),
       createMixedLabelOrdersNavigationPage("Open", "My Orders"),
       createMixedLabelOrdersNavigationPage("UPI", "My Orders"),
+      createMixedLabelOrdersNavigationPage("Order Now", "My Orders"),
+      createMixedLabelOrdersNavigationPage("My Orders", "Checkout and Pay"),
       createMixedLabelOrdersNavigationPage("Customer Support", "My Orders"),
       createMixedLabelOrdersNavigationPage("Invoice", "My Orders"),
       createMixedLabelOrdersNavigationPage("Rating", "My Orders"),
@@ -353,6 +371,8 @@ describe("order automation helpers", () => {
       createMixedLabelAccountMenuPage("My Orders", "Account"),
       createMixedLabelAccountMenuPage("Open", "Account"),
       createMixedLabelAccountMenuPage("UPI", "Account"),
+      createMixedLabelAccountMenuPage("Order Now", "Account"),
+      createMixedLabelAccountMenuPage("Account", "Checkout and Pay"),
       createMixedLabelAccountMenuPage("Customer Support", "Account"),
       createMixedLabelAccountMenuPage("Invoice", "Account"),
       createMixedLabelAccountMenuPage("Rating", "Account"),
@@ -397,6 +417,9 @@ describe("order automation helpers", () => {
       createMixedLabelReorderPage("Proceed to Pay", "Reorder"),
       createMixedLabelReorderPage("UPI", "Reorder"),
       createMixedLabelReorderPage("Cash on Delivery", "Reorder"),
+      createMixedLabelReorderPage("Order Now", "Reorder"),
+      createMixedLabelReorderPage("Reorder", "Checkout and Pay"),
+      createMixedLabelReorderPage("Reorder", "Reorder", { title: "Pay with UPI" }),
       createMixedLabelReorderPage("Reorder", "Credit Card"),
       createMixedLabelReorderPage("Reorder", "Reorder", { title: "Payment Method" }),
       createMixedLabelReorderPage("Again", "Reorder"),

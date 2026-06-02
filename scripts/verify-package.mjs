@@ -404,6 +404,7 @@ async function verifyInstalledFinalActionLabelContract(prefixDir) {
     "Confirm Order",
     "Pay Now",
     "Make Payment",
+    "Order Now",
     "Pay ₹249",
     "Checkout and Pay",
     "Pay with UPI"
@@ -531,6 +532,16 @@ async function verifyInstalledAuthAutomationContract(prefixDir) {
       `expected installed phone prefill label to be unsafe: ${label}`
     );
   }
+  for (const label of ["Order Now", "Checkout and Pay", "Pay with UPI", "Pay ₹249"]) {
+    assert(
+      isUnsafeAccountSurfaceClickText(label) === true,
+      `expected installed account-surface final action label to be unsafe: ${label}`
+    );
+    assert(
+      isUnsafePhonePrefillInputText(`${label} phone`) === true,
+      `expected installed phone prefill final action label to be unsafe: ${label}`
+    );
+  }
 
   console.log("pass installed auth automation contract");
 }
@@ -592,13 +603,28 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
     "Cancellation",
     "Cancelled",
     "Rate & Review",
-    "Review Your Order"
+    "Review Your Order",
+    "Order Now",
+    "Checkout and Pay",
+    "Pay with UPI",
+    "Pay ₹249"
   ]) {
     assert(isCartOpenClickText(label) === false, `expected installed cart open label to be rejected: ${label}`);
     assert(isUnsafeCartOpenClickText(label) === true, `expected installed cart open label to be unsafe: ${label}`);
   }
   assert(isCartRemoveControlText("Remove") === true, "expected installed cart remove label to be accepted");
-  for (const label of ["Order Summary", "Track Order", "Reorder", "Cancel Order", "Invoice", "Support"]) {
+  for (const label of [
+    "Order Summary",
+    "Track Order",
+    "Reorder",
+    "Cancel Order",
+    "Invoice",
+    "Support",
+    "Order Now",
+    "Checkout and Pay",
+    "Pay with UPI",
+    "Pay ₹249"
+  ]) {
     assert(isCartRemoveControlText(label) === false, `expected installed cart remove label to be rejected: ${label}`);
     assert(isUnsafeCartRemoveControlText(label) === true, `expected installed cart remove label to be unsafe: ${label}`);
   }
@@ -613,6 +639,18 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
   assert(
     isLikelyRemovableCartItemText("Track Order Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
     "expected installed cart remove row parser to reject tracking rows"
+  );
+  assert(
+    isLikelyRemovableCartItemText("Order Now Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
+    "expected installed cart remove row parser to reject final order action rows"
+  );
+  assert(
+    isLikelyRemovableCartItemText("Checkout and Pay Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
+    "expected installed cart remove row parser to reject checkout-and-pay rows"
+  );
+  assert(
+    isLikelyRemovableCartItemText("Pay with UPI Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
+    "expected installed cart remove row parser to reject pay-with rows"
   );
   console.log("pass installed cart automation contract");
 }
@@ -747,6 +785,19 @@ async function verifyInstalledOrderExtractionContract(prefixDir) {
     [],
     "expected installed order parser to reject eta-only delivery-speed copy"
   );
+  assertDeepEqual(
+    parseOrdersFromText("Track order Out for delivery ETA: 8 mins Checkout and Pay Total ₹249"),
+    [
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: 8 mins Checkout and Pay Total ₹249"
+      }
+    ],
+    "expected installed order parser to trim final action text from ETA"
+  );
   console.log("pass installed order extraction contract");
 }
 
@@ -775,6 +826,16 @@ async function verifyInstalledOrderAutomationContract(prefixDir) {
       `expected installed account-menu label to be unsafe: ${label}`
     );
   }
+  for (const label of ["Order Now", "Checkout and Pay", "Pay with UPI", "Pay ₹249"]) {
+    assert(
+      isUnsafeOrdersOpenClickText(label) === true,
+      `expected installed order navigation final action label to be unsafe: ${label}`
+    );
+    assert(
+      isUnsafeAccountMenuClickText(label) === true,
+      `expected installed account-menu final action label to be unsafe: ${label}`
+    );
+  }
 
   for (const label of [
     "Customer Support",
@@ -788,6 +849,12 @@ async function verifyInstalledOrderAutomationContract(prefixDir) {
     assert(
       isUnsafeReorderActionClickText(label) === true,
       `expected installed reorder label to be unsafe: ${label}`
+    );
+  }
+  for (const label of ["Order Now", "Checkout and Pay", "Pay with UPI", "Pay ₹249"]) {
+    assert(
+      isUnsafeReorderActionClickText(label) === true,
+      `expected installed reorder final action label to be unsafe: ${label}`
     );
   }
 
@@ -807,6 +874,7 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     extractAddressLabel,
     isAddAddressClickText,
     isAddressManagerClickText,
+    isLikelyAddressText,
     isUnsafeAddressAutomationClickText
   } = await import(pathToFileURL(addressAutomationModulePath).href);
   const { parseCartItemsFromText, parseProductCard } = await import(
@@ -884,11 +952,26 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "Invoice",
     "Refund",
     "Cancellation",
-    "Rate & Review"
+    "Rate & Review",
+    "Order Now",
+    "Checkout and Pay",
+    "Pay with UPI",
+    "Pay ₹249"
   ]) {
     assert(
       isUnsafeAddressAutomationClickText(unsafeText) === true,
       `expected installed address automation label to be unsafe: ${unsafeText}`
+    );
+  }
+  for (const rejectedText of [
+    "Order Now Home 221B Baker Street, Bengaluru, India",
+    "Checkout and Pay Home 221B Baker Street, Bengaluru, India",
+    "Pay with UPI Home 221B Baker Street, Bengaluru, India",
+    "Pay ₹249 Home 221B Baker Street, Bengaluru, India"
+  ]) {
+    assert(
+      isLikelyAddressText(rejectedText) === false,
+      `expected installed address parser to reject final action address copy: ${rejectedText}`
     );
   }
   for (const rejectedText of [

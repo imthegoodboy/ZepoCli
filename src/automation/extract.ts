@@ -8,10 +8,11 @@ import {
   splitVisibleLines,
   stripImagePrefix
 } from "../utils/format.js";
+import { FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE } from "./final-action-labels.js";
 import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
 
 const ORDER_ETA_TRAILING_ACTION_PATTERN = new RegExp(
-  `(?:\\b(reorder|order again|repeat order|track order|order summary|payment|paid)\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE}).*$`,
+  `(?:\\b(reorder|order again|repeat order|track order|order summary|payment|paid)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}).*$`,
   "i"
 );
 

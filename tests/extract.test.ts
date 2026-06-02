@@ -1069,6 +1069,26 @@ describe("Zepto page extraction helpers", () => {
         rawText: "Track order Out for delivery ETA: 8 mins More details Support Total ₹249"
       }
     ]);
+
+    expect(parseOrdersFromText("Track order Out for delivery ETA: 8 mins Checkout and Pay Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: 8 mins Checkout and Pay Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Track order Out for delivery ETA: 8 mins Pay with UPI Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Out for delivery",
+        eta: "8 mins",
+        total: "₹249",
+        rawText: "Track order Out for delivery ETA: 8 mins Pay with UPI Total ₹249"
+      }
+    ]);
   });
 
   it("extracts order totals only from explicit total labels", () => {

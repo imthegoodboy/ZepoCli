@@ -104,6 +104,10 @@ describe("login state inference", () => {
       "PhonePe",
       "Google Pay",
       "BHIM",
+      "Order Now",
+      "Checkout and Pay",
+      "Pay with UPI",
+      "Pay ₹249",
       "Wallet",
       "Customer Support",
       "Invoice",
@@ -129,6 +133,9 @@ describe("login state inference", () => {
       createMixedLabelAccountSurfacePage("Checkout", "Login"),
       createMixedLabelAccountSurfacePage("Continue", "Login"),
       createMixedLabelAccountSurfacePage("UPI", "Login"),
+      createMixedLabelAccountSurfacePage("Order Now", "Login"),
+      createMixedLabelAccountSurfacePage("Login", "Checkout and Pay"),
+      createMixedLabelAccountSurfacePage("Login", "Login", { title: "Pay with UPI" }),
       createMixedLabelAccountSurfacePage("Customer Support", "Login"),
       createMixedLabelAccountSurfacePage("Invoice", "Login"),
       createMixedLabelAccountSurfacePage("Rating", "Login"),
@@ -184,6 +191,10 @@ describe("login state inference", () => {
       "Cash on Delivery phone",
       "COD phone",
       "Wallet phone",
+      "Order Now phone",
+      "Checkout and Pay phone",
+      "Pay with UPI phone",
+      "Pay ₹249 phone",
       "Customer support phone",
       "Invoice phone",
       "Refund phone",
@@ -241,6 +252,10 @@ describe("login state inference", () => {
       createPhoneInputLocator({
         type: "tel",
         "aria-label": "Customer support phone"
+      }),
+      createPhoneInputLocator({
+        type: "tel",
+        "aria-label": "Order Now phone"
       }),
       createPhoneInputLocator({
         type: "number"

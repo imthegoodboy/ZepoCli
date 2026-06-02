@@ -1,6 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { isEditableTextInput, readControlLabels } from "./control-state.js";
+import { isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentMethodLabelText } from "./payment-labels.js";
 
@@ -105,6 +106,7 @@ export function isUnsafePhonePrefillInputText(text: string): boolean {
     /\b(otp|one[-\s]*time|verification code|verify|pin|passcode|password|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
     ) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
@@ -236,6 +238,7 @@ function isUnsafeLoginFormInputText(text: string): boolean {
     /\b(password|passcode|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
     ) ||
+    isFinalPaymentOrOrderActionText(normalized) ||
     isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
