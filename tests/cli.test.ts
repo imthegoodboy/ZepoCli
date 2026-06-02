@@ -532,6 +532,29 @@ describe("CLI command smokes", () => {
     expect(result.stderr).not.toContain(fakeNpmToken);
   }, CLI_TEST_TIMEOUT_MS);
 
+  it("redacts Linux local paths from parser errors in JSON mode", async () => {
+    const result = await runCli(["--json", "status", "--path=/root/.zepo-live/report.json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    const payload = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: {
+        type: string;
+        code?: string;
+        message: string;
+        exitCode: number;
+      };
+    };
+    expect(payload.ok).toBe(false);
+    expect(payload.error.type).toBe("invalid_input");
+    expect(payload.error.code).toBe("invalid_input");
+    expect(payload.error.message).toBe("error: unknown option '--path=<redacted-local-path>'");
+    expect(payload.error.exitCode).toBe(1);
+    expect(result.stderr).not.toContain("/root");
+    expect(result.stderr).not.toContain("report.json");
+  }, CLI_TEST_TIMEOUT_MS);
+
   it("prints machine-readable parser errors for nested command mistakes in JSON mode", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-nested-json-"));
     for (const testCase of [

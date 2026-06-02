@@ -3761,6 +3761,20 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       }
     },
     {
+      name: "installed json Linux path unknown option redaction",
+      args: ["--json", "status", "--path=/root/.zepo-live/report.json"],
+      expect: (result) => {
+        expectJsonError(
+          result,
+          "invalid_input",
+          "error: unknown option '--path=<redacted-local-path>'",
+          "invalid_input"
+        );
+        assert(!result.stderr.includes("/root"), "expected installed JSON parser error to omit Linux root path");
+        assert(!result.stderr.includes("report.json"), "expected installed JSON parser error to omit Linux path tail");
+      }
+    },
+    {
       name: "installed json relative path assignment unknown option redaction",
       args: ["--json", "status", "--bad=.zepo-live/report.json"],
       expect: (result) => {
