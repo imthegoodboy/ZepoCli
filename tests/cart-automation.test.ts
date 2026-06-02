@@ -373,6 +373,18 @@ describe("cart automation helpers", () => {
       "Cash on Delivery",
       "COD",
       "Confirm order",
+      "Order Summary",
+      "Track Order",
+      "Reorder",
+      "Order Again",
+      "Repeat Order",
+      "Cancel Order",
+      "Refund",
+      "Return",
+      "Support",
+      "Invoice",
+      "Receipt",
+      "Rate Order",
       "Address",
       "Clear cart",
       "+",
@@ -432,6 +444,11 @@ describe("cart automation helpers", () => {
       { "aria-label": "UPI" },
       { title: "Cash on Delivery" },
       { "aria-description": "Credit Card" },
+      { "aria-label": "Order Summary" },
+      { title: "Track Order" },
+      { "aria-description": "Reorder" },
+      { title: "Invoice" },
+      { "aria-label": "Support" },
       { value: "Pay Now" }
     ]) {
       const page = createTaggedCartRemovePage(attributes, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
@@ -480,6 +497,11 @@ describe("cart automation helpers", () => {
     expect(isLikelyRemovableCartItemText("Saved for later Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Before you checkout Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Complete your cart Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Order Summary Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Track Order Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Reorder Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Invoice Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Support Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Potato Chips 52 g Rs 20", "milk")).toBe(false);
     expect(isLikelyRemovableCartItemText("Price Drop Wheat Flour 1 kg Rs 99 Remove", "rice")).toBe(false);
   });

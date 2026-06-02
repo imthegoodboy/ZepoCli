@@ -297,6 +297,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed deferred payment-method label to be unsafe");
     expect(verifier).toContain("expected installed wallet payment-method label to be unsafe");
     expect(verifier).toContain("expected installed bare proceed label to be unsafe");
+    expect(verifier).toContain("verifyInstalledCartAutomationContract");
+    expect(verifier).toContain("expected installed cart remove label to be unsafe: ${label}");
+    expect(verifier).toContain("expected installed cart remove row parser to reject order summary rows");
+    expect(verifier).toContain("expected installed cart remove row parser to reject tracking rows");
     expect(verifier).toContain("verifyInstalledProductAutomationContract");
     expect(verifier).toContain("expected installed product-specific ADD label to be accepted");
     expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");

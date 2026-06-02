@@ -13,7 +13,7 @@ export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, 
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
-  `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|address|location|save for later|saved for later|clear cart)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
+  `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|cancel order|refund|return|support|help|invoice|receipt|rate order|address|location|save for later|saved for later|clear cart)\\b|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
 
 export async function openCart(page: Page): Promise<void> {
   await gotoZepto(page, "/cart");
@@ -412,7 +412,7 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
         text
       );
     const isNonCartProductSurfaceText = (text: string) =>
-      /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought)\b/i.test(
+      /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
         text
       );
     const hasCartMutationSignal = (text: string) =>
@@ -710,7 +710,7 @@ function isCartSummaryOrFeeText(text: string): boolean {
 }
 
 function isNonCartProductSurfaceText(text: string): boolean {
-  return /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought)\b/i.test(
+  return /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
     text
   );
 }

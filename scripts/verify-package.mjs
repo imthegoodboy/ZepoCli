@@ -87,6 +87,7 @@ try {
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
+  await verifyInstalledCartAutomationContract(installDir);
   await verifyInstalledProductAutomationContract(installDir);
   await verifyInstalledOrderExtractionContract(installDir);
   await verifyInstalledAddressAutomationContract(installDir);
@@ -220,6 +221,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
     "not a fixed address-label list or service-city allow-list",
+    "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
     "including image alt/accessibility text",
@@ -397,6 +399,32 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "expected installed checkout detector to accept explicit payment selection text"
   );
   console.log("pass installed checkout handoff contract");
+}
+
+async function verifyInstalledCartAutomationContract(prefixDir) {
+  const cartAutomationModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "automation", "cart.js");
+  const { isCartRemoveControlText, isLikelyRemovableCartItemText, isUnsafeCartRemoveControlText } = await import(
+    pathToFileURL(cartAutomationModulePath).href
+  );
+
+  assert(isCartRemoveControlText("Remove") === true, "expected installed cart remove label to be accepted");
+  for (const label of ["Order Summary", "Track Order", "Reorder", "Cancel Order", "Invoice", "Support"]) {
+    assert(isCartRemoveControlText(label) === false, `expected installed cart remove label to be rejected: ${label}`);
+    assert(isUnsafeCartRemoveControlText(label) === true, `expected installed cart remove label to be unsafe: ${label}`);
+  }
+  assert(
+    isLikelyRemovableCartItemText("Amul Taaza Toned Milk 500 ml Rs 32 Remove") === true,
+    "expected installed cart remove row parser to accept product rows"
+  );
+  assert(
+    isLikelyRemovableCartItemText("Order Summary Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
+    "expected installed cart remove row parser to reject order summary rows"
+  );
+  assert(
+    isLikelyRemovableCartItemText("Track Order Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
+    "expected installed cart remove row parser to reject tracking rows"
+  );
+  console.log("pass installed cart automation contract");
 }
 
 async function verifyInstalledProductAutomationContract(prefixDir) {
