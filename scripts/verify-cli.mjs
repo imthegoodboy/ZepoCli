@@ -901,7 +901,7 @@ function throwSpawnError(error, command, args, timeoutMs) {
 }
 
 function verifyLocalCliEntryContract() {
-  assert(packageJson.bin?.zepo === "./dist/index.js", "expected package bin zepo to point at dist/index.js");
+  assert(packageJson.bin?.zepo === "dist/index.js", "expected package bin zepo to point at dist/index.js");
   const compiledEntry = readFileSync(cliPath, "utf8");
   assert(compiledEntry.startsWith("#!/usr/bin/env node\n"), "expected compiled CLI entry to keep node shebang");
   console.log("pass local CLI entry contract");

@@ -95,7 +95,7 @@ function collectSafeLiveReportErrorCodes(): string[] {
 describe("package CLI contract", () => {
   it("publishes zepo as the compiled executable entry", () => {
     expect(packageJson.bin).toEqual({
-      zepo: "./dist/index.js"
+      zepo: "dist/index.js"
     });
   });
 

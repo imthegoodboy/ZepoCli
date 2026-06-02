@@ -4,7 +4,7 @@
   "description": "Terminal-first CLI for user-directed Zepto shopping workflows.",
   "type": "module",
   "bin": {
-    "zepo": "./dist/index.js"
+    "zepo": "dist/index.js"
   },
   "files": [
     "dist",

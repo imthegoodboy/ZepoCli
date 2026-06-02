@@ -107,7 +107,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedEnvExamplePath = join(packageDir, ".env.example");
   const installedNpmrcExamplePath = join(packageDir, ".npmrc.example");
 
-  assert(installedPackageJson.bin?.zepo === "./dist/index.js", "expected installed package bin zepo entry");
+  assert(installedPackageJson.bin?.zepo === "dist/index.js", "expected installed package bin zepo entry");
   assert(
     installedPackageJson.scripts?.build?.includes("node scripts/clean-dist.mjs"),
     "expected installed build script to clean dist"

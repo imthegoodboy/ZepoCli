@@ -146,7 +146,7 @@ npm audit --omit=dev
 npm pack --dry-run
 ```
 
-Keep package verification checking that `package.json` maps `zepo` to `./dist/index.js` and that the compiled entry keeps the `#!/usr/bin/env node` shebang.
+Keep package verification checking that `package.json` maps `zepo` to `dist/index.js` and that the compiled entry keeps the `#!/usr/bin/env node` shebang. Keep the bin path in npm-normalized form so `npm publish --dry-run --access public` does not auto-correct the manifest during release.
 
 Keep `verify:cli` and `verify:package` checking both `doctor --skip-browser --json` and normal `doctor --json` so release gates prove Playwright Chromium launches for the compiled and installed CLI.
 
