@@ -159,6 +159,9 @@ describe("order automation helpers", () => {
     expect(isUnsafeOrdersOpenClickText("Invoice")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Refund")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Return")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Return Request")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Cancellation")).toBe(true);
+    expect(isUnsafeOrdersOpenClickText("Rate & Review")).toBe(true);
     expect(isUnsafeOrdersOpenClickText("Rating")).toBe(true);
     expect(isAccountMenuClickText("Account")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Account")).toBe(false);
@@ -174,6 +177,9 @@ describe("order automation helpers", () => {
     expect(isUnsafeAccountMenuClickText("Invoice")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Refund")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Return")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Return Request")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Cancellation")).toBe(true);
+    expect(isUnsafeAccountMenuClickText("Rate & Review")).toBe(true);
     expect(isUnsafeAccountMenuClickText("Rating")).toBe(true);
   });
 
@@ -226,12 +232,16 @@ describe("order automation helpers", () => {
     expect(isUnsafeReorderActionClickText("Order Summary")).toBe(true);
     expect(isUnsafeReorderActionClickText("Refund")).toBe(true);
     expect(isUnsafeReorderActionClickText("Return Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Return Request")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Cancellation")).toBe(true);
     expect(isUnsafeReorderActionClickText("Support")).toBe(true);
     expect(isUnsafeReorderActionClickText("Invoice")).toBe(true);
     expect(isUnsafeReorderActionClickText("Receipt")).toBe(true);
     expect(isUnsafeReorderActionClickText("Rate Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Rate & Review")).toBe(true);
     expect(isUnsafeReorderActionClickText("Rating")).toBe(true);
     expect(isUnsafeReorderActionClickText("Review Order")).toBe(true);
+    expect(isUnsafeReorderActionClickText("Review Your Order")).toBe(true);
     expect(isUnsafeReorderActionClickText("Again")).toBe(true);
     expect(isUnsafeReorderActionClickText("Open")).toBe(true);
   });

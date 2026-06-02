@@ -310,7 +310,7 @@ export function isUnsafeOrdersOpenClickText(text: string): boolean {
   }
 
   return (
-    /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order|cancel order)\b/i.test(
+    /\b(account|profile|wallet|cart|my cart|search results?|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|view bill|bill summary|to pay|track order|reorder|order again|repeat order)\b/i.test(
       normalized
     ) ||
     isOrderActionLabelText(normalized) ||
@@ -348,7 +348,7 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
   }
 
   return (
-    /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
+    /\b(cart|my cart|address|location|deliver(?:ing)? to|checkout|proceed|payment|pay|place order|confirm order|view bill|bill summary|to pay|track order|order summary)\b/i.test(
       normalized
     ) ||
     isOrderActionLabelText(normalized) ||
