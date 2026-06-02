@@ -623,13 +623,7 @@ function readableCartItemCount(payload) {
 }
 
 function readableOrderCount(orders) {
-  return orders.filter(
-    (order) =>
-      hasReadableText(order?.status) ||
-      hasReadableText(order?.eta) ||
-      hasReadableText(order?.total) ||
-      hasReadableText(order?.placedAt)
-  ).length;
+  return orders.filter((order) => hasReadableText(order?.status) || hasReadableText(order?.eta)).length;
 }
 
 function hasReadableRecordName(value) {

@@ -2743,7 +2743,12 @@ describe("live verification runner", () => {
   });
 
   it("fails history live report steps with unreadable order entries", () => {
-    for (const stdout of [JSON.stringify([{}]), JSON.stringify([{ id: "ZEP1234" }])]) {
+    for (const stdout of [
+      JSON.stringify([{}]),
+      JSON.stringify([{ id: "ZEP1234" }]),
+      JSON.stringify([{ total: "₹249" }]),
+      JSON.stringify([{ placedAt: "Yesterday" }])
+    ]) {
       const { step } = buildLiveReportStep({
         name: "history",
         args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
@@ -2769,15 +2774,19 @@ describe("live verification runner", () => {
   });
 
   it("accepts history live report steps with empty or readable order history", () => {
-    for (const stdout of ["[]", JSON.stringify([{ status: "Delivered", total: "₹249" }])]) {
+    for (const stdout of [
+      "[]",
+      JSON.stringify([{ status: "Delivered", total: "₹249" }]),
+      JSON.stringify([{ eta: "8 mins" }])
+    ]) {
       const { step } = buildLiveReportStep({
         name: "history",
         args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
         status: 0,
         stdout,
         stderr: "",
-        summarizePayload: (_name: string, value: Array<{ status?: string }>) => ({
-          orderCount: value.filter((order) => typeof order.status === "string").length
+        summarizePayload: (_name: string, value: Array<{ eta?: string; status?: string }>) => ({
+          orderCount: value.filter((order) => typeof order.status === "string" || typeof order.eta === "string").length
         })
       });
 

@@ -266,7 +266,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "<redacted-browser-timezone>",
     "browser locale/timezone values",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
-    "counts of readable product/cart/order records",
+    "counts of readable product/cart records and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -3585,6 +3585,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     unreadableHistoryStep.ok === false &&
       unreadableHistoryStep.error?.code === "live_history_contract_mismatch",
     "expected installed history live report contract to require readable order records"
+  );
+  const totalOnlyHistoryStep = buildLiveReportStep({
+    name: "history",
+    args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
+    status: 0,
+    stdout: JSON.stringify([{ total: "₹249" }]),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    totalOnlyHistoryStep.ok === false &&
+      totalOnlyHistoryStep.error?.code === "live_history_contract_mismatch",
+    "expected installed history live report contract to reject total-only order records"
   );
 
   const { step: statusLiveStep } = buildLiveReportStep({

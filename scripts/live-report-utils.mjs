@@ -1568,10 +1568,7 @@ function hasReadableCartItemPayload(value) {
 function isReadableHistoryOrderPayload(value) {
   return (
     isObject(value) &&
-    (hasReadableText(value.status) ||
-      hasReadableText(value.eta) ||
-      hasReadableText(value.total) ||
-      hasReadableText(value.placedAt))
+    (hasReadableText(value.status) || hasReadableText(value.eta))
   );
 }
 
