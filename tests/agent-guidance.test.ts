@@ -137,6 +137,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("raw address labels or text");
       expect(guidance).toContain("local item markers only");
       expect(guidance).toContain("cart item names, units, prices, totals");
+      expect(guidance).toContain("local cache IDs only");
+      expect(guidance).toContain("status, ETA, totals, placed-at text");
       expect(guidance).toContain("raw Zepto order IDs");
     }
   });

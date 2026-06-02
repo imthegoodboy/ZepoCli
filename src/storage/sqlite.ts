@@ -159,14 +159,14 @@ export class SqliteStore {
 
     const save = this.db.transaction((items: OrderSnapshot[]) => {
       this.db.prepare("delete from orders").run();
-      for (const [index, order] of items.entries()) {
+      for (const [index] of items.entries()) {
         statement.run(
           `${ORDER_CACHE_ID_PREFIX}${index + 1}`,
-          order.status ?? null,
-          order.eta ?? null,
-          order.total ?? null,
-          order.placedAt ?? null,
-          // Keep parsed cache fields only; raw page text can contain sensitive order copy.
+          null,
+          null,
+          null,
+          null,
+          // Keep countable cache rows only; order details and raw page text stay in memory.
           ""
         );
       }
@@ -230,6 +230,12 @@ export class SqliteStore {
       update cart_snapshots set total = null where total is not null;
       update cart_snapshots set raw_text = null where raw_text is not null;
       update orders set raw_text = '' where raw_text is not null and raw_text <> '';
+      update orders
+        set status = null,
+            eta = null,
+            total = null,
+            placed_at = null
+        where status is not null or eta is not null or total is not null or placed_at is not null;
       update orders
         set order_id = '${ORDER_CACHE_ID_PREFIX}legacy-' || rowid
         where order_id not like '${ORDER_CACHE_ID_PREFIX}%';

@@ -332,7 +332,9 @@ describe("session storage", () => {
       {
         id: "ZEP1234",
         status: "Delivered",
+        eta: "8 mins",
         total: "₹32",
+        placedAt: "Today",
         rawText: "Order #ZEP1234 Delivered Home 221B Test Street"
       }
     ]);
@@ -345,6 +347,10 @@ describe("session storage", () => {
     const addressLabels = readColumnValues(paths.dbPath, "select label as raw_text from addresses order by text");
     const addressTexts = readColumnValues(paths.dbPath, "select text as raw_text from addresses order by text");
     const orderCacheId = readSingleColumn(paths.dbPath, "select order_id as raw_text from orders limit 1");
+    const orderStatus = readSingleColumn(paths.dbPath, "select status as raw_text from orders limit 1");
+    const orderEta = readSingleColumn(paths.dbPath, "select eta as raw_text from orders limit 1");
+    const orderTotal = readSingleColumn(paths.dbPath, "select total as raw_text from orders limit 1");
+    const orderPlacedAt = readSingleColumn(paths.dbPath, "select placed_at as raw_text from orders limit 1");
     const orderRawText = readSingleColumn(paths.dbPath, "select raw_text from orders limit 1");
 
     expect(searchQuery).toBe(REDACTED_SEARCH_QUERY);
@@ -364,6 +370,10 @@ describe("session storage", () => {
     expect(JSON.stringify(addressTexts)).not.toContain("42 Test Avenue");
     expect(orderCacheId).toBe(`${ORDER_CACHE_ID_PREFIX}1`);
     expect(String(orderCacheId)).not.toContain("ZEP1234");
+    expect(orderStatus).toBeNull();
+    expect(orderEta).toBeNull();
+    expect(orderTotal).toBeNull();
+    expect(orderPlacedAt).toBeNull();
     expect(orderRawText).toBe("");
     expect(String(cartRawText)).not.toContain("221B Test Street");
     expect(String(orderRawText)).not.toContain("221B Test Street");
@@ -438,7 +448,7 @@ describe("session storage", () => {
       values ('[{"name":"Amul Milk","unit":"500 ml","price":"₹32"}]', '₹32', 'Cart Delivery address 221B Test Street', datetime('now'));
 
       insert into orders (order_id, status, eta, total, placed_at, raw_text, updated_at)
-      values ('ZEP1234', 'Delivered', null, '₹32', null, 'Order Home 221B Test Street', datetime('now'));
+      values ('ZEP1234', 'Delivered', '8 mins', '₹32', 'Today', 'Order Home 221B Test Street', datetime('now'));
 
       insert into addresses (label, text, selected, updated_at)
       values ('Home', 'Home: 221B Test Street, Bengaluru', 1, datetime('now'));
@@ -457,6 +467,10 @@ describe("session storage", () => {
     const migratedOrderId = readSingleColumn(paths.dbPath, "select order_id as raw_text from orders limit 1");
     expect(migratedOrderId).toMatch(new RegExp(`^${ORDER_CACHE_ID_PREFIX}legacy-\\d+$`));
     expect(String(migratedOrderId)).not.toContain("ZEP1234");
+    expect(readSingleColumn(paths.dbPath, "select status as raw_text from orders limit 1")).toBeNull();
+    expect(readSingleColumn(paths.dbPath, "select eta as raw_text from orders limit 1")).toBeNull();
+    expect(readSingleColumn(paths.dbPath, "select total as raw_text from orders limit 1")).toBeNull();
+    expect(readSingleColumn(paths.dbPath, "select placed_at as raw_text from orders limit 1")).toBeNull();
     expect(readSingleColumn(paths.dbPath, "select raw_text from orders limit 1")).toBe("");
     expect(readSingleColumn(paths.dbPath, "select label as raw_text from addresses limit 1")).toBe(
       REDACTED_ADDRESS_LABEL

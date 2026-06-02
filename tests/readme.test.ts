@@ -141,12 +141,14 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "Cart cache rows use local item markers only and do not retain cart item names, units, prices, totals, or raw page text."
     );
-    expect(readme).toContain("Order cache rows use local cache IDs instead of raw Zepto order IDs");
+    expect(readme).toContain(
+      "Order cache rows use local cache IDs only and do not retain raw Zepto order IDs, status, ETA, totals, placed-at text, or raw page text."
+    );
     expect(readme).toContain("No raw Zepto page HTML/screenshot artifacts for browser flows that may use the persistent profile");
     expect(readme).toContain(
       "Debug HTML/screenshot artifacts are disabled for Zepto browser flows that may use the persistent profile, including search, live session checks, login, cart, address, checkout, orders, and reorder"
     );
-    expect(readme).toContain("raw order page text is used in memory for parsing but is not saved to SQLite snapshots");
+    expect(readme).toContain("raw Zepto page text and internal automation IDs are kept internal");
     expect(readme).toContain("Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");
     expect(readme).toContain("auth/session/token/password/secret URL-parameter");
