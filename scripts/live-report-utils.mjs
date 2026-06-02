@@ -717,6 +717,13 @@ function validateLiveReportSummaryConsistencyContract(name, summary, issues) {
     return;
   }
 
+  if (name === "status") {
+    if (summary.liveSessionState !== undefined && summary.liveSessionState !== "skipped") {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
   if (name === "track" || name === "history") {
     const latestHasOrderEvidence = summary.latestHasStatus === true || summary.latestHasEta === true;
     if (

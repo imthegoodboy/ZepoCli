@@ -2372,6 +2372,20 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     {
       ...acceptedLiveReport,
       steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "status"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                liveSessionState: "logged-in"
+              }
+            }
+          : step
+      )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
         step.name === "doctor"
           ? {
               ...step,
