@@ -19,6 +19,7 @@ describe("agent guidance", () => {
     for (const guidance of [agentReadme, builderSkill]) {
       expect(guidance).toContain("payment-method/payment controls");
       expect(guidance).toContain("cart/checkout/order/bill/payment controls");
+      expect(guidance).toContain("generic `continue`, bare `proceed`");
       expect(guidance).toContain("`checkout and pay`, or amount-bearing pay text");
       expect(guidance).toContain("after any scroll into view before clicking");
       expect(guidance).toContain("Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls");
@@ -87,6 +88,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>");
       expect(guidance).toContain("optional `--max-age-minutes` freshness");
       expect(guidance).toContain("`--max-age-minutes` must be supplied so production-scope evidence is fresh");
+      expect(guidance).toContain("Do not run `npm run verify:cli` in parallel with `npm run verify:package`");
       expect(guidance).toContain(
         "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track must be explicitly requested and covered"
       );

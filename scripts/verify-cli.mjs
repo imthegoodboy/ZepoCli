@@ -12,6 +12,9 @@ const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "u
 const CLI_COMMAND_TIMEOUT_MS = 120_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
 const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "dist", "commands", "checkout.js")).href);
+const { isCheckoutHandoffClickText, isUnsafeCheckoutAutomationClickText } = await import(
+  pathToFileURL(resolve(rootDir, "dist", "automation", "checkout.js")).href
+);
 const { HEADLESS_BROWSER_RUN_HISTORY_META_KEY, LAST_ACCESS_CHALLENGE_META_KEY } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "browser.js")).href
 );
@@ -981,6 +984,23 @@ function assertCheckoutHandoffContract(payload) {
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected track next command");
   assert(String(payload.next).includes("Complete payment in Zepto"), "expected checkout handoff next-step guidance");
+  assert(isCheckoutHandoffClickText("Checkout") === true, "expected compiled checkout label to be accepted");
+  assert(
+    isCheckoutHandoffClickText("Proceed to Checkout") === true,
+    "expected compiled proceed-to-checkout label to be accepted"
+  );
+  assert(
+    isCheckoutHandoffClickText("Checkout and Pay") === false,
+    "expected compiled checkout-and-pay label to be rejected"
+  );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Continue to Payment") === true,
+    "expected compiled continue-to-payment label to be unsafe"
+  );
+  assert(
+    isUnsafeCheckoutAutomationClickText("Proceed") === true,
+    "expected compiled bare proceed label to be unsafe"
+  );
 }
 
 function parseJson(text, streamName) {

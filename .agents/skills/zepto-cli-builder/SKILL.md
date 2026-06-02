@@ -150,6 +150,8 @@ Keep package verification checking that `package.json` maps `zepo` to `./dist/in
 
 Keep `verify:cli` and `verify:package` checking both `doctor --skip-browser --json` and normal `doctor --json` so release gates prove Playwright Chromium launches for the compiled and installed CLI.
 
+Build and package gates that clean or rebuild `dist` must run serially. Do not run `npm run verify:cli` in parallel with `npm run verify:package`, `npm pack`, or any command that triggers `prepack`, because those commands can rebuild `dist` while the compiled CLI verifier is reading it.
+
 Keep `.github/workflows/release.yml` tag-driven, using Node.js 20.19, installing Playwright Chromium, running `npm run check`, then publishing with `npm publish --provenance --access public` and `NPM_TOKEN`. Do not add `verify:live` to release automation; live Zepto account verification remains manual and human-controlled.
 
 Never store npm tokens in the app, tests, docs, `.npmrc`, or agent guidance. Keep local `.npmrc` and `.env*` files ignored and reference only the placeholder secret name `NPM_TOKEN`; `.npmrc.example` and `.env.example` may contain placeholder names only. Keep `verify:secrets` in `npm run check`; it should scan tracked and unignored project text and fail on npm-token-shaped values without printing the raw token.
