@@ -111,5 +111,11 @@ function hasSkippedSegment(filePath) {
 }
 
 function isSkippedDirectoryName(name) {
-  return skippedDirectories.has(name) || name === ".zepo" || name.startsWith(".zepo-");
+  return (
+    skippedDirectories.has(name) ||
+    name === ".zepo" ||
+    name.startsWith(".zepo-") ||
+    name === ".zepto" ||
+    name.startsWith(".zepto-")
+  );
 }

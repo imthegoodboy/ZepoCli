@@ -14,3 +14,5 @@ coverage/
 *.sqlite-wal
 .zepo/
 .zepo-*/
+.zepto/
+.zepto-*/

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { basename, extname, join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -120,6 +120,10 @@ describe("package CLI contract", () => {
     expect(gitignore).toContain("!.npmrc.example");
     expect(gitignore).toContain(".env.*");
     expect(gitignore).toContain("!.env.example");
+    expect(gitignore).toContain(".zepo/");
+    expect(gitignore).toContain(".zepo-*/");
+    expect(gitignore).toContain(".zepto/");
+    expect(gitignore).toContain(".zepto-*/");
     expect(readFileSync(resolve(rootDir, ".npmrc.example"), "utf8")).toContain("${NPM_TOKEN}");
     expect(readFileSync(resolve(rootDir, ".env.example"), "utf8")).toContain("NPM_TOKEN=");
 
@@ -195,6 +199,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("--exclude-standard");
     expect(verifier).toContain('name === ".zepo"');
     expect(verifier).toContain('name.startsWith(".zepo-")');
+    expect(verifier).toContain('name === ".zepto"');
+    expect(verifier).toContain('name.startsWith(".zepto-")');
     expect(verifier).toContain("isLocalSecretConfigName");
     expect(verifier).toContain("npmTokenPattern");
     expect(verifier).toContain('".js"');
@@ -236,6 +242,29 @@ describe("package CLI contract", () => {
       expect(result.stderr).not.toContain(fakeToken);
     } finally {
       rmSync(fixturePath, { force: true });
+    }
+  }, PACKAGE_CONTRACT_SLOW_TEST_TIMEOUT_MS);
+
+  it("keeps service-spelled local data directories out of secret scanning", () => {
+    const fixtureDir = resolve(rootDir, ".zepto-secret-scan-fixture");
+    const fixturePath = resolve(fixtureDir, "session.js");
+    const fakeToken = `npm_${"B".repeat(24)}`;
+
+    mkdirSync(fixtureDir, { recursive: true });
+    writeFileSync(fixturePath, `export const fixture = "${fakeToken}";\n`);
+
+    try {
+      const result = spawnSync(process.execPath, ["scripts/verify-secrets.mjs"], {
+        cwd: rootDir,
+        encoding: "utf8"
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("pass secret verification");
+      expect(result.stderr).toBe("");
+      expect(`${result.stdout}\n${result.stderr}`).not.toContain(fakeToken);
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true });
     }
   }, PACKAGE_CONTRACT_SLOW_TEST_TIMEOUT_MS);
 
@@ -295,6 +324,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
     expect(verifier).toContain("expected installed verify:live npm-token redaction guidance");
     expect(verifier).toContain("expected installed verify:live percent-encoded fragment redaction guidance");
+    expect(verifier).toContain("expected installed verify:secrets to skip service-spelled local runtime data directories");
     expect(verifier).toContain("function installedVerifyLiveArgs");
     expect(verifier).toContain('"--silent", "run", "--prefix", packageDir, "verify:live"');
     expect(verifier).toContain("expected installed verify:live invalid phone output to omit raw phone input");

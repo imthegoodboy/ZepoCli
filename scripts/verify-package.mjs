@@ -145,6 +145,20 @@ function verifyInstalledCliEntryContract(prefixDir) {
     readFileSync(installedNpmrcExamplePath, "utf8").includes("${NPM_TOKEN}"),
     "expected installed .npmrc.example to reference NPM_TOKEN placeholder"
   );
+  const installedVerifySecretsSource = readFileSync(installedVerifySecretsPath, "utf8");
+  assert(
+    installedVerifySecretsSource.includes('name === ".zepto"') &&
+      installedVerifySecretsSource.includes('name.startsWith(".zepto-")'),
+    "expected installed verify:secrets to skip service-spelled local runtime data directories"
+  );
+  const serviceSpelledRuntimeDir = join(packageDir, ".zepto-secret-scan-fixture");
+  try {
+    mkdirSync(serviceSpelledRuntimeDir, { recursive: true });
+    writeFileSync(join(serviceSpelledRuntimeDir, "session.js"), `export const fixture = "${FAKE_NPM_TOKEN}";\n`);
+    runNpm(["run", "--prefix", packageDir, "verify:secrets", "--silent"], { cwd: rootDir });
+  } finally {
+    removeTree(serviceSpelledRuntimeDir);
+  }
   runNpm(["run", "--prefix", packageDir, "verify:secrets", "--silent"], { cwd: rootDir });
   assert(
     readFileSync(installedCliPath, "utf8").startsWith("#!/usr/bin/env node\n"),
