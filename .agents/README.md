@@ -63,7 +63,7 @@ Storage:
 - Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls, not generic page copy containing those words, reject mixed labels that point at payment-method/payment, cart, address, phone/OTP, checkout, order, verification, support/help, invoice/receipt, refund/return/cancel, or rating/review actions, and revalidate labels plus disabled state after any scroll into view before clicking.
 - Safe-click checks must inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and `aria-labelledby`/`aria-describedby` referenced text before clicking. Reject a control when any label points at an unsafe action for that command, including after any scroll into view before clicking.
 - Payment-method label matching lives in `src/automation/payment-labels.ts`; use the shared helper/source and do not add per-module payment regex copies.
-- Support/help, invoice/receipt, refund/return/cancel, and rating/review order-action label matching lives in `src/automation/order-action-labels.ts`; use the shared helper/source for browser click guards and DOM-evaluated parsers, and do not add per-module copies that can drift across account, address, cart, order, and login surfaces.
+- Support/help, invoice/receipt, refund/return/cancel, and rating/review order-action label matching lives in `src/automation/order-action-labels.ts`; use the shared helper/source for browser click guards and DOM-evaluated parsers, and do not add per-module copies that can drift across account, address, cart, order, login, search, or product-add surfaces.
 
 ## Researched Zepto Facts
 

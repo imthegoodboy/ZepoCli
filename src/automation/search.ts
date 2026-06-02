@@ -7,6 +7,7 @@ import { normalizeProductMatchText, textMatchesProductQuery } from "../utils/pro
 import { ACCESS_CHALLENGE_COOLDOWN_MS, assertNoAccessChallenge, gotoWithAccessProtection } from "./browser.js";
 import { isDisabledControl, isEditableTextInput, readControlLabels } from "./control-state.js";
 import { dedupeProducts, parseProductCard, type RawProductCard } from "./extract.js";
+import { isOrderActionLabelText, ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 export const SEARCH_TRIGGER_CLICK_LABELS = [
@@ -17,11 +18,13 @@ export const SEARCH_TRIGGER_CLICK_LABELS = [
 ] as const;
 const PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE =
   "address|location|coupon|promo|voucher|checkout|payment|pay\\s+now|place\\s+order|confirm\\s+order";
+const PRODUCT_ADD_UNSAFE_WORKFLOW_PATTERN_SOURCE =
+  `(?:\\b(?:${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE})`;
 const PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE =
   "(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d+)(?:\\s*(?:items?|pcs?|pieces?|qty|quantity))?";
-const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = `^add(?:\\s+to\\s+cart|\\s+(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$)(?!(?:.*\\b(?:${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b)).+\\s+to\\s+cart)?$`;
+const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = `^add(?:\\s+to\\s+cart|\\s+(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$)(?!(?:.*${PRODUCT_ADD_UNSAFE_WORKFLOW_PATTERN_SOURCE})).+\\s+to\\s+cart)?$`;
 const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
-  `^(?:remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE}\\s+to\\s+cart$|^add\\s+(?!(?:to\\s+cart|(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$).+\\s+to\\s+cart)$).+|\\b(${PRODUCT_ADD_UNSAFE_TERM_PATTERN_SOURCE})\\b`;
+  `^(?:remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE}\\s+to\\s+cart$|^add\\s+(?!(?:to\\s+cart|(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$).+\\s+to\\s+cart)$).+|${PRODUCT_ADD_UNSAFE_WORKFLOW_PATTERN_SOURCE}`;
 const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
@@ -415,7 +418,9 @@ export function isUnsafeSearchInputText(text: string): boolean {
   return (
     /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay|phone|mobile|otp|coupon)\b/i.test(
       normalized
-    ) || isPaymentMethodLabelText(normalized)
+    ) ||
+    isOrderActionLabelText(normalized) ||
+    isPaymentMethodLabelText(normalized)
   );
 }
 
@@ -428,7 +433,9 @@ export function isUnsafeSearchTriggerClickText(text: string): boolean {
   return (
     /\b(search results?|popular searches|cart|my cart|account|profile|login|log in|sign in|orders?|order history|track order|reorder|address|location|checkout|proceed|continue|next|submit|go|open|payment|pay|view bill|bill summary|to pay)\b/i.test(
       normalized
-    ) || isPaymentMethodLabelText(normalized)
+    ) ||
+    isOrderActionLabelText(normalized) ||
+    isPaymentMethodLabelText(normalized)
   );
 }
 
@@ -471,6 +478,7 @@ export function isUnsafeProductAddControlText(text: string): boolean {
   return (
     /^add(?:ed|ing)?$/i.test(normalized) ||
     new RegExp(PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE, "i").test(normalized) ||
+    isOrderActionLabelText(normalized) ||
     isPaymentMethodLabelText(normalized)
   );
 }
@@ -506,7 +514,9 @@ export function isUnsafeQuantityIncreaseControlText(text: string): boolean {
   return (
     /\b(decrease|decrement|remove|delete|minus|add more|add coupon|apply coupon|coupon|promo|voucher|address|location|checkout|payment|pay|place order|confirm order|continue|proceed)\b|^[-−]$|^(?:qty|quantity)\s*[-−]$/i.test(
       normalized
-    ) || isPaymentMethodLabelText(normalized)
+    ) ||
+    isOrderActionLabelText(normalized) ||
+    isPaymentMethodLabelText(normalized)
   );
 }
 

@@ -488,9 +488,13 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     "automation",
     "search.js"
   );
-  const { isProductAddControlText, isUnsafeProductAddControlText } = await import(
-    pathToFileURL(searchAutomationModulePath).href
-  );
+  const {
+    isProductAddControlText,
+    isUnsafeProductAddControlText,
+    isUnsafeQuantityIncreaseControlText,
+    isUnsafeSearchInputText,
+    isUnsafeSearchTriggerClickText
+  } = await import(pathToFileURL(searchAutomationModulePath).href);
 
   assert(isProductAddControlText("Add to Cart") === true, "expected installed generic product ADD label to be accepted");
   assert(
@@ -512,6 +516,29 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
   assert(
     isUnsafeProductAddControlText("Add 2 items to cart") === true,
     "expected installed item-count ADD label to be unsafe"
+  );
+  for (const label of ["Customer Support", "Help", "Invoice", "Refunded", "Review Order"]) {
+    assert(
+      isUnsafeSearchInputText(`Search ${label}`) === true,
+      `expected installed search input to reject order action label: ${label}`
+    );
+    assert(
+      isUnsafeSearchTriggerClickText(label) === true,
+      `expected installed search trigger to reject order action label: ${label}`
+    );
+    assert(
+      isUnsafeProductAddControlText(label) === true,
+      `expected installed product ADD to reject order action label: ${label}`
+    );
+    assert(
+      isUnsafeQuantityIncreaseControlText(label) === true,
+      `expected installed quantity increase to reject order action label: ${label}`
+    );
+  }
+  assert(
+    isProductAddControlText("Add Help to Cart") === false &&
+      isUnsafeProductAddControlText("Add Help to Cart") === true,
+    "expected installed product-specific ADD label with order action text to be unsafe"
   );
   console.log("pass installed product automation contract");
 }

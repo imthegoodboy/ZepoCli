@@ -145,7 +145,12 @@ describe("search automation helpers", () => {
       "Continue",
       "UPI",
       "COD",
-      "Wallet"
+      "Wallet",
+      "Customer Support",
+      "Help",
+      "Invoice",
+      "Refund",
+      "Review Order"
     ]) {
       expect(SEARCH_TRIGGER_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(false);
       expect(isSearchTriggerClickText(label)).toBe(false);
@@ -167,6 +172,10 @@ describe("search automation helpers", () => {
       "Search UPI",
       "Search COD",
       "Search wallet",
+      "Search help",
+      "Search invoice",
+      "Search refund",
+      "Search review order",
       "Popular searches"
     ]) {
       expect(isSearchInputText(label)).toBe(false);
@@ -240,6 +249,12 @@ describe("search automation helpers", () => {
       "Add ten to cart",
       "Added",
       "Add Address to Cart",
+      "Add Help to Cart",
+      "Add Review Order to Cart",
+      "Customer Support",
+      "Refunded",
+      "Review Order",
+      "Cancel Order",
       "Payment Method",
       "UPI",
       "Credit Card",
@@ -346,6 +361,13 @@ describe("search automation helpers", () => {
         buttonText: "",
         buttonAttributes: {
           "aria-label": "Add to Cart",
+          title: "Customer Support"
+        }
+      }),
+      createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": "Add to Cart",
           value: "Pay Now"
         }
       }),
@@ -398,7 +420,11 @@ describe("search automation helpers", () => {
       "Credit Card",
       "Wallet",
       "Cash on Delivery",
-      "COD"
+      "COD",
+      "Help",
+      "Invoice",
+      "Refund",
+      "Rate Order"
     ]) {
       expect(isQuantityIncreaseControlText(label)).toBe(false);
       expect(isUnsafeQuantityIncreaseControlText(label)).toBe(true);
