@@ -395,7 +395,16 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     isUnsafeCheckoutAutomationClickText("Amazon Pay") === true,
     "expected installed wallet payment-method label to be unsafe"
   );
-  for (const label of ["Customer Support", "Help", "Invoice", "Refunded", "Cancel Order", "Review Order"]) {
+  for (const label of [
+    "Customer Support",
+    "Help",
+    "Invoice",
+    "Refunded",
+    "Cancellation",
+    "Cancelled",
+    "Rate & Review",
+    "Review Your Order"
+  ]) {
     assert(
       isUnsafeCheckoutAutomationClickText(label) === true,
       `expected installed checkout order-action label to be unsafe: ${label}`
@@ -419,7 +428,15 @@ async function verifyInstalledAuthAutomationContract(prefixDir) {
     pathToFileURL(authAutomationModulePath).href
   );
 
-  for (const label of ["Customer Support", "Invoice", "Refund", "Return", "Rating", "Review Order"]) {
+  for (const label of [
+    "Customer Support",
+    "Invoice",
+    "Refund",
+    "Return Request",
+    "Cancellation",
+    "Rate & Review",
+    "Review Your Order"
+  ]) {
     assert(
       isUnsafeAccountSurfaceClickText(label) === true,
       `expected installed account-surface label to be unsafe: ${label}`
@@ -447,12 +464,25 @@ async function verifyInstalledOrderActionLabelContract(prefixDir) {
   );
   const pattern = new RegExp(ORDER_ACTION_LABEL_PATTERN_SOURCE, "i");
 
-  for (const label of ["Help", "Support Ticket", "Refunded", "Cancel", "Rating", "Review Order"]) {
+  for (const label of [
+    "Help",
+    "Support Ticket",
+    "Refunded",
+    "Refunds",
+    "Return Order",
+    "Cancellation",
+    "Cancelled",
+    "Rate Order",
+    "Rate & Review",
+    "Rate and Review",
+    "Review Your Order",
+    "Write Review"
+  ]) {
     assert(isOrderActionLabelText(label) === true, `expected installed order-action label to be unsafe: ${label}`);
     assert(pattern.test(label) === true, `expected installed order-action source to match: ${label}`);
   }
 
-  for (const label of ["Account", "Login", "Search", "Cart", "Checkout", "Reorder", "Track Order"]) {
+  for (const label of ["Account", "Login", "Search", "Cart", "Checkout", "Reorder", "Track Order", "Product Reviews"]) {
     assert(isOrderActionLabelText(label) === false, `expected installed ordinary workflow label not to match: ${label}`);
   }
 
@@ -470,7 +500,15 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
   } = await import(pathToFileURL(cartAutomationModulePath).href);
 
   assert(isCartOpenClickText("Cart") === true, "expected installed cart open label to be accepted");
-  for (const label of ["Customer Support", "Invoice", "Refund", "Cancel Order", "Rating", "Review Order"]) {
+  for (const label of [
+    "Customer Support",
+    "Invoice",
+    "Refund",
+    "Cancellation",
+    "Cancelled",
+    "Rate & Review",
+    "Review Your Order"
+  ]) {
     assert(isCartOpenClickText(label) === false, `expected installed cart open label to be rejected: ${label}`);
     assert(isUnsafeCartOpenClickText(label) === true, `expected installed cart open label to be unsafe: ${label}`);
   }
@@ -532,7 +570,7 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     isUnsafeProductAddControlText("Add 2 items to cart") === true,
     "expected installed item-count ADD label to be unsafe"
   );
-  for (const label of ["Customer Support", "Help", "Invoice", "Refunded", "Review Order"]) {
+  for (const label of ["Customer Support", "Help", "Invoice", "Refunded", "Cancellation", "Rate & Review", "Review Your Order"]) {
     assert(
       isUnsafeSearchInputText(`Search ${label}`) === true,
       `expected installed search input to reject order action label: ${label}`
@@ -618,7 +656,7 @@ async function verifyInstalledOrderAutomationContract(prefixDir) {
     isUnsafeReorderActionClickText
   } = await import(pathToFileURL(ordersAutomationModulePath).href);
 
-  for (const label of ["Customer Support", "Invoice", "Refund", "Return", "Rating"]) {
+  for (const label of ["Customer Support", "Invoice", "Refund", "Return Request", "Cancellation", "Rate & Review"]) {
     assert(
       isUnsafeOrdersOpenClickText(label) === true,
       `expected installed order navigation label to be unsafe: ${label}`
@@ -629,7 +667,15 @@ async function verifyInstalledOrderAutomationContract(prefixDir) {
     );
   }
 
-  for (const label of ["Customer Support", "Invoice", "Refund", "Return", "Rating", "Review Order"]) {
+  for (const label of [
+    "Customer Support",
+    "Invoice",
+    "Refund",
+    "Return Request",
+    "Cancellation",
+    "Rate & Review",
+    "Review Your Order"
+  ]) {
     assert(
       isUnsafeReorderActionClickText(label) === true,
       `expected installed reorder label to be unsafe: ${label}`
@@ -728,8 +774,8 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "Customer Support",
     "Invoice",
     "Refund",
-    "Cancel Order",
-    "Rate Order"
+    "Cancellation",
+    "Rate & Review"
   ]) {
     assert(
       isUnsafeAddressAutomationClickText(unsafeText) === true,
@@ -750,8 +796,8 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "Customer Support",
     "Invoice",
     "Refund",
-    "Cancel Order",
-    "Rate Order"
+    "Cancellation",
+    "Rate & Review"
   ]) {
     assert(
       isAddressManagerClickText(rejectedText) === false,

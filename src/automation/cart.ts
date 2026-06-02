@@ -15,6 +15,8 @@ const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|clear cart)\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
+const NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE =
+  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order)\\b|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 
 export async function openCart(page: Page): Promise<void> {
   await gotoZepto(page, "/cart");
@@ -343,9 +345,10 @@ export function isLikelyRemovableCartItemText(text: string, query?: string): boo
 }
 
 async function findRemoveButtonId(page: Page, query?: string): Promise<number | undefined> {
-  return page.evaluate(({ itemQuery, removeControlPatternSource, unsafeRemoveControlPatternSource }) => {
+  return page.evaluate(({ itemQuery, nonCartProductSurfacePatternSource, removeControlPatternSource, unsafeRemoveControlPatternSource }) => {
     const removeControlPattern = new RegExp(removeControlPatternSource, "i");
     const unsafeRemoveControlPattern = new RegExp(unsafeRemoveControlPatternSource, "i");
+    const nonCartProductSurfacePattern = new RegExp(nonCartProductSurfacePatternSource, "i");
     const sizeUnitPattern =
       "ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules";
     const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
@@ -415,9 +418,7 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
         text
       );
     const isNonCartProductSurfaceText = (text: string) =>
-      /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
-        text
-      );
+      nonCartProductSurfacePattern.test(text);
     const hasCartMutationSignal = (text: string) =>
       /\b(qty|quantity|remove|delete|decrease)\b/i.test(text) ||
       /(?:^|\s)x\s*\d+\b/i.test(text) ||
@@ -517,6 +518,7 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
     return undefined;
   }, {
     itemQuery: query,
+    nonCartProductSurfacePatternSource: NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE,
     removeControlPatternSource: CART_REMOVE_CONTROL_PATTERN_SOURCE,
     unsafeRemoveControlPatternSource: CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE
   });
@@ -713,9 +715,7 @@ function isCartSummaryOrFeeText(text: string): boolean {
 }
 
 function isNonCartProductSurfaceText(text: string): boolean {
-  return /\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order|cancel order|refund|return|support|help|invoice|receipt|rate order)\b/i.test(
-    text
-  );
+  return new RegExp(NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE, "i").test(text);
 }
 
 function hasCartMutationSignal(text: string): boolean {

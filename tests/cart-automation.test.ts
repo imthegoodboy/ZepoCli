@@ -512,6 +512,12 @@ describe("cart automation helpers", () => {
     expect(isLikelyRemovableCartItemText("Reorder Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Invoice Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Support Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
+    expect(isLikelyRemovableCartItemText("Cancellation Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(
+      false
+    );
+    expect(isLikelyRemovableCartItemText("Rate & Review Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(
+      false
+    );
     expect(isLikelyRemovableCartItemText("Potato Chips 52 g Rs 20", "milk")).toBe(false);
     expect(isLikelyRemovableCartItemText("Price Drop Wheat Flour 1 kg Rs 99 Remove", "rice")).toBe(false);
   });

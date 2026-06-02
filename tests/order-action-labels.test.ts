@@ -14,20 +14,32 @@ describe("order action label matching", () => {
       "Receipt",
       "Refund",
       "Refunded",
+      "Refunds",
       "Return",
+      "Returns",
+      "Return Order",
+      "Return Request",
       "Cancel",
       "Cancel Order",
+      "Cancel Request",
+      "Cancellation",
+      "Cancellations",
+      "Cancelled",
       "Rate Order",
       "Rate Your Order",
+      "Rate & Review",
+      "Rate and Review",
       "Rating",
-      "Review Order"
+      "Review Order",
+      "Review Your Order",
+      "Write Review"
     ]) {
       expect(isOrderActionLabelText(label)).toBe(true);
     }
   });
 
   it("does not match ordinary workflow labels", () => {
-    for (const label of ["Account", "Login", "Search", "Cart", "Checkout", "Reorder", "Track Order"]) {
+    for (const label of ["Account", "Login", "Search", "Cart", "Checkout", "Reorder", "Track Order", "Product Reviews"]) {
       expect(isOrderActionLabelText(label)).toBe(false);
     }
   });
@@ -36,6 +48,8 @@ describe("order action label matching", () => {
     const pattern = new RegExp(ORDER_ACTION_LABEL_PATTERN_SOURCE, "i");
 
     expect(pattern.test("Support Desk")).toBe(true);
+    expect(pattern.test("Rate & Review")).toBe(true);
+    expect(pattern.test("Cancellation")).toBe(true);
     expect(pattern.test("Saved Address")).toBe(false);
   });
 });

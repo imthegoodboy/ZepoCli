@@ -86,7 +86,15 @@ const checks = [
     args: undefined,
     expect: () => {
       assert(isCartOpenClickText("Cart") === true, "expected compiled cart open label to be accepted");
-      for (const label of ["Customer Support", "Invoice", "Refund", "Cancel Order", "Rating", "Review Order"]) {
+      for (const label of [
+        "Customer Support",
+        "Invoice",
+        "Refund",
+        "Cancellation",
+        "Cancelled",
+        "Rate & Review",
+        "Review Your Order"
+      ]) {
         assert(isCartOpenClickText(label) === false, `expected compiled cart open label to be rejected: ${label}`);
         assert(isUnsafeCartOpenClickText(label) === true, `expected compiled cart open label to be unsafe: ${label}`);
       }
