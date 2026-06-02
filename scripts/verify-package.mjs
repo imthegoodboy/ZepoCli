@@ -461,10 +461,19 @@ async function verifyInstalledOrderActionLabelContract(prefixDir) {
 
 async function verifyInstalledCartAutomationContract(prefixDir) {
   const cartAutomationModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "automation", "cart.js");
-  const { isCartRemoveControlText, isLikelyRemovableCartItemText, isUnsafeCartRemoveControlText } = await import(
-    pathToFileURL(cartAutomationModulePath).href
-  );
+  const {
+    isCartOpenClickText,
+    isCartRemoveControlText,
+    isLikelyRemovableCartItemText,
+    isUnsafeCartOpenClickText,
+    isUnsafeCartRemoveControlText
+  } = await import(pathToFileURL(cartAutomationModulePath).href);
 
+  assert(isCartOpenClickText("Cart") === true, "expected installed cart open label to be accepted");
+  for (const label of ["Customer Support", "Invoice", "Refund", "Cancel Order", "Rating", "Review Order"]) {
+    assert(isCartOpenClickText(label) === false, `expected installed cart open label to be rejected: ${label}`);
+    assert(isUnsafeCartOpenClickText(label) === true, `expected installed cart open label to be unsafe: ${label}`);
+  }
   assert(isCartRemoveControlText("Remove") === true, "expected installed cart remove label to be accepted");
   for (const label of ["Order Summary", "Track Order", "Reorder", "Cancel Order", "Invoice", "Support"]) {
     assert(isCartRemoveControlText(label) === false, `expected installed cart remove label to be rejected: ${label}`);

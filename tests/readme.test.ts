@@ -126,7 +126,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "checkout, payment-method/payment, final-order, support, invoice/receipt, refund/return/cancel, or rating/review action"
     );
-    expect(readme).toContain("Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, or final order text, and cart navigation labels plus disabled state are revalidated after any scroll into view before clicking");
+    expect(readme).toContain(
+      "Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, final order text, support/help, invoice/receipt, refund/return/cancel, or rating/review order-action text, and cart navigation labels plus disabled state are revalidated after any scroll into view before clicking"
+    );
     expect(readme).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");

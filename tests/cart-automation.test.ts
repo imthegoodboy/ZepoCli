@@ -292,6 +292,12 @@ describe("cart automation helpers", () => {
       "Wallet",
       "Cash on Delivery",
       "COD",
+      "Customer Support",
+      "Help",
+      "Invoice",
+      "Refunded",
+      "Cancel Order",
+      "Review Order",
       "Go",
       "Open",
       "Next",
@@ -319,7 +325,11 @@ describe("cart automation helpers", () => {
       createMixedLabelCartOpenPage("Cart", "Cart", { title: "Payment Method" }),
       createMixedLabelCartOpenPage("Open", "Cart"),
       createMixedLabelCartOpenPage("Cart", "Cart", { title: "Checkout" }),
-      createMixedLabelCartOpenPage("Cart", "To Pay ₹249")
+      createMixedLabelCartOpenPage("Cart", "To Pay ₹249"),
+      createMixedLabelCartOpenPage("Customer Support", "Cart"),
+      createMixedLabelCartOpenPage("Cart", "Invoice"),
+      createMixedLabelCartOpenPage("Cart", "Cart", { title: "Refunded" }),
+      createMixedLabelCartOpenPage("Cart", "Cart", { "aria-description": "Review Order" })
     ]) {
       await expect(clickCartOpenButton(page as never)).resolves.toBe(false);
 

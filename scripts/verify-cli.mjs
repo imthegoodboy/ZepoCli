@@ -15,6 +15,9 @@ const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "d
 const { isCheckoutHandoffClickText, isCheckoutHandoffText, isUnsafeCheckoutAutomationClickText } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "checkout.js")).href
 );
+const { isCartOpenClickText, isUnsafeCartOpenClickText } = await import(
+  pathToFileURL(resolve(rootDir, "dist", "automation", "cart.js")).href
+);
 const { HEADLESS_BROWSER_RUN_HISTORY_META_KEY, LAST_ACCESS_CHALLENGE_META_KEY } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "browser.js")).href
 );
@@ -76,6 +79,17 @@ const checks = [
     args: undefined,
     expect: () => {
       assertCheckoutHandoffContract(checkoutHandoffOutput());
+    }
+  },
+  {
+    name: "cart open automation contract",
+    args: undefined,
+    expect: () => {
+      assert(isCartOpenClickText("Cart") === true, "expected compiled cart open label to be accepted");
+      for (const label of ["Customer Support", "Invoice", "Refund", "Cancel Order", "Rating", "Review Order"]) {
+        assert(isCartOpenClickText(label) === false, `expected compiled cart open label to be rejected: ${label}`);
+        assert(isUnsafeCartOpenClickText(label) === true, `expected compiled cart open label to be unsafe: ${label}`);
+      }
     }
   },
   {

@@ -7,7 +7,7 @@ import { textMatchesProductQuery } from "../utils/product-matching.js";
 import { parseCartItemsFromText } from "./extract.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
-import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
+import { isOrderActionLabelText, ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
@@ -275,7 +275,9 @@ export function isUnsafeCartOpenClickText(text: string): boolean {
   return (
     /\b(checkout|proceed|continue|payment|pay|make payment|place order|confirm order|view bill|bill summary|item total|grand total|to pay)\b/i.test(
       normalized
-    ) || isPaymentMethodLabelText(normalized)
+    ) ||
+    isOrderActionLabelText(normalized) ||
+    isPaymentMethodLabelText(normalized)
   );
 }
 
