@@ -332,7 +332,7 @@ function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): 
 }
 
 function isProductAddControlLine(line: string): boolean {
-  return /^add(?:ed|\s+to\s+cart)?$/i.test(normalizeText(line));
+  return /^add(?:ed(?:\s+to\s+cart)?|\s+to\s+cart|\s+.+\s+to\s+cart)?$/i.test(normalizeText(line));
 }
 
 function ignoredProductLinesFrom(values: string[] | undefined): ReadonlySet<string> {

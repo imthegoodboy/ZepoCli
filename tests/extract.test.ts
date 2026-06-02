@@ -257,6 +257,43 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("ignores product-specific add-control labels when choosing product names", () => {
+    const product = parseProductCard(
+      {
+        automationId: 18,
+        imageAlt: "Image: Add Amul Taaza Toned Milk to cart",
+        text: "Add Amul Taaza Toned Milk to Cart\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      index: 0,
+      automationId: 18,
+      name: "Amul Taaza Toned Milk",
+      price: "₹32",
+      unit: "1 pack (500 ml)"
+    });
+  });
+
+  it("ignores added-to-cart state labels when choosing product names", () => {
+    const product = parseProductCard(
+      {
+        automationId: 19,
+        text: "Added to cart\n₹78\nWhole Farm Eggs\n6 pieces"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      index: 0,
+      automationId: 19,
+      name: "Whole Farm Eggs",
+      price: "₹78",
+      unit: "6 pieces"
+    });
+  });
+
   it("ignores Zepto product-card control labels when choosing product names", () => {
     for (const controlLabel of [
       "Notify Me",
