@@ -29,6 +29,8 @@ export const LIVE_REPORT_NOTE =
   "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.";
 const LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS = 5 * 60 * 1_000;
 const LIVE_REPORT_ERROR_RETRY_AFTER_MAX_MS = 60 * 60 * 1_000;
+const LIVE_CONSOLE_BUFFERED_TAIL_CHARS = 1024;
+const LIVE_CONSOLE_BUFFERED_FLUSH_CHARS = 4096;
 const LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES = [
   "browserPreflight",
   "localStatus",
@@ -1642,6 +1644,8 @@ export function redactLiveConsoleText(value, args = []) {
 export function createLiveConsoleTextRedactor(args = [], write, options = {}) {
   let pending = "";
   const immediate = options.immediate === true;
+  const redactions = liveReportTextRedactions(args);
+  const redactPending = (value) => redactLiveReportText(value, redactions);
 
   return {
     write(chunk) {
@@ -1651,7 +1655,8 @@ export function createLiveConsoleTextRedactor(args = [], write, options = {}) {
       }
 
       if (immediate) {
-        write(redactLiveConsoleText(text, args));
+        pending += text;
+        flushImmediateLiveConsolePending();
         return;
       }
 
@@ -1660,13 +1665,16 @@ export function createLiveConsoleTextRedactor(args = [], write, options = {}) {
       if (newlineIndex >= 0) {
         const flushable = pending.slice(0, newlineIndex + 1);
         pending = pending.slice(newlineIndex + 1);
-        write(redactLiveConsoleText(flushable, args));
+        write(redactPending(flushable));
       }
 
-      if (pending.length > 4096) {
-        const flushable = pending.slice(0, -1024);
-        pending = pending.slice(-1024);
-        write(redactLiveConsoleText(flushable, args));
+      if (pending.length > LIVE_CONSOLE_BUFFERED_FLUSH_CHARS) {
+        const tailLength = Math.max(LIVE_CONSOLE_BUFFERED_TAIL_CHARS, liveConsoleSensitiveTailLength(pending, redactions));
+        if (pending.length > tailLength) {
+          const flushable = pending.slice(0, -tailLength);
+          pending = pending.slice(-tailLength);
+          write(redactPending(flushable));
+        }
       }
     },
     flush() {
@@ -1674,10 +1682,21 @@ export function createLiveConsoleTextRedactor(args = [], write, options = {}) {
         return;
       }
 
-      write(redactLiveConsoleText(pending, args));
+      write(redactPending(pending));
       pending = "";
     }
   };
+
+  function flushImmediateLiveConsolePending() {
+    const tailLength = liveConsoleSensitiveTailLength(pending, redactions);
+    if (pending.length <= tailLength) {
+      return;
+    }
+
+    const flushable = pending.slice(0, pending.length - tailLength);
+    pending = tailLength > 0 ? pending.slice(-tailLength) : "";
+    write(redactPending(flushable));
+  }
 }
 
 export function redactArgsForLiveReport(args) {
@@ -1803,6 +1822,54 @@ function redactText(value, redactions) {
 function redactLiveReportText(value, redactions) {
   return collapseRedactedPathSuffixes(redactGenericSensitiveText(redactText(value, redactions)));
 }
+
+function liveConsoleSensitiveTailLength(value, redactions) {
+  const text = String(value ?? "");
+  let length = 0;
+
+  for (const redaction of redactions) {
+    length = Math.max(length, redactionPrefixTailLength(text, redaction.value));
+  }
+
+  for (const pattern of LIVE_CONSOLE_SENSITIVE_TAIL_PATTERNS) {
+    const match = text.match(pattern);
+    if (match?.index !== undefined) {
+      length = Math.max(length, text.length - match.index);
+    }
+  }
+
+  return length;
+}
+
+function redactionPrefixTailLength(text, redactionValue) {
+  const sensitive = String(redactionValue ?? "");
+  const maxLength = Math.min(text.length, Math.max(0, sensitive.length - 1));
+
+  for (let length = maxLength; length > 0; length -= 1) {
+    if (sensitive.startsWith(text.slice(-length))) {
+      return length;
+    }
+  }
+
+  return 0;
+}
+
+const LIVE_CONSOLE_SENSITIVE_TAIL_PATTERNS = [
+  /\bnpm_[A-Za-z0-9]*$/,
+  /\border\s*(?:#|ID:?)\s*[A-Z0-9-]*$/i,
+  /\bZEP[A-Z0-9-]*$/i,
+  /\b(?:otp|one[-\s]*time(?:\s+(?:password|code))?|verification code|passcode|upi\s*pin|atm\s*pin|cvv|cvc)\s*(?:is|:|=|-)?\s*\d{0,8}$/i,
+  /(?<!\d)(?:\+?91[\s-]?|0)?[6-9][\d\s-]*$/,
+  /\b\d(?:[ -]?\d){3,18}$/,
+  /(?<![\w.-])[\w.-]{2,}@[A-Za-z]?[A-Za-z0-9.-]*$/,
+  /file:\/\/\/[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*$/i,
+  /(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*$/,
+  /\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"',;<>|]*$/,
+  /(?<![\w.-])\.{1,2}[\\/][^\r\n"',;<>|]*$/,
+  /(?<![\w.-])\.zepo-live[\\/][^\r\n"',;<>|]*$/,
+  /\b(?:phone|mobile|tel|otp|pin|cvv|cvc|card|payment|upi|auth|session|password|passwd|passphrase|pwd|secret|credential|token|jwt|access[-_]?token|refresh[-_]?token|id[-_]?token|path|file|data[-_]?dir|report(?:[-_]?path)?)\s*(?:=|%3[Dd])[^&\s"'<>]*$/i,
+  /[^\s"',;<>]*%[0-9A-Fa-f]{0,2}[^\s"',;<>]*$/
+];
 
 function redactGenericSensitiveText(value) {
   return redactGenericPlainSensitiveText(redactEncodedSensitiveParameterValues(redactEncodedSensitiveFragments(value)));

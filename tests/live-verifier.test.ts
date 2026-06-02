@@ -3251,6 +3251,40 @@ describe("live verification runner", () => {
     expect(output).not.toContain("98765 43210");
   });
 
+  it("redacts immediate live console streaming across sensitive chunk boundaries", () => {
+    const fakeNpmToken = `npm_${"A".repeat(24)}`;
+    const chunks: string[] = [];
+    const redactor = createLiveConsoleTextRedactor(
+      ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"],
+      (chunk: string) => chunks.push(chunk),
+      { immediate: true }
+    );
+
+    redactor.write("Visible prompt: choose item > ");
+    expect(chunks.join("")).toBe("Visible prompt: choose item > ");
+
+    redactor.write(`token ${fakeNpmToken.slice(0, 8)}`);
+    expect(chunks.join("")).not.toContain(fakeNpmToken.slice(0, 8));
+
+    redactor.write(`${fakeNpmToken.slice(8)} and query "Amul `);
+    redactor.write('Milk 500ml" near C:\\Users\\parth\\.');
+    redactor.write("zepo-live\\trace.txt for +91 ");
+    redactor.write("98765 43210.");
+    redactor.flush();
+
+    const output = chunks.join("");
+    expect(output.match(/Visible prompt/g)?.length).toBe(1);
+    expect(output).toContain("<redacted-npm-token>");
+    expect(output).toContain('query "<redacted-query>"');
+    expect(output).toContain("<redacted-local-path>");
+    expect(output).toContain("<redacted-phone>");
+    expect(output).not.toContain(fakeNpmToken);
+    expect(output).not.toContain("Amul Milk 500ml");
+    expect(output).not.toContain("Users");
+    expect(output).not.toContain(".zepo-live");
+    expect(output).not.toContain("98765 43210");
+  });
+
   it("redacts generic sensitive values from stored error summaries", () => {
     const fakeNpmToken = `npm_${"A".repeat(24)}`;
 

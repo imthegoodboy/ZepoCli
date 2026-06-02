@@ -77,6 +77,7 @@ Do not combine `--clear` with `--checkout`; clearing the cart destroys checkout 
 - ZepoCli may open checkout/payment handoff, but it must not click final payment or final order-placement controls.
 - If Zepto shows access challenges, 403/429 responses, verification surfaces, or cooldown signals, stop or switch to a visible human-controlled flow. Do not loop headless commands.
 - Use `--phone` only with `--login`; accepted formats are the same as `zepo login --phone`: 10-digit Indian mobile, `+91`, or leading `0`.
+- Live verifier stderr streaming must redact across chunk boundaries, including immediate visible handoff streams for login, checkout, address add, and `zepo add --choose`, so split workflow queries, phone/order/payment/verification values, local paths, and npm-token-shaped values are not printed before the runner writes the sanitized report.
 
 ## Report Acceptance
 

@@ -2565,6 +2565,41 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !streamedLiveStderr.includes("Users"),
     "expected installed live console stderr stream redaction to handle split workflow queries"
   );
+  const immediateLiveStderrChunks = [];
+  const immediateLiveStderrRedactor = createLiveConsoleTextRedactor(
+    ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"],
+    (chunk) => immediateLiveStderrChunks.push(chunk),
+    { immediate: true }
+  );
+  immediateLiveStderrRedactor.write("Visible prompt: choose item > ");
+  assert(
+    immediateLiveStderrChunks.join("") === "Visible prompt: choose item > ",
+    "expected installed immediate live console stderr redaction to stream non-sensitive prompt text"
+  );
+  immediateLiveStderrRedactor.write(`token ${fakeNpmToken.slice(0, 8)}`);
+  assert(
+    !immediateLiveStderrChunks.join("").includes(fakeNpmToken.slice(0, 8)),
+    "expected installed immediate live console stderr redaction to hold split npm-token-shaped values"
+  );
+  immediateLiveStderrRedactor.write(`${fakeNpmToken.slice(8)} and query "Amul `);
+  immediateLiveStderrRedactor.write('Milk 500ml" near C:\\Users\\parth\\.');
+  immediateLiveStderrRedactor.write("zepo-live\\trace.txt for +91 ");
+  immediateLiveStderrRedactor.write("98765 43210.");
+  immediateLiveStderrRedactor.flush();
+  const immediateLiveStderr = immediateLiveStderrChunks.join("");
+  assert(
+    (immediateLiveStderr.match(/Visible prompt/g) ?? []).length === 1 &&
+      immediateLiveStderr.includes("<redacted-npm-token>") &&
+      immediateLiveStderr.includes("<redacted-query>") &&
+      immediateLiveStderr.includes("<redacted-local-path>") &&
+      immediateLiveStderr.includes("<redacted-phone>") &&
+      !immediateLiveStderr.includes(fakeNpmToken) &&
+      !immediateLiveStderr.includes("Amul Milk 500ml") &&
+      !immediateLiveStderr.includes("Users") &&
+      !immediateLiveStderr.includes(".zepo-live") &&
+      !immediateLiveStderr.includes("98765 43210"),
+    "expected installed immediate live console stderr redaction to handle split sensitive values"
+  );
   assertDeepEqual(
     redactArgsForLiveReport([
       "--data-dir",
