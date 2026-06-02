@@ -455,6 +455,14 @@ describe("address automation helpers", () => {
     expect(page.clicks).toEqual(["safe"]);
   });
 
+  it("revalidates address-manager controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedAddressManagerPage("Delivery Address", "Use current location");
+
+    await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
+
+    expect(page.managerClicked).toBe(false);
+  });
+
   it("clicks only explicit add-address action labels", () => {
     for (const label of ["Add New", "Add Address", "Add New Address", "Enter Delivery Location"]) {
       expect(isAddAddressClickText(label)).toBe(true);
@@ -502,6 +510,14 @@ describe("address automation helpers", () => {
     await expect(clickAddAddressButton(page as never)).resolves.toBe(true);
 
     expect(page.clicks).toEqual(["safe"]);
+  });
+
+  it("revalidates add-address controls after scrolling before clicking", async () => {
+    const page = createScrollRerenderedAddAddressPage("Add Address", "Save Address");
+
+    await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
+
+    expect(page.addAddressClicked).toBe(false);
   });
 
   it("clicks a tagged saved-address row only after it is revalidated", async () => {
@@ -739,6 +755,60 @@ function createAddAddressCollectionPage() {
   return page;
 }
 
+function createScrollRerenderedAddressManagerPage(textBeforeScroll: string, textAfterScroll: string) {
+  let label = textBeforeScroll;
+  const page = {
+    managerClicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocatorWithAria(
+          () => label,
+          () => label,
+          async () => {
+            page.managerClicked = true;
+          },
+          {},
+          async () => {
+            label = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createScrollRerenderedAddAddressPage(textBeforeScroll: string, textAfterScroll: string) {
+  let label = textBeforeScroll;
+  const page = {
+    addAddressClicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, textBeforeScroll)) {
+        return createVisibleLocatorWithAria(
+          () => label,
+          () => label,
+          async () => {
+            page.addAddressClicked = true;
+          },
+          {},
+          async () => {
+            label = textAfterScroll;
+          }
+        );
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDirectAddressAddFlowPage() {
   let stage: "home" | "add-flow" = "home";
   const page = {
@@ -923,10 +993,11 @@ function createScrollRerenderedTaggedAddressSelectionPage(textBeforeScroll: stri
 }
 
 function createVisibleLocatorWithAria(
-  text: string,
-  ariaLabel: string,
+  text: string | (() => string),
+  ariaLabel: string | (() => string),
   click: () => Promise<void>,
-  attributes: Record<string, string | null> = {}
+  attributes: Record<string, string | null> = {},
+  scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
 ) {
   return {
     first() {
@@ -936,11 +1007,17 @@ function createVisibleLocatorWithAria(
       return createHiddenLocator();
     },
     isVisible: async () => true,
-    innerText: async () => text,
-    getAttribute: async (name: string) => (name === "aria-label" ? ariaLabel : attributes[name] ?? null),
+    innerText: async () => resolveLocatorText(text),
+    getAttribute: async (name: string) =>
+      name === "aria-label" ? resolveLocatorText(ariaLabel) : attributes[name] ?? null,
     evaluate: async () => false,
+    scrollIntoViewIfNeeded,
     click
   };
+}
+
+function resolveLocatorText(text: string | (() => string)): string {
+  return typeof text === "function" ? text() : text;
 }
 
 function createVisibleLocator(

@@ -86,6 +86,21 @@ async function clickFirstSafeAddressManagerControl(locator: Locator): Promise<bo
 }
 
 async function clickSafeAddressManagerControl(locator: Locator): Promise<boolean> {
+  if (!(await isSafeAddressManagerControl(locator))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+
+  if (!(await isSafeAddressManagerControl(locator))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeAddressManagerControl(locator: Locator): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -103,7 +118,6 @@ async function clickSafeAddressManagerControl(locator: Locator): Promise<boolean
     return false;
   }
 
-  await locator.click();
   return true;
 }
 
@@ -607,6 +621,21 @@ async function clickFirstSafeAddAddressControl(locator: Locator): Promise<boolea
 }
 
 async function clickSafeAddAddressControl(locator: Locator): Promise<boolean> {
+  if (!(await isSafeAddAddressControl(locator))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+
+  if (!(await isSafeAddAddressControl(locator))) {
+    return false;
+  }
+
+  await locator.click();
+  return true;
+}
+
+async function isSafeAddAddressControl(locator: Locator): Promise<boolean> {
   if (!(await locator.isVisible().catch(() => false))) {
     return false;
   }
@@ -624,7 +653,6 @@ async function clickSafeAddAddressControl(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  await locator.click();
   return true;
 }
 

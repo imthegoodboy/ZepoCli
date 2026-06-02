@@ -100,6 +100,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text");
     expect(readme).toContain("Search, account/login, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");
+    expect(readme).toContain("Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("Saved-address labels are derived from Zepto's visible saved-address row text");
     expect(readme).toContain("The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view");
     expect(readme).toContain("rather than a hardcoded service-city allow-list");

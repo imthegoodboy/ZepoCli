@@ -21,6 +21,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("cart/checkout/order/bill/payment controls");
       expect(guidance).toContain("`checkout and pay`, or amount-bearing pay text");
       expect(guidance).toContain("after any scroll into view before clicking");
+      expect(guidance).toContain("Address manager/add-address labels and disabled state must be revalidated after any scroll into view before clicking");
       expect(guidance).toContain(
         "location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment copy, and payment-method/payment copy"
       );
