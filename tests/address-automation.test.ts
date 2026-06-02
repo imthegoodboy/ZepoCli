@@ -408,11 +408,31 @@ describe("address automation helpers", () => {
   });
 
   it("clicks only explicit address-manager labels", () => {
-    for (const label of ["Delivering to Home", "Select Location", "Delivery Address", "Saved Addresses"]) {
+    for (const label of [
+      "Delivering to Home",
+      "Deliver to Home",
+      "Select Location",
+      "Change Location",
+      "Change Delivery Address",
+      "Set Location",
+      "Set Delivery Location",
+      "Choose Location",
+      "Choose Delivery Address",
+      "Delivery Address",
+      "Saved Addresses"
+    ]) {
       expect(isAddressManagerClickText(label)).toBe(true);
     }
 
-    for (const label of ["Add Address", "Confirm Address", "Save Address", "Address selected", "Current location"]) {
+    for (const label of [
+      "Add Address",
+      "Use Current Location",
+      "Change to current location",
+      "Confirm Address",
+      "Save Address",
+      "Address selected",
+      "Current location"
+    ]) {
       expect(isAddressManagerClickText(label)).toBe(false);
     }
   });
@@ -464,11 +484,30 @@ describe("address automation helpers", () => {
   });
 
   it("clicks only explicit add-address action labels", () => {
-    for (const label of ["Add New", "Add Address", "Add New Address", "Enter Delivery Location"]) {
+    for (const label of [
+      "Add New",
+      "Add Address",
+      "Add New Address",
+      "Add Delivery Address",
+      "Add New Delivery Address",
+      "Add Location",
+      "Add New Location",
+      "Add Delivery Location",
+      "Enter Address",
+      "Enter Complete Address",
+      "Enter Delivery Address",
+      "Enter Delivery Location"
+    ]) {
       expect(isAddAddressClickText(label)).toBe(true);
     }
 
-    for (const label of ["Save Address", "Confirm Address", "Use Current Location", "Address selected"]) {
+    for (const label of [
+      "Save Address",
+      "Confirm Address",
+      "Use Current Location",
+      "Add Current Location",
+      "Address selected"
+    ]) {
       expect(isAddAddressClickText(label)).toBe(false);
     }
   });

@@ -101,6 +101,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("Search, account/login, cart-navigation, order-history, account-menu, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("visible, enabled address controls");
+    expect(readme).toContain("explicit select/change/set/choose delivery address or location labels");
+    expect(readme).toContain("explicit add/enter delivery address or location labels");
     expect(readme).toContain("Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("Saved-address labels are derived from Zepto's visible saved-address row text");
     expect(readme).toContain("The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view");

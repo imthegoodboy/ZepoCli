@@ -23,6 +23,9 @@ const ADDRESS_CONTAINER_PREFIX_PATTERN = /^(saved|manage|my|select|delivery)\s+a
 export const ADDRESS_MANAGER_CLICK_LABELS = [
   /^deliver(?:ing)? to\b.*$/i,
   /^select location$/i,
+  /^change (?:delivery )?(?:address|location)$/i,
+  /^set (?:delivery )?(?:address|location)$/i,
+  /^choose (?:delivery )?(?:address|location)$/i,
   /^delivery address$/i,
   /^saved addresses$/i
 ] as const;
@@ -30,6 +33,9 @@ export const ADD_ADDRESS_CLICK_LABELS = [
   /^add new$/i,
   /^add address$/i,
   /^add new address$/i,
+  /^add (?:new )?(?:delivery )?location$/i,
+  /^add (?:new )?delivery address$/i,
+  /^enter (?:complete |delivery )?address$/i,
   /^enter\s+(?:delivery\s+)?location$/i
 ] as const;
 const ADDRESS_CONTROL_SCAN_LIMIT = 8;
