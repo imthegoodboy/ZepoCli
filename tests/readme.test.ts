@@ -134,7 +134,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.");
     expect(readme).toContain("unsafe phone-like payment/cart/address/search fields");
     expect(readme).toContain("visible, enabled account/profile/login controls");
-    expect(readme).toContain("Search cache stores redacted query text only");
+    expect(readme).toContain(
+      "Search cache stores diagnostic result counts with a fixed redacted query marker only; raw search text is not passed into SQLite writes"
+    );
     expect(readme).toContain("No raw Zepto page HTML/screenshot artifacts for browser flows that may use the persistent profile");
     expect(readme).toContain(
       "Debug HTML/screenshot artifacts are disabled for Zepto browser flows that may use the persistent profile, including search, live session checks, login, cart, address, checkout, orders, and reorder"

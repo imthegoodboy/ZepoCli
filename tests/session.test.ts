@@ -163,7 +163,7 @@ describe("session storage", () => {
     const sqlite = new SqliteStore(paths.dbPath);
     const session = new SessionStore(paths, sqlite);
 
-    sqlite.recordSearch("milk", 2);
+    sqlite.recordSearch(2);
     sqlite.saveCartSnapshot({
       items: [
         {
@@ -255,7 +255,7 @@ describe("session storage", () => {
     const sqlite = new SqliteStore(paths.dbPath);
     const session = new SessionStore(paths, sqlite);
 
-    sqlite.recordSearch("milk", 2);
+    sqlite.recordSearch(2);
     sqlite.saveCartSnapshot({
       items: [
         {
@@ -293,7 +293,7 @@ describe("session storage", () => {
     const paths = resolveAppPaths(tempDir);
     const sqlite = new SqliteStore(paths.dbPath);
 
-    sqlite.recordSearch("private snacks 500", 4);
+    sqlite.recordSearch(4);
     sqlite.saveCartSnapshot({
       items: [
         {

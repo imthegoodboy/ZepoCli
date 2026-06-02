@@ -22,6 +22,36 @@ describe("search service validation helpers", () => {
       message: "Search query is required."
     });
   });
+
+  it("records only diagnostic result counts in the search cache", async () => {
+    const cacheCalls: unknown[][] = [];
+    const service = new SearchService({
+      sqlite: {
+        recordSearch: (...args: unknown[]) => {
+          cacheCalls.push(args);
+        }
+      }
+    } as never);
+
+    (service as unknown as { browser: { withPage: () => Promise<unknown[]> } }).browser = {
+      withPage: async () => [
+        {
+          index: 1,
+          name: "Amul Milk"
+        }
+      ]
+    };
+
+    await expect(service.search("private snacks 500")).resolves.toEqual([
+      {
+        index: 1,
+        name: "Amul Milk"
+      }
+    ]);
+
+    expect(cacheCalls).toEqual([[1]]);
+    expect(JSON.stringify(cacheCalls)).not.toContain("private snacks");
+  });
 });
 
 function createNoBrowserRuntime() {

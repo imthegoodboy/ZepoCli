@@ -24,7 +24,7 @@ export class SearchService {
       searchProducts(page, cleanQuery, limit)
     );
 
-    this.runtime.sqlite.recordSearch(cleanQuery, products.length);
+    this.runtime.sqlite.recordSearch(products.length);
     return products;
   }
 }

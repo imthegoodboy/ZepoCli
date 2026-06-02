@@ -133,6 +133,7 @@ describe("agent guidance", () => {
         "Empty Zepto origin storage, empty auth-looking cookie/localStorage values, and public preference/location cookies are not auth proof"
       );
       expect(guidance).toContain("non-empty auth/session-like Zepto cookies or non-empty auth/session-like Zepto localStorage keys");
+      expect(guidance).toContain("raw search text");
     }
   });
 

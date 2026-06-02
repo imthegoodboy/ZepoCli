@@ -97,7 +97,7 @@ export class SqliteStore {
     };
   }
 
-  recordSearch(_query: string, productCount: number): void {
+  recordSearch(productCount: number): void {
     // Search history is diagnostic-only; keep counts without retaining user query text.
     this.db
       .prepare("insert into searches (query, product_count, created_at) values (?, ?, datetime('now'))")
