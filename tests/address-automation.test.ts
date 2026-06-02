@@ -518,6 +518,23 @@ describe("address automation helpers", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("revalidates tagged saved-address rows after scrolling before clicking", async () => {
+    const page = createScrollRerenderedTaggedAddressSelectionPage(
+      "Home 221B Baker Street, Bengaluru, India",
+      "Work Flat 42, Tower B, Bengaluru, India"
+    );
+
+    await expect(
+      clickTaggedAddressSelection(page as never, {
+        index: 4,
+        label: "Home",
+        text: "Home 221B Baker Street, Bengaluru, India"
+      })
+    ).rejects.toThrow("Zepto address list changed before the selected address could be clicked.");
+
+    expect(page.clicked).toBe(false);
+  });
+
   it("does not click a stale tagged saved-address row", async () => {
     const page = createTaggedAddressSelectionPage({}, { tagged: false });
 
@@ -883,6 +900,28 @@ function createTaggedAddressSelectionPage(
   return page;
 }
 
+function createScrollRerenderedTaggedAddressSelectionPage(textBeforeScroll: string, textAfterScroll: string) {
+  let text = textBeforeScroll;
+  const page = {
+    clicked: false,
+    evaluate: async () => true,
+    locator: () =>
+      createVisibleLocator(
+        () => text,
+        async () => {
+          page.clicked = true;
+        },
+        {},
+        true,
+        async () => {
+          text = textAfterScroll;
+        }
+      )
+  };
+
+  return page;
+}
+
 function createVisibleLocatorWithAria(
   text: string,
   ariaLabel: string,
@@ -905,10 +944,11 @@ function createVisibleLocatorWithAria(
 }
 
 function createVisibleLocator(
-  text: string,
+  text: string | (() => string),
   click: () => Promise<void>,
   attributes: Record<string, string | null> = {},
-  visible = true
+  visible = true,
+  scrollIntoViewIfNeeded: () => Promise<void> = async () => undefined
 ) {
   return {
     first() {
@@ -918,9 +958,10 @@ function createVisibleLocator(
       return createHiddenLocator();
     },
     isVisible: async () => visible,
-    innerText: async () => text,
+    innerText: async () => (typeof text === "function" ? text() : text),
     getAttribute: async (name: string) => attributes[name] ?? null,
     evaluate: async () => false,
+    scrollIntoViewIfNeeded,
     click
   };
 }
@@ -937,6 +978,7 @@ function createHiddenLocator() {
     innerText: async () => "",
     getAttribute: async () => null,
     evaluate: async () => false,
+    scrollIntoViewIfNeeded: async () => undefined,
     click: async () => undefined
   };
 }
@@ -958,6 +1000,7 @@ function createLocatorCollection(locators: Array<ReturnType<typeof createHiddenL
     innerText: async () => collection.first().innerText(),
     getAttribute: async (name: string) => collection.first().getAttribute(name),
     evaluate: async () => false,
+    scrollIntoViewIfNeeded: async () => collection.first().scrollIntoViewIfNeeded(),
     click: async () => collection.first().click()
   };
 

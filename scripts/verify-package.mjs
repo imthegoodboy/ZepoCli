@@ -192,6 +192,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Those labels and disabled state are revalidated after any scroll into view before clicking.",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
     "Saved-address labels are derived from Zepto's visible saved-address row text",
+    "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
     "not a fixed address-label list or service-city allow-list",

@@ -105,7 +105,7 @@ Implementation consequence:
 - `zepo login --phone` should validate and normalize Indian mobile formats before opening the browser, then prefill only visible, enabled, editable Zepto phone/mobile/tel fields with paced typing, including fields identified by placeholder, title, description, or referenced accessible labels.
 - Phone prefill must target explicit phone/mobile/tel fields only; never use bare numeric input selectors because those can match OTP fields.
 - Failed re-login attempts must preserve a previously confirmed session by restoring both Playwright auth state and persistent browser profile data.
-- Address extraction should prefer specific saved address rows, avoid clicking broad containers that include multiple saved addresses, and reject label-only navigation/category text such as "Home" or "Work" without real address detail.
+- Address extraction should prefer specific saved address rows, avoid clicking broad containers that include multiple saved addresses, and reject label-only navigation/category text such as "Home" or "Work" without real address detail. Tagged saved-address rows must be revalidated against Zepto's current visible row text before click, including after any scroll into view.
 - Saved-address labels must be derived from Zepto's visible saved-address row text instead of a fixed `Home`/`Work`/`Other` list, and address detection should use structural address detail rather than a hardcoded service-city allow-list.
 - Cart parsing must skip delivery-address blocks with custom saved-address labels by using structural address detail, not a fixed address-label list or service-city allow-list.
 - Account-dependent commands should require confirmed local session state, not just leftover files.

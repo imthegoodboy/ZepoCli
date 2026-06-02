@@ -256,6 +256,16 @@ export async function clickTaggedAddressSelection(
   }
 
   const locator = page.locator(`[data-zepo-address-id="${candidate.index}"]`).first();
+  await assertTaggedAddressSelectionReady(locator, candidate);
+  await scrollControlIntoViewIfNeeded(locator);
+  await assertTaggedAddressSelectionReady(locator, candidate);
+  await locator.click();
+}
+
+async function assertTaggedAddressSelectionReady(
+  locator: Locator,
+  candidate: AddressSelectionCandidate
+): Promise<void> {
   if (!(await locator.isVisible().catch(() => false))) {
     throw new UserFacingError("Zepto address selection control changed before it could be clicked.", {
       code: "address_selection_control_unavailable",
@@ -285,8 +295,13 @@ export async function clickTaggedAddressSelection(
       hint: "The saved address may no longer be selectable. Rerun `zepo address list` or inspect with `--visible`."
     });
   }
+}
 
-  await locator.click();
+async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
+  const scrollable = locator as {
+    scrollIntoViewIfNeeded?: () => Promise<void>;
+  };
+  await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
 export function requireSelectedAddress(addresses: Address[], query: string): Address {

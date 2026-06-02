@@ -101,6 +101,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Search, account/login, order-history, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation");
     expect(readme).toContain("visible, enabled address controls");
     expect(readme).toContain("Saved-address labels are derived from Zepto's visible saved-address row text");
+    expect(readme).toContain("The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view");
     expect(readme).toContain("rather than a hardcoded service-city allow-list");
     expect(readme).toContain(
       "location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces"

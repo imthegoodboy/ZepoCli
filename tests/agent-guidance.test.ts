@@ -34,6 +34,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("product-specific accessible labels such as `Add <product> to cart`");
       expect(guidance).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
       expect(guidance).toContain("revalidated against the current cart row before click, including after any scroll into view");
+      expect(guidance).toContain("Tagged saved-address rows must be revalidated against Zepto's current visible row text before click, including after any scroll into view");
       expect(guidance).toContain("Saved-address labels must be derived from Zepto's visible saved-address row text");
       expect(guidance).toContain("rather than a hardcoded service-city allow-list");
       expect(guidance).toContain("Cart parsing must skip delivery-address blocks with custom saved-address labels");
