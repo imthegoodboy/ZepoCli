@@ -104,7 +104,13 @@ describe("login state inference", () => {
       "PhonePe",
       "Google Pay",
       "BHIM",
-      "Wallet"
+      "Wallet",
+      "Customer Support",
+      "Invoice",
+      "Refund",
+      "Return",
+      "Rating",
+      "Review Order"
     ]) {
       expect(isUnsafeAccountSurfaceClickText(label)).toBe(true);
     }
@@ -123,8 +129,13 @@ describe("login state inference", () => {
       createMixedLabelAccountSurfacePage("Checkout", "Login"),
       createMixedLabelAccountSurfacePage("Continue", "Login"),
       createMixedLabelAccountSurfacePage("UPI", "Login"),
+      createMixedLabelAccountSurfacePage("Customer Support", "Login"),
+      createMixedLabelAccountSurfacePage("Invoice", "Login"),
+      createMixedLabelAccountSurfacePage("Rating", "Login"),
       createMixedLabelAccountSurfacePage("Login", "Login", { title: "Checkout" }),
       createMixedLabelAccountSurfacePage("Account", "Account", { "aria-description": "Cash on Delivery" }),
+      createMixedLabelAccountSurfacePage("Login", "Login", { title: "Customer Support" }),
+      createMixedLabelAccountSurfacePage("Account", "Account", { "aria-description": "Refund" }),
       createMixedLabelAccountSurfacePage("Account", "My Orders")
     ]) {
       await expect(clickAccountSurfaceButton(page as never)).resolves.toBe(false);
@@ -172,7 +183,13 @@ describe("login state inference", () => {
       "Credit Card Phone",
       "Cash on Delivery phone",
       "COD phone",
-      "Wallet phone"
+      "Wallet phone",
+      "Customer support phone",
+      "Invoice phone",
+      "Refund phone",
+      "Return phone",
+      "Rating phone",
+      "Review order phone"
     ]) {
       expect(isUnsafePhonePrefillInputText(label)).toBe(true);
     }
@@ -222,6 +239,10 @@ describe("login state inference", () => {
         "aria-label": "Phone UPI"
       }),
       createPhoneInputLocator({
+        type: "tel",
+        "aria-label": "Customer support phone"
+      }),
+      createPhoneInputLocator({
         type: "number"
       })
     ]);
@@ -265,6 +286,19 @@ describe("login state inference", () => {
           type: "text",
           placeholder: "Phone number",
           "aria-description": "Cash on Delivery"
+        })
+      ]),
+      createLoginInputDiscoveryPage([
+        createPhoneInputLocator({
+          type: "tel",
+          "aria-label": "Customer support phone"
+        })
+      ]),
+      createLoginInputDiscoveryPage([
+        createPhoneInputLocator({
+          type: "text",
+          placeholder: "Phone number",
+          "aria-description": "Refund"
         })
       ])
     ]) {

@@ -46,6 +46,8 @@ const LOGIN_FORM_FALLBACK_INPUT_SELECTOR = [
 
 const DIRECT_INPUT_SCAN_LIMIT = 10;
 const FALLBACK_INPUT_SCAN_LIMIT = 20;
+const ACCOUNT_ACTION_SURFACE_PATTERN =
+  /\b(customer support|help (?:centre|center)|support (?:centre|center|ticket)|contact support|invoice|receipt|refund|return|cancel(?: order)?|rate(?: order| your order)?|rating|review order)\b/i;
 
 export async function findPhonePrefillInput(page: Page): Promise<Locator | undefined> {
   const directInput = await findSafePhonePrefillInput(page.locator(PHONE_PREFILL_INPUT_SELECTOR), DIRECT_INPUT_SCAN_LIMIT);
@@ -103,7 +105,9 @@ export function isUnsafePhonePrefillInputText(text: string): boolean {
   return (
     /\b(otp|one[-\s]*time|verification code|verify|pin|passcode|password|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
-    ) || isPaymentMethodLabelText(normalized)
+    ) ||
+    ACCOUNT_ACTION_SURFACE_PATTERN.test(normalized) ||
+    isPaymentMethodLabelText(normalized)
   );
 }
 
@@ -232,7 +236,9 @@ function isUnsafeLoginFormInputText(text: string): boolean {
   return (
     /\b(password|passcode|search|cart|checkout|payment|pay|address|location|coupon|orders?|order history|track order|reorder|pincode|pin code|quantity|qty)\b/i.test(
       normalized
-    ) || isPaymentMethodLabelText(normalized)
+    ) ||
+    ACCOUNT_ACTION_SURFACE_PATTERN.test(normalized) ||
+    isPaymentMethodLabelText(normalized)
   );
 }
 

@@ -23,6 +23,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("`checkout and pay`, or amount-bearing pay text");
       expect(guidance).toContain("after any scroll into view before clicking");
       expect(guidance).toContain("Account/login surface navigation should click visible, enabled, explicit account/profile/login/sign-in controls");
+      expect(guidance).toContain("support/help, invoice/receipt, refund/return/cancel, or rating/review actions");
+      expect(guidance).toContain("support/help, invoice/receipt, refund/return/cancel, or rating/review controls");
+      expect(guidance).toContain("unsafe phone-like payment/cart/address/search/support/refund/rating fields");
       expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");
       expect(guidance).toContain("search-trigger labels plus disabled state");
       expect(guidance).toContain("Order-history and account-menu labels plus disabled state must be revalidated after any scroll into view before clicking");

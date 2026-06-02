@@ -119,7 +119,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "account/order actions such as support, invoice/receipt, refund/return, cancellation, or rating/review"
     );
-    expect(readme).toContain("unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, or verification actions");
+    expect(readme).toContain(
+      "unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, verification, support/help, invoice/receipt, refund/return/cancel, or rating/review actions"
+    );
     expect(readme).toContain("payment-method/payment, coupon, or order actions");
     expect(readme).toContain(
       "checkout, payment-method/payment, final-order, support, invoice/receipt, refund/return/cancel, or rating/review action"
@@ -150,6 +152,12 @@ describe("README package guidance", () => {
     expect(readme).toContain("non-empty auth/session-like Zepto cookies or non-empty auth/session-like Zepto localStorage keys");
     expect(readme).toContain("It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.");
     expect(readme).toContain("unsafe phone-like payment/cart/address/search fields");
+    expect(readme).toContain(
+      "support/help, invoice/receipt, refund/return/cancel, or rating/review actions"
+    );
+    expect(readme).toContain(
+      "support/help, invoice/receipt, refund/return/cancel, or rating/review controls"
+    );
     expect(readme).toContain("visible, enabled account/profile/login controls");
     expect(readme).toContain(
       "Search cache stores diagnostic result counts with a fixed redacted query marker only; raw search text is not passed into SQLite writes"

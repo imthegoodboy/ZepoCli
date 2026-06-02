@@ -86,6 +86,7 @@ try {
   verifyInstalledBinShim(zepoBin);
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
+  await verifyInstalledAuthAutomationContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
   await verifyInstalledCartAutomationContract(installDir);
   await verifyInstalledProductAutomationContract(installDir);
@@ -403,6 +404,26 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "expected installed checkout detector to accept explicit payment selection text"
   );
   console.log("pass installed checkout handoff contract");
+}
+
+async function verifyInstalledAuthAutomationContract(prefixDir) {
+  const authAutomationModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "automation", "auth.js");
+  const { isUnsafeAccountSurfaceClickText, isUnsafePhonePrefillInputText } = await import(
+    pathToFileURL(authAutomationModulePath).href
+  );
+
+  for (const label of ["Customer Support", "Invoice", "Refund", "Return", "Rating", "Review Order"]) {
+    assert(
+      isUnsafeAccountSurfaceClickText(label) === true,
+      `expected installed account-surface label to be unsafe: ${label}`
+    );
+    assert(
+      isUnsafePhonePrefillInputText(`${label} phone`) === true,
+      `expected installed phone prefill label to be unsafe: ${label}`
+    );
+  }
+
+  console.log("pass installed auth automation contract");
 }
 
 async function verifyInstalledCartAutomationContract(prefixDir) {
