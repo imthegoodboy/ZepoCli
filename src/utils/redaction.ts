@@ -181,11 +181,21 @@ function redactRelativeLocalPaths(value: string): string {
 function redactLocalPathMatch(value: string): string {
   const connector = value.match(/\s+(?:and|or|with|after|before|near)\s+/i);
   if (connector?.index !== undefined) {
-    return `${redactLocalPathMatch(value.slice(0, connector.index))}${value.slice(connector.index)}`;
+    const separator = connector[0];
+    const suffix = value.slice(connector.index + separator.length);
+    return `${redactLocalPathMatch(value.slice(0, connector.index))}${separator}${
+      startsWithLocalPathLikeText(suffix) ? redactLocalPathMatch(suffix) : suffix
+    }`;
   }
 
   const punctuation = value.match(/[.,;:!?)]$/)?.[0] ?? "";
   return `<redacted-local-path>${punctuation}`;
+}
+
+function startsWithLocalPathLikeText(value: string): boolean {
+  return /^(?:file:\/\/\/[A-Za-z]:[\\/]|[A-Za-z]:[\\/]|\/(?:Users|home|tmp|var|private|workspace|mnt|opt|root)\/|\.{1,2}[\\/]|\.zept?o(?:[\\/.-]|$))/i.test(
+    value
+  );
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

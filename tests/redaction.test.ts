@@ -75,4 +75,18 @@ describe("sensitive value redaction", () => {
     expect(redacted).not.toContain(".zepto-current-smoke");
     expect(redacted).not.toContain("report.json");
   });
+
+  it("redacts multiple local paths joined by connector words", () => {
+    const redacted = redactSensitiveText(
+      "paths /root/.zepo-live/report.json and /opt/zepocli/.zepto-smoke/trace.txt near C:/Users/parth/.zepo-live/log.txt"
+    );
+
+    expect(redacted.match(/<redacted-local-path>/g)?.length).toBe(3);
+    expect(redacted).not.toContain("/root");
+    expect(redacted).not.toContain("/opt");
+    expect(redacted).not.toContain("C:/Users");
+    expect(redacted).not.toContain(".zepo-live");
+    expect(redacted).not.toContain(".zepto-smoke");
+    expect(redacted).not.toContain("trace.txt");
+  });
 });

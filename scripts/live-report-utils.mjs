@@ -1866,7 +1866,7 @@ const LIVE_CONSOLE_SENSITIVE_TAIL_PATTERNS = [
   /(?<![\w.-])[\w.-]{2,}@[A-Za-z]?[A-Za-z0-9.-]*$/,
   /file:\/\/\/[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*$/i,
   /(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]*$/,
-  /\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"',;<>|]*$/,
+  /\/(?:Users|home|tmp|var|private|workspace|mnt|opt|root)\/[^\r\n"',;<>|]*$/,
   /(?<![\w.-])\.{1,2}[\\/][^\r\n"',;<>|]*$/,
   /(?<![\w.-])\.zept?o(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]*)?$/,
   /\b(?:phone|mobile|tel|otp|pin|cvv|cvc|card|payment|upi|auth|session|password|passwd|passphrase|pwd|secret|credential|token|jwt|access[-_]?token|refresh[-_]?token|id[-_]?token|path|file|data[-_]?dir|report(?:[-_]?path)?)\s*(?:=|%3[Dd])[^&\s"'<>]*$/i,
@@ -1893,7 +1893,7 @@ function redactGenericPlainSensitiveText(value) {
     .replace(/(?<![\w.-])[\w.-]{2,}@[A-Za-z][A-Za-z0-9.-]{1,}(?![\w.-])/g, "<redacted-payment-handle>")
     .replace(/file:\/\/\/[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]+/gi, redactLocalPathMatch)
     .replace(/(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\r\n"',;<>|]+/g, redactLocalPathMatch)
-    .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt)\/[^\r\n"',;<>|]+/g, redactLocalPathMatch)
+    .replace(/\/(?:Users|home|tmp|var|private|workspace|mnt|opt|root)\/[^\r\n"',;<>|]+/g, redactLocalPathMatch)
     .replace(/(?<![\w.-])\.{1,2}[\\/][^\r\n"',;<>|]+/g, redactLocalPathMatch)
     .replace(/(?<![\w.-])\.zept?o(?:-[A-Za-z0-9._-]+)?(?:[\\/][^\r\n"',;<>|]+)?/g, redactLocalPathMatch);
 }
@@ -1955,11 +1955,21 @@ function collapseRedactedPathSuffixes(value) {
 function redactLocalPathMatch(value) {
   const connector = value.match(/\s+(?:and|or|with|after|before|near)\s+/i);
   if (connector?.index !== undefined) {
-    return `${redactLocalPathMatch(value.slice(0, connector.index))}${value.slice(connector.index)}`;
+    const separator = connector[0];
+    const suffix = value.slice(connector.index + separator.length);
+    return `${redactLocalPathMatch(value.slice(0, connector.index))}${separator}${
+      startsWithLocalPathLikeText(suffix) ? redactLocalPathMatch(suffix) : suffix
+    }`;
   }
 
   const punctuation = value.match(/[.,;:!?)]$/)?.[0] ?? "";
   return `<redacted-local-path>${punctuation}`;
+}
+
+function startsWithLocalPathLikeText(value) {
+  return /^(?:file:\/\/\/[A-Za-z]:[\\/]|[A-Za-z]:[\\/]|\/(?:Users|home|tmp|var|private|workspace|mnt|opt|root)\/|\.{1,2}[\\/]|\.zept?o(?:[\\/.-]|$))/i.test(
+    String(value ?? "")
+  );
 }
 
 function collectPositionals(args) {

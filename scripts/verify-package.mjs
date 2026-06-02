@@ -2273,6 +2273,25 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !JSON.stringify(sensitiveLiveReportIssues).includes(FAKE_NPM_TOKEN),
     "expected installed live report sensitive text rejection to avoid echoing raw sensitive keys or values"
   );
+  const linuxSensitiveLiveReport = {
+    ...acceptedLiveReport,
+    metadata: {
+      "/root/.zepo-live/report.json": true,
+      "/opt/zepocli/.zepto-smoke/trace.txt": true
+    }
+  };
+  const linuxSensitiveLiveReportIssues = validateLiveReportAcceptance(linuxSensitiveLiveReport, {
+    expectedVersion: packageJson.version
+  }).issues;
+  assert(
+    linuxSensitiveLiveReportIssues.some((issue) => issue.code === "live_report_sensitive_text"),
+    "expected installed live report acceptance helper to reject Linux root/opt local paths"
+  );
+  assert(
+    !JSON.stringify(linuxSensitiveLiveReportIssues).includes("/root") &&
+      !JSON.stringify(linuxSensitiveLiveReportIssues).includes("/opt"),
+    "expected installed live report Linux path rejection to omit raw sensitive keys or values"
+  );
   const sensitiveLiveReportPath = join(tempRoot, "sensitive-live-verification-report.json");
   writeFileSync(sensitiveLiveReportPath, `${JSON.stringify(sensitiveLiveReport, null, 2)}\n`);
   const sensitiveLiveReportResult = runNpmResult(
@@ -2704,6 +2723,20 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !forwardSlashPathLiveStderr.includes("report.json") &&
       !forwardSlashPathLiveStderr.includes("trace.txt"),
     "expected installed live console stderr redaction to omit Windows forward-slash local paths"
+  );
+  const linuxPathLiveStderr = redactLiveConsoleText(
+    "Live stderr referenced /root/.zepo-live/report.json and /opt/zepocli/.zepto-smoke/trace.txt.",
+    []
+  );
+  assert(
+    linuxPathLiveStderr.includes("<redacted-local-path>") &&
+      !linuxPathLiveStderr.includes("/root") &&
+      !linuxPathLiveStderr.includes("/opt") &&
+      !linuxPathLiveStderr.includes(".zepo-live") &&
+      !linuxPathLiveStderr.includes(".zepto-smoke") &&
+      !linuxPathLiveStderr.includes("report.json") &&
+      !linuxPathLiveStderr.includes("trace.txt"),
+    "expected installed live console stderr redaction to omit Linux root and opt local paths"
   );
   const encodedLiveStderr = redactLiveConsoleText(
     "Debug URL: https://www.zepto.com/search?query=Amul%20Milk%20500ml&fallback=Amul+Milk+500ml",

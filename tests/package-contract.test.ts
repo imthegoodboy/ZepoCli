@@ -433,6 +433,8 @@ describe("package CLI contract", () => {
     );
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
     expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject Linux root/opt local paths");
+    expect(verifier).toContain("expected installed live report Linux path rejection to omit raw sensitive keys or values");
     expect(verifier).toContain("expected installed live report validator to reject partial reports when production scope is required");
     expect(verifier).toContain("expected installed live report validator to accept production-scope report evidence");
     expect(verifier).toContain("expected installed live report validator to reject production-scope evidence without freshness");
@@ -499,6 +501,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report command redaction to handle global timeout before workflow commands");
     expect(verifier).toContain("expected installed live console stderr redaction to omit workflow queries and local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit Windows forward-slash local paths");
+    expect(verifier).toContain("expected installed live console stderr redaction to omit Linux root and opt local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded workflow queries");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded sensitive values");
     expect(verifier).toContain("expected installed live console stderr redaction to omit URL-encoded sensitive blobs");

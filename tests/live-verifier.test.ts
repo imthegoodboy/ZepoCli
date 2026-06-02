@@ -1252,6 +1252,21 @@ describe("live verification runner", () => {
     expect(JSON.stringify(sensitiveResult.issues)).not.toContain("Users");
     expect(JSON.stringify(sensitiveResult.issues)).not.toContain("npm_");
 
+    const linuxSensitiveReport = acceptedLiveReport({
+      metadata: {
+        "/root/.zepo-live/report.json": true,
+        "/opt/zepocli/.zepto-smoke/trace.txt": true
+      }
+    });
+    const linuxSensitiveResult = validateLiveReportAcceptance(linuxSensitiveReport, {
+      expectedVersion: packageJson.version
+    });
+
+    expect(linuxSensitiveResult.accepted).toBe(false);
+    expect(linuxSensitiveResult.issues.map((issue) => issue.code)).toContain("live_report_sensitive_text");
+    expect(JSON.stringify(linuxSensitiveResult.issues)).not.toContain("/root");
+    expect(JSON.stringify(linuxSensitiveResult.issues)).not.toContain("/opt");
+
     const sensitiveKeyReport = acceptedLiveReport({
       metadata: {
         "C:\\Users\\parth\\.zepo-live": true
@@ -3353,6 +3368,21 @@ describe("live verification runner", () => {
     expect(redacted).not.toContain(".zepo-agent");
     expect(redacted).not.toContain(".zepto-current-smoke");
     expect(redacted).not.toContain("%2Ezepto-live");
+  });
+
+  it("redacts Linux root and opt local paths from live report text", () => {
+    const redacted = redactLiveConsoleText(
+      "Live verifier paths: /root/.zepo-live/report.json, /opt/zepocli/.zepto-smoke/trace.txt, and file=/root/.zepto-live/log.txt.",
+      []
+    );
+
+    expect(redacted).toContain("<redacted-local-path>");
+    expect(redacted).toContain("file=<redacted-local-path>");
+    expect(redacted).not.toContain("/root");
+    expect(redacted).not.toContain("/opt");
+    expect(redacted).not.toContain(".zepo-live");
+    expect(redacted).not.toContain(".zepto-smoke");
+    expect(redacted).not.toContain("trace.txt");
   });
 
   it("redacts sensitive workflow arguments from stored report commands", () => {
