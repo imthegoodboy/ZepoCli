@@ -303,6 +303,9 @@ describe("live verification runner", () => {
     expect(script).toContain('args.push("--browser-locale", options.browserLocale)');
     expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
     expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
+    expect(script).toContain("productCount: readableProductCount(payload)");
+    expect(script).toContain("cartItemCount: readableCartItemCount(payload)");
+    expect(script).toContain("orderCount: readableOrderCount(orders)");
     expect(script).toContain('const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium")');
     expect(script).toContain('playwrightChromiumPassed: playwrightChromiumCheck?.status === "pass"');
   });
@@ -2519,7 +2522,7 @@ describe("live verification runner", () => {
         stdout: "{}",
         error: {
           code: "live_history_contract_mismatch",
-          message: "History JSON did not include an order-history array."
+          message: "History JSON did not include a readable order-history array."
         }
       }
     ]) {
@@ -2739,28 +2742,75 @@ describe("live verification runner", () => {
     }
   });
 
-  it("fails search live report steps without product results", () => {
-    const { step } = buildLiveReportStep({
-      name: "search",
-      args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
-      status: 0,
-      stdout: "[]",
-      stderr: "",
-      summarizePayload: () => {
-        throw new Error("empty search payload should not be summarized");
-      }
-    });
+  it("fails history live report steps with unreadable order entries", () => {
+    for (const stdout of [JSON.stringify([{}]), JSON.stringify([{ id: "ZEP1234" }])]) {
+      const { step } = buildLiveReportStep({
+        name: "history",
+        args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("unreadable history payload should not be summarized");
+        }
+      });
 
-    expect(step).toEqual({
-      name: "search",
-      command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
-      exitCode: 1,
-      ok: false,
-      error: {
-        code: "live_search_contract_mismatch",
-        message: "Search JSON did not include any product results."
-      }
-    });
+      expect(step).toEqual({
+        name: "history",
+        command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_history_contract_mismatch",
+          message: "History JSON did not include a readable order-history array."
+        }
+      });
+    }
+  });
+
+  it("accepts history live report steps with empty or readable order history", () => {
+    for (const stdout of ["[]", JSON.stringify([{ status: "Delivered", total: "₹249" }])]) {
+      const { step } = buildLiveReportStep({
+        name: "history",
+        args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: (_name: string, value: Array<{ status?: string }>) => ({
+          orderCount: value.filter((order) => typeof order.status === "string").length
+        })
+      });
+
+      expect(step.ok).toBe(true);
+      expect(step.exitCode).toBe(0);
+      expect(step.summary).toBeDefined();
+    }
+  });
+
+  it("fails search live report steps without readable product results", () => {
+    for (const stdout of ["[]", JSON.stringify([{}])]) {
+      const { step } = buildLiveReportStep({
+        name: "search",
+        args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("unreadable search payload should not be summarized");
+        }
+      });
+
+      expect(step).toEqual({
+        name: "search",
+        command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_search_contract_mismatch",
+          message: "Search JSON did not include any readable product results."
+        }
+      });
+    }
   });
 
   it("accepts search live report steps with product results", () => {
@@ -2784,28 +2834,34 @@ describe("live verification runner", () => {
     });
   });
 
-  it("fails add live report steps without product and cart evidence", () => {
-    const { step } = buildLiveReportStep({
-      name: "add",
-      args: ["--data-dir", ".zepo-live", "--visible", "add", "milk", "--json"],
-      status: 0,
-      stdout: JSON.stringify({ product: { name: "Milk" }, cart: { items: [] } }),
-      stderr: "",
-      summarizePayload: () => {
-        throw new Error("incomplete add payload should not be summarized");
-      }
-    });
+  it("fails add live report steps without readable product and cart evidence", () => {
+    for (const stdout of [
+      JSON.stringify({ product: { name: "Milk" }, cart: { items: [] } }),
+      JSON.stringify({ product: {}, cart: { items: [{ name: "Milk" }] } }),
+      JSON.stringify({ product: { name: "Milk" }, cart: { items: [{}] } })
+    ]) {
+      const { step } = buildLiveReportStep({
+        name: "add",
+        args: ["--data-dir", ".zepo-live", "--visible", "add", "milk", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("incomplete add payload should not be summarized");
+        }
+      });
 
-    expect(step).toEqual({
-      name: "add",
-      command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --json",
-      exitCode: 1,
-      ok: false,
-      error: {
-        code: "live_add_contract_mismatch",
-        message: "Add JSON did not include an added product and readable cart items."
-      }
-    });
+      expect(step).toEqual({
+        name: "add",
+        command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --json",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_add_contract_mismatch",
+          message: "Add JSON did not include an added product and readable cart items."
+        }
+      });
+    }
   });
 
   it("accepts add live report steps with product and cart evidence", () => {
@@ -2917,31 +2973,33 @@ describe("live verification runner", () => {
     });
   });
 
-  it("fails reorder live report steps without cart items", () => {
-    const { step } = buildLiveReportStep({
-      name: "reorder",
-      args: ["--data-dir", ".zepo-live", "--visible", "reorder", "last", "--json"],
-      status: 0,
-      stdout: JSON.stringify({ items: [] }),
-      stderr: "",
-      summarizePayload: () => {
-        throw new Error("empty reorder payload should not be summarized");
-      }
-    });
+  it("fails reorder live report steps without readable cart items", () => {
+    for (const stdout of [JSON.stringify({ items: [] }), JSON.stringify({ items: [{}] })]) {
+      const { step } = buildLiveReportStep({
+        name: "reorder",
+        args: ["--data-dir", ".zepo-live", "--visible", "reorder", "last", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("empty reorder payload should not be summarized");
+        }
+      });
 
-    expect(step).toEqual({
-      name: "reorder",
-      command: "zepo --data-dir <redacted-data-dir> --visible reorder last --json",
-      exitCode: 1,
-      ok: false,
-      error: {
-        code: "live_reorder_contract_mismatch",
-        message: "Reorder JSON did not include readable cart items."
-      }
-    });
+      expect(step).toEqual({
+        name: "reorder",
+        command: "zepo --data-dir <redacted-data-dir> --visible reorder last --json",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_reorder_contract_mismatch",
+          message: "Reorder JSON did not include readable cart items."
+        }
+      });
+    }
   });
 
-  it("accepts reorder live report steps with cart items", () => {
+  it("accepts reorder live report steps with readable cart items", () => {
     const { step } = buildLiveReportStep({
       name: "reorder",
       args: ["--data-dir", ".zepo-live", "--visible", "reorder", "last", "--json"],
@@ -2960,28 +3018,30 @@ describe("live verification runner", () => {
     });
   });
 
-  it("fails cart and remove live report steps without cart-shaped JSON", () => {
+  it("fails cart and remove live report steps without readable cart-shaped JSON", () => {
     for (const name of ["cart", "remove"]) {
-      const { step } = buildLiveReportStep({
-        name,
-        args:
-          name === "cart"
-            ? ["--data-dir", ".zepo-live", "--visible", "cart", "--json"]
-            : ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
-        status: 0,
-        stdout: "{}",
-        stderr: "",
-        summarizePayload: () => {
-          throw new Error("non-cart payload should not be summarized");
-        }
-      });
+      for (const stdout of ["{}", JSON.stringify({ items: [{}] })]) {
+        const { step } = buildLiveReportStep({
+          name,
+          args:
+            name === "cart"
+              ? ["--data-dir", ".zepo-live", "--visible", "cart", "--json"]
+              : ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
+          status: 0,
+          stdout,
+          stderr: "",
+          summarizePayload: () => {
+            throw new Error("non-cart payload should not be summarized");
+          }
+        });
 
-      expect(step.exitCode).toBe(1);
-      expect(step.ok).toBe(false);
-      expect(step.error).toEqual({
-        code: "live_cart_contract_mismatch",
-        message: "Cart JSON did not include a readable cart item array."
-      });
+        expect(step.exitCode).toBe(1);
+        expect(step.ok).toBe(false);
+        expect(step.error).toEqual({
+          code: "live_cart_contract_mismatch",
+          message: "Cart JSON did not include a readable cart item array."
+        });
+      }
     }
   });
 

@@ -266,6 +266,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "<redacted-browser-timezone>",
     "browser locale/timezone values",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
+    "counts of readable product/cart/order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -1131,6 +1132,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     liveVerifierSource.includes("version: packageJson.version"),
     "expected installed live verifier report to include package version"
+  );
+  assert(
+    liveVerifierSource.includes("productCount: readableProductCount(payload)") &&
+      liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload)") &&
+      liveVerifierSource.includes("orderCount: readableOrderCount(orders)"),
+    "expected installed live verifier summaries to count readable records"
   );
   assert(
     liveVerifierSource.includes("summarizeLiveRunnerFailure(error)") &&
@@ -3523,6 +3530,62 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   });
   assert(clearStep.ok === false, "expected installed clear live report contract to fail non-empty cart");
   assert(clearStep.error?.code === "live_clear_contract_mismatch", "expected installed clear mismatch code");
+
+  const unreadableSearchStep = buildLiveReportStep({
+    name: "search",
+    args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
+    status: 0,
+    stdout: JSON.stringify([{}]),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    unreadableSearchStep.ok === false &&
+      unreadableSearchStep.error?.code === "live_search_contract_mismatch",
+    "expected installed search live report contract to require readable products"
+  );
+
+  const unreadableAddStep = buildLiveReportStep({
+    name: "add",
+    args: ["--data-dir", ".zepo-live", "--visible", "add", "milk", "--json"],
+    status: 0,
+    stdout: JSON.stringify({ product: { name: "Milk" }, cart: { items: [{}] } }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    unreadableAddStep.ok === false &&
+      unreadableAddStep.error?.code === "live_add_contract_mismatch",
+    "expected installed add live report contract to require readable cart items"
+  );
+
+  const unreadableCartStep = buildLiveReportStep({
+    name: "cart",
+    args: ["--data-dir", ".zepo-live", "--visible", "cart", "--json"],
+    status: 0,
+    stdout: JSON.stringify({ items: [{}] }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    unreadableCartStep.ok === false &&
+      unreadableCartStep.error?.code === "live_cart_contract_mismatch",
+    "expected installed cart live report contract to require readable cart item records"
+  );
+
+  const unreadableHistoryStep = buildLiveReportStep({
+    name: "history",
+    args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
+    status: 0,
+    stdout: JSON.stringify([{}]),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    unreadableHistoryStep.ok === false &&
+      unreadableHistoryStep.error?.code === "live_history_contract_mismatch",
+    "expected installed history live report contract to require readable order records"
+  );
 
   const { step: statusLiveStep } = buildLiveReportStep({
     name: "status live",

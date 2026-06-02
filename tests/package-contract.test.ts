@@ -426,8 +426,13 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live requested-checkout console output to omit local temp paths");
     expect(verifier).toContain("expected installed live verifier to sanitize report write failures");
     expect(verifier).toContain("expected installed live verifier to write sanitized partial reports on interrupts");
+    expect(verifier).toContain("expected installed live verifier summaries to count readable records");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
     expect(verifier).toContain("expected installed status live report contract to require browser readiness");
+    expect(verifier).toContain("expected installed search live report contract to require readable products");
+    expect(verifier).toContain("expected installed add live report contract to require readable cart items");
+    expect(verifier).toContain("expected installed cart live report contract to require readable cart item records");
+    expect(verifier).toContain("expected installed history live report contract to require readable order records");
     expect(verifier).toContain("expected installed verify:live no-session report to show browser automation readiness");
     expect(verifier).toContain("expected installed verify:live no-session report to show passing Playwright Chromium evidence");
     expect(verifier).toContain("expected installed verify:live no-session report coverage to distinguish preflight from account workflow");

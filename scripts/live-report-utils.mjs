@@ -1325,10 +1325,10 @@ function validateLiveReportPayloadContract(name, payload) {
   }
 
   if (name === "search") {
-    return validateNonEmptyArrayPayload(
+    return validateNonEmptyReadableProductArrayPayload(
       payload,
       "live_search_contract_mismatch",
-      "Search JSON did not include any product results."
+      "Search JSON did not include any readable product results."
     );
   }
 
@@ -1459,9 +1459,8 @@ function validateTrackPayloadContract(payload) {
 function validateAddPayloadContract(payload) {
   if (
     isObject(payload) &&
-    isObject(payload.product) &&
-    isObject(payload.cart) &&
-    Array.isArray(payload.cart.items) &&
+    hasReadableProduct(payload.product) &&
+    isReadableCartSnapshotPayload(payload.cart) &&
     payload.cart.items.length > 0
   ) {
     return undefined;
@@ -1496,7 +1495,7 @@ function validateAddressUsePayloadContract(payload) {
 }
 
 function validateReorderPayloadContract(payload) {
-  if (isObject(payload) && Array.isArray(payload.items) && payload.items.length > 0) {
+  if (isReadableCartSnapshotPayload(payload) && payload.items.length > 0) {
     return undefined;
   }
 
@@ -1507,7 +1506,7 @@ function validateReorderPayloadContract(payload) {
 }
 
 function validateCartSnapshotPayloadContract(payload) {
-  if (isObject(payload) && Array.isArray(payload.items)) {
+  if (isReadableCartSnapshotPayload(payload)) {
     return undefined;
   }
 
@@ -1529,18 +1528,18 @@ function validateClearPayloadContract(payload) {
 }
 
 function validateHistoryPayloadContract(payload) {
-  if (Array.isArray(payload)) {
+  if (Array.isArray(payload) && payload.every(isReadableHistoryOrderPayload)) {
     return undefined;
   }
 
   return {
     code: "live_history_contract_mismatch",
-    message: "History JSON did not include an order-history array."
+    message: "History JSON did not include a readable order-history array."
   };
 }
 
-function validateNonEmptyArrayPayload(payload, code, message) {
-  if (Array.isArray(payload) && payload.length > 0) {
+function validateNonEmptyReadableProductArrayPayload(payload, code, message) {
+  if (Array.isArray(payload) && payload.length > 0 && payload.every(hasReadableProduct)) {
     return undefined;
   }
 
@@ -1552,6 +1551,28 @@ function validateNonEmptyArrayPayload(payload, code, message) {
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasReadableProduct(value) {
+  return isObject(value) && hasReadableText(value.name);
+}
+
+function isReadableCartSnapshotPayload(payload) {
+  return isObject(payload) && Array.isArray(payload.items) && payload.items.every(hasReadableCartItemPayload);
+}
+
+function hasReadableCartItemPayload(value) {
+  return isObject(value) && hasReadableText(value.name);
+}
+
+function isReadableHistoryOrderPayload(value) {
+  return (
+    isObject(value) &&
+    (hasReadableText(value.status) ||
+      hasReadableText(value.eta) ||
+      hasReadableText(value.total) ||
+      hasReadableText(value.placedAt))
+  );
 }
 
 function hasStatusDiagnostics(payload) {

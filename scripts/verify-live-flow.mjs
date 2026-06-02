@@ -557,7 +557,7 @@ function summarizePayload(name, payload) {
 
   if (name === "search") {
     return {
-      productCount: Array.isArray(payload) ? payload.length : 0
+      productCount: readableProductCount(payload)
     };
   }
 
@@ -578,14 +578,14 @@ function summarizePayload(name, payload) {
 
   if (name === "add") {
     return {
-      productAdded: Boolean(payload.product),
-      cartItemCount: Array.isArray(payload.cart?.items) ? payload.cart.items.length : 0
+      productAdded: hasReadableRecordName(payload.product),
+      cartItemCount: readableCartItemCount(payload.cart)
     };
   }
 
   if (name === "cart" || name === "reorder" || name === "remove" || name === "clear") {
     return {
-      cartItemCount: Array.isArray(payload.items) ? payload.items.length : 0,
+      cartItemCount: readableCartItemCount(payload),
       hasTotal: typeof payload.total === "string"
     };
   }
@@ -603,7 +603,7 @@ function summarizePayload(name, payload) {
   if (name === "track" || name === "history") {
     const orders = Array.isArray(payload) ? payload : [];
     return {
-      orderCount: orders.length,
+      orderCount: readableOrderCount(orders),
       latestHasStatus: typeof orders[0]?.status === "string",
       latestHasEta: typeof orders[0]?.eta === "string"
     };
@@ -612,6 +612,32 @@ function summarizePayload(name, payload) {
   return {
     observed: true
   };
+}
+
+function readableProductCount(payload) {
+  return Array.isArray(payload) ? payload.filter(hasReadableRecordName).length : 0;
+}
+
+function readableCartItemCount(payload) {
+  return Array.isArray(payload?.items) ? payload.items.filter(hasReadableRecordName).length : 0;
+}
+
+function readableOrderCount(orders) {
+  return orders.filter(
+    (order) =>
+      hasReadableText(order?.status) ||
+      hasReadableText(order?.eta) ||
+      hasReadableText(order?.total) ||
+      hasReadableText(order?.placedAt)
+  ).length;
+}
+
+function hasReadableRecordName(value) {
+  return hasReadableText(value?.name);
+}
+
+function hasReadableText(value) {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function parseArgs(args) {
