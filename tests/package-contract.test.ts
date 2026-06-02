@@ -288,6 +288,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("auth/session/token/password/secret URL-parameter, and local-path rules");
     expect(verifier).toContain("`checkout and pay`, or amount-bearing pay text");
     expect(verifier).toContain("unrelated cart/checkout/order/bill/payment text");
+    expect(verifier).toContain(
+      "Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels"
+    );
     expect(verifier).toContain("explicit select/change/set/choose delivery address or location labels");
     expect(verifier).toContain("explicit add/enter delivery address or location labels");
     expect(verifier).toContain("expected installed promotional checkout label to be rejected");
@@ -321,6 +324,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Use Current Location");
     expect(verifier).toContain("Change to current location");
     expect(verifier).toContain("Confirm Address");
+    expect(verifier).toContain("Customer Support");
+    expect(verifier).toContain("Cancel Order");
+    expect(verifier).toContain("Rate Order");
     expect(verifier).toContain("expected installed address automation label to be unsafe");
     expect(verifier).toContain("expected installed address manager label to be rejected: ${rejectedText}");
     expect(verifier).toContain("expected installed add-address label to be rejected: ${rejectedText}");

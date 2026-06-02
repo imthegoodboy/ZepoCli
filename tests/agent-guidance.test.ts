@@ -30,6 +30,11 @@ describe("agent guidance", () => {
       expect(guidance).toContain(
         "location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment copy, and payment-method/payment copy"
       );
+      expect(guidance).toContain("support/invoice/refund/cancel/rating order-action");
+      expect(guidance).toContain("support, invoice/receipt, refund/return, cancellation, or rating/review");
+      expect(guidance).toContain(
+        "support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels"
+      );
       expect(guidance).toContain("`value`");
       expect(guidance).toContain("src/automation/payment-labels.ts");
       expect(guidance).toContain("do not add per-module payment regex copies");

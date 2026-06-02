@@ -113,6 +113,12 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces"
     );
+    expect(readme).toContain(
+      "Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels"
+    );
+    expect(readme).toContain(
+      "account/order actions such as support, invoice/receipt, refund/return, cancellation, or rating/review"
+    );
     expect(readme).toContain("unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, or verification actions");
     expect(readme).toContain("payment-method/payment, coupon, or order actions");
     expect(readme).toContain("checkout, payment-method/payment, or final-order action");

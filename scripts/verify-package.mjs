@@ -213,6 +213,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, `checkout and pay`, or amount-bearing pay text",
     "Those labels and disabled state are revalidated after any scroll into view before clicking.",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
+    "Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels",
     "explicit select/change/set/choose delivery address or location labels",
     "explicit add/enter delivery address or location labels",
     "Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.",
@@ -589,7 +590,18 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     ) === undefined,
     "expected installed product parser not to invent names from product-card controls"
   );
-  for (const unsafeText of ["Checkout", "Pay Now", "Order Summary", "Bill Summary", "Cart"]) {
+  for (const unsafeText of [
+    "Checkout",
+    "Pay Now",
+    "Order Summary",
+    "Bill Summary",
+    "Cart",
+    "Customer Support",
+    "Invoice",
+    "Refund",
+    "Cancel Order",
+    "Rate Order"
+  ]) {
     assert(
       isUnsafeAddressAutomationClickText(unsafeText) === true,
       `expected installed address automation label to be unsafe: ${unsafeText}`
@@ -605,7 +617,12 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "Change to current location",
     "Save Address",
     "Confirm Address",
-    "Address selected"
+    "Address selected",
+    "Customer Support",
+    "Invoice",
+    "Refund",
+    "Cancel Order",
+    "Rate Order"
   ]) {
     assert(
       isAddressManagerClickText(rejectedText) === false,

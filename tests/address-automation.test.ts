@@ -223,6 +223,9 @@ describe("address automation helpers", () => {
     expect(isLikelyAddressText("India Gate Basmati Rice 1 kg ₹249 ADD")).toBe(false);
     expect(isLikelyAddressText("Cart Bill Summary Item Total ₹249 To Pay ₹279 Bengaluru")).toBe(false);
     expect(isLikelyAddressText("Popular picks delivered across India 500 g pack")).toBe(false);
+    expect(isLikelyAddressText("Customer Support Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Invoice Home 221B Baker Street, Bengaluru, India")).toBe(false);
+    expect(isLikelyAddressText("Cancel Order Work Flat 42, Tower B, Bengaluru, India")).toBe(false);
   });
 
   it("rejects payment-method copy as saved addresses", () => {
@@ -399,7 +402,18 @@ describe("address automation helpers", () => {
       "Promo",
       "Order History",
       "Track Order",
-      "Reorder"
+      "Reorder",
+      "Customer Support",
+      "Help Center",
+      "Contact Support",
+      "Invoice",
+      "Receipt",
+      "Refund",
+      "Return",
+      "Cancel Order",
+      "Rate Order",
+      "Rating",
+      "Review Order"
     ]) {
       expect(isUnsafeAddressAutomationClickText(unsafeText)).toBe(true);
       expect(isAddressManagerClickText(unsafeText)).toBe(false);
@@ -454,11 +468,20 @@ describe("address automation helpers", () => {
       createMixedLabelAddressManagerPage("Delivery Address", "Checkout"),
       createMixedLabelAddressManagerPage("Delivery Address", "Pay"),
       createMixedLabelAddressManagerPage("Delivery Address", "Order Summary"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Customer Support"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Invoice"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Refund"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Cancel Order"),
+      createMixedLabelAddressManagerPage("Delivery Address", "Rate Order"),
       createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Use current location" }),
       createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", {
         "aria-description": "Cash on Delivery"
       }),
       createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Bill Summary" }),
+      createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", { title: "Invoice" }),
+      createMixedLabelAddressManagerPage("Delivery Address", "Delivery Address", {
+        "aria-description": "Customer Support"
+      }),
       createMixedLabelAddressManagerPage("Continue", "Delivery Address")
     ]) {
       await expect(clickAddressManagerButton(page as never)).resolves.toBe(false);
@@ -532,9 +555,18 @@ describe("address automation helpers", () => {
       createMixedLabelAddAddressPage("Checkout", "Add Address"),
       createMixedLabelAddAddressPage("Add Address", "Pay Now"),
       createMixedLabelAddAddressPage("Add Address", "Order History"),
+      createMixedLabelAddAddressPage("Add Address", "Customer Support"),
+      createMixedLabelAddAddressPage("Add Address", "Invoice"),
+      createMixedLabelAddAddressPage("Add Address", "Refund"),
+      createMixedLabelAddAddressPage("Add Address", "Cancel Order"),
+      createMixedLabelAddAddressPage("Add Address", "Rate Order"),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Save Address" }),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { "aria-description": "Cash on Delivery" }),
       createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Checkout" }),
+      createMixedLabelAddAddressPage("Add Address", "Add Address", { title: "Invoice" }),
+      createMixedLabelAddAddressPage("Add Address", "Add Address", {
+        "aria-description": "Customer Support"
+      }),
       createMixedLabelAddAddressPage("Use this address", "Add Address")
     ]) {
       await expect(clickAddAddressButton(page as never)).resolves.toBe(false);
@@ -641,7 +673,10 @@ describe("address automation helpers", () => {
       createTaggedAddressSelectionPage({ title: "Cash on Delivery" }),
       createTaggedAddressSelectionPage({ "aria-label": "Checkout" }),
       createTaggedAddressSelectionPage({ title: "Pay Now" }),
-      createTaggedAddressSelectionPage({ "aria-description": "Order Summary" })
+      createTaggedAddressSelectionPage({ "aria-description": "Order Summary" }),
+      createTaggedAddressSelectionPage({ "aria-label": "Customer Support" }),
+      createTaggedAddressSelectionPage({ title: "Invoice" }),
+      createTaggedAddressSelectionPage({ "aria-description": "Cancel Order" })
     ]) {
       await expect(
         clickTaggedAddressSelection(page as never, {
