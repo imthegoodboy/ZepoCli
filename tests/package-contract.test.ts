@@ -302,6 +302,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed address automation label to be unsafe");
     expect(verifier).toContain("expected installed address manager label to be rejected: ${rejectedText}");
     expect(verifier).toContain("expected installed add-address label to be rejected: ${rejectedText}");
+    expect(verifier).toContain("verifyInstalledSessionContract");
+    expect(verifier).toContain("expected installed session auth-state contract to reject weak profile/contact keys");
+    expect(verifier).toContain("expected installed session status to reject weak profile/contact auth state");
+    expect(verifier).toContain("expected installed session auth-state contract to accept strong auth keys");
+    expect(verifier).toContain("pass installed session auth-state contract");
     expect(verifier).toContain("`browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
     expect(verifier).toContain('paymentStatus: \\"not_observed_by_zepocli\\"');
     expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');

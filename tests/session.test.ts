@@ -705,6 +705,62 @@ describe("session storage", () => {
     sqlite.close();
   });
 
+  it("does not treat weak profile or contact storage keys as saved auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-weak-profile-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "customerProfile",
+            value: "profile-data",
+            domain: "www.zepto.com",
+            path: "/"
+          },
+          {
+            name: "phoneNumber",
+            value: "present",
+            domain: ".zeptonow.com",
+            path: "/"
+          },
+          {
+            name: "identity",
+            value: "customer",
+            domain: "www.zepto.com",
+            path: "/"
+          }
+        ],
+        origins: [
+          {
+            origin: "https://www.zepto.com",
+            localStorage: [
+              {
+                name: "customerProfile",
+                value: "profile-data"
+              },
+              {
+                name: "mobileNumber",
+                value: "present"
+              },
+              {
+                name: "identity",
+                value: "customer"
+              }
+            ]
+          }
+        ]
+      })
+    );
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
   it("does not treat empty auth-like Zepto cookie or localStorage values as saved auth state", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-auth-values-"));
     const paths = resolveAppPaths(tempDir);

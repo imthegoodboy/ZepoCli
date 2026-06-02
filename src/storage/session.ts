@@ -235,25 +235,11 @@ function isAuthLikeStorageKey(value: unknown): boolean {
   }
 
   const normalizedKey = normalizeStorageKey(value);
-  if (hasStrongAuthStorageSignal(normalizedKey)) {
-    return true;
-  }
-
-  if (isPublicPreferenceStorageKey(normalizedKey)) {
-    return false;
-  }
-
-  return /\b(user|customer|profile|phone|mobile|identity)\b/i.test(normalizedKey);
+  return hasStrongAuthStorageSignal(normalizedKey);
 }
 
 function hasStrongAuthStorageSignal(normalizedKey: string): boolean {
   return /\b(auth|session|token|jwt|sid|access|refresh|login|logged)\b/i.test(normalizedKey);
-}
-
-function isPublicPreferenceStorageKey(normalizedKey: string): boolean {
-  return /\b(location|pincode|pin\s?code|pin_code|latitude|longitude|lat|lng|geo|address|preference|preferred|selected|store|city|serviceable|delivery)\b/i.test(
-    normalizedKey
-  );
 }
 
 function normalizeStorageKey(value: string): string {

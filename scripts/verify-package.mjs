@@ -87,6 +87,7 @@ try {
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledCheckoutHandoffContract(installDir);
   await verifyInstalledAddressAutomationContract(installDir);
+  await verifyInstalledSessionContract(installDir);
   await verifyInstalledLiveVerifierContract(installDir);
   const runtimeModules = await loadInstalledRuntimeModules(installDir);
   verifyInstalledCli(installedCliPath, runtimeModules);
@@ -437,6 +438,112 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     );
   }
   console.log("pass installed address automation contract");
+}
+
+async function verifyInstalledSessionContract(prefixDir) {
+  const packageDir = join(prefixDir, "node_modules", packageJson.name);
+  const sessionModuleUrl = pathToFileURL(join(packageDir, "dist", "storage", "session.js")).href;
+  const sqliteModuleUrl = pathToFileURL(join(packageDir, "dist", "storage", "sqlite.js")).href;
+  const pathsModuleUrl = pathToFileURL(join(packageDir, "dist", "config", "paths.js")).href;
+  const sessionDataDir = join(tempRoot, "installed-session-contract");
+  const script = `
+    import { mkdirSync, writeFileSync } from "node:fs";
+    import { join } from "node:path";
+    import { SessionStore } from ${JSON.stringify(sessionModuleUrl)};
+    import { SqliteStore } from ${JSON.stringify(sqliteModuleUrl)};
+    import { resolveAppPaths } from ${JSON.stringify(pathsModuleUrl)};
+
+    const paths = resolveAppPaths(${JSON.stringify(sessionDataDir)});
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    try {
+      writeFileSync(
+        paths.authStatePath,
+        JSON.stringify({
+          cookies: [
+            {
+              name: "customerProfile",
+              value: "present",
+              domain: "www.zepto.com",
+              path: "/"
+            },
+            {
+              name: "phoneNumber",
+              value: "present",
+              domain: ".zeptonow.com",
+              path: "/"
+            }
+          ],
+          origins: [
+            {
+              origin: "https://www.zepto.com",
+              localStorage: [
+                {
+                  name: "mobileNumber",
+                  value: "present"
+                },
+                {
+                  name: "identity",
+                  value: "present"
+                }
+              ]
+            }
+          ]
+        })
+      );
+      mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+      writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
+      session.markLoggedIn();
+
+      assert(
+        session.hasStorageState() === false,
+        "expected installed session auth-state contract to reject weak profile/contact keys"
+      );
+      assert(
+        session.status().confirmedSession === false,
+        "expected installed session status to reject weak profile/contact auth state"
+      );
+
+      writeFileSync(
+        paths.authStatePath,
+        JSON.stringify({
+          cookies: [
+            {
+              name: "sid",
+              value: "present",
+              domain: "www.zepto.com",
+              path: "/"
+            }
+          ],
+          origins: []
+        })
+      );
+      assert(
+        session.hasStorageState() === true,
+        "expected installed session auth-state contract to accept strong auth keys"
+      );
+      assert(session.status().confirmedSession === true, "expected installed session status to accept strong auth state");
+    } finally {
+      sqlite.close();
+    }
+
+    function assert(condition, message) {
+      if (!condition) {
+        throw new Error(message);
+      }
+    }
+  `;
+
+  run(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: rootDir,
+    env: sanitizedChildEnv(process.env, {
+      FORCE_COLOR: "0",
+      NO_COLOR: "1"
+    })
+  });
+
+  console.log("pass installed session auth-state contract");
 }
 
 async function verifyInstalledLiveVerifierContract(prefixDir) {
