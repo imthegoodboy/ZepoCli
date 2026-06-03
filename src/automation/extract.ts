@@ -406,11 +406,11 @@ function isCommerceUiOrPromoLine(line: string): boolean {
   }
 
   return (
-    /^(checkout|payment methods?|payments?|upi|cards?|wallets?|net banking|cash on delivery|cod|free gift|zepto pass|membership|subscription|unlocked at checkout|unlock at checkout|gift unlocked|reward|rewards|cashback)$/i.test(
+    /^(checkout|payment methods?|payments?|upi|cards?|wallets?|net banking|cash on delivery|cod|free gift|zepto pass|membership|subscription|unlocked at checkout|unlock at checkout|gift unlocked|reward|rewards|cashback|offer zone|offers?|deals?|deals for you|buy more save more|save more|sale|sale zone|promo|promos?|voucher|coupons?)$/i.test(
       normalized
     ) ||
     /^\d+\s*(?:days?|months?|years?)$/i.test(normalized) ||
-    /\b(checkout|payment methods?|place order|confirm order|pay now|to pay|zepto pass|free gift|unlocked at checkout|unlock at checkout)\b/i.test(
+    /\b(checkout|payment methods?|place order|confirm order|pay now|to pay|zepto pass|free gift|unlocked at checkout|unlock at checkout|offer zone|deals for you|buy more save more|save more|sale zone|promo|voucher|coupon)\b/i.test(
       normalized
     ) ||
     new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i").test(normalized)

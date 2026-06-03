@@ -614,6 +614,24 @@ describe("Zepto page extraction helpers", () => {
         0
       )
     ).toBeUndefined();
+
+    expect(
+      parseProductCard(
+        {
+          text: "Buy More Save More\n50 g\n₹120"
+        },
+        0
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseProductCard(
+        {
+          text: "Offer Zone\n1 pack\n₹99"
+        },
+        0
+      )
+    ).toBeUndefined();
   });
 
   it("parses cart-like text without creating empty items", () => {
@@ -842,6 +860,26 @@ describe("Zepto page extraction helpers", () => {
         UPI
         Pay ₹249
         Grand Total ₹249
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Buy More Save More
+        50 g
+        ₹120
+        Grand Total ₹120
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Offer Zone
+        1 pack
+        ₹99
+        Grand Total ₹99
       `)
     ).toEqual([]);
   });

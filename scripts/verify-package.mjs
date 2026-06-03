@@ -247,12 +247,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
-    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, and membership rows",
+    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, offer/upsell rows, and membership rows",
     "not a fixed address-label list or service-city allow-list",
     "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
-    "checkout/payment panels, promo gift panels, membership rows, and image alt/accessibility text",
+    "checkout/payment panels, promo gift panels, offer/upsell panels, membership rows, and image alt/accessibility text",
     "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted.",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
@@ -1231,6 +1231,24 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "expected installed product parser to reject membership panels"
   );
   assert(
+    parseProductCard(
+      {
+        text: "Buy More Save More\n50 g\n₹120"
+      },
+      0
+    ) === undefined,
+    "expected installed product parser to reject cart upsell panels"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "Offer Zone\n1 pack\n₹99"
+      },
+      0
+    ) === undefined,
+    "expected installed product parser to reject offer panels"
+  );
+  assert(
     parseCartItemsFromText(`
       Cart
       Free Gift
@@ -1261,6 +1279,26 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
       Grand Total ₹249
     `).length === 0,
     "expected installed cart parser to reject checkout payment panels"
+  );
+  assert(
+    parseCartItemsFromText(`
+      Cart
+      Buy More Save More
+      50 g
+      ₹120
+      Grand Total ₹120
+    `).length === 0,
+    "expected installed cart parser to reject cart upsell rows"
+  );
+  assert(
+    parseCartItemsFromText(`
+      Cart
+      Offer Zone
+      1 pack
+      ₹99
+      Grand Total ₹99
+    `).length === 0,
+    "expected installed cart parser to reject offer rows"
   );
   for (const unsafeText of [
     "Checkout",
