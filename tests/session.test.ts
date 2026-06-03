@@ -480,6 +480,50 @@ describe("session storage", () => {
     );
   });
 
+  it("removes raw cart fields from legacy marker-prefixed cart cache rows during migration", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-cart-cache-marker-migration-"));
+    const paths = resolveAppPaths(tempDir);
+    const db = new Database(paths.dbPath);
+    db.exec(`
+      create table cart_snapshots (
+        id integer primary key autoincrement,
+        items_json text not null,
+        total text,
+        raw_text text,
+        created_at text not null
+      );
+
+      insert into cart_snapshots (items_json, total, raw_text, created_at)
+      values
+        ('[{"name":"cache-cart-item-1","unit":"500 ml","price":"₹32"},{"name":"Amul Milk","unit":"1 L"}]', '₹90', 'Cart Amul Milk 500 ml', datetime('now')),
+        ('not-json', '₹10', 'Cart raw text', datetime('now'));
+    `);
+    db.close();
+
+    const sqlite = new SqliteStore(paths.dbPath);
+    sqlite.close();
+
+    const cartItemsJson = readColumnValues(
+      paths.dbPath,
+      "select items_json as raw_text from cart_snapshots order by id"
+    );
+    const cartTotals = readColumnValues(paths.dbPath, "select coalesce(total, '') as raw_text from cart_snapshots order by id");
+    const cartRawTexts = readColumnValues(
+      paths.dbPath,
+      "select coalesce(raw_text, '') as raw_text from cart_snapshots order by id"
+    );
+
+    expect(cartItemsJson).toEqual([
+      JSON.stringify([{ name: `${CART_CACHE_ITEM_PREFIX}1` }, { name: `${CART_CACHE_ITEM_PREFIX}2` }]),
+      "[]"
+    ]);
+    expect(JSON.stringify(cartItemsJson)).not.toContain("Amul");
+    expect(JSON.stringify(cartItemsJson)).not.toContain("500 ml");
+    expect(JSON.stringify(cartItemsJson)).not.toContain("₹32");
+    expect(cartTotals).toEqual(["", ""]);
+    expect(cartRawTexts).toEqual(["", ""]);
+  });
+
   it("requires auth state, browser profile data, and confirmed login for a usable session", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-confirmed-session-"));
     const paths = resolveAppPaths(tempDir);

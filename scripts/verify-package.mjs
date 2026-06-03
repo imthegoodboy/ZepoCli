@@ -1094,6 +1094,7 @@ async function verifyInstalledSessionContract(prefixDir) {
   const pathsModuleUrl = pathToFileURL(join(packageDir, "dist", "config", "paths.js")).href;
   const sessionDataDir = join(tempRoot, "installed-session-contract");
   const script = `
+    import Database from "better-sqlite3";
     import { mkdirSync, writeFileSync } from "node:fs";
     import { join } from "node:path";
     import { SessionStore } from ${JSON.stringify(sessionModuleUrl)};
@@ -1173,6 +1174,47 @@ async function verifyInstalledSessionContract(prefixDir) {
       assert(session.status().confirmedSession === true, "expected installed session status to accept strong auth state");
     } finally {
       sqlite.close();
+    }
+
+    const cartCachePaths = resolveAppPaths(join(${JSON.stringify(sessionDataDir)}, "cart-cache"));
+    const legacyCartDb = new Database(cartCachePaths.dbPath);
+    legacyCartDb.exec(\`
+      create table cart_snapshots (
+        id integer primary key autoincrement,
+        items_json text not null,
+        total text,
+        raw_text text,
+        created_at text not null
+      );
+
+      insert into cart_snapshots (items_json, total, raw_text, created_at)
+      values
+        ('[{"name":"cache-cart-item-1","unit":"500 ml","price":"₹32"},{"name":"Amul Milk","unit":"1 L"}]', '₹90', 'Cart Amul Milk 500 ml', datetime('now')),
+        ('not-json', '₹10', 'Cart raw text', datetime('now'));
+    \`);
+    legacyCartDb.close();
+
+    const migratedCartSqlite = new SqliteStore(cartCachePaths.dbPath);
+    migratedCartSqlite.close();
+
+    const migratedCartDb = new Database(cartCachePaths.dbPath, { readonly: true });
+    try {
+      const rows = migratedCartDb
+        .prepare("select items_json, total, raw_text from cart_snapshots order by id")
+        .all();
+      const serializedRows = JSON.stringify(rows);
+      assert(
+        rows[0]?.items_json === JSON.stringify([{ name: "cache-cart-item-1" }, { name: "cache-cart-item-2" }]),
+        "expected installed cart cache migration to keep marker-only item counts"
+      );
+      assert(rows[1]?.items_json === "[]", "expected installed cart cache migration to scrub malformed item JSON");
+      assert(rows.every((row) => row.total === null), "expected installed cart cache migration to clear totals");
+      assert(rows.every((row) => row.raw_text === null), "expected installed cart cache migration to clear raw text");
+      assert(!serializedRows.includes("Amul"), "expected installed cart cache migration to omit raw product names");
+      assert(!serializedRows.includes("500 ml"), "expected installed cart cache migration to omit raw product units");
+      assert(!serializedRows.includes("₹32"), "expected installed cart cache migration to omit raw product prices");
+    } finally {
+      migratedCartDb.close();
     }
 
     function assert(condition, message) {

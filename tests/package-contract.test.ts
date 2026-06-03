@@ -400,6 +400,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed session auth-state contract to reject weak profile/contact keys");
     expect(verifier).toContain("expected installed session status to reject weak profile/contact auth state");
     expect(verifier).toContain("expected installed session auth-state contract to accept strong auth keys");
+    expect(verifier).toContain("expected installed cart cache migration to keep marker-only item counts");
+    expect(verifier).toContain("expected installed cart cache migration to omit raw product names");
     expect(verifier).toContain("pass installed session auth-state contract");
     expect(verifier).toContain("`browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
     expect(verifier).toContain('paymentStatus: \\"not_observed_by_zepocli\\"');

@@ -249,10 +249,43 @@ export class SqliteStore {
     this.db
       .prepare("update searches set query = ? where query <> ?")
       .run(REDACTED_SEARCH_QUERY, REDACTED_SEARCH_QUERY);
+    this.scrubCartSnapshotItems();
+  }
+
+  private scrubCartSnapshotItems(): void {
+    const rows = this.db.prepare("select id, items_json from cart_snapshots").all() as Array<{
+      id: number;
+      items_json: string;
+    }>;
+    const update = this.db.prepare("update cart_snapshots set items_json = ? where id = ?");
+
+    const scrub = this.db.transaction((items: typeof rows) => {
+      for (const row of items) {
+        const sanitizedItemsJson = sanitizeCachedCartItemsJson(row.items_json);
+        if (sanitizedItemsJson !== row.items_json) {
+          update.run(sanitizedItemsJson, row.id);
+        }
+      }
+    });
+
+    scrub(rows);
   }
 
   private countRows(table: "searches" | "cart_snapshots" | "addresses" | "orders"): number {
     const row = this.db.prepare(`select count(*) as count from ${table}`).get() as { count: number };
     return row.count;
+  }
+}
+
+function sanitizeCachedCartItemsJson(value: string): string {
+  try {
+    const items = JSON.parse(value) as unknown;
+    if (!Array.isArray(items)) {
+      return "[]";
+    }
+
+    return JSON.stringify(items.map((_, index) => ({ name: `${CART_CACHE_ITEM_PREFIX}${index + 1}` })));
+  } catch {
+    return "[]";
   }
 }
