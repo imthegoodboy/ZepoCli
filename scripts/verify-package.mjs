@@ -249,7 +249,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
     "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
     "not a fixed address-label list or service-city allow-list",
-    "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, or order actions",
+    "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, promotional/merchandising/payment/membership rows, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
     "checkout/payment panels, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text",
@@ -759,6 +759,45 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
   assert(
     isLikelyRemovableCartItemText("Amul Taaza Toned Milk 500 ml Rs 32 Remove") === true,
     "expected installed cart remove row parser to accept product rows"
+  );
+  for (const prefix of [
+    "Top Picks For You",
+    "Best Offers For You",
+    "Trending Deals",
+    "Best Sellers",
+    "Offer Zone",
+    "Buy More Save More",
+    "Deals For You",
+    "UPI Cashback",
+    "Card Offers",
+    "Saved Cards",
+    "Wallet Cashback",
+    "Cash on Delivery",
+    "Zepto Pass",
+    "Membership",
+    "Free Gift",
+    "Gift Unlocked",
+    "Promo",
+    "Checkout",
+    "Payment Method"
+  ]) {
+    assert(
+      isLikelyRemovableCartItemText(`${prefix} Amul Taaza Toned Milk 500 ml Rs 32 Remove`) === false,
+      `expected installed cart remove row parser to reject non-cart product surfaces: ${prefix}`
+    );
+    assert(
+      isLikelyRemovableCartItemText(`${prefix} Amul Taaza Toned Milk 500 ml Rs 32 Remove`, "Amul Taaza Toned Milk") ===
+        false,
+      `expected installed cart remove row parser query matching to reject non-cart product surfaces: ${prefix}`
+    );
+  }
+  assert(
+    isLikelyRemovableCartItemText("Playing Cards 1 pack Rs 99 Remove") === true,
+    "expected installed cart remove row parser not to reject ordinary card product rows"
+  );
+  assert(
+    isLikelyRemovableCartItemText("Wallet Cleaner 100 ml Rs 49 Remove") === true,
+    "expected installed cart remove row parser not to reject ordinary wallet product rows"
   );
   assert(
     isLikelyRemovableCartItemText("Order Summary Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,

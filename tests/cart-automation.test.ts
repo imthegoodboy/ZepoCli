@@ -609,6 +609,33 @@ describe("cart automation helpers", () => {
     expect(isLikelyRemovableCartItemText("Potato Chips 52 g Rs 20 Notify Me", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Before you checkout Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Complete your cart Potato Chips 52 g Rs 20 Remove", undefined)).toBe(false);
+    for (const prefix of [
+      "Top Picks For You",
+      "Best Offers For You",
+      "Trending Deals",
+      "Best Sellers",
+      "Offer Zone",
+      "Buy More Save More",
+      "Deals For You",
+      "UPI Cashback",
+      "Card Offers",
+      "Saved Cards",
+      "Wallet Cashback",
+      "Cash on Delivery",
+      "Zepto Pass",
+      "Membership",
+      "Free Gift",
+      "Gift Unlocked",
+      "Promo",
+      "Checkout",
+      "Payment Method"
+    ]) {
+      expect(isLikelyRemovableCartItemText(`${prefix} Potato Chips 52 g Rs 20 Remove`, undefined)).toBe(false);
+      expect(isLikelyRemovableCartItemText(`${prefix} Potato Chips 52 g Rs 20 Remove`, "potato chips")).toBe(false);
+    }
+    expect(isLikelyRemovableCartItemText("Playing Cards 1 pack Rs 99 Remove", undefined)).toBe(true);
+    expect(isLikelyRemovableCartItemText("Card Holder 1 pc Rs 149 Remove", undefined)).toBe(true);
+    expect(isLikelyRemovableCartItemText("Wallet Cleaner 100 ml Rs 49 Remove", undefined)).toBe(true);
     expect(isLikelyRemovableCartItemText("Order Summary Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Track Order Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);
     expect(isLikelyRemovableCartItemText("Reorder Amul Taaza Toned Milk 500 ml Rs 32 Remove", undefined)).toBe(false);

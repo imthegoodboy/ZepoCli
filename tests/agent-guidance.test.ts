@@ -72,6 +72,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
       expect(guidance).toContain("revalidated against the current cart row before click, including after any scroll into view");
       expect(guidance).toContain("inactive saved/unavailable item actions");
+      expect(guidance).toContain("promotional/merchandising/payment/membership rows");
       expect(guidance).toContain("order actions including order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, and rating");
       expect(guidance).toContain("Tagged saved-address rows must be revalidated against Zepto's current visible row text before click, including after any scroll into view");
       expect(guidance).toContain("Saved-address labels must be derived from Zepto's visible saved-address row text");
