@@ -3591,7 +3591,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     name: "address list",
     args: ["--data-dir", ".zepo-live", "--visible", "address", "list", "--json"],
     status: 0,
-    stdout: JSON.stringify([{ text: "Home" }, {}]),
+    stdout: JSON.stringify([{ text: "Amul Milk 500ml" }]),
     stderr: "",
     summarizePayload: () => ({ unsafe: true })
   }).step;

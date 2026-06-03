@@ -52,6 +52,12 @@ const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
 ];
 const LIVE_REPORT_ADDRESS_DETAIL_PATTERN =
   /\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\s+code|india)\b|\b[a-z]\s*[-/]\s*\d{2,}\b|\d{3,}/i;
+const LIVE_REPORT_ADDRESS_PLACEHOLDER_PATTERN =
+  /^(add|select|enter|use|choose|set|change)\b.*\b(address|location)\b|^(delivery address|saved addresses|select location|add address)$/i;
+const LIVE_REPORT_ADDRESS_UNIT_PATTERN =
+  /\b\d+(?:\.\d+)?\s?(?:ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules)\b/i;
+const LIVE_REPORT_ADDRESS_NON_ADDRESS_PATTERN =
+  /\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|delivery charge|handling fee|platform fee|recommended|sponsored|popular picks|you may also like|out of stock)\b|₹|\brs\.?\s?\d|\binr\s?\d/i;
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
@@ -1612,7 +1618,10 @@ export function hasLiveReportAddressDetailText(value) {
   return (
     normalized.length > 12 &&
     normalized.length < 400 &&
-    LIVE_REPORT_ADDRESS_DETAIL_PATTERN.test(normalized)
+    LIVE_REPORT_ADDRESS_DETAIL_PATTERN.test(normalized) &&
+    !LIVE_REPORT_ADDRESS_PLACEHOLDER_PATTERN.test(normalized) &&
+    !LIVE_REPORT_ADDRESS_UNIT_PATTERN.test(normalized) &&
+    !LIVE_REPORT_ADDRESS_NON_ADDRESS_PATTERN.test(normalized)
   );
 }
 

@@ -95,7 +95,7 @@ The live report is acceptable only when:
 - Ok report workflow steps follow the live runner order.
 - Workflow step summaries include every runner-defined key.
 - Workflow step summary values keep the runner's expected types.
-- Address summaries require structural address detail without storing raw address text, product and cart count summaries count readable records only, and order count summaries count status/ETA-bearing records only; placeholder objects such as `{}`, label-only address rows such as `Home`, total-only rows, and date-only rows are not live evidence.
+- Address summaries require structural address detail without storing raw address text, product and cart count summaries count readable records only, and order count summaries count status/ETA-bearing records only; placeholder objects such as `{}`, label-only address rows such as `Home`, product/unit rows such as `Amul Milk 500ml`, payment/cart/order text, total-only rows, and date-only rows are not live evidence.
 - String and string-array workflow step summary values stay within runner-known values.
 - Related workflow step summary fields are internally consistent.
 - Numeric workflow step summaries stay within runner-supported ranges.

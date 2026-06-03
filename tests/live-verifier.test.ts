@@ -2942,6 +2942,9 @@ describe("live verification runner", () => {
         "[]",
         JSON.stringify([{}]),
         JSON.stringify([{ text: "Home" }]),
+        JSON.stringify([{ text: "Amul Milk 500ml" }]),
+        JSON.stringify([{ text: "Checkout Pay ₹249" }]),
+        JSON.stringify([{ text: "Saved addresses" }]),
         JSON.stringify([{ text: "Home" }, { text: "Flat 12 Tower 7 MG Road" }])
       ]) {
         const { step } = buildLiveReportStep({
@@ -2990,7 +2993,9 @@ describe("live verification runner", () => {
   it("fails address use live report steps without a selected address with detail", () => {
     for (const stdout of [
       JSON.stringify({ text: "Flat 12 Tower 7 MG Road", selected: false }),
-      JSON.stringify({ text: "Home", selected: true })
+      JSON.stringify({ text: "Home", selected: true }),
+      JSON.stringify({ text: "Amul Milk 500ml", selected: true }),
+      JSON.stringify({ text: "Checkout Pay ₹249", selected: true })
     ]) {
       const { step } = buildLiveReportStep({
         name: "address use",
