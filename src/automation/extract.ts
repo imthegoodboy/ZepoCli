@@ -547,7 +547,7 @@ function isCartSuggestedProductWindow(lines: string[]): boolean {
 }
 
 function isRecommendationHeaderLine(line: string): boolean {
-  return /\b(you may also like|similar products|recommended|frequently bought|popular picks|sponsored|before you checkout|complete your cart|customers also bought|add more items?)\b/i.test(
+  return /\b(you may also like|similar products|recommended|frequently bought|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|sponsored|before you checkout|complete your cart|customers also bought|add more items?)\b/i.test(
     line
   );
 }

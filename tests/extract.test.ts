@@ -632,6 +632,17 @@ describe("Zepto page extraction helpers", () => {
         0
       )
     ).toBeUndefined();
+
+    for (const heading of ["Top Picks For You", "Best Offers For You", "Trending Deals", "Best Sellers"]) {
+      expect(
+        parseProductCard(
+          {
+            text: `${heading}\n50 g\n₹120`
+          },
+          0
+        )
+      ).toBeUndefined();
+    }
   });
 
   it("parses cart-like text without creating empty items", () => {
@@ -882,6 +893,18 @@ describe("Zepto page extraction helpers", () => {
         Grand Total ₹99
       `)
     ).toEqual([]);
+
+    for (const heading of ["Top Picks For You", "Best Offers For You", "Trending Deals", "Best Sellers"]) {
+      expect(
+        parseCartItemsFromText(`
+          Cart
+          ${heading}
+          50 g
+          ₹120
+          Grand Total ₹120
+        `)
+      ).toEqual([]);
+    }
   });
 
   it("does not treat discount-only cart badges as item prices", () => {

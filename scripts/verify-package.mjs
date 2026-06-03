@@ -247,12 +247,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
-    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, offer/upsell rows, and membership rows",
+    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
     "not a fixed address-label list or service-city allow-list",
     "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
-    "checkout/payment panels, promo gift panels, offer/upsell panels, membership rows, and image alt/accessibility text",
+    "checkout/payment panels, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text",
     "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted.",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
@@ -1248,6 +1248,17 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     ) === undefined,
     "expected installed product parser to reject offer panels"
   );
+  for (const heading of ["Top Picks For You", "Best Offers For You", "Trending Deals", "Best Sellers"]) {
+    assert(
+      parseProductCard(
+        {
+          text: `${heading}\n50 g\n₹120`
+        },
+        0
+      ) === undefined,
+      `expected installed product parser to reject merchandising heading: ${heading}`
+    );
+  }
   assert(
     parseCartItemsFromText(`
       Cart
@@ -1300,6 +1311,18 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     `).length === 0,
     "expected installed cart parser to reject offer rows"
   );
+  for (const heading of ["Top Picks For You", "Best Offers For You", "Trending Deals", "Best Sellers"]) {
+    assert(
+      parseCartItemsFromText(`
+        Cart
+        ${heading}
+        50 g
+        ₹120
+        Grand Total ₹120
+      `).length === 0,
+      `expected installed cart parser to reject merchandising heading: ${heading}`
+    );
+  }
   for (const unsafeText of [
     "Checkout",
     "Pay Now",
