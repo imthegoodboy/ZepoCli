@@ -26,6 +26,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("support/help, invoice/receipt, refund/return/cancel, or rating/review actions");
       expect(guidance).toContain("support/help, invoice/receipt, refund/return/cancel, or rating/review controls");
       expect(guidance).toContain("unsafe phone-like payment/cart/address/search/support/refund/rating fields");
+      expect(guidance).toContain("background/headless mode by default");
+      expect(guidance).toContain("human-only login, address-add, or checkout handoff");
+      expect(guidance).toContain("Background/headless mode is for explicit user-requested CLI commands only");
       expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");
       expect(guidance).toContain("search-trigger labels plus disabled state");
       expect(guidance).toContain("Order-history and account-menu labels plus disabled state must be revalidated after any scroll into view before clicking");
@@ -57,6 +60,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain("product-specific accessible labels such as `Add <product> to cart`");
       expect(guidance).toContain("quantity-only add text such as `Add 2 items to cart`");
       expect(guidance).toContain("quantity-only labels such as `Add 2 to cart`");
+      expect(guidance).toContain("Public product URLs");
+      expect(guidance).toContain("Zepto-owned HTTP(S)");
+      expect(guidance).toContain("query strings and hash fragments");
+      expect(guidance).toContain("unsafe-scheme hrefs");
       expect(guidance).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
       expect(guidance).toContain("revalidated against the current cart row before click, including after any scroll into view");
       expect(guidance).toContain("order actions including order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, and rating");
