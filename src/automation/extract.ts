@@ -11,7 +11,7 @@ import {
 } from "../utils/format.js";
 import { FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE } from "./final-action-labels.js";
 import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
-import { PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
+import { isPaymentUiSurfaceText } from "./payment-labels.js";
 
 const ORDER_ETA_TRAILING_ACTION_PATTERN = new RegExp(
   `(?:\\b(reorder|order again|repeat order|track order|order summary|payment|paid)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}).*$`,
@@ -413,7 +413,7 @@ function isCommerceUiOrPromoLine(line: string): boolean {
     /\b(checkout|payment methods?|place order|confirm order|pay now|to pay|zepto pass|free gift|unlocked at checkout|unlock at checkout|offer zone|deals for you|buy more save more|save more|sale zone|promo|voucher|coupon)\b/i.test(
       normalized
     ) ||
-    new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i").test(normalized)
+    isPaymentUiSurfaceText(normalized)
   );
 }
 

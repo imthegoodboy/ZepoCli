@@ -693,7 +693,7 @@ export async function extractProducts(page: Page, limit: number): Promise<Produc
       (/\bproduct\b/i.test(label) && /\badd\b/i.test(label) && /\b(action|button|control)\b/i.test(label));
     const isUnsafeAddControlLabel = (label: string) =>
       unsafeAddControlPattern.test(label) ||
-      paymentMethodPattern.test(label);
+      (paymentMethodPattern.test(label) && !isAllowedAddCompanionLabel(label));
     const visibleText = (element: Element) =>
       element instanceof HTMLElement ? element.innerText : (element.textContent ?? "");
     const referencedLabelText = (element: Element) =>

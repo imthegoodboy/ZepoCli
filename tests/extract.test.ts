@@ -645,6 +645,35 @@ describe("Zepto page extraction helpers", () => {
     }
   });
 
+  it("does not treat ordinary card or wallet product names as payment panels", () => {
+    for (const product of [
+      {
+        text: "Playing Cards\n1 pack\n₹99",
+        name: "Playing Cards",
+        unit: "1 pack",
+        price: "₹99"
+      },
+      {
+        text: "Card Holder\n1 pc\n₹149",
+        name: "Card Holder",
+        unit: "1 pc",
+        price: "₹149"
+      },
+      {
+        text: "Wallet Cleaner\n100 ml\n₹49",
+        name: "Wallet Cleaner",
+        unit: "100 ml",
+        price: "₹49"
+      }
+    ]) {
+      expect(parseProductCard({ text: product.text }, 0)).toMatchObject({
+        name: product.name,
+        unit: product.unit,
+        price: product.price
+      });
+    }
+  });
+
   it("parses cart-like text without creating empty items", () => {
     const items = parseCartItemsFromText(`
       Cart

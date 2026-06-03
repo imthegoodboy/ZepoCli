@@ -7,6 +7,7 @@ import {
   isPaymentHandoffSurfaceText,
   isPaymentMethodLabelText,
   isPaymentSelectionPromptText,
+  isPaymentUiSurfaceText,
   PAYMENT_METHOD_LABEL_PATTERN_SOURCE
 } from "../src/automation/payment-labels.js";
 
@@ -92,6 +93,27 @@ describe("payment label helpers", () => {
     }
   });
 
+  it("recognizes payment UI surfaces without rejecting ordinary card or wallet product names", () => {
+    for (const label of [
+      "UPI",
+      "Cards",
+      "Wallet",
+      "Payment Method",
+      "Cash on Delivery",
+      "Card Offers",
+      "Saved Cards",
+      "UPI Cashback",
+      "Wallet Offers",
+      "Pay with UPI"
+    ]) {
+      expect(isPaymentUiSurfaceText(label)).toBe(true);
+    }
+
+    for (const label of ["Playing Cards", "Card Holder", "Wallet Cleaner", "Gift Wrap"]) {
+      expect(isPaymentUiSurfaceText(label)).toBe(false);
+    }
+  });
+
   it("keeps payment label matching centralized across automation modules", () => {
     expect(PAYMENT_METHOD_LABEL_PATTERN_SOURCE).toContain("cash on delivery");
 
@@ -100,6 +122,7 @@ describe("payment label helpers", () => {
       "auth.ts",
       "cart.ts",
       "checkout.ts",
+      "extract.ts",
       "login-inputs.ts",
       "orders.ts",
       "search.ts"

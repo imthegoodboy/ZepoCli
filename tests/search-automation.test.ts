@@ -338,6 +338,50 @@ describe("search automation helpers", () => {
     expect(page.button.getAttribute("data-zepo-add-id")).toBe("0");
   });
 
+  it("does not reject product-specific ADD labels for ordinary card or wallet product names", async () => {
+    for (const product of [
+      {
+        cardText: "Playing Cards\n1 pack\n₹99",
+        label: "Add Playing Cards to cart",
+        name: "Playing Cards",
+        unit: "1 pack",
+        price: "₹99"
+      },
+      {
+        cardText: "Card Holder\n1 pc\n₹149",
+        label: "Add Card Holder to cart",
+        name: "Card Holder",
+        unit: "1 pc",
+        price: "₹149"
+      },
+      {
+        cardText: "Wallet Cleaner\n100 ml\n₹49",
+        label: "Add Wallet Cleaner to cart",
+        name: "Wallet Cleaner",
+        unit: "100 ml",
+        price: "₹49"
+      }
+    ]) {
+      const page = createProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": product.label
+        },
+        cardText: product.cardText
+      });
+
+      await expect(extractProducts(page as never, 5)).resolves.toMatchObject([
+        {
+          automationId: 0,
+          name: product.name,
+          price: product.price,
+          unit: product.unit
+        }
+      ]);
+      expect(page.button.getAttribute("data-zepo-add-id")).toBe("0");
+    }
+  });
+
   it("does not map mixed-label product controls that expose unsafe add state", async () => {
     for (const page of [
       createProductExtractionPage({
@@ -1181,6 +1225,7 @@ function createProductExtractionPage(options: {
   buttonText: string;
   buttonAttributes?: Record<string, string>;
   referencedLabels?: Record<string, string>;
+  cardText?: string;
 }) {
   const labels = Object.fromEntries(
     Object.entries(options.referencedLabels ?? {}).map(([id, text]) => [id, new FakeElement(text)])
@@ -1190,7 +1235,7 @@ function createProductExtractionPage(options: {
     querySelectorAll: (selector: string) => (selector === "button, [role='button']" ? document.buttons : []),
     getElementById: (id: string) => labels[id] ?? null
   };
-  const card = new FakeElement("Amul Milk\n500 ml\n₹32", {}, document);
+  const card = new FakeElement(options.cardText ?? "Amul Milk\n500 ml\n₹32", {}, document);
   const button = new FakeElement(options.buttonText, options.buttonAttributes ?? {}, document);
   card.appendChild(button);
   document.buttons = [button];

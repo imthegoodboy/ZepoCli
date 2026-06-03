@@ -10,6 +10,7 @@ const rootDir = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
 const npmExecPath = process.env.npm_execpath;
 const INSTALLED_CLI_COMMAND_TIMEOUT_MS = 120_000;
+const INSTALLED_HELPER_COMMAND_TIMEOUT_MS = 15_000;
 const NPM_COMMAND_TIMEOUT_MS = 180_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
 const AUTH_STATE = JSON.stringify({
@@ -23,6 +24,62 @@ const AUTH_STATE = JSON.stringify({
   ],
   origins: []
 });
+
+class InstalledFakeElement {
+  parentElement = null;
+  children = [];
+  disabled = false;
+
+  constructor(textContent, attributes = {}, ownerDocument = { getElementById: () => null }) {
+    this.textContent = textContent;
+    this.attributes = attributes;
+    this.ownerDocument = ownerDocument;
+  }
+
+  get innerText() {
+    return this.textContent;
+  }
+
+  appendChild(child) {
+    child.parentElement = this;
+    this.children.push(child);
+  }
+
+  getAttribute(name) {
+    return this.attributes[name] ?? null;
+  }
+
+  setAttribute(name, value) {
+    this.attributes[name] = value;
+  }
+
+  hasAttribute(name) {
+    return this.attributes[name] !== undefined;
+  }
+
+  getBoundingClientRect() {
+    return {
+      width: 24,
+      height: 24
+    };
+  }
+
+  querySelector(selector) {
+    return this.querySelectorAll(selector)[0] ?? null;
+  }
+
+  querySelectorAll(selector) {
+    if (selector !== "img[alt]") {
+      return [];
+    }
+
+    return this.children.filter((child) => child.getAttribute("alt") !== null);
+  }
+
+  closest() {
+    return null;
+  }
+}
 
 const tempRoot = mkdtempSync(join(tmpdir(), "zepo-package-smoke-"));
 const packDir = join(tempRoot, "pack");
@@ -488,7 +545,8 @@ async function verifyInstalledPaymentLabelContract(prefixDir) {
   const {
     isPaymentHandoffSurfaceText,
     isPaymentMethodLabelText,
-    isPaymentSelectionPromptText
+    isPaymentSelectionPromptText,
+    isPaymentUiSurfaceText
   } = await import(pathToFileURL(paymentLabelModulePath).href);
 
   assert(isPaymentMethodLabelText("Credit & Debit Cards") === true, "expected installed card payment label to match");
@@ -509,6 +567,16 @@ async function verifyInstalledPaymentLabelContract(prefixDir) {
   assert(
     isPaymentSelectionPromptText("Payment Methods Accepted") === false,
     "expected installed generic payment heading not to match selection prompt"
+  );
+  assert(isPaymentUiSurfaceText("Cards") === true, "expected installed payment UI surface to match standalone cards");
+  assert(isPaymentUiSurfaceText("Card Offers") === true, "expected installed payment UI surface to match card offers");
+  assert(
+    isPaymentUiSurfaceText("Playing Cards") === false,
+    "expected installed payment UI surface not to reject ordinary card product names"
+  );
+  assert(
+    isPaymentUiSurfaceText("Wallet Cleaner") === false,
+    "expected installed payment UI surface not to reject ordinary wallet product names"
   );
   console.log("pass installed payment label contract");
 }
@@ -873,6 +941,7 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     "extract.js"
   );
   const {
+    extractProducts,
     isProductAddControlText,
     isUnsafeProductAddControlText,
     isUnsafeQuantityIncreaseControlText,
@@ -886,6 +955,12 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     isProductAddControlText("Add Amul Milk to Cart") === true,
     "expected installed product-specific ADD label to be accepted"
   );
+  for (const label of ["Add Playing Cards to Cart", "Add Card Holder to Cart", "Add Wallet Cleaner to Cart"]) {
+    assert(
+      isProductAddControlText(label) === true && isUnsafeProductAddControlText(label) === false,
+      `expected installed ordinary card/wallet product-specific ADD label to be accepted: ${label}`
+    );
+  }
   assert(
     isProductAddControlText("Add 2 to cart") === false,
     "expected installed quantity-only ADD label not to be accepted as product ADD"
@@ -949,6 +1024,47 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
       isUnsafeProductAddControlText("Add Help to Cart") === true,
     "expected installed product-specific ADD label with order action text to be unsafe"
   );
+  for (const product of [
+    {
+      cardText: "Playing Cards\n1 pack\n₹99",
+      label: "Add Playing Cards to cart",
+      name: "Playing Cards",
+      price: "₹99",
+      unit: "1 pack"
+    },
+    {
+      cardText: "Card Holder\n1 pc\n₹149",
+      label: "Add Card Holder to cart",
+      name: "Card Holder",
+      price: "₹149",
+      unit: "1 pc"
+    },
+    {
+      cardText: "Wallet Cleaner\n100 ml\n₹49",
+      label: "Add Wallet Cleaner to cart",
+      name: "Wallet Cleaner",
+      price: "₹49",
+      unit: "100 ml"
+    }
+  ]) {
+    const products = await extractProducts(
+      createInstalledProductExtractionPage({
+        buttonText: "",
+        buttonAttributes: {
+          "aria-label": product.label
+        },
+        cardText: product.cardText
+      }),
+      5
+    );
+    assert(
+      products[0]?.name === product.name &&
+        products[0]?.price === product.price &&
+        products[0]?.unit === product.unit &&
+        products[0]?.automationId === 0,
+      `expected installed product extraction to accept ordinary product-specific ADD label: ${product.label}`
+    );
+  }
   assert(
     parseProductCard(
       {
@@ -980,6 +1096,65 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     "expected installed unsafe-scheme product URL to be omitted"
   );
   console.log("pass installed product automation contract");
+}
+
+function createInstalledProductExtractionPage(options) {
+  const labels = Object.fromEntries(
+    Object.entries(options.referencedLabels ?? {}).map(([id, text]) => [id, new InstalledFakeElement(text)])
+  );
+  const documentLike = {
+    buttons: [],
+    querySelectorAll(selector) {
+      return selector === "button, [role='button']" ? this.buttons : [];
+    },
+    getElementById(id) {
+      return labels[id] ?? null;
+    }
+  };
+  const card = new InstalledFakeElement(options.cardText ?? "Amul Milk\n500 ml\n₹32", {}, documentLike);
+  const button = new InstalledFakeElement(options.buttonText, options.buttonAttributes ?? {}, documentLike);
+  card.appendChild(button);
+  documentLike.buttons = [button];
+
+  return {
+    button,
+    evaluate: async (callback, input) => {
+      const previous = {
+        document: globalThis.document,
+        window: globalThis.window,
+        HTMLElement: globalThis.HTMLElement,
+        HTMLButtonElement: globalThis.HTMLButtonElement,
+        HTMLInputElement: globalThis.HTMLInputElement,
+        HTMLAnchorElement: globalThis.HTMLAnchorElement,
+        HTMLSelectElement: globalThis.HTMLSelectElement,
+        HTMLTextAreaElement: globalThis.HTMLTextAreaElement
+      };
+      globalThis.document = documentLike;
+      globalThis.window = {
+        getComputedStyle: () => ({
+          display: "block",
+          visibility: "visible"
+        })
+      };
+      globalThis.HTMLElement = InstalledFakeElement;
+      globalThis.HTMLButtonElement = InstalledFakeElement;
+      globalThis.HTMLInputElement = InstalledFakeElement;
+      globalThis.HTMLAnchorElement = InstalledFakeElement;
+      globalThis.HTMLSelectElement = InstalledFakeElement;
+      globalThis.HTMLTextAreaElement = InstalledFakeElement;
+      try {
+        return callback(input);
+      } finally {
+        for (const [key, value] of Object.entries(previous)) {
+          if (value === undefined) {
+            delete globalThis[key];
+          } else {
+            globalThis[key] = value;
+          }
+        }
+      }
+    }
+  };
 }
 
 async function verifyInstalledOrderExtractionContract(prefixDir) {
@@ -5354,7 +5529,12 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
 
   for (const check of checks) {
     const args = typeof check.args === "function" ? check.args() : check.args;
-    const result = runInstalledCli(installedCliPath, args);
+    let result;
+    try {
+      result = runInstalledCli(installedCliPath, args);
+    } catch (error) {
+      throw new Error(`Installed CLI smoke check failed (${check.name}): ${error.message}`, { cause: error });
+    }
     check.expect(result);
     console.log(`pass ${check.name}`);
   }
@@ -5515,6 +5695,7 @@ function setRuntimeMeta(runtimeModules, targetDataDir, keyExportName, value) {
 
   run(process.execPath, ["--input-type=module", "--eval", script], {
     cwd: rootDir,
+    timeout: INSTALLED_HELPER_COMMAND_TIMEOUT_MS,
     env: sanitizedChildEnv(process.env, {
       FORCE_COLOR: "0",
       NO_COLOR: "1"
@@ -5547,6 +5728,7 @@ function markInstalledConfirmedSession(runtimeModules, targetDataDir) {
 
   run(process.execPath, ["--input-type=module", "--eval", script], {
     cwd: rootDir,
+    timeout: INSTALLED_HELPER_COMMAND_TIMEOUT_MS,
     env: sanitizedChildEnv(process.env, {
       FORCE_COLOR: "0",
       NO_COLOR: "1"
