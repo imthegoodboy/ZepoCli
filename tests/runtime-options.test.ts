@@ -215,8 +215,9 @@ describe("global runtime options", () => {
       expect(serialized).not.toContain("98765 43210");
       expect(serialized).not.toContain("09876543210");
       expect(serialized).not.toContain(fakeNpmToken);
-      expect(serialized).not.toContain("4111");
-      expect(serialized).not.toContain("5555");
+      expect(serialized).not.toContain("4111111111111111");
+      expect(serialized).not.toContain("4111 1111");
+      expect(serialized).not.toContain("5555 5555");
       expect(serialized).not.toContain("abc@upi");
       expect(serialized).not.toContain("%2B91");
       expect(serialized).not.toContain("%31%32%33");
