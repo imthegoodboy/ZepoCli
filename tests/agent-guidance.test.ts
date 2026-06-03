@@ -161,9 +161,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Node.js 20.19");
       expect(guidance).toContain("zepo logout");
       expect(guidance).toContain(
-        "Empty Zepto origin storage, empty auth-looking cookie/localStorage values, and public preference/location cookies are not auth proof"
+        "Empty Zepto origin storage, empty auth-looking cookie/localStorage values, public preference/location cookies, and bare login/logged UI flags are not auth proof"
       );
-      expect(guidance).toContain("non-empty auth/session-like Zepto cookies or non-empty auth/session-like Zepto localStorage keys");
+      expect(guidance).toContain("non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys");
       expect(guidance).toContain("raw search text");
       expect(guidance).toContain("raw address labels or text");
       expect(guidance).toContain("local item markers only");

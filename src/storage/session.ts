@@ -242,7 +242,7 @@ function isAuthLikeStorageKey(value: unknown): boolean {
 }
 
 function hasStrongAuthStorageSignal(normalizedKey: string): boolean {
-  return /\b(auth|session|token|jwt|sid|access|refresh|login|logged)\b/i.test(normalizedKey);
+  return /\b(auth|session|token|jwt|sid|access|refresh)\b/i.test(normalizedKey);
 }
 
 function normalizeStorageKey(value: string): string {

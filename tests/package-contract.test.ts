@@ -299,6 +299,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed visible browser mode not to be requested");
     expect(verifier).toContain("expected installed visible option to document headless default");
     expect(verifier).toContain("Safe-click checks inspect visible text");
+    expect(verifier).toContain("bare login/logged UI flags are not enough to confirm local auth");
+    expect(verifier).toContain("non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys");
     expect(verifier).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(verifier).toContain("auth/session/token/password/secret URL parameters, and local-path values");
     expect(verifier).toContain("npm-token-shaped values");
@@ -407,6 +409,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("verifyInstalledSessionContract");
     expect(verifier).toContain("expected installed session auth-state contract to reject weak profile/contact keys");
     expect(verifier).toContain("expected installed session status to reject weak profile/contact auth state");
+    expect(verifier).toContain("expected installed session auth-state contract to reject bare login/logged flags");
+    expect(verifier).toContain("expected installed session status to reject bare login/logged auth flags");
     expect(verifier).toContain("expected installed session auth-state contract to accept strong auth keys");
     expect(verifier).toContain("expected installed cart cache migration to keep marker-only item counts");
     expect(verifier).toContain("expected installed cart cache migration to omit raw product names");

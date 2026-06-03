@@ -805,6 +805,52 @@ describe("session storage", () => {
     sqlite.close();
   });
 
+  it("does not treat bare login or logged UI flags as saved auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-login-flag-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "loginModalSeen",
+            value: "true",
+            domain: "www.zepto.com",
+            path: "/"
+          },
+          {
+            name: "loggedOut",
+            value: "false",
+            domain: ".zeptonow.com",
+            path: "/"
+          }
+        ],
+        origins: [
+          {
+            origin: "https://www.zepto.com",
+            localStorage: [
+              {
+                name: "isLoggedIn",
+                value: "true"
+              },
+              {
+                name: "lastLoginPrompt",
+                value: "2026-06-03"
+              }
+            ]
+          }
+        ]
+      })
+    );
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status().hasAuthState).toBe(false);
+    sqlite.close();
+  });
+
   it("does not treat empty auth-like Zepto cookie or localStorage values as saved auth state", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-auth-values-"));
     const paths = resolveAppPaths(tempDir);

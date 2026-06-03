@@ -260,6 +260,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "passwords and payment instrument details as sensitive personal information",
     "keeps debug capture disabled for Zepto browser pages that may use the persistent profile",
     "Debug HTML/screenshot artifacts are disabled for Zepto browser flows that may use the persistent profile, including search, live session checks, login, cart, address, checkout, orders, and reorder",
+    "bare login/logged UI flags are not enough to confirm local auth",
+    "non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys",
     "Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token/password/secret URL parameters, and local-path values",
     "npm-token-shaped values",
@@ -1200,6 +1202,49 @@ async function verifyInstalledSessionContract(prefixDir) {
       assert(
         session.status().confirmedSession === false,
         "expected installed session status to reject weak profile/contact auth state"
+      );
+
+      writeFileSync(
+        paths.authStatePath,
+        JSON.stringify({
+          cookies: [
+            {
+              name: "loginModalSeen",
+              value: "true",
+              domain: "www.zepto.com",
+              path: "/"
+            },
+            {
+              name: "loggedOut",
+              value: "false",
+              domain: ".zeptonow.com",
+              path: "/"
+            }
+          ],
+          origins: [
+            {
+              origin: "https://www.zepto.com",
+              localStorage: [
+                {
+                  name: "isLoggedIn",
+                  value: "true"
+                },
+                {
+                  name: "lastLoginPrompt",
+                  value: "2026-06-03"
+                }
+              ]
+            }
+          ]
+        })
+      );
+      assert(
+        session.hasStorageState() === false,
+        "expected installed session auth-state contract to reject bare login/logged flags"
+      );
+      assert(
+        session.status().confirmedSession === false,
+        "expected installed session status to reject bare login/logged auth flags"
       );
 
       writeFileSync(

@@ -158,9 +158,9 @@ describe("README package guidance", () => {
       "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted."
     );
     expect(readme).toContain(
-      "Empty Zepto origin storage, empty auth-looking cookie/localStorage values, and public preference/location cookies are not enough to confirm local auth, even when the key name contains words like `user`, `customer`, or `profile`"
+      "Empty Zepto origin storage, empty auth-looking cookie/localStorage values, public preference/location cookies, and bare login/logged UI flags are not enough to confirm local auth, even when the key name contains words like `user`, `customer`, `profile`, `login`, or `logged`"
     );
-    expect(readme).toContain("non-empty auth/session-like Zepto cookies or non-empty auth/session-like Zepto localStorage keys");
+    expect(readme).toContain("non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys");
     expect(readme).toContain("It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.");
     expect(readme).toContain("unsafe phone-like payment/cart/address/search fields");
     expect(readme).toContain(

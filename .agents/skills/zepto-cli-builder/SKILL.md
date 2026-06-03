@@ -115,7 +115,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
    - Browser profile data lives in the configured data directory so IndexedDB, cookies, and site state survive between CLI runs.
    - Unauthenticated commands such as search must not write Playwright auth state or make local status look partially logged in.
    - Browser profile files alone may exist after unauthenticated browser use; they are not proof of partial login without auth state or the local login marker.
-   - Empty Zepto origin storage, empty auth-looking cookie/localStorage values, and public preference/location cookies are not auth proof, even when the key name contains words like `user`, `customer`, or `profile`. Local auth state should require non-empty auth/session-like Zepto cookies or non-empty auth/session-like Zepto localStorage keys before contributing to confirmed session status.
+   - Empty Zepto origin storage, empty auth-looking cookie/localStorage values, public preference/location cookies, and bare login/logged UI flags are not auth proof, even when the key name contains words like `user`, `customer`, `profile`, `login`, or `logged`. Local auth state should require non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys before contributing to confirmed session status.
    - Session auth-state validation should treat both `zepto.com` and legacy `zeptonow.com` storage as Zepto platform session evidence.
    - Doctor checks should probe all runtime directories needed for auth state, browser profile data, logs, and diagnostics.
    - Doctor checks should report active or stale browser automation locks for the configured data directory.
