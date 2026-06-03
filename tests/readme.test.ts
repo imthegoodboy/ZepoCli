@@ -136,10 +136,12 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, final order text, support/help, invoice/receipt, refund/return/cancel, or rating/review order-action text, and cart navigation labels plus disabled state are revalidated after any scroll into view before clicking"
     );
+    expect(readme).toContain("inactive saved/unavailable item actions");
     expect(readme).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
+    expect(readme).toContain("skips inactive saved-for-later and unavailable item sections");
     expect(readme).toContain("not a fixed address-label list or service-city allow-list");
     expect(readme).toContain(
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'

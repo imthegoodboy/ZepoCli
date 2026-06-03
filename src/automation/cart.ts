@@ -18,9 +18,9 @@ export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, 
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
-  `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|clear cart)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
+  `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|currently unavailable|unavailable|out of stock|sold out|move to cart|move to bag|notify me|clear cart)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
 const NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE =
-  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
+  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|sponsored|ad|add more|saved for later|currently unavailable|unavailable items?|out of stock|sold out|move to cart|move to bag|notify me|notify when available|before you checkout|complete your cart|customers also bought|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 
 export async function openCart(page: Page): Promise<void> {
   await gotoZepto(page, "/cart");

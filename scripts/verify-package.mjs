@@ -247,8 +247,9 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
+    "skips inactive saved-for-later and unavailable item sections",
     "not a fixed address-label list or service-city allow-list",
-    "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, or order actions",
+    "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
     "including image alt/accessibility text",
@@ -777,6 +778,18 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
     isLikelyRemovableCartItemText("Pay with UPI Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
     "expected installed cart remove row parser to reject pay-with rows"
   );
+  for (const rowText of [
+    "Currently unavailable Potato Chips 52 g Rs 20 Remove",
+    "Out of stock Potato Chips 52 g Rs 20 Remove",
+    "Sold out Potato Chips 52 g Rs 20 Remove",
+    "Potato Chips 52 g Rs 20 Move to cart",
+    "Potato Chips 52 g Rs 20 Notify Me"
+  ]) {
+    assert(
+      isLikelyRemovableCartItemText(rowText) === false,
+      `expected installed cart remove row parser to reject inactive cart rows: ${rowText}`
+    );
+  }
   console.log("pass installed cart automation contract");
 }
 
