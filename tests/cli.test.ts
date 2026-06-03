@@ -55,6 +55,7 @@ describe("CLI command smokes", () => {
     expect(result.stdout).toContain("doctor [options]");
     expect(result.stdout).toContain("--json");
     expect(result.stdout).toContain("--no-input");
+    expect(result.stdout).toContain("default is background/headless");
     expect(result.stdout).toContain("checkout");
   }, CLI_TEST_TIMEOUT_MS);
 

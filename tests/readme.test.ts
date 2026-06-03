@@ -58,6 +58,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("`--browser-locale <locale>` and `--browser-timezone <timezone>`");
     expect(readme).toContain("do not add a custom user agent");
     expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
+    expect(readme).toContain("Installed-package commands run browser automation in background/headless mode by default");
+    expect(readme).toContain("human-only login, address-add, or checkout handoff is required");
+    expect(readme).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");
     expect(readme).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");

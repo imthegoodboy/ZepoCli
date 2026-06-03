@@ -11,6 +11,19 @@ import { closeRuntime, closeRuntimeBestEffort, createRuntime } from "../src/conf
 import { UserFacingError } from "../src/utils/errors.js";
 
 describe("global runtime options", () => {
+  it("defaults browser automation to background headless mode", () => {
+    const dataDir = mkdtempSync(join(tmpdir(), "zepo-runtime-headless-default-"));
+    const runtime = createRuntime({ dataDir });
+
+    try {
+      expect(runtime.options.headless).toBe(true);
+      expect(runtime.options.interactive).toBe(true);
+    } finally {
+      closeRuntimeBestEffort(runtime);
+      rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
   it("parses visible/debug/timeout flags", () => {
     expect(
       parseRuntimeOptions({

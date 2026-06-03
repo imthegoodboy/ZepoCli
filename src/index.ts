@@ -28,7 +28,7 @@ program
   .option("--debug", "write verbose automation logs")
   .option("--json", "print machine-readable JSON when supported")
   .option("--no-input", "fail instead of prompting for interactive input")
-  .option("--visible", "run supported browser automation in a visible browser")
+  .option("--visible", "show the browser for supported human-controlled automation; default is background/headless")
   .option("--browser-locale <locale>", "browser locale for Zepto automation", DEFAULT_BROWSER_LOCALE)
   .option("--browser-timezone <timezone>", "browser time zone for Zepto automation", DEFAULT_BROWSER_TIMEZONE)
   .option("--timeout <ms>", "browser automation timeout", String(DEFAULT_TIMEOUT_MS));

@@ -212,6 +212,9 @@ function verifyInstalledReadmeContract(prefixDir) {
     "npm ci --include=prod --include=dev",
     "npm run verify:dependencies",
     "declared runtime packages load and required dev-tool binaries are present",
+    "Installed-package commands run browser automation in background/headless mode by default",
+    "human-only login, address-add, or checkout handoff is required",
+    "Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`",
     "zepo login",
     "zepo checkout",
     "cartPrecondition: \"non_empty_cart_verified\"",
@@ -3966,6 +3969,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
           stdout.includes("--browser-timezone <timezone>"),
           "expected installed browser timezone option in help output"
         );
+        assert(stdout.includes("default is background/headless"), "expected installed visible option to document headless default");
         assert(stdout.includes("checkout"), "expected checkout command in help output");
       }
     },
