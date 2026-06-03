@@ -406,6 +406,7 @@ function isCommerceUiOrPromoLine(line: string): boolean {
   }
 
   return (
+    isCartOrCheckoutServiceLine(normalized) ||
     /^(checkout|payment methods?|payments?|upi|cards?|wallets?|net banking|cash on delivery|cod|free gift|zepto pass|membership|subscription|unlocked at checkout|unlock at checkout|gift unlocked|reward|rewards|cashback|offer zone|offers?|deals?|deals for you|buy more save more|save more|sale|sale zone|promo|promos?|voucher|coupons?)$/i.test(
       normalized
     ) ||
@@ -414,6 +415,15 @@ function isCommerceUiOrPromoLine(line: string): boolean {
       normalized
     ) ||
     isPaymentUiSurfaceText(normalized)
+  );
+}
+
+function isCartOrCheckoutServiceLine(line: string): boolean {
+  return (
+    /\b(clear cart|minimum (?:order|cart|basket) value|small cart fee|delivery partner tip|delivery instructions|add (?:delivery|cooking) instructions|order summary|bill summary|view bill|cancellation policy|refund policy|return policy)\b/i.test(
+      line
+    ) ||
+    /\b(delivery|handling|platform|convenience|surge|packing|packaging)\s+(?:fee|charge)\b/i.test(line)
   );
 }
 
@@ -609,8 +619,11 @@ function cartItemDetailWindow(lines: string[], index: number): string[] {
 }
 
 function isCartSummaryLine(line: string): boolean {
-  return /\b(subtotal|grand total|item total|to pay|payable|delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|bill total)\b/i.test(
-    line
+  return (
+    isCartOrCheckoutServiceLine(normalizeText(line)) ||
+    /\b(subtotal|grand total|item total|to pay|payable|delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|bill total)\b/i.test(
+      line
+    )
   );
 }
 

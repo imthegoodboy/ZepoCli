@@ -645,6 +645,26 @@ describe("Zepto page extraction helpers", () => {
     }
   });
 
+  it("does not parse cart service or checkout action rows as product cards", () => {
+    for (const text of [
+      "Clear Cart\n₹0",
+      "Minimum order value\n₹99",
+      "Small cart fee\n₹15",
+      "Delivery Partner Tip\n₹10",
+      "Handling fee\n₹5",
+      "Order Summary\n₹249",
+      "Bill Summary\n₹249",
+      "View Bill\n₹249",
+      "Delivery instructions\n₹0",
+      "Add cooking instructions\n₹0",
+      "Cancellation Policy\n₹0",
+      "Refund Policy\n₹0",
+      "Return Policy\n₹0"
+    ]) {
+      expect(parseProductCard({ text }, 0)).toBeUndefined();
+    }
+  });
+
   it("does not treat ordinary card or wallet product names as payment panels", () => {
     for (const product of [
       {
@@ -931,6 +951,32 @@ describe("Zepto page extraction helpers", () => {
           50 g
           ₹120
           Grand Total ₹120
+        `)
+      ).toEqual([]);
+    }
+  });
+
+  it("does not parse cart service or checkout action rows as active cart items", () => {
+    for (const row of [
+      "Clear Cart\n₹0",
+      "Minimum order value\n₹99",
+      "Small cart fee\n₹15",
+      "Delivery Partner Tip\n₹10",
+      "Handling fee\n₹5",
+      "Order Summary\n₹249",
+      "Bill Summary\n₹249",
+      "View Bill\n₹249",
+      "Delivery instructions\n₹0",
+      "Add cooking instructions\n₹0",
+      "Cancellation Policy\n₹0",
+      "Refund Policy\n₹0",
+      "Return Policy\n₹0"
+    ]) {
+      expect(
+        parseCartItemsFromText(`
+          Cart
+          ${row}
+          Grand Total ₹249
         `)
       ).toEqual([]);
     }

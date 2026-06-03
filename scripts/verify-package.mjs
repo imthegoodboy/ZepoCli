@@ -304,12 +304,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
-    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
+    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, fees, tips, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
     "not a fixed address-label list or service-city allow-list",
     "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, promotional/merchandising/payment/membership rows, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
-    "checkout/payment panels, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text",
+    "checkout/payment panels, cart/checkout service rows, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text",
     "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted.",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
@@ -1473,6 +1473,31 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
       `expected installed product parser to reject merchandising heading: ${heading}`
     );
   }
+  for (const text of [
+    "Clear Cart\n₹0",
+    "Minimum order value\n₹99",
+    "Small cart fee\n₹15",
+    "Delivery Partner Tip\n₹10",
+    "Handling fee\n₹5",
+    "Order Summary\n₹249",
+    "Bill Summary\n₹249",
+    "View Bill\n₹249",
+    "Delivery instructions\n₹0",
+    "Add cooking instructions\n₹0",
+    "Cancellation Policy\n₹0",
+    "Refund Policy\n₹0",
+    "Return Policy\n₹0"
+  ]) {
+    assert(
+      parseProductCard(
+        {
+          text
+        },
+        0
+      ) === undefined,
+      `expected installed product parser to reject cart service row: ${text.split("\n")[0]}`
+    );
+  }
   assert(
     parseCartItemsFromText(`
       Cart
@@ -1535,6 +1560,30 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
         Grand Total ₹120
       `).length === 0,
       `expected installed cart parser to reject merchandising heading: ${heading}`
+    );
+  }
+  for (const row of [
+    "Clear Cart\n₹0",
+    "Minimum order value\n₹99",
+    "Small cart fee\n₹15",
+    "Delivery Partner Tip\n₹10",
+    "Handling fee\n₹5",
+    "Order Summary\n₹249",
+    "Bill Summary\n₹249",
+    "View Bill\n₹249",
+    "Delivery instructions\n₹0",
+    "Add cooking instructions\n₹0",
+    "Cancellation Policy\n₹0",
+    "Refund Policy\n₹0",
+    "Return Policy\n₹0"
+  ]) {
+    assert(
+      parseCartItemsFromText(`
+        Cart
+        ${row}
+        Grand Total ₹249
+      `).length === 0,
+      `expected installed cart parser to reject cart service row: ${row.split("\n")[0]}`
     );
   }
   for (const unsafeText of [
