@@ -1576,6 +1576,28 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("keeps no-id terminal order statuses when the action label is only the status", () => {
+    expect(parseOrdersFromText("My Orders Refunded Total ₹25")).toEqual([
+      {
+        id: undefined,
+        status: "Refunded",
+        eta: undefined,
+        total: "₹25",
+        rawText: "My Orders Refunded Total ₹25"
+      }
+    ]);
+
+    expect(parseOrdersFromText("My Orders Cancelled Total ₹25")).toEqual([
+      {
+        id: undefined,
+        status: "Cancelled",
+        eta: undefined,
+        total: "₹25",
+        rawText: "My Orders Cancelled Total ₹25"
+      }
+    ]);
+  });
+
   it("does not parse bare order ids without readable order details", () => {
     expect(parseOrdersFromText("Order #ZEP1234")).toEqual([]);
   });

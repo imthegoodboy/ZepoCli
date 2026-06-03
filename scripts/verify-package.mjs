@@ -1176,7 +1176,12 @@ async function verifyInstalledOrderExtractionContract(prefixDir) {
     "automation",
     "extract.js"
   );
+  const extractAutomationSource = readFileSync(extractAutomationModulePath, "utf8");
   const { parseOrdersFromText } = await import(pathToFileURL(extractAutomationModulePath).href);
+  assert(
+    extractAutomationSource.includes("isOrderActionLabelText"),
+    "expected installed order parser to use centralized order-action label matching"
+  );
 
   assertDeepEqual(
     parseOrdersFromText("Order #ZEP9999 Out for delivery Delivery in 6 mins Total ₹320"),

@@ -10,7 +10,7 @@ import {
   stripImagePrefix
 } from "../utils/format.js";
 import { FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE } from "./final-action-labels.js";
-import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
+import { ORDER_ACTION_LABEL_PATTERN_SOURCE, isOrderActionLabelText } from "./order-action-labels.js";
 import { isPaymentUiSurfaceText } from "./payment-labels.js";
 
 const ORDER_ETA_TRAILING_ACTION_PATTERN = new RegExp(
@@ -680,7 +680,7 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
     return false;
   }
 
-  if (!order.id && hasNoIdOrderActionOnlyContext(order.rawText) && !hasNoIdTrackingContext(order.rawText)) {
+  if (!order.id && hasNoIdOrderActionOnlyContext(order) && !hasNoIdTrackingContext(order.rawText)) {
     return false;
   }
 
@@ -710,7 +710,7 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
 function hasExplicitOrderStatusPhrase(text: string): boolean {
   for (const match of text.matchAll(/\border\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/gi)) {
     const prefix = normalizeText(text.slice(Math.max(0, (match.index ?? 0) - 32), match.index ?? 0));
-    if (/\b(rate your|rate|rating|review|write review|review your)\s*$/i.test(prefix)) {
+    if (isOrderActionLabelText(`${prefix} order`)) {
       continue;
     }
 
@@ -720,10 +720,28 @@ function hasExplicitOrderStatusPhrase(text: string): boolean {
   return false;
 }
 
-function hasNoIdOrderActionOnlyContext(text: string): boolean {
-  return /\b(customer support|help(?:\s+(?:centre|center|desk))?|support(?:\s+(?:centre|center|ticket|desk))?|contact support|invoice|receipt|refunds?|returns?(?:\s+(?:order|request))?|cancel(?:\s+(?:order|request))?|cancellation policy|refund policy|rate(?:\s*(?:&|and)\s*review|\s+(?:order|your order))?|rating|(?:write\s+)?review\s+(?:order|your order)|write\s+review|order summary|bill summary|view bill)\b/i.test(
-    text
-  );
+function hasNoIdOrderActionOnlyContext(order: OrderSnapshot): boolean {
+  if (hasNoIdOrderSummaryContext(order.rawText)) {
+    return true;
+  }
+
+  return isOrderActionLabelText(removeOrderStatusText(order.rawText, order.status));
+}
+
+function hasNoIdOrderSummaryContext(text: string): boolean {
+  return /\b(order summary|bill summary|view bill)\b/i.test(text);
+}
+
+function removeOrderStatusText(text: string, status: string | undefined): string {
+  if (!status) {
+    return text;
+  }
+
+  return text.replace(new RegExp(`\\b${escapeRegExp(status)}\\b`, "gi"), " ");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function hasNoIdTrackingContext(text: string): boolean {

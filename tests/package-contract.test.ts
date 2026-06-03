@@ -391,6 +391,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed order parser not to report items total as final order total");
     expect(verifier).toContain("expected installed order parser not to report sub total as final order total");
     expect(verifier).toContain("expected installed order parser not to skip through sub total to a price");
+    expect(verifier).toContain("expected installed order parser to use centralized order-action label matching");
     expect(verifier).toContain("expected installed order parser to reject no-id action row");
     expect(verifier).toContain("expected installed order parser to keep id-bearing order rows with action labels");
     expect(verifier).toContain("expected installed order parser to keep tracking-context order rows with action labels");
