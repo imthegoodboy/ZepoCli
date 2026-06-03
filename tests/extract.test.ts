@@ -587,6 +587,35 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("does not parse checkout, payment, or promo panels as product cards", () => {
+    expect(
+      parseProductCard(
+        {
+          text: "Checkout\n₹249\nPayment Methods\nUPI"
+        },
+        0
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseProductCard(
+        {
+          text: "Free Gift\n1 piece\n₹0\nUnlocked at checkout"
+        },
+        0
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseProductCard(
+        {
+          text: "Zepto Pass\n1 month\n₹99"
+        },
+        0
+      )
+    ).toBeUndefined();
+  });
+
   it("parses cart-like text without creating empty items", () => {
     const items = parseCartItemsFromText(`
       Cart
@@ -781,6 +810,40 @@ describe("Zepto page extraction helpers", () => {
     `);
 
     expect(items).toEqual([]);
+  });
+
+  it("does not parse checkout, promo, or membership rows as active cart items", () => {
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Free Gift
+        1 piece
+        ₹0
+        Unlocked at checkout
+        Grand Total ₹120
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Zepto Pass
+        1 month
+        ₹99
+        Grand Total ₹120
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Checkout
+        Payment Methods
+        UPI
+        Pay ₹249
+        Grand Total ₹249
+      `)
+    ).toEqual([]);
   });
 
   it("does not treat discount-only cart badges as item prices", () => {

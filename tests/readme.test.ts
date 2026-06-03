@@ -102,7 +102,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("the CLI tries the direct search URL before returning only query-matched homepage fallback cards");
     expect(readme).toContain("Homepage fallback never overrides explicit search-page no-results");
     expect(readme).toContain("Zepto exposes as product-card control labels");
-    expect(readme).toContain("including image alt/accessibility text");
+    expect(readme).toContain("checkout/payment panels, promo gift panels, membership rows, and image alt/accessibility text");
     expect(readme).toContain("not explicit product-add labels");
     expect(readme).toContain("product-specific accessible labels such as `Add <product> to cart`");
     expect(readme).toContain("Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.");
@@ -116,6 +116,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("explicit add/enter delivery address or location labels");
     expect(readme).toContain("Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.");
     expect(readme).toContain("Saved-address labels are derived from Zepto's visible saved-address row text");
+    expect(readme).toContain("checkout/payment panels, promo gift rows, and membership rows instead of counting those rows as active cart items");
     expect(readme).toContain("The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view");
     expect(readme).toContain("rather than a hardcoded service-city allow-list");
     expect(readme).toContain(
@@ -142,7 +143,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
-    expect(readme).toContain("skips inactive saved-for-later and unavailable item sections");
+    expect(readme).toContain("skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, and membership rows");
     expect(readme).toContain("not a fixed address-label list or service-city allow-list");
     expect(readme).toContain(
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'

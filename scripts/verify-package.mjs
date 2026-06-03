@@ -247,12 +247,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
-    "skips inactive saved-for-later and unavailable item sections",
+    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, promo gift rows, and membership rows",
     "not a fixed address-label list or service-city allow-list",
     "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
-    "including image alt/accessibility text",
+    "checkout/payment panels, promo gift panels, membership rows, and image alt/accessibility text",
     "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted.",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
@@ -1202,6 +1202,65 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
       0
     ) === undefined,
     "expected installed product parser not to invent names from product-card controls"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "Checkout\n₹249\nPayment Methods\nUPI"
+      },
+      0
+    ) === undefined,
+    "expected installed product parser to reject checkout payment panels"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "Free Gift\n1 piece\n₹0\nUnlocked at checkout"
+      },
+      0
+    ) === undefined,
+    "expected installed product parser to reject promo gift panels"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "Zepto Pass\n1 month\n₹99"
+      },
+      0
+    ) === undefined,
+    "expected installed product parser to reject membership panels"
+  );
+  assert(
+    parseCartItemsFromText(`
+      Cart
+      Free Gift
+      1 piece
+      ₹0
+      Unlocked at checkout
+      Grand Total ₹120
+    `).length === 0,
+    "expected installed cart parser to reject promo gift rows"
+  );
+  assert(
+    parseCartItemsFromText(`
+      Cart
+      Zepto Pass
+      1 month
+      ₹99
+      Grand Total ₹120
+    `).length === 0,
+    "expected installed cart parser to reject membership rows"
+  );
+  assert(
+    parseCartItemsFromText(`
+      Cart
+      Checkout
+      Payment Methods
+      UPI
+      Pay ₹249
+      Grand Total ₹249
+    `).length === 0,
+    "expected installed cart parser to reject checkout payment panels"
   );
   for (const unsafeText of [
     "Checkout",

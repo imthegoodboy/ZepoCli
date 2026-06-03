@@ -11,6 +11,7 @@ import {
 } from "../utils/format.js";
 import { FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE } from "./final-action-labels.js";
 import { ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
+import { PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 const ORDER_ETA_TRAILING_ACTION_PATTERN = new RegExp(
   `(?:\\b(reorder|order again|repeat order|track order|order summary|payment|paid)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}).*$`,
@@ -373,6 +374,7 @@ function isGenericImageAlt(value: string): boolean {
 
 function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): boolean {
   return (
+    isCommerceUiOrPromoLine(line) ||
     isProductCardControlLabel(line) ||
     isProductAddControlLine(line) ||
     ignoredLines.has(normalizedIgnoredProductLine(line)) ||
@@ -394,6 +396,24 @@ function isProductAddControlLine(line: string): boolean {
 function isProductCardControlLabel(line: string): boolean {
   return /^(?:notify me|notify when available|sold out|temporarily out of stock|currently unavailable|out of stock|view similar|see similar products|select options|choose product options|add item|add more)$/i.test(
     normalizeText(line)
+  );
+}
+
+function isCommerceUiOrPromoLine(line: string): boolean {
+  const normalized = normalizeText(line);
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    /^(checkout|payment methods?|payments?|upi|cards?|wallets?|net banking|cash on delivery|cod|free gift|zepto pass|membership|subscription|unlocked at checkout|unlock at checkout|gift unlocked|reward|rewards|cashback)$/i.test(
+      normalized
+    ) ||
+    /^\d+\s*(?:days?|months?|years?)$/i.test(normalized) ||
+    /\b(checkout|payment methods?|place order|confirm order|pay now|to pay|zepto pass|free gift|unlocked at checkout|unlock at checkout)\b/i.test(
+      normalized
+    ) ||
+    new RegExp(PAYMENT_METHOD_LABEL_PATTERN_SOURCE, "i").test(normalized)
   );
 }
 
@@ -431,6 +451,7 @@ function isLikelyCartProductName(line: string): boolean {
   }
 
   if (
+    isCommerceUiOrPromoLine(line) ||
     /^(cart|checkout|view bill|apply coupon|add|add to cart|added|add more|out of stock|saved|save for later|address|remove|remove item|delete|delete item|decrease|decrease quantity|increase|increase quantity)$/i.test(
       line
     ) ||
