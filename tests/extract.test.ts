@@ -659,7 +659,17 @@ describe("Zepto page extraction helpers", () => {
       "Add cooking instructions\n₹0",
       "Cancellation Policy\n₹0",
       "Refund Policy\n₹0",
-      "Return Policy\n₹0"
+      "Return Policy\n₹0",
+      "Delivery Charges\n₹15",
+      "Handling Charges\n₹5",
+      "Platform Charges\n₹4",
+      "Packaging Charges\n₹7",
+      "Convenience Fees\n₹9",
+      "Taxes\n₹12",
+      "GST\n₹8",
+      "Taxes and Charges\n₹20",
+      "Service Charge\n₹10",
+      "Service Charges\n₹10"
     ]) {
       expect(parseProductCard({ text }, 0)).toBeUndefined();
     }
@@ -970,7 +980,17 @@ describe("Zepto page extraction helpers", () => {
       "Add cooking instructions\n₹0",
       "Cancellation Policy\n₹0",
       "Refund Policy\n₹0",
-      "Return Policy\n₹0"
+      "Return Policy\n₹0",
+      "Delivery Charges\n₹15",
+      "Handling Charges\n₹5",
+      "Platform Charges\n₹4",
+      "Packaging Charges\n₹7",
+      "Convenience Fees\n₹9",
+      "Taxes\n₹12",
+      "GST\n₹8",
+      "Taxes and Charges\n₹20",
+      "Service Charge\n₹10",
+      "Service Charges\n₹10"
     ]) {
       expect(
         parseCartItemsFromText(`
