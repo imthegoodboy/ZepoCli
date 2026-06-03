@@ -1085,6 +1085,28 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     cartItems.length === 1 && cartItems[0]?.name === "Protein Bar",
     "expected installed cart parser to ignore custom-label delivery address blocks"
   );
+  const cartItemsWithInactiveSections = parseCartItemsFromText(`
+    Cart
+    Amul Taaza Toned Milk
+    1 pack (500 ml)
+    ₹32
+    Qty 1
+    Saved for later
+    Protein Bar
+    50 g
+    ₹120
+    Move to cart
+    Currently unavailable
+    Tender Coconut
+    1 piece
+    ₹65
+    Notify Me
+    Grand Total ₹32
+  `);
+  assert(
+    cartItemsWithInactiveSections.length === 1 && cartItemsWithInactiveSections[0]?.name === "Amul Taaza Toned Milk",
+    "expected installed cart parser to ignore inactive saved/unavailable cart sections"
+  );
   const productFromControlAlt = parseProductCard(
     {
       imageAlt: "Image: Notify Me",

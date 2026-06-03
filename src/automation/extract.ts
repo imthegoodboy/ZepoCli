@@ -16,6 +16,11 @@ const ORDER_ETA_TRAILING_ACTION_PATTERN = new RegExp(
   `(?:\\b(reorder|order again|repeat order|track order|order summary|payment|paid)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}).*$`,
   "i"
 );
+const INACTIVE_CART_SECTION_COUNT_SUFFIX = String.raw`(?:\s*[\(\[]?\d+\s*items?[\)\]]?|\s*[\(\[]\d+[\)\]])?`;
+const INACTIVE_CART_SECTION_HEADER_PATTERN = new RegExp(
+  `^(?:saved\\s+(?:items?|for\\s+later)|save\\s+for\\s+later|items?\\s+saved\\s+for\\s+later|unavailable(?:\\s+items?)?|currently\\s+unavailable|out\\s+of\\s+stock(?:\\s+items?)?|sold\\s+out(?:\\s+items?)?|not\\s+available(?:\\s+items?)?)${INACTIVE_CART_SECTION_COUNT_SUFFIX}$`,
+  "i"
+);
 
 export interface RawProductCard {
   automationId?: number;
@@ -117,7 +122,7 @@ export function parseCartItemsFromText(rawText: string): CartItem[] {
     }
 
     const window = cartItemDetailWindow(lines, index);
-    if (isCartRecommendationContextLine(lines, index) || isCartSuggestedProductWindow(window)) {
+    if (isCartNonActiveContextLine(lines, index) || isCartSuggestedProductWindow(window)) {
       continue;
     }
 
@@ -430,7 +435,8 @@ function isLikelyCartProductName(line: string): boolean {
       line
     ) ||
     isCartSummaryLine(line) ||
-    isRecommendationHeaderLine(line)
+    isRecommendationHeaderLine(line) ||
+    isInactiveCartSectionHeaderLine(line)
   ) {
     return false;
   }
@@ -491,7 +497,7 @@ function isCartAddressContextLine(lines: string[], index: number): boolean {
   return false;
 }
 
-function isCartRecommendationContextLine(lines: string[], index: number): boolean {
+function isCartNonActiveContextLine(lines: string[], index: number): boolean {
   const lookbackLimit = Math.max(0, index - 8);
   for (let candidateIndex = index - 1; candidateIndex >= lookbackLimit; candidateIndex -= 1) {
     const candidate = normalizeText(lines[candidateIndex] ?? "");
@@ -503,7 +509,7 @@ function isCartRecommendationContextLine(lines: string[], index: number): boolea
       return false;
     }
 
-    if (isRecommendationHeaderLine(candidate)) {
+    if (isRecommendationHeaderLine(candidate) || isInactiveCartSectionHeaderLine(candidate)) {
       return true;
     }
   }
@@ -512,13 +518,21 @@ function isCartRecommendationContextLine(lines: string[], index: number): boolea
 }
 
 function isCartSuggestedProductWindow(lines: string[]): boolean {
-  return lines.some((line) => /^(add|add to cart|added|out of stock)$/i.test(normalizeText(line)));
+  return lines.some((line) =>
+    /^(add|add to cart|added|out of stock|move to cart|move to bag|notify me|notify when available)$/i.test(
+      normalizeText(line)
+    )
+  );
 }
 
 function isRecommendationHeaderLine(line: string): boolean {
   return /\b(you may also like|similar products|recommended|frequently bought|popular picks|sponsored|before you checkout|complete your cart|customers also bought|add more items?)\b/i.test(
     line
   );
+}
+
+function isInactiveCartSectionHeaderLine(line: string): boolean {
+  return INACTIVE_CART_SECTION_HEADER_PATTERN.test(normalizeText(line));
 }
 
 function isCartAddressHeaderLine(line: string): boolean {

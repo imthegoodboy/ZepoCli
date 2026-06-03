@@ -924,6 +924,56 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not parse saved-for-later rows as active cart items", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+      Qty 1
+      Saved for later
+      Protein Bar
+      50 g
+      ₹120
+      Move to cart
+      Grand Total ₹32
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "1"
+      }
+    ]);
+  });
+
+  it("does not parse unavailable inactive cart rows as active cart items", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Amul Taaza Toned Milk
+      1 pack (500 ml)
+      ₹32
+      Qty 1
+      Currently unavailable
+      Tender Coconut
+      1 piece
+      ₹65
+      Notify Me
+      Grand Total ₹32
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "1"
+      }
+    ]);
+  });
+
   it("keeps product item details before bill summary rows", () => {
     const items = parseCartItemsFromText(`
       Cart

@@ -399,6 +399,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed add-address label to be accepted: ${label}");
     expect(verifier).toContain("expected installed product parser to ignore product-card control image alt text");
     expect(verifier).toContain("expected installed product parser not to invent names from product-card controls");
+    expect(verifier).toContain("expected installed cart parser to ignore inactive saved/unavailable cart sections");
     expect(verifier).toContain("Use Current Location");
     expect(verifier).toContain("Change to current location");
     expect(verifier).toContain("Confirm Address");
