@@ -257,7 +257,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
     "quantity-only add text such as `Add 2 items to cart`",
-    "`Item total` and `Subtotal` are not reported as final cart totals",
+    "`Item total`, `Items total`, `Subtotal`, and `Sub total` are not reported as final cart/order totals",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.",
     "cart navigation labels plus disabled state are revalidated after any scroll into view before clicking",
@@ -785,8 +785,21 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
     "expected installed cart total parser not to report item total as final cart total"
   );
   assert(
+    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nItems total ₹32").total === undefined,
+    "expected installed cart total parser not to report items total as final cart total"
+  );
+  assert(
     requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSubtotal ₹32").total === undefined,
     "expected installed cart total parser not to report subtotal as final cart total"
+  );
+  assert(
+    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSub total ₹32").total === undefined,
+    "expected installed cart total parser not to report sub total as final cart total"
+  );
+  assert(
+    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nTotal\nSub total\n₹32").total ===
+      undefined,
+    "expected installed cart total parser not to skip through sub total to a price"
   );
   for (const rowText of [
     "Currently unavailable Potato Chips 52 g Rs 20 Remove",
@@ -984,6 +997,45 @@ async function verifyInstalledOrderExtractionContract(prefixDir) {
       }
     ],
     "expected installed order parser to trim final action text from ETA"
+  );
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP1234 Delivered Items total ₹32"),
+    [
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: undefined,
+        rawText: "Order #ZEP1234 Delivered Items total ₹32"
+      }
+    ],
+    "expected installed order parser not to report items total as final order total"
+  );
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP1234 Delivered Sub total ₹32"),
+    [
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: undefined,
+        rawText: "Order #ZEP1234 Delivered Sub total ₹32"
+      }
+    ],
+    "expected installed order parser not to report sub total as final order total"
+  );
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP1234 Delivered Total\nSub total\n₹32"),
+    [
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: undefined,
+        rawText: "Order #ZEP1234 Delivered Total Sub total ₹32"
+      }
+    ],
+    "expected installed order parser not to skip through sub total to a price"
   );
   console.log("pass installed order extraction contract");
 }

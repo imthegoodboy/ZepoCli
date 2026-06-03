@@ -355,7 +355,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed cart remove row parser to reject pay-with rows");
     expect(verifier).toContain("expected installed cart remove row parser to reject inactive cart rows");
     expect(verifier).toContain("expected installed cart total parser not to report item total as final cart total");
+    expect(verifier).toContain("expected installed cart total parser not to report items total as final cart total");
     expect(verifier).toContain("expected installed cart total parser not to report subtotal as final cart total");
+    expect(verifier).toContain("expected installed cart total parser not to report sub total as final cart total");
+    expect(verifier).toContain("expected installed cart total parser not to skip through sub total to a price");
     expect(verifier).toContain("verifyInstalledProductAutomationContract");
     expect(verifier).toContain("expected installed product-specific ADD label to be accepted");
     expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");
@@ -383,6 +386,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed order parser not to borrow delivery-speed ETA from delivered orders");
     expect(verifier).toContain("expected installed order parser to reject eta-only delivery-speed copy");
     expect(verifier).toContain("expected installed order parser to trim final action text from ETA");
+    expect(verifier).toContain("expected installed order parser not to report items total as final order total");
+    expect(verifier).toContain("expected installed order parser not to report sub total as final order total");
+    expect(verifier).toContain("expected installed order parser not to skip through sub total to a price");
     expect(verifier).toContain("verifyInstalledOrderAutomationContract");
     expect(verifier).toContain("expected installed order navigation label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed account-menu label to be unsafe: ${label}");

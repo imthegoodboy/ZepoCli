@@ -292,7 +292,7 @@ function findOrderTotalLabelEndIndex(line: string): number | undefined {
     }
 
     const before = line.slice(Math.max(0, match.index - 16), match.index);
-    if (/\b(item|subtotal)\s*$/i.test(before)) {
+    if (/\b(item|items|sub|subtotal)\s*$/i.test(before)) {
       continue;
     }
 
@@ -308,7 +308,7 @@ function findOrderTotalLabelEndIndex(line: string): number | undefined {
 }
 
 function isOrderTotalStopLine(line: string): boolean {
-  return /\b(order|track order|status|eta|confirmed|packed|out for delivery|on the way|arriving|delivered|cancelled|refunded|item|delivery|handling|platform|fee|charge|discount|coupon|tax|address|reorder|order again)\b/i.test(
+  return /\b(order|track order|status|eta|confirmed|packed|out for delivery|on the way|arriving|delivered|cancelled|refunded|items?\s+total|sub\s+total|subtotal|item|delivery|handling|platform|fee|charge|discount|coupon|tax|address|reorder|order again)\b/i.test(
     line
   );
 }

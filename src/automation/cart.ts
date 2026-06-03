@@ -683,7 +683,7 @@ function isCartTotalLabelBlockedByPrefix(words: string[], labelStartIndex: numbe
   const previousWord = normalizeTotalLabel(words[labelStartIndex - 1] ?? "").toLowerCase();
   const currentWord = normalizeTotalLabel(words[labelStartIndex] ?? "").toLowerCase();
 
-  return currentWord === "total" && (previousWord === "item" || previousWord === "subtotal");
+  return currentWord === "total" && ["item", "items", "sub", "subtotal"].includes(previousWord);
 }
 
 function isPrimaryCartTotalLabel(label: string): boolean {
@@ -703,7 +703,7 @@ function normalizeTotalLabel(label: string): string {
 }
 
 function isCartTotalStopLine(line: string): boolean {
-  return /\b(delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|address|cart|qty|quantity|remove|delete|item total|subtotal|to pay|grand total|payable|bill total)\b/i.test(
+  return /\b(delivery|handling|platform|convenience|surge|small cart|fee|charge|coupon|discount|saving|wallet|tip|donation|tax|packing|packaging|address|cart|qty|quantity|remove|delete|items? total|sub total|subtotal|to pay|grand total|payable|bill total)\b/i.test(
     line
   );
 }
