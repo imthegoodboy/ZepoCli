@@ -944,6 +944,56 @@ describe("CLI command smokes", () => {
     }
   }, CLI_TEST_TIMEOUT_MS * 2);
 
+  it("fails before browser work when human handoffs are not explicitly visible", async () => {
+    for (const testCase of [
+      {
+        setup: () => undefined,
+        args: ["login", "--json"],
+        message: "Zepto login requires a visible browser.",
+        hint: "zepo --visible login"
+      },
+      {
+        setup: markConfirmedSession,
+        args: ["address", "add", "--json"],
+        message: "Zepto address add requires a visible browser.",
+        hint: "zepo --visible address add"
+      },
+      {
+        setup: markConfirmedSession,
+        args: ["checkout", "--json"],
+        message: "Zepto checkout requires a visible browser.",
+        hint: "zepo --visible checkout"
+      }
+    ]) {
+      dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-visible-required-"));
+      testCase.setup(dataDir);
+      const result = await runCli(["--data-dir", dataDir, ...testCase.args]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(existsSync(join(dataDir, "browser.lock"))).toBe(false);
+      const payload = JSON.parse(result.stderr) as {
+        ok: boolean;
+        error: {
+          type: string;
+          code?: string;
+          message: string;
+          hint?: string;
+          exitCode: number;
+        };
+      };
+      expect(payload.ok).toBe(false);
+      expect(payload.error.type).toBe("user_error");
+      expect(payload.error.code).toBe("visible_browser_required");
+      expect(payload.error.message).toBe(testCase.message);
+      expect(payload.error.hint).toContain(testCase.hint);
+      expect(payload.error.exitCode).toBe(1);
+
+      rmSync(dataDir, { recursive: true, force: true });
+      dataDir = undefined;
+    }
+  }, CLI_TEST_TIMEOUT_MS * 2);
+
   it("fails before browser work when no-input is combined with choose", async () => {
     dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-no-input-choose-"));
     const result = await runCli(["--data-dir", dataDir, "--no-input", "add", "milk", "--choose", "--json"]);
@@ -1088,6 +1138,21 @@ function setRuntimeMeta(dataDir: string, key: string, value: string): void {
   const sqlite = new SqliteStore(resolveAppPaths(dataDir).dbPath);
   try {
     sqlite.setMeta(key, value);
+  } finally {
+    sqlite.close();
+  }
+}
+
+function markConfirmedSession(dataDir: string): void {
+  const paths = resolveAppPaths(dataDir);
+  mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+  writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
+  mkdirSync(join(dataDir, "storage"), { recursive: true });
+  writeFileSync(paths.authStatePath, AUTH_STATE);
+
+  const sqlite = new SqliteStore(paths.dbPath);
+  try {
+    sqlite.markSession(true, paths.authStatePath);
   } finally {
     sqlite.close();
   }

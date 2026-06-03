@@ -1,6 +1,6 @@
 # ZepoCli
 
-`zepo` is a terminal-first CLI for user-directed Zepto workflows. It uses Playwright to operate the Zepto website with the user's own browser session. Installed-package commands run browser automation in background/headless mode by default; the browser is shown only when `--visible` is explicitly used or when a human-only login, address-add, or checkout handoff is required.
+`zepo` is a terminal-first CLI for user-directed Zepto workflows. It uses Playwright to operate the Zepto website with the user's own browser session. Installed-package commands run browser automation in background/headless mode by default and never show the browser unless `--visible` is explicitly used. Human-only login, address-add, and checkout handoffs fail with `visible_browser_required` in background mode instead of opening a surprise browser window.
 
 ## Install
 
@@ -27,8 +27,8 @@ zepo doctor
 ## Commands
 
 ```bash
-zepo login
-zepo login --phone 9876543210
+zepo --visible login
+zepo --visible login --phone 9876543210
 zepo logout
 zepo status
 zepo status --live
@@ -42,8 +42,8 @@ zepo remove chips
 zepo clear
 zepo address list
 zepo address use home
-zepo address add
-zepo checkout
+zepo --visible address add
+zepo --visible checkout
 zepo track
 zepo history
 zepo reorder last
@@ -54,7 +54,7 @@ Most commands that return workflow state or completion status support `--json` f
 ```bash
 zepo --json status
 zepo status --live --json
-zepo login --json
+zepo --visible login --json
 zepo logout --json
 zepo search milk --json
 zepo add "Amul Milk 500ml" --json
@@ -64,7 +64,7 @@ zepo remove chips --json
 zepo clear --json
 zepo address list --json
 zepo address use home --json
-zepo checkout --json
+zepo --visible checkout --json
 zepo track --json
 zepo history --json
 zepo reorder last --json
@@ -93,7 +93,7 @@ Use a dedicated data directory when an agent or script owns the workflow:
 
 ```bash
 zepo --data-dir ./.zepo-agent doctor
-zepo --data-dir ./.zepo-agent login
+zepo --data-dir ./.zepo-agent --visible login
 zepo --data-dir ./.zepo-agent status --live --json
 ```
 
@@ -103,11 +103,11 @@ Then run the explicit user workflow:
 zepo --data-dir ./.zepo-agent search milk --json
 zepo --data-dir ./.zepo-agent add "Amul Milk 500ml" --json
 zepo --data-dir ./.zepo-agent cart --json
-zepo --data-dir ./.zepo-agent checkout --json
+zepo --data-dir ./.zepo-agent --visible checkout --json
 zepo --data-dir ./.zepo-agent track --json
 ```
 
-`checkout` opens a visible Zepto browser page and returns only after the user presses Enter in the terminal. Complete payment in Zepto; do not treat the CLI handoff as a paid or placed order.
+`checkout` requires `--visible`, opens a visible Zepto browser page, and returns only after the user presses Enter in the terminal. Complete payment in Zepto; do not treat the CLI handoff as a paid or placed order.
 
 `zepo search --limit` accepts integers from 1 to 50. Invalid limits fail before browser automation starts.
 `--timeout <ms>` accepts decimal integer milliseconds from 1000 to 300000. Invalid timeout values fail before runtime or browser automation starts and use stable `invalid_input` JSON issues for agents.
@@ -116,15 +116,15 @@ zepo --data-dir ./.zepo-agent track --json
 ## Agent Runbook
 
 1. Run `zepo status --json` or `zepo doctor --json` before account workflows.
-2. If `confirmedSession` is false, run `zepo login` in a human-controlled terminal/browser.
-3. Check `browserAutomationMode.current`; normal package runs should report `background_headless`, while `visible_human_controlled` means `--visible` or a human handoff was requested.
+2. If `confirmedSession` is false, ask a human to run `zepo --visible login` in a human-controlled terminal/browser.
+3. Check `browserAutomationMode.current`; normal package runs should report `background_headless`, while `visible_human_controlled` means `--visible` was requested.
 4. If `browserAutomation.ready` is false, wait for `browserAutomation.retryAfterMs`, wait for the active browser lock to clear, or rerun the next browser command with `--visible` when a human can complete Zepto-controlled verification.
 5. Use `--no-input` only for unattended checks that must fail instead of prompting.
 6. Do not parallelize multiple data directories to bypass pacing or throttle signals.
 7. Treat every non-zero exit as failure, even when stderr contains structured JSON.
-8. After `zepo checkout --json`, inspect `cartPrecondition`, `paymentStatus`, `orderPlacement`, and then run `zepo track --json` only after Zepto-side payment is completed.
+8. After `zepo --visible checkout --json`, inspect `cartPrecondition`, `paymentStatus`, `orderPlacement`, and then run `zepo track --json` only after Zepto-side payment is completed.
 
-JSON failures use a stable shape on stderr: `{ ok: false, error: { type, code, message, hint, exitCode, retryAfterMs } }`. Every JSON failure includes `error.code`; parser/validation failures use `error.code: "invalid_input"` and unexpected failures use `error.code: "unexpected_error"`. Agents should branch on `error.code` instead of parsing `message`. Important codes include `no_confirmed_session`, `interactive_input_required`, `invalid_input`, `runtime_setup_failed`, `headless_browser_throttle`, `zepto_access_cooldown`, `zepto_access_challenge`, `zepto_access_protection`, `delivery_location_required`, `cart_unreadable`, `checkout_handoff_unverified`, `orders_unreadable`, `zepto_login_required`, and `unexpected_error`.
+JSON failures use a stable shape on stderr: `{ ok: false, error: { type, code, message, hint, exitCode, retryAfterMs } }`. Every JSON failure includes `error.code`; parser/validation failures use `error.code: "invalid_input"` and unexpected failures use `error.code: "unexpected_error"`. Agents should branch on `error.code` instead of parsing `message`. Important codes include `no_confirmed_session`, `visible_browser_required`, `interactive_input_required`, `invalid_input`, `runtime_setup_failed`, `headless_browser_throttle`, `zepto_access_cooldown`, `zepto_access_challenge`, `zepto_access_protection`, `delivery_location_required`, `cart_unreadable`, `checkout_handoff_unverified`, `orders_unreadable`, `zepto_login_required`, and `unexpected_error`.
 
 ## How It Works
 
@@ -134,9 +134,9 @@ The CLI layers are deliberately simple:
 CLI commands -> services -> Playwright automation -> Zepto website
 ```
 
-Login opens Zepto in a visible browser and stores the browser state locally only after the flow is completed or explicitly confirmed. Search, cart, address, order, and checkout commands reuse that state. Search uses visible, enabled, editable search inputs or explicit search controls and may fall back to real product cards visible on Zepto's public homepage when Zepto's search page is empty before a location is selected. If homepage search leaves ordinary homepage product cards on screen, the CLI tries the direct search URL before returning only query-matched homepage fallback cards. Homepage fallback never overrides explicit search-page no-results, delivery-location-required, or access-protection states. Search input discovery can use placeholder, title, description, and referenced accessible labels, but rejects mixed labels that point at address, phone/OTP, cart, payment-method/payment, coupon, or order actions. Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text. Search, account/login, cart-navigation, order-history, account-menu, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation, result-list, cart, address, checkout, payment-method/payment, final-order, support, invoice/receipt, refund/return/cancel, or rating/review action. Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking. Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces. Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels. Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking. Checkout never processes payment details; it first verifies Zepto exposes a readable non-empty cart, then verifies Zepto exposes checkout/payment handoff UI, and leaves payment and order placement inside the visible Zepto browser. Automation must not click `Place Order`, `Pay Now`, `Confirm Order`, or equivalent order-placement controls.
+Login requires `--visible`, opens Zepto in a visible browser, and stores the browser state locally only after the flow is completed or explicitly confirmed. Search, cart, address, order, and checkout commands reuse that state. Search uses visible, enabled, editable search inputs or explicit search controls and may fall back to real product cards visible on Zepto's public homepage when Zepto's search page is empty before a location is selected. If homepage search leaves ordinary homepage product cards on screen, the CLI tries the direct search URL before returning only query-matched homepage fallback cards. Homepage fallback never overrides explicit search-page no-results, delivery-location-required, or access-protection states. Search input discovery can use placeholder, title, description, and referenced accessible labels, but rejects mixed labels that point at address, phone/OTP, cart, payment-method/payment, coupon, or order actions. Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text. Search, account/login, cart-navigation, order-history, account-menu, and reorder controls are rejected when any visible or accessible label points at an unrelated navigation, result-list, cart, address, checkout, payment-method/payment, final-order, support, invoice/receipt, refund/return/cancel, or rating/review action. Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking. Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces. Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels. Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking. Checkout never processes payment details; it first verifies Zepto exposes a readable non-empty cart, then verifies Zepto exposes checkout/payment handoff UI, and leaves payment and order placement inside the visible Zepto browser only after `--visible` is explicitly provided. Automation must not click `Place Order`, `Pay Now`, `Confirm Order`, or equivalent order-placement controls.
 Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, support/help, invoice/receipt, refund/return/cancel, rating/review, `checkout and pay`, or amount-bearing pay text, even when another label looks like a safe checkout handoff. Those labels and disabled state are revalidated after any scroll into view before clicking. Checkout handoff verification requires explicit payment-selection or final checkout-page labels; payment method names or UPI promo copy on an ordinary cart page are not proof of handoff.
-When an existing confirmed session is present, `zepo login` snapshots the saved auth state and persistent browser profile before re-login. If the new login attempt fails or cannot be confirmed, the previous session data is restored.
+When an existing confirmed session is present, `zepo --visible login` snapshots the saved auth state and persistent browser profile before re-login. If the new login attempt fails or cannot be confirmed, the previous session data is restored.
 
 Check local readiness before account-dependent commands:
 
@@ -151,7 +151,7 @@ zepo doctor --json
 
 `zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`, `browserAutomation.ready`, `browserAutomation.reasons`, and `browserAutomation.retryAfterMs`, plus local browser lock state, headless browser throttle state, recent Zepto access-challenge cooldown state, and cache counts for searches, cart snapshots, addresses, and orders. Browser lock JSON includes the lock owner `pid`, `createdAt`, and `staleReason` when available so agents can distinguish an active command from a dead-owner or expired stale lock. Those counts are diagnostics only; account-dependent commands still require a confirmed Zepto session and live browser automation. Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`.
 `zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge` fields so agents can branch on readiness without scraping human check messages.
-`zepo status --live` opens Zepto with the saved browser profile and checks whether the session still appears accepted. If Zepto clearly asks for login or OTP again, the CLI reports `liveSession.state: "login-required"` and demotes the local login marker so agents do not continue with stale session state. Logged-in account/profile text is trusted before login input evidence, and bare numeric fields alone are not treated as login proof, so a profile page that exposes a phone field is not demoted by that field alone. Ambiguous live checks are reported as `unknown` and should be resolved with `zepo status --live --visible` or `zepo login`.
+`zepo status --live` opens Zepto with the saved browser profile and checks whether the session still appears accepted. If Zepto clearly asks for login or OTP again, the CLI reports `liveSession.state: "login-required"` and demotes the local login marker so agents do not continue with stale session state. Logged-in account/profile text is trusted before login input evidence, and bare numeric fields alone are not treated as login proof, so a profile page that exposes a phone field is not demoted by that field alone. Ambiguous live checks are reported as `unknown` and should be resolved with `zepo status --live --visible` or `zepo --visible login`.
 Account-dependent browser commands also demote the local login marker when a failed Zepto page clearly shows login or OTP prompts. The shared expired-session guard trusts explicit logged-in account/profile text before login input evidence, and ignores bare numeric fields plus unsafe phone-like payment/cart/address/search fields on ambiguous pages, so profile, payment, or cart pages with phone fields are not treated as expired sessions. This avoids repeated cart, checkout, address, or order commands against an expired session while preserving cached metadata for diagnostics.
 `zepo doctor` checks Node.js, SQLite, Zepto session state, the browser automation lock, headless browser throttling, recent Zepto access-challenge cooldown state, Playwright Chromium, and writable runtime directories for auth state, browser profile data, logs, and diagnostics.
 If browser launch fails, run `npm run prepare:browsers` or `npx playwright install chromium`, then rerun `zepo doctor`.
@@ -168,7 +168,7 @@ ZepoCli treats both `zepto.com` and legacy `zeptonow.com` responses as Zepto pla
 By default data is stored under the OS app data directory. Override it for agents, tests, or isolated runs:
 
 ```bash
-zepo --data-dir ./.zepo login
+zepo --data-dir ./.zepo --visible login
 ```
 
 If the configured data directory is blank, cannot be created, or cannot be opened, the CLI fails before browser work starts. Use `zepo --data-dir <path> doctor` with a writable directory to diagnose local storage issues.
@@ -180,10 +180,13 @@ zepo --data-dir ./.zepo-agent-a search milk
 zepo --data-dir ./.zepo-agent-b search bread
 ```
 
-Use `--visible` when diagnosing Zepto rendering, location, or blocking behavior:
+Use `--visible` when diagnosing Zepto rendering, location, blocking behavior, or starting a human-only login/address/checkout handoff:
 
 ```bash
 zepo --visible search milk
+zepo --visible login
+zepo --visible address add
+zepo --visible checkout
 ```
 
 Agents should inspect `zepo status --json` or `zepo doctor --json` before retry loops. If `browserAutomation.ready` is false, branch on `browserAutomation.reasons`; wait for the reported `browserAutomation.retryAfterMs`, wait for an active browser lock to clear, or switch to a visible, human-controlled flow when Zepto verification must be completed. JSON errors for throttles, Zepto access challenges, access protection, and access cooldowns also include `error.retryAfterMs`. Do not loop headless commands to force Zepto pages to load.
@@ -195,8 +198,8 @@ zepo --no-input cart --json
 zepo --no-input login --json
 ```
 
-Interactive flows such as `login`, `address add`, `checkout`, and `add --choose` fail early with a structured error when `--no-input` is set.
-`zepo login` opens the account/login surface through visible, enabled account/profile/login controls only, and rejects mixed labels that point at unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, verification, support/help, invoice/receipt, refund/return/cancel, or rating/review actions. `zepo login --phone` only pre-fills visible, enabled, editable phone/mobile/tel input fields, including fields identified by placeholder, title, description, or referenced accessible labels. It rejects mixed labels that look like OTP, verification, payment-method/payment, address, cart, order, search, support/help, invoice/receipt, refund/return/cancel, or rating/review controls. It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.
+Interactive flows such as `login`, `address add`, `checkout`, and `add --choose` fail early with a structured error when `--no-input` is set. Human-only browser handoffs such as `login`, `address add`, and `checkout` also fail with `visible_browser_required` unless `--visible` is explicitly supplied.
+`zepo --visible login` opens the account/login surface through visible, enabled account/profile/login controls only, and rejects mixed labels that point at unrelated navigation, cart, address, checkout, payment-method/payment, order, phone/OTP, verification, support/help, invoice/receipt, refund/return/cancel, or rating/review actions. `zepo --visible login --phone` only pre-fills visible, enabled, editable phone/mobile/tel fields, including fields identified by placeholder, title, description, or referenced accessible labels. It rejects mixed labels that look like OTP, verification, payment-method/payment, address, cart, order, search, support/help, invoice/receipt, refund/return/cancel, or rating/review controls. It does not target bare numeric inputs so OTP entry remains fully Zepto-controlled.
 Product ADD and quantity plus controls must be visible and enabled before automation clicks them. Tagged ADD/quantity controls must still match the selected product card immediately before click, including after any scroll into view that can trigger Zepto rerenders. Product ADD discovery/revalidation accepts referenced accessible labels and product-specific accessible labels such as `Add <product> to cart`, but rejects mixed unsafe labels such as `Added`, `Add more`, `Add coupon`, address/location, checkout, payment-method/payment, or support/help, invoice/receipt, refund/return/cancel, and rating/review order-action labels. Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls. Quantity plus controls also reject mixed unsafe labels such as decrease/remove, coupon, checkout, payment-method/payment, or order actions. Automated `zepo add --quantity` is capped at 12 and paced between quantity-control clicks so scripts do not hammer Zepto controls. Cart and order totals are reported only from explicit total/payable labels; the CLI does not guess totals from arbitrary product, fee, discount, or badge prices.
 Product extraction ignores text that Zepto exposes as product-card control labels, including image alt/accessibility text, when choosing product names, and ADD-control mapping rejects mixed controls whose labels are not explicit product-add labels. Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted. Product-specific `Add <product> to cart` labels count as explicit product-add labels only when they do not include unsafe workflow terms such as address, coupon, checkout, payment-method/payment, final-order text, support/help, invoice/receipt, refund/return/cancel, rating/review order-action text, or quantity-only add text such as `Add 2 items to cart`. This keeps unavailable or alternate-action controls from being treated as product names or safe ADD buttons without baking those labels into the parser.
 
@@ -210,7 +213,7 @@ Stored data includes:
 
 Debug HTML/screenshot artifacts are disabled for Zepto browser flows that may use the persistent profile, including search, live session checks, login, cart, address, checkout, orders, and reorder, so OTP, address, cart, order, or payment-adjacent screens are not stored locally.
 
-Unauthenticated search does not write Playwright auth state. Session state is saved by `zepo login` and refreshed by account-dependent browser flows after a confirmed session exists. Empty Zepto origin storage, empty auth-looking cookie/localStorage values, public preference/location cookies, and bare login/logged UI flags are not enough to confirm local auth, even when the key name contains words like `user`, `customer`, `profile`, `login`, or `logged`; the saved state must include non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys.
+Unauthenticated search does not write Playwright auth state. Session state is saved by `zepo --visible login` and refreshed by account-dependent browser flows after a confirmed session exists. Empty Zepto origin storage, empty auth-looking cookie/localStorage values, public preference/location cookies, and bare login/logged UI flags are not enough to confirm local auth, even when the key name contains words like `user`, `customer`, `profile`, `login`, or `logged`; the saved state must include non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys.
 Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage because Zepto platform sessions may surface through either domain.
 
 `zepo logout` removes the saved Zepto session, clears the persistent browser profile, and deletes cached local user metadata such as searches, cart snapshots, addresses, and order snapshots. It refuses to run while another ZepoCli browser command owns the current data directory lock, so logout cannot delete profile files from under an active login, cart, checkout, address, or order flow.
@@ -225,9 +228,9 @@ Session auth checks recognize both `zepto.com` and legacy `zeptonow.com` storage
 - Address automation may open the add-address UI through visible, enabled address controls, including explicit select/change/set/choose delivery address or location labels and explicit add/enter delivery address or location labels, but must not click current/device/precise-location sharing, browser location-access/GPS permission controls, cart/checkout/order/bill/payment controls, payment-method/payment controls, final address-confirmation controls, or account/order actions such as support, invoice/receipt, refund/return, cancellation, or rating/review. Address manager/add-address controls and saved-address extraction are rejected when visible or accessible copy contains location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment text. Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels. Address manager/add-address labels and disabled state are revalidated after any scroll into view before clicking.
 - Saved-address labels are derived from Zepto's visible saved-address row text instead of a fixed `Home`/`Work`/`Other` list, and address detection uses structural address detail rather than a hardcoded service-city allow-list.
 - `zepo address use` selects a saved address only when the best matching row is unique; if multiple saved addresses match, rerun with more visible address text such as street, building, or pincode. The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view.
-- User-visible checkout/payment remains inside Zepto.
+- User-visible checkout/payment remains inside Zepto and requires `--visible`.
 - Checkout automation may open the checkout/payment handoff through enabled checkout controls, but must not click final order-placement or payment buttons. Payment method names or UPI/cart-promo copy alone must not be treated as proof that checkout handoff is already open.
-- `zepo checkout` is a handoff, not proof that an order was paid or placed. Its JSON output reports `cartPrecondition: "non_empty_cart_verified"` after the checkout command verifies a readable non-empty cart, keeps `paymentStatus: "not_observed_by_zepocli"` and `orderPlacement: "not_confirmed_by_zepocli"`, and includes `orderStatusCommand: "zepo track"`; use `zepo track` after completing Zepto payment.
+- `zepo --visible checkout` is a handoff, not proof that an order was paid or placed. Its JSON output reports `cartPrecondition: "non_empty_cart_verified"` after the checkout command verifies a readable non-empty cart, keeps `paymentStatus: "not_observed_by_zepocli"` and `orderPlacement: "not_confirmed_by_zepocli"`, and includes `orderStatusCommand: "zepo track"`; use `zepo track` after completing Zepto payment.
 - Cart navigation and cart remove/clear automation use visible, enabled cart controls only. Cart navigation controls are rejected if any visible or accessible label contains checkout, proceed, payment-method/payment, bill, final order text, support/help, invoice/receipt, refund/return/cancel, or rating/review order-action text, and cart navigation labels plus disabled state are revalidated after any scroll into view before clicking. Product listing `Add to Cart` copy is not cart-surface evidence. Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, or order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating; they are also revalidated against the current cart row before click, including after any scroll into view, and `zepo remove <query>` requires that row to still match the requested item.
 - Parsed product-like rows count as cart data only when Zepto also exposes cart-surface evidence such as cart, quantity, bill, total, or remove controls.
 - Cart parsing skips delivery-address blocks with custom saved-address labels by using structural address detail, not a fixed address-label list or service-city allow-list.

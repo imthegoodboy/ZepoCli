@@ -16,8 +16,8 @@ describe("README package guidance", () => {
 
   it("documents the full production command surface", () => {
     for (const command of [
-      "zepo login",
-      "zepo login --phone 9876543210",
+      "zepo --visible login",
+      "zepo --visible login --phone 9876543210",
       "zepo logout",
       "zepo status",
       "zepo status --live",
@@ -30,8 +30,8 @@ describe("README package guidance", () => {
       "zepo clear",
       "zepo address list",
       "zepo address use home",
-      "zepo address add",
-      "zepo checkout",
+      "zepo --visible address add",
+      "zepo --visible checkout",
       "zepo track",
       "zepo history",
       "zepo reorder last"
@@ -49,6 +49,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("browserAutomationMode.current");
     expect(readme).toContain("normal package runs should report `background_headless`");
     expect(readme).toContain("`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`");
+    expect(readme).toContain("never show the browser unless `--visible` is explicitly used");
     expect(readme).toContain("Browser lock JSON includes the lock owner `pid`, `createdAt`, and `staleReason`");
     expect(readme).toContain("Browser commands register interrupt handlers so Ctrl+C/SIGTERM attempts to close the Playwright browser context");
     expect(readme).toContain("Browser context close is bounded and best-effort");
@@ -62,7 +63,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("do not add a custom user agent");
     expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("Installed-package commands run browser automation in background/headless mode by default");
-    expect(readme).toContain("human-only login, address-add, or checkout handoff is required");
+    expect(readme).toContain("Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`");
     expect(readme).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");
@@ -169,6 +170,7 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "support/help, invoice/receipt, refund/return/cancel, or rating/review controls"
     );
+    expect(readme).toContain("`zepo --visible login` opens the account/login surface");
     expect(readme).toContain("visible, enabled account/profile/login controls");
     expect(readme).toContain(
       "Search cache stores diagnostic result counts with a fixed redacted query marker only; raw search text is not passed into SQLite writes"
@@ -193,6 +195,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("It refuses to run while another ZepoCli browser command owns the current data directory lock");
     expect(readme).toContain("configured data directory is blank");
     expect(readme).toContain('"code": "no_confirmed_session"');
+    expect(readme).toContain("visible_browser_required");
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');

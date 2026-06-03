@@ -19,6 +19,16 @@ vi.mock("@inquirer/prompts", () => ({
 }));
 
 vi.mock("../src/automation/browser.js", () => ({
+  assertConfirmedSession: (runtime: { session: { hasConfirmedSession?: () => boolean; status: () => { confirmedSession?: boolean } } }) => {
+    if ((runtime.session.hasConfirmedSession?.() ?? runtime.session.status().confirmedSession) === true) {
+      return;
+    }
+
+    throw Object.assign(new Error("No confirmed Zepto session found."), {
+      code: "no_confirmed_session",
+      hint: "Run `zepo login` first."
+    });
+  },
   BrowserAutomation: class {
     async withPage<T>(options: Record<string, unknown>, action: (page: unknown) => Promise<T> | T): Promise<T> {
       mocks.withPageCalls.push({ options });
@@ -64,8 +74,19 @@ describe("human-controlled browser handoff services", () => {
     mocks.detectLoginState.mockClear();
   });
 
-  it("opens checkout in a visible session browser and saves state after handoff", async () => {
-    await new CheckoutService(createRuntime()).checkout();
+  it("does not open checkout unless a visible browser is explicitly requested", async () => {
+    const runtime = createRuntime({ confirmedSession: true });
+
+    await expect(new CheckoutService(runtime).checkout()).rejects.toMatchObject({
+      code: "visible_browser_required",
+      message: "Zepto checkout requires a visible browser."
+    });
+    expect(mocks.withPageCalls).toEqual([]);
+    expect(mocks.openCheckout).not.toHaveBeenCalled();
+  });
+
+  it("opens checkout in an explicitly visible session browser and saves state after handoff", async () => {
+    await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout();
 
     expect(mocks.withPageCalls[0]?.options).toMatchObject({
       captureFailures: false,
@@ -77,8 +98,19 @@ describe("human-controlled browser handoff services", () => {
     expect(mocks.input).toHaveBeenCalledOnce();
   });
 
-  it("opens address add in a visible authenticated browser", async () => {
-    await new AddressService(createRuntime()).add();
+  it("does not open address add unless a visible browser is explicitly requested", async () => {
+    const runtime = createRuntime({ confirmedSession: true });
+
+    await expect(new AddressService(runtime).add()).rejects.toMatchObject({
+      code: "visible_browser_required",
+      message: "Zepto address add requires a visible browser."
+    });
+    expect(mocks.withPageCalls).toEqual([]);
+    expect(mocks.startAddAddress).not.toHaveBeenCalled();
+  });
+
+  it("opens address add in an explicitly visible authenticated browser", async () => {
+    await new AddressService(createRuntime({ confirmedSession: true, headless: false })).add();
 
     expect(mocks.withPageCalls[0]?.options).toMatchObject({
       captureFailures: false,
@@ -89,8 +121,19 @@ describe("human-controlled browser handoff services", () => {
     expect(mocks.input).toHaveBeenCalledOnce();
   });
 
-  it("opens login in a visible browser and saves the confirmed session", async () => {
+  it("does not open login unless a visible browser is explicitly requested", async () => {
     const runtime = createRuntime();
+
+    await expect(new AuthService(runtime).login("9876543210")).rejects.toMatchObject({
+      code: "visible_browser_required",
+      message: "Zepto login requires a visible browser."
+    });
+    expect(mocks.withPageCalls).toEqual([]);
+    expect(mocks.openLoginFlow).not.toHaveBeenCalled();
+  });
+
+  it("opens login in an explicitly visible browser and saves the confirmed session", async () => {
+    const runtime = createRuntime({ headless: false });
 
     await new AuthService(runtime).login("9876543210");
 
@@ -104,14 +147,16 @@ describe("human-controlled browser handoff services", () => {
   });
 });
 
-function createRuntime() {
-  let confirmedSession = false;
+function createRuntime(options: { confirmedSession?: boolean; headless?: boolean } = {}) {
+  let confirmedSession = options.confirmedSession ?? false;
   return {
     options: {
+      headless: options.headless ?? true,
       interactive: true
     },
     session: {
       status: () => ({ confirmedSession }),
+      hasConfirmedSession: () => confirmedSession,
       createSnapshot: () => "snapshot",
       restoreSnapshot: () => undefined,
       disposeSnapshot: () => undefined,

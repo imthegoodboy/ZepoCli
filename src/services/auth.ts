@@ -5,7 +5,7 @@ import { BrowserAutomation, getBrowserRunLockStatus } from "../automation/browse
 import { detectLoginState, openAccountSurface, openLoginFlow, type LoginState } from "../automation/auth.js";
 import type { BrowserRunLockStatus, LiveSessionStatus, SessionStatus } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
-import { requireInteractiveInput } from "../utils/interactive.js";
+import { requireInteractiveInput, requireVisibleBrowser } from "../utils/interactive.js";
 import { promptContext } from "../utils/prompts.js";
 
 export class AuthService {
@@ -22,6 +22,11 @@ export class AuthService {
       this.runtime,
       "Zepto login requires interactive input.",
       "Rerun `zepo login` without `--no-input` so you can complete Zepto login or OTP in the browser."
+    );
+    requireVisibleBrowser(
+      this.runtime,
+      "Zepto login requires a visible browser.",
+      "Rerun `zepo --visible login` so OTP/login stays in a human-controlled Zepto browser."
     );
 
     const previousStatus = this.runtime.session.status();

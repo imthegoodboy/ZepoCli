@@ -12,6 +12,17 @@ const npmExecPath = process.env.npm_execpath;
 const INSTALLED_CLI_COMMAND_TIMEOUT_MS = 120_000;
 const NPM_COMMAND_TIMEOUT_MS = 180_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
+const AUTH_STATE = JSON.stringify({
+  cookies: [
+    {
+      name: "sid",
+      value: "1",
+      domain: "www.zepto.com",
+      path: "/"
+    }
+  ],
+  origins: []
+});
 
 const tempRoot = mkdtempSync(join(tmpdir(), "zepo-package-smoke-"));
 const packDir = join(tempRoot, "pack");
@@ -214,14 +225,15 @@ function verifyInstalledReadmeContract(prefixDir) {
     "npm run verify:dependencies",
     "declared runtime packages load and required dev-tool binaries are present",
     "Installed-package commands run browser automation in background/headless mode by default",
-    "human-only login, address-add, or checkout handoff is required",
+    "never show the browser unless `--visible` is explicitly used",
+    "Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`",
     "browserAutomationMode.current",
     "normal package runs should report `background_headless`",
     "`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`",
     "`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`",
     "Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`",
-    "zepo login",
-    "zepo checkout",
+    "zepo --visible login",
+    "zepo --visible checkout",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "paymentStatus: \"not_observed_by_zepocli\"",
     "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, support/help, invoice/receipt, refund/return/cancel, rating/review, `checkout and pay`, or amount-bearing pay text",
@@ -435,12 +447,29 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
     "expected installed login service to be the visible human-controlled login handoff"
   );
   assert(
+    authServiceSource.includes("requireVisibleBrowser") &&
+      authServiceSource.includes("Zepto login requires a visible browser."),
+    "expected installed login service to require explicit --visible before opening a browser"
+  );
+  assert(
     countSourceOccurrences(addressesServiceSource, "headless: false") === 1,
     "expected installed address service to force visible browser only for address add"
   );
   assert(
+    addressesServiceSource.includes("assertConfirmedSession") &&
+      addressesServiceSource.includes("requireVisibleBrowser") &&
+      addressesServiceSource.includes("Zepto address add requires a visible browser."),
+    "expected installed address add service to require session and explicit --visible before opening a browser"
+  );
+  assert(
     countSourceOccurrences(checkoutServiceSource, "headless: false") === 1,
     "expected installed checkout service to be the visible human-controlled payment handoff"
+  );
+  assert(
+    checkoutServiceSource.includes("assertConfirmedSession") &&
+      checkoutServiceSource.includes("requireVisibleBrowser") &&
+      checkoutServiceSource.includes("Zepto checkout requires a visible browser."),
+    "expected installed checkout service to require session and explicit --visible before opening a browser"
   );
   console.log("pass installed background automation mode contract");
 }
@@ -4856,6 +4885,19 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       }
     },
     {
+      name: "installed visible required login",
+      args: () => ["--data-dir", join(tempRoot, "data-visible-login"), "login", "--json"],
+      expect: (result) => {
+        const payload = expectJsonError(
+          result,
+          "user_error",
+          "Zepto login requires a visible browser.",
+          "visible_browser_required"
+        );
+        assert(String(payload.error?.hint).includes("zepo --visible login"), "expected installed visible login hint");
+      }
+    },
+    {
       name: "installed no-input address add",
       args: ["--data-dir", dataDir, "--no-input", "address", "add", "--json"],
       expect: (result) => {
@@ -4863,10 +4905,47 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       }
     },
     {
+      name: "installed visible required address add",
+      args: () => {
+        const visibleDataDir = join(tempRoot, "data-visible-address-add");
+        markInstalledConfirmedSession(runtimeModules, visibleDataDir);
+        return ["--data-dir", visibleDataDir, "address", "add", "--json"];
+      },
+      expect: (result) => {
+        const payload = expectJsonError(
+          result,
+          "user_error",
+          "Zepto address add requires a visible browser.",
+          "visible_browser_required"
+        );
+        assert(
+          String(payload.error?.hint).includes("zepo --visible address add"),
+          "expected installed visible address add hint"
+        );
+      }
+    },
+    {
       name: "installed no-input checkout",
       args: ["--data-dir", dataDir, "--no-input", "checkout", "--json"],
       expect: (result) => {
         expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+      }
+    },
+    {
+      name: "installed visible required checkout",
+      args: () => {
+        const visibleDataDir = join(tempRoot, "data-visible-checkout");
+        markInstalledConfirmedSession(runtimeModules, visibleDataDir);
+        return ["--data-dir", visibleDataDir, "checkout", "--json"];
+      },
+      expect: (result) => {
+        const payload = expectJsonError(
+          result,
+          "user_error",
+          "Zepto checkout requires a visible browser.",
+          "visible_browser_required"
+        );
+        assert(String(payload.error?.hint).includes("zepo --visible checkout"), "expected installed visible checkout hint");
       }
     },
     {
@@ -5130,6 +5209,38 @@ function setRuntimeMeta(runtimeModules, targetDataDir, keyExportName, value) {
     const sqlite = new SqliteStore(resolveAppPaths(${JSON.stringify(targetDataDir)}).dbPath);
     try {
       sqlite.setMeta(metaKey, ${JSON.stringify(value)});
+    } finally {
+      sqlite.close();
+    }
+  `;
+
+  run(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: rootDir,
+    env: sanitizedChildEnv(process.env, {
+      FORCE_COLOR: "0",
+      NO_COLOR: "1"
+    })
+  });
+}
+
+function markInstalledConfirmedSession(runtimeModules, targetDataDir) {
+  const pathsModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "config", "paths.js")).href;
+  const sqliteModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "storage", "sqlite.js")).href;
+  const script = `
+    import { mkdirSync, writeFileSync } from "node:fs";
+    import { join } from "node:path";
+    import { resolveAppPaths } from ${JSON.stringify(pathsModuleUrl)};
+    import { SqliteStore } from ${JSON.stringify(sqliteModuleUrl)};
+
+    const paths = resolveAppPaths(${JSON.stringify(targetDataDir)});
+    mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+    writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
+    mkdirSync(join(${JSON.stringify(targetDataDir)}, "storage"), { recursive: true });
+    writeFileSync(paths.authStatePath, ${JSON.stringify(AUTH_STATE)});
+
+    const sqlite = new SqliteStore(paths.dbPath);
+    try {
+      sqlite.markSession(true, paths.authStatePath);
     } finally {
       sqlite.close();
     }

@@ -286,12 +286,15 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed cart service not to force visible browser mode");
     expect(verifier).toContain("expected installed orders service not to force visible browser mode");
     expect(verifier).toContain("expected installed checkout service to be the visible human-controlled payment handoff");
+    expect(verifier).toContain("expected installed login service to require explicit --visible before opening a browser");
+    expect(verifier).toContain("expected installed address add service to require session and explicit --visible before opening a browser");
+    expect(verifier).toContain("expected installed checkout service to require session and explicit --visible before opening a browser");
     expect(verifier).toContain("pass installed background automation mode contract");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("Installed-package commands run browser automation in background/headless mode by default");
-    expect(verifier).toContain("human-only login, address-add, or checkout handoff is required");
+    expect(verifier).toContain("Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`");
     expect(verifier).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");
     expect(verifier).toContain("browserAutomationMode.current");
     expect(verifier).toContain("normal package runs should report `background_headless`");
@@ -597,6 +600,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed JSON parser error to omit npm-token-shaped value");
     expect(verifier).toContain("installed json equals flag parser error");
     expect(verifier).toContain("expected installed malformed --json value parser error to keep stdout empty");
+    expect(verifier).toContain("installed visible required login");
+    expect(verifier).toContain("installed visible required address add");
+    expect(verifier).toContain("installed visible required checkout");
+    expect(verifier).toContain("visible_browser_required");
     expect(verifier).toContain("expected installed redacted phone hint");
     expect(verifier).toContain("expected installed JSON phone error to omit raw phone-shaped value");
     expect(verifier).toContain("expected runtime error to omit raw data-dir path");

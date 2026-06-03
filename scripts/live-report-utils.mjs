@@ -156,6 +156,7 @@ const SAFE_REPORT_ERROR_CODES = new Set([
   "session_save_failed",
   "unexpected_error",
   "unsupported_operation",
+  "visible_browser_required",
   "zepto_access_challenge",
   "zepto_access_cooldown",
   "zepto_access_protection",

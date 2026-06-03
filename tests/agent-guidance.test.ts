@@ -29,8 +29,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("background/headless mode by default");
       expect(guidance).toContain("browserAutomationMode.current");
       expect(guidance).toContain("background_headless");
-      expect(guidance).toContain("human-only login, address-add, or checkout handoff");
+      expect(guidance).toContain("human-only login, address-add, and checkout handoffs must fail with `visible_browser_required`");
       expect(guidance).toContain("Background/headless mode is for explicit user-requested CLI commands only");
+      expect(guidance).toContain("Show the browser only when the user explicitly passes `--visible`");
       expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");
       expect(guidance).toContain("search-trigger labels plus disabled state");
       expect(guidance).toContain("Order-history and account-menu labels plus disabled state must be revalidated after any scroll into view before clicking");

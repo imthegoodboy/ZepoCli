@@ -2,10 +2,10 @@ import { input } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
 import type { Address } from "../types.js";
-import { BrowserAutomation } from "../automation/browser.js";
+import { assertConfirmedSession, BrowserAutomation } from "../automation/browser.js";
 import { listAddresses, startAddAddress, useAddress } from "../automation/address.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
-import { requireInteractiveInput } from "../utils/interactive.js";
+import { requireInteractiveInput, requireVisibleBrowser } from "../utils/interactive.js";
 import { promptContext } from "../utils/prompts.js";
 
 export class AddressService {
@@ -37,6 +37,12 @@ export class AddressService {
       this.runtime,
       "Zepto address add requires interactive input.",
       "Rerun `zepo address add` without `--no-input` so you can add or confirm the address in the browser."
+    );
+    assertConfirmedSession(this.runtime);
+    requireVisibleBrowser(
+      this.runtime,
+      "Zepto address add requires a visible browser.",
+      "Rerun `zepo --visible address add` so address entry stays in a human-controlled Zepto browser."
     );
 
     const addresses = await this.browser.withPage(

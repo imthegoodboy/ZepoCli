@@ -1,9 +1,9 @@
 import { input } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
-import { BrowserAutomation } from "../automation/browser.js";
+import { assertConfirmedSession, BrowserAutomation } from "../automation/browser.js";
 import { openCheckout } from "../automation/checkout.js";
-import { requireInteractiveInput } from "../utils/interactive.js";
+import { requireInteractiveInput, requireVisibleBrowser } from "../utils/interactive.js";
 import { promptContext } from "../utils/prompts.js";
 
 export class CheckoutService {
@@ -18,6 +18,12 @@ export class CheckoutService {
       this.runtime,
       "Zepto checkout requires interactive input.",
       "Rerun `zepo checkout` without `--no-input` so payment stays inside the visible Zepto browser."
+    );
+    assertConfirmedSession(this.runtime);
+    requireVisibleBrowser(
+      this.runtime,
+      "Zepto checkout requires a visible browser.",
+      "Rerun `zepo --visible checkout` so checkout/payment stays in a human-controlled Zepto browser."
     );
 
     await this.browser.withPage(

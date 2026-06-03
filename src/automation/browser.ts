@@ -71,12 +71,8 @@ export class BrowserAutomation {
     options: BrowserRunOptions,
     task: (page: Page, context: BrowserContext) => Promise<T>
   ): Promise<T> {
-    if (options.requireSession && !this.runtime.session.hasConfirmedSession()) {
-      const status = this.runtime.session.status();
-      throw new UserFacingError("No confirmed Zepto session found.", {
-        code: "no_confirmed_session",
-        hint: confirmedSessionHint(status)
-      });
+    if (options.requireSession) {
+      assertConfirmedSession(this.runtime);
     }
 
     const headless = options.headless ?? this.runtime.options.headless;
@@ -753,6 +749,18 @@ function firstErrorLine(error: unknown): string | undefined {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .find(Boolean);
+}
+
+export function assertConfirmedSession(runtime: Pick<AppRuntime, "session">): void {
+  if (runtime.session.hasConfirmedSession()) {
+    return;
+  }
+
+  const status = runtime.session.status();
+  throw new UserFacingError("No confirmed Zepto session found.", {
+    code: "no_confirmed_session",
+    hint: confirmedSessionHint(status)
+  });
 }
 
 function confirmedSessionHint(status: SessionStatus): string {
