@@ -95,7 +95,7 @@ The live report is acceptable only when:
 - Ok report workflow steps follow the live runner order.
 - Workflow step summaries include every runner-defined key.
 - Workflow step summary values keep the runner's expected types.
-- Address summaries require structural address detail without storing raw address text, product and cart count summaries count readable records only, and order count summaries count status/ETA-bearing records only; placeholder objects such as `{}`, label-only address rows such as `Home`, product/unit rows such as `Amul Milk 500ml`, payment/cart/order text, total-only rows, and date-only rows are not live evidence.
+- Address summaries require structural address detail without storing raw address text, product summaries require a readable name plus price or unit detail, cart count summaries count readable item records only, and order count summaries count status/ETA-bearing records only; placeholder objects such as `{}`, label-only address rows such as `Home`, name-only product rows such as `Amul Milk 500ml`, payment/cart/order text, total-only rows, and date-only rows are not live evidence.
 - String and string-array workflow step summary values stay within runner-known values.
 - Related workflow step summary fields are internally consistent.
 - Numeric workflow step summaries stay within runner-supported ranges.
@@ -111,8 +111,8 @@ The live report is acceptable only when:
 - `login` confirms `sessionSaved: true` and `confirmedSession: true` when a login step actually runs.
 - Existing confirmed sessions with `--login` leave `requested.login` false and require `requested.liveSession` to pass instead.
 - `status live` reports ready browser automation and `liveSession.state: "logged-in"`.
-- `search` has one or more product results when requested.
-- `add` has both selected product evidence and readable cart items when requested.
+- `search` has one or more product results with readable price or unit detail when requested.
+- `add` has selected product evidence with readable price or unit detail and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.
 - `checkout` preserves `cartPrecondition: "non_empty_cart_verified"`, `paymentStatus: "not_observed_by_zepocli"`, `orderPlacement: "not_confirmed_by_zepocli"`, and `orderStatusCommand: "zepo track"`.
 - With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage, focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence, and `--max-age-minutes` must be supplied so production-scope evidence is fresh.

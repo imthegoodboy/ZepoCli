@@ -114,7 +114,8 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
       exitCode: 0,
       ok: true,
       summary: {
-        productCount: 1
+        productCount: 1,
+        productDetailCount: 1
       }
     },
     {
@@ -174,6 +175,7 @@ function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
       ok: true,
       summary: {
         productAdded: true,
+        productHasDetail: true,
         cartItemCount: 1
       }
     },
@@ -322,6 +324,8 @@ describe("live verification runner", () => {
     expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
     expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
     expect(script).toContain("productCount: readableProductCount(payload)");
+    expect(script).toContain("productDetailCount: detailedProductCount(payload)");
+    expect(script).toContain("productHasDetail: hasReadableProductDetail(payload.product)");
     expect(script).toContain("const addressCount = readableAddressCount(addresses)");
     expect(script).toContain("addressCount,");
     expect(script).toContain("selectedCount: readableSelectedAddressCount(addresses)");
@@ -1119,6 +1123,55 @@ describe("live verification runner", () => {
               }
             : step
         )
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps.slice(0, 3),
+          {
+            name: "search",
+            command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+            exitCode: 0,
+            ok: true,
+            summary: {
+              productCount: 1,
+              productDetailCount: 0
+            }
+          },
+          ...acceptedLiveReport().steps.slice(4)
+        ]
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps.slice(0, 3),
+          {
+            name: "search",
+            command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+            exitCode: 0,
+            ok: true,
+            summary: {
+              productCount: 1,
+              productDetailCount: 2
+            }
+          },
+          ...acceptedLiveReport().steps.slice(4)
+        ]
+      }),
+      acceptedLiveReport({
+        steps: [
+          ...acceptedLiveReport().steps.slice(0, 4),
+          {
+            name: "add",
+            command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+            exitCode: 0,
+            ok: true,
+            summary: {
+              productAdded: true,
+              productHasDetail: false,
+              cartItemCount: 1
+            }
+          },
+          ...acceptedLiveReport().steps.slice(4)
+        ]
       }),
       acceptedLiveReport({
         steps: [
@@ -2876,7 +2929,7 @@ describe("live verification runner", () => {
   });
 
   it("fails search live report steps without readable product results", () => {
-    for (const stdout of ["[]", JSON.stringify([{}])]) {
+    for (const stdout of ["[]", JSON.stringify([{}]), JSON.stringify([{ name: "Milk" }])]) {
       const { step } = buildLiveReportStep({
         name: "search",
         args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
@@ -2895,7 +2948,7 @@ describe("live verification runner", () => {
         ok: false,
         error: {
           code: "live_search_contract_mismatch",
-          message: "Search JSON did not include any readable product results."
+          message: "Search JSON did not include readable product results with price or unit detail."
         }
       });
     }
@@ -2906,10 +2959,11 @@ describe("live verification runner", () => {
       name: "search",
       args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
       status: 0,
-      stdout: JSON.stringify([{ index: 0, name: "Milk" }]),
+      stdout: JSON.stringify([{ index: 0, name: "Milk", unit: "500 ml" }]),
       stderr: "",
       summarizePayload: (_name: string, value: unknown[]) => ({
-        productCount: value.length
+        productCount: value.length,
+        productDetailCount: value.filter((product) => typeof (product as { unit?: unknown }).unit === "string").length
       })
     });
 
@@ -2917,7 +2971,8 @@ describe("live verification runner", () => {
       exitCode: 0,
       ok: true,
       summary: {
-        productCount: 1
+        productCount: 1,
+        productDetailCount: 1
       }
     });
   });
@@ -2926,7 +2981,9 @@ describe("live verification runner", () => {
     for (const stdout of [
       JSON.stringify({ product: { name: "Milk" }, cart: { items: [] } }),
       JSON.stringify({ product: {}, cart: { items: [{ name: "Milk" }] } }),
-      JSON.stringify({ product: { name: "Milk" }, cart: { items: [{}] } })
+      JSON.stringify({ product: { name: "Milk" }, cart: { items: [{}] } }),
+      JSON.stringify({ product: { name: "Milk" }, cart: { items: [{ name: "Milk" }] } }),
+      JSON.stringify({ product: { name: "Milk", unit: "500 ml" }, cart: { items: [{}] } })
     ]) {
       const { step } = buildLiveReportStep({
         name: "add",
@@ -2946,7 +3003,7 @@ describe("live verification runner", () => {
         ok: false,
         error: {
           code: "live_add_contract_mismatch",
-          message: "Add JSON did not include an added product and readable cart items."
+          message: "Add JSON did not include an added product with price or unit detail and readable cart items."
         }
       });
     }
@@ -2958,11 +3015,11 @@ describe("live verification runner", () => {
       args: ["--data-dir", ".zepo-live", "--visible", "add", "milk", "--json"],
       status: 0,
       stdout: JSON.stringify({
-        product: { index: 0, name: "Milk" },
+        product: { index: 0, name: "Milk", unit: "500 ml" },
         cart: { items: [{ name: "Milk" }] }
       }),
       stderr: "",
-      summarizePayload: () => ({ productAdded: true, cartItemCount: 1 })
+      summarizePayload: () => ({ productAdded: true, productHasDetail: true, cartItemCount: 1 })
     });
 
     expect(step).toMatchObject({
@@ -2970,6 +3027,7 @@ describe("live verification runner", () => {
       ok: true,
       summary: {
         productAdded: true,
+        productHasDetail: true,
         cartItemCount: 1
       }
     });

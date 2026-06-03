@@ -196,7 +196,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain(
       "Address summaries require structural address detail without storing raw address text"
     );
-    expect(liveVerifierSkill).toContain("product/unit rows such as `Amul Milk 500ml`");
+    expect(liveVerifierSkill).toContain("product summaries require a readable name plus price or unit detail");
+    expect(liveVerifierSkill).toContain("name-only product rows such as `Amul Milk 500ml`");
     expect(liveVerifierSkill).toContain("String and string-array workflow step summary values stay within runner-known values");
     expect(liveVerifierSkill).toContain("Related workflow step summary fields are internally consistent");
     expect(liveVerifierSkill).toContain("Numeric workflow step summaries stay within runner-supported ranges");

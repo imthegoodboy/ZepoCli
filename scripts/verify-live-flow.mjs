@@ -558,7 +558,8 @@ function summarizePayload(name, payload) {
 
   if (name === "search") {
     return {
-      productCount: readableProductCount(payload)
+      productCount: readableProductCount(payload),
+      productDetailCount: detailedProductCount(payload)
     };
   }
 
@@ -583,6 +584,7 @@ function summarizePayload(name, payload) {
   if (name === "add") {
     return {
       productAdded: hasReadableRecordName(payload.product),
+      productHasDetail: hasReadableProductDetail(payload.product),
       cartItemCount: readableCartItemCount(payload.cart)
     };
   }
@@ -622,6 +624,10 @@ function readableProductCount(payload) {
   return Array.isArray(payload) ? payload.filter(hasReadableRecordName).length : 0;
 }
 
+function detailedProductCount(payload) {
+  return Array.isArray(payload) ? payload.filter(hasReadableProductDetail).length : 0;
+}
+
 function readableAddressCount(payload) {
   return Array.isArray(payload) ? payload.filter(hasReadableAddressDetail).length : 0;
 }
@@ -642,6 +648,13 @@ function readableOrderCount(orders) {
 
 function hasReadableRecordName(value) {
   return hasReadableText(value?.name);
+}
+
+function hasReadableProductDetail(value) {
+  return (
+    hasReadableRecordName(value) &&
+    (hasReadableText(value?.price) || hasReadableText(value?.unit))
+  );
 }
 
 function hasReadableAddressDetail(value) {

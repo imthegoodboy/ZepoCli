@@ -87,6 +87,7 @@ try {
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledBrowserDiagnosticsContract(installDir);
+  verifyInstalledBackgroundAutomationModeContract(installDir);
   await verifyInstalledPaymentLabelContract(installDir);
   await verifyInstalledFinalActionLabelContract(installDir);
   await verifyInstalledOrderActionLabelContract(installDir);
@@ -275,7 +276,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "<redacted-browser-timezone>",
     "browser locale/timezone values",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
-    "counts of structural address-detail records, readable product/cart records, and status/ETA-bearing order records",
+    "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -392,6 +393,54 @@ async function verifyInstalledBrowserDiagnosticsContract(prefixDir) {
   );
 
   console.log("pass installed browser diagnostics contract");
+}
+
+function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
+  const packageDir = join(prefixDir, "node_modules", packageJson.name);
+  const sharedCommandSource = readFileSync(join(packageDir, "dist", "commands", "shared.js"), "utf8");
+  const runtimeSource = readFileSync(join(packageDir, "dist", "config", "runtime.js"), "utf8");
+  const searchServiceSource = readFileSync(join(packageDir, "dist", "services", "search.js"), "utf8");
+  const cartServiceSource = readFileSync(join(packageDir, "dist", "services", "cart.js"), "utf8");
+  const ordersServiceSource = readFileSync(join(packageDir, "dist", "services", "orders.js"), "utf8");
+  const authServiceSource = readFileSync(join(packageDir, "dist", "services", "auth.js"), "utf8");
+  const addressesServiceSource = readFileSync(join(packageDir, "dist", "services", "addresses.js"), "utf8");
+  const checkoutServiceSource = readFileSync(join(packageDir, "dist", "services", "checkout.js"), "utf8");
+
+  assert(
+    sharedCommandSource.includes("headless: !options.visible"),
+    "expected installed CLI runtime options to keep --visible as the only global visible-browser switch"
+  );
+  assert(
+    runtimeSource.includes("headless: options.headless ?? true"),
+    "expected installed runtime to default browser automation to headless"
+  );
+
+  assert(
+    !searchServiceSource.includes("headless: false"),
+    "expected installed search service not to force visible browser mode"
+  );
+  assert(
+    !cartServiceSource.includes("headless: false"),
+    "expected installed cart service not to force visible browser mode"
+  );
+  assert(
+    !ordersServiceSource.includes("headless: false"),
+    "expected installed orders service not to force visible browser mode"
+  );
+
+  assert(
+    countSourceOccurrences(authServiceSource, "headless: false") === 1,
+    "expected installed login service to be the visible human-controlled login handoff"
+  );
+  assert(
+    countSourceOccurrences(addressesServiceSource, "headless: false") === 1,
+    "expected installed address service to force visible browser only for address add"
+  );
+  assert(
+    countSourceOccurrences(checkoutServiceSource, "headless: false") === 1,
+    "expected installed checkout service to be the visible human-controlled payment handoff"
+  );
+  console.log("pass installed background automation mode contract");
 }
 
 async function verifyInstalledPaymentLabelContract(prefixDir) {
@@ -1260,13 +1309,15 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     liveVerifierSource.includes("productCount: readableProductCount(payload)") &&
+      liveVerifierSource.includes("productDetailCount: detailedProductCount(payload)") &&
+      liveVerifierSource.includes("productHasDetail: hasReadableProductDetail(payload.product)") &&
       liveVerifierSource.includes("const addressCount = readableAddressCount(addresses)") &&
       liveVerifierSource.includes("addressCount,") &&
       liveVerifierSource.includes("selectedCount: readableSelectedAddressCount(addresses)") &&
       liveVerifierSource.includes("hasAddressDetail: addressCount > 0") &&
       liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload)") &&
       liveVerifierSource.includes("orderCount: readableOrderCount(orders)"),
-    "expected installed live verifier summaries to count readable records"
+    "expected installed live verifier summaries to count readable records and product detail evidence"
   );
   assert(
     liveVerifierSource.includes("summarizeLiveRunnerFailure(error)") &&
@@ -1876,7 +1927,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       exitCode: 0,
       ok: true,
       summary: {
-        productCount: 1
+        productCount: 1,
+        productDetailCount: 1
       }
     },
     {
@@ -1931,6 +1983,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       ok: true,
       summary: {
         productAdded: true,
+        productHasDetail: true,
         cartItemCount: 1
       }
     },
@@ -2524,6 +2577,58 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
             }
           : step
       )
+    },
+    {
+      ...acceptedLiveReport,
+      steps: [
+        ...acceptedLiveReport.steps.slice(0, 3),
+        {
+          name: "search",
+          command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            productCount: 1,
+            productDetailCount: 0
+          }
+        },
+        ...acceptedLiveReport.steps.slice(4)
+      ]
+    },
+    {
+      ...acceptedLiveReport,
+      steps: [
+        ...acceptedLiveReport.steps.slice(0, 3),
+        {
+          name: "search",
+          command: "zepo --data-dir <redacted-data-dir> --visible search <redacted-query> --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            productCount: 1,
+            productDetailCount: 2
+          }
+        },
+        ...acceptedLiveReport.steps.slice(4)
+      ]
+    },
+    {
+      ...acceptedLiveReport,
+      steps: [
+        ...acceptedLiveReport.steps.slice(0, 4),
+        {
+          name: "add",
+          command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
+          exitCode: 0,
+          ok: true,
+          summary: {
+            productAdded: true,
+            productHasDetail: false,
+            cartItemCount: 1
+          }
+        },
+        ...acceptedLiveReport.steps.slice(4)
+      ]
     },
     {
       ...acceptedLiveReport,
@@ -3702,14 +3807,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     name: "search",
     args: ["--data-dir", ".zepo-live", "--visible", "search", "milk", "--json"],
     status: 0,
-    stdout: JSON.stringify([{}]),
+    stdout: JSON.stringify([{ name: "Milk" }]),
     stderr: "",
     summarizePayload: () => ({ unsafe: true })
   }).step;
   assert(
     unreadableSearchStep.ok === false &&
       unreadableSearchStep.error?.code === "live_search_contract_mismatch",
-    "expected installed search live report contract to require readable products"
+    "expected installed search live report contract to require product detail"
   );
 
   const unreadableAddressStep = buildLiveReportStep({
@@ -3730,13 +3835,27 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     name: "add",
     args: ["--data-dir", ".zepo-live", "--visible", "add", "milk", "--json"],
     status: 0,
-    stdout: JSON.stringify({ product: { name: "Milk" }, cart: { items: [{}] } }),
+    stdout: JSON.stringify({ product: { name: "Milk" }, cart: { items: [{ name: "Milk" }] } }),
     stderr: "",
     summarizePayload: () => ({ unsafe: true })
   }).step;
   assert(
     unreadableAddStep.ok === false &&
       unreadableAddStep.error?.code === "live_add_contract_mismatch",
+    "expected installed add live report contract to require product detail"
+  );
+
+  const addWithUnreadableCartStep = buildLiveReportStep({
+    name: "add",
+    args: ["--data-dir", ".zepo-live", "--visible", "add", "milk", "--json"],
+    status: 0,
+    stdout: JSON.stringify({ product: { name: "Milk", unit: "500 ml" }, cart: { items: [{}] } }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    addWithUnreadableCartStep.ok === false &&
+      addWithUnreadableCartStep.error?.code === "live_add_contract_mismatch",
     "expected installed add live report contract to require readable cart items"
   );
 
@@ -5109,6 +5228,10 @@ function removeTree(path) {
     maxRetries: 10,
     retryDelay: 100
   });
+}
+
+function countSourceOccurrences(source, needle) {
+  return source.split(needle).length - 1;
 }
 
 function assert(condition, message) {

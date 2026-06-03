@@ -279,6 +279,14 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("verifyInstalledBrowserDiagnosticsContract");
     expect(verifier).toContain("expected installed browser failure capture to default off even with debug");
     expect(verifier).toContain("pass installed browser diagnostics contract");
+    expect(verifier).toContain("verifyInstalledBackgroundAutomationModeContract");
+    expect(verifier).toContain("expected installed CLI runtime options to keep --visible as the only global visible-browser switch");
+    expect(verifier).toContain("expected installed runtime to default browser automation to headless");
+    expect(verifier).toContain("expected installed search service not to force visible browser mode");
+    expect(verifier).toContain("expected installed cart service not to force visible browser mode");
+    expect(verifier).toContain("expected installed orders service not to force visible browser mode");
+    expect(verifier).toContain("expected installed checkout service to be the visible human-controlled payment handoff");
+    expect(verifier).toContain("pass installed background automation mode contract");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
@@ -448,7 +456,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live verifier summaries to count readable records");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
     expect(verifier).toContain("expected installed status live report contract to require browser readiness");
-    expect(verifier).toContain("expected installed search live report contract to require readable products");
+    expect(verifier).toContain("expected installed search live report contract to require product detail");
+    expect(verifier).toContain("expected installed add live report contract to require product detail");
     expect(verifier).toContain("expected installed add live report contract to require readable cart items");
     expect(verifier).toContain("expected installed cart live report contract to require readable cart item records");
     expect(verifier).toContain("expected installed history live report contract to require readable order records");

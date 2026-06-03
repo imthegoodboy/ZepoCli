@@ -206,7 +206,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("It starts with normal `zepo doctor --json`, including the Playwright Chromium launch check");
     expect(readme).toContain("the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
     expect(readme).toContain(
-      "counts of structural address-detail records, readable product/cart records, and status/ETA-bearing order records"
+      "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records"
     );
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");

@@ -714,6 +714,27 @@ function validateLiveReportSummaryConsistencyContract(name, summary, issues) {
     return;
   }
 
+  if (name === "search") {
+    if (
+      Number.isInteger(summary.productCount) &&
+      Number.isInteger(summary.productDetailCount) &&
+      summary.productDetailCount !== summary.productCount
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
+  if (name === "add") {
+    if (
+      (summary.productAdded === true && summary.productHasDetail !== true) ||
+      (summary.productHasDetail === true && summary.productAdded !== true)
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
   if (name === "address add" || name === "address list") {
     if (
       Number.isInteger(summary.addressCount) &&
@@ -1066,11 +1087,11 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
-  ["search", new Set(["productCount"])],
+  ["search", new Set(["productCount", "productDetailCount"])],
   ["address add", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
   ["address list", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
   ["address use", new Set(["selected", "hasAddressText", "hasAddressDetail"])],
-  ["add", new Set(["productAdded", "cartItemCount"])],
+  ["add", new Set(["productAdded", "productHasDetail", "cartItemCount"])],
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
@@ -1091,11 +1112,11 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["status", new Set(["confirmedSession", "browserAutomationReady"])],
   ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
-  ["search", new Set(["productCount"])],
+  ["search", new Set(["productCount", "productDetailCount"])],
   ["address add", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
   ["address list", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
   ["address use", new Set(["selected", "hasAddressText", "hasAddressDetail"])],
-  ["add", new Set(["productAdded", "cartItemCount"])],
+  ["add", new Set(["productAdded", "productHasDetail", "cartItemCount"])],
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
@@ -1116,6 +1137,7 @@ const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "ok",
   "playwrightChromiumPassed",
   "productAdded",
+  "productHasDetail",
   "selected",
   "sessionSaved"
 ]);
@@ -1124,6 +1146,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS = new Set([
   "cartItemCount",
   "orderCount",
   "productCount",
+  "productDetailCount",
   "selectedCount"
 ]);
 const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
@@ -1131,6 +1154,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
   ["cartItemCount", 200],
   ["orderCount", 200],
   ["productCount", 50],
+  ["productDetailCount", 50],
   ["selectedCount", 200]
 ]);
 const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
@@ -1233,7 +1257,7 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   {
     capability: "search",
     step: "search",
-    accepts: (step) => step.summary?.productCount > 0
+    accepts: (step) => step.summary?.productCount > 0 && step.summary?.productDetailCount > 0
   },
   {
     capability: "addressAdd",
@@ -1256,7 +1280,10 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   {
     capability: "add",
     step: "add",
-    accepts: (step) => step.summary?.productAdded === true && step.summary?.cartItemCount > 0
+    accepts: (step) =>
+      step.summary?.productAdded === true &&
+      step.summary?.productHasDetail === true &&
+      step.summary?.cartItemCount > 0
   },
   {
     capability: "cart",
@@ -1361,7 +1388,7 @@ function validateLiveReportPayloadContract(name, payload) {
     return validateNonEmptyReadableProductArrayPayload(
       payload,
       "live_search_contract_mismatch",
-      "Search JSON did not include any readable product results."
+      "Search JSON did not include readable product results with price or unit detail."
     );
   }
 
@@ -1501,7 +1528,7 @@ function validateAddPayloadContract(payload) {
 
   return {
     code: "live_add_contract_mismatch",
-    message: "Add JSON did not include an added product and readable cart items."
+    message: "Add JSON did not include an added product with price or unit detail and readable cart items."
   };
 }
 
@@ -1587,7 +1614,11 @@ function isObject(value) {
 }
 
 function hasReadableProduct(value) {
-  return isObject(value) && hasReadableText(value.name);
+  return (
+    isObject(value) &&
+    hasReadableText(value.name) &&
+    (hasReadableText(value.price) || hasReadableText(value.unit))
+  );
 }
 
 function isReadableCartSnapshotPayload(payload) {
