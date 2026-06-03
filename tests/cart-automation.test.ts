@@ -207,6 +207,46 @@ describe("cart automation helpers", () => {
     ).toMatchObject({
       total: undefined
     });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Item total ₹32
+      `)
+    ).toMatchObject({
+      total: undefined
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Item total
+        ₹32
+      `)
+    ).toMatchObject({
+      total: undefined
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Subtotal ₹32
+      `)
+    ).toMatchObject({
+      total: undefined
+    });
   });
 
   it("rejects generic navigation text as cart page proof", () => {

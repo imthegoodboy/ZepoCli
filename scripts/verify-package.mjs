@@ -257,6 +257,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
     "quantity-only add text such as `Add 2 items to cart`",
+    "`Item total` and `Subtotal` are not reported as final cart totals",
     "Safe-click checks inspect visible text, `aria-label`, `title`, `placeholder`, `value`, `aria-description`, and referenced `aria-labelledby`/`aria-describedby` text",
     "Search/account/cart/order navigation labels and disabled state are revalidated after any scroll into view before clicking.",
     "cart navigation labels plus disabled state are revalidated after any scroll into view before clicking",
@@ -717,6 +718,7 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
     isCartOpenClickText,
     isCartRemoveControlText,
     isLikelyRemovableCartItemText,
+    requireReadableCartSnapshot,
     isUnsafeCartOpenClickText,
     isUnsafeCartRemoveControlText
   } = await import(pathToFileURL(cartAutomationModulePath).href);
@@ -777,6 +779,14 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
   assert(
     isLikelyRemovableCartItemText("Pay with UPI Amul Taaza Toned Milk 500 ml Rs 32 Remove") === false,
     "expected installed cart remove row parser to reject pay-with rows"
+  );
+  assert(
+    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nItem total ₹32").total === undefined,
+    "expected installed cart total parser not to report item total as final cart total"
+  );
+  assert(
+    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSubtotal ₹32").total === undefined,
+    "expected installed cart total parser not to report subtotal as final cart total"
   );
   for (const rowText of [
     "Currently unavailable Potato Chips 52 g Rs 20 Remove",

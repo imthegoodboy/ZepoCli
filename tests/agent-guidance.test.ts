@@ -63,6 +63,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("product-specific accessible labels such as `Add <product> to cart`");
       expect(guidance).toContain("quantity-only add text such as `Add 2 items to cart`");
       expect(guidance).toContain("quantity-only labels such as `Add 2 to cart`");
+      expect(guidance).toContain("report `Item total` or `Subtotal` as final cart totals");
       expect(guidance).toContain("Public product URLs");
       expect(guidance).toContain("Zepto-owned HTTP(S)");
       expect(guidance).toContain("query strings and hash fragments");

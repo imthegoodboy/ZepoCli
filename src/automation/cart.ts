@@ -615,8 +615,7 @@ function extractCartTotal(rawText: string): string | undefined {
   const lines = rawText.split(/\r?\n/).map((line) => line.trim());
   return (
     extractLabeledCartTotal(lines, isPrimaryCartTotalLabel) ??
-    extractLabeledCartTotal(lines, isFinalCartTotalLabel) ??
-    extractLabeledCartTotal(lines, isFallbackCartTotalLabel)
+    extractLabeledCartTotal(lines, isFinalCartTotalLabel)
   );
 }
 
@@ -657,6 +656,10 @@ function extractCartTotalPriceAfterLabel(line: string, matchesTotalLabel: (line:
         continue;
       }
 
+      if (isCartTotalLabelBlockedByPrefix(words, start)) {
+        continue;
+      }
+
       const suffix = words
         .slice(end)
         .join(" ")
@@ -676,16 +679,19 @@ function extractCartTotalPriceAfterLabel(line: string, matchesTotalLabel: (line:
   return undefined;
 }
 
+function isCartTotalLabelBlockedByPrefix(words: string[], labelStartIndex: number): boolean {
+  const previousWord = normalizeTotalLabel(words[labelStartIndex - 1] ?? "").toLowerCase();
+  const currentWord = normalizeTotalLabel(words[labelStartIndex] ?? "").toLowerCase();
+
+  return currentWord === "total" && (previousWord === "item" || previousWord === "subtotal");
+}
+
 function isPrimaryCartTotalLabel(label: string): boolean {
   return /^(to pay|grand total|payable|bill total|amount payable|order total)$/i.test(normalizeTotalLabel(label));
 }
 
 function isFinalCartTotalLabel(label: string): boolean {
   return /^total$/i.test(normalizeTotalLabel(label));
-}
-
-function isFallbackCartTotalLabel(label: string): boolean {
-  return /^(item total|subtotal)$/i.test(normalizeTotalLabel(label));
 }
 
 function startsWithPrice(value: string): boolean {

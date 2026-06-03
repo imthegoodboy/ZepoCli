@@ -120,7 +120,7 @@ Implementation consequence:
 - Keep JSON-mode error payloads stable and structured enough for agents to branch on `error.code`, `error.type`, `error.message`, `error.hint`, and `error.exitCode`, including `visible_browser_required` for human-only handoffs attempted without `--visible`.
 - Product, cart, and order JSON output should omit internal automation IDs and raw Zepto page text; keep those values internal for automation, parsing, and cache only.
 - Product JSON may include sanitized Zepto product URLs only; never pass through raw href query strings, hash fragments, offsite links, or unsafe schemes.
-- Cart and order totals should be parsed only from explicit total/payable labels. Do not infer totals from arbitrary product, fee, discount, or badge prices.
+- Cart and order totals should be parsed only from explicit total/payable labels. Do not report `Item total` or `Subtotal` as final cart totals, and do not infer totals from arbitrary product, fee, discount, or badge prices.
 - Prompting commands must reject `--no-input` before opening browsers or waiting for user input.
 - Global `--timeout <ms>` must remain a decimal integer from 1000 to 300000 and fail before runtime or browser work with stable `invalid_input` JSON issues.
 - Logout must remove cached user data such as searches, cart snapshots, addresses, and order snapshots.

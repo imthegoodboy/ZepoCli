@@ -354,6 +354,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed cart remove row parser to reject checkout-and-pay rows");
     expect(verifier).toContain("expected installed cart remove row parser to reject pay-with rows");
     expect(verifier).toContain("expected installed cart remove row parser to reject inactive cart rows");
+    expect(verifier).toContain("expected installed cart total parser not to report item total as final cart total");
+    expect(verifier).toContain("expected installed cart total parser not to report subtotal as final cart total");
     expect(verifier).toContain("verifyInstalledProductAutomationContract");
     expect(verifier).toContain("expected installed product-specific ADD label to be accepted");
     expect(verifier).toContain("expected installed quantity-only ADD label not to be accepted as product ADD");
