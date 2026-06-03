@@ -851,6 +851,60 @@ describe("session storage", () => {
     sqlite.close();
   });
 
+  it("does not treat CSRF or XSRF tokens as saved auth state", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zepo-csrf-token-auth-"));
+    const paths = resolveAppPaths(tempDir);
+    const sqlite = new SqliteStore(paths.dbPath);
+    const session = new SessionStore(paths, sqlite);
+
+    writeFileSync(
+      paths.authStatePath,
+      JSON.stringify({
+        cookies: [
+          {
+            name: "XSRF-TOKEN",
+            value: "present",
+            domain: "www.zepto.com",
+            path: "/"
+          },
+          {
+            name: "csrfToken",
+            value: "present",
+            domain: ".zeptonow.com",
+            path: "/"
+          }
+        ],
+        origins: [
+          {
+            origin: "https://www.zepto.com",
+            localStorage: [
+              {
+                name: "antiForgeryToken",
+                value: "present"
+              },
+              {
+                name: "requestVerificationToken",
+                value: "present"
+              }
+            ]
+          }
+        ]
+      })
+    );
+    mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
+    writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
+    session.markLoggedIn();
+
+    expect(session.hasStorageState()).toBe(false);
+    expect(session.status()).toMatchObject({
+      hasAuthState: false,
+      hasBrowserProfileData: true,
+      markedLoggedIn: true,
+      confirmedSession: false
+    });
+    sqlite.close();
+  });
+
   it("does not treat empty auth-like Zepto cookie or localStorage values as saved auth state", () => {
     tempDir = mkdtempSync(join(tmpdir(), "zepo-empty-auth-values-"));
     const paths = resolveAppPaths(tempDir);

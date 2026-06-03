@@ -238,7 +238,15 @@ function isAuthLikeStorageKey(value: unknown): boolean {
   }
 
   const normalizedKey = normalizeStorageKey(value);
+  if (isVerificationOnlyStorageKey(normalizedKey)) {
+    return false;
+  }
+
   return hasStrongAuthStorageSignal(normalizedKey);
+}
+
+function isVerificationOnlyStorageKey(normalizedKey: string): boolean {
+  return /\b(csrf|xsrf|anti\s*csrf|anti\s*forgery|request\s*verification)\b/i.test(normalizedKey);
 }
 
 function hasStrongAuthStorageSignal(normalizedKey: string): boolean {
