@@ -74,11 +74,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("Use ZepoCli only where permitted by Zepto and applicable law");
     expect(readme).toContain("https://www.zepto.com/s/terms-of-service");
     expect(readme).toContain("Terms of Use version 1.4");
-    expect(readme).toContain("were checked on 2026-06-02");
+    expect(readme).toContain("were checked on 2026-06-03");
     expect(readme).toContain("Last updated: 1 st November 2025");
     expect(readme).toContain("Privacy Notice version 1.1");
     expect(readme).toContain("https://staticweb.zepto.com/privacy-policy/");
-    expect(readme).toContain("was checked on 2026-06-02");
+    expect(readme).toContain("was checked on 2026-06-03");
     expect(readme).toContain("Last updated: 17th June 2025");
     expect(readme).toContain("passwords and payment instrument details as sensitive personal information");
     expect(readme).toContain("payment processing through payment gateways");
