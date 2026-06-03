@@ -232,6 +232,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
     "including image alt/accessibility text",
+    "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted.",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
     "quantity-only add text such as `Add 2 items to cart`",
@@ -701,6 +702,14 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     "automation",
     "search.js"
   );
+  const extractAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "extract.js"
+  );
   const {
     isProductAddControlText,
     isUnsafeProductAddControlText,
@@ -708,6 +717,7 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     isUnsafeSearchInputText,
     isUnsafeSearchTriggerClickText
   } = await import(pathToFileURL(searchAutomationModulePath).href);
+  const { parseProductCard } = await import(pathToFileURL(extractAutomationModulePath).href);
 
   assert(isProductAddControlText("Add to Cart") === true, "expected installed generic product ADD label to be accepted");
   assert(
@@ -776,6 +786,36 @@ async function verifyInstalledProductAutomationContract(prefixDir) {
     isProductAddControlText("Add Help to Cart") === false &&
       isUnsafeProductAddControlText("Add Help to Cart") === true,
     "expected installed product-specific ADD label with order action text to be unsafe"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)",
+        href: "https://www.zepto.com/p/amul-taaza-toned-milk?session=raw#details"
+      },
+      0
+    )?.url === "https://www.zepto.com/p/amul-taaza-toned-milk",
+    "expected installed product URL to strip query and hash"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)",
+        href: "https://example.com/p/amul-taaza-toned-milk?session=raw"
+      },
+      0
+    )?.url === undefined,
+    "expected installed offsite product URL to be omitted"
+  );
+  assert(
+    parseProductCard(
+      {
+        text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)",
+        href: "javascript:alert('raw')"
+      },
+      0
+    )?.url === undefined,
+    "expected installed unsafe-scheme product URL to be omitted"
   );
   console.log("pass installed product automation contract");
 }

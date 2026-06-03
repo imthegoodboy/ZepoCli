@@ -1,4 +1,5 @@
 import type { CartItem, OrderSnapshot, Product } from "../types.js";
+import { BASE_URL } from "../config/constants.js";
 import {
   extractPrices,
   looksLikePrice,
@@ -24,6 +25,8 @@ export interface RawProductCard {
   ignoredText?: string[];
 }
 
+const PUBLIC_PRODUCT_HOSTS = [new URL(BASE_URL).hostname.replace(/^www\./, ""), "zeptonow.com"];
+
 export function parseProductCard(raw: RawProductCard, outputIndex: number): Product | undefined {
   const lines = splitVisibleLines(raw.text);
   const ignoredLines = ignoredProductLinesFrom(raw.ignoredText);
@@ -47,8 +50,41 @@ export function parseProductCard(raw: RawProductCard, outputIndex: number): Prod
     mrp,
     unit,
     rating: lines.find((line) => looksLikeRating(line)),
-    url: raw.href
+    url: publicProductUrl(raw.href)
   };
+}
+
+function publicProductUrl(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(value, BASE_URL);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return undefined;
+    }
+
+    if (!isPublicProductHost(url.hostname)) {
+      return undefined;
+    }
+
+    url.protocol = "https:";
+    url.search = "";
+    url.hash = "";
+
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function isPublicProductHost(hostname: string): boolean {
+  const normalizedHostname = hostname.toLowerCase().replace(/^www\./, "");
+
+  return PUBLIC_PRODUCT_HOSTS.some(
+    (allowedHost) => normalizedHostname === allowedHost || normalizedHostname.endsWith(`.${allowedHost}`)
+  );
 }
 
 export function dedupeProducts(products: Product[]): Product[] {

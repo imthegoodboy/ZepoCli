@@ -347,6 +347,12 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed product ADD to reject order action label: ${label}");
     expect(verifier).toContain("expected installed quantity increase to reject order action label: ${label}");
     expect(verifier).toContain("expected installed product-specific ADD label with order action text to be unsafe");
+    expect(verifier).toContain("expected installed product URL to strip query and hash");
+    expect(verifier).toContain("expected installed offsite product URL to be omitted");
+    expect(verifier).toContain("expected installed unsafe-scheme product URL to be omitted");
+    expect(verifier).toContain(
+      "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted."
+    );
     expect(verifier).toContain("Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.");
     expect(verifier).toContain("verifyInstalledOrderExtractionContract");
     expect(verifier).toContain("expected installed order parser to keep active delivery ETA");

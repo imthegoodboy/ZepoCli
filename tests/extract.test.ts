@@ -46,6 +46,70 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("keeps only public Zepto product URLs and strips query or hash details", () => {
+    expect(
+      parseProductCard(
+        {
+          text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)",
+          href: "https://www.zepto.com/p/amul-taaza-toned-milk?session=raw#details"
+        },
+        0
+      )
+    ).toMatchObject({
+      url: "https://www.zepto.com/p/amul-taaza-toned-milk"
+    });
+
+    expect(
+      parseProductCard(
+        {
+          text: "ADD\n₹65\nTender Coconut\n1 piece",
+          href: "/p/tender-coconut?ref=raw#buy"
+        },
+        0
+      )
+    ).toMatchObject({
+      url: "https://www.zepto.com/p/tender-coconut"
+    });
+
+    expect(
+      parseProductCard(
+        {
+          text: "ADD\n₹78\nWhole Farm Eggs\n6 pieces",
+          href: "https://www.zeptonow.com/p/whole-farm-eggs?token=raw#cart"
+        },
+        0
+      )
+    ).toMatchObject({
+      url: "https://www.zeptonow.com/p/whole-farm-eggs"
+    });
+  });
+
+  it("omits offsite or unsafe product URLs", () => {
+    expect(
+      parseProductCard(
+        {
+          text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)",
+          href: "https://example.com/p/amul-taaza-toned-milk?session=raw"
+        },
+        0
+      )
+    ).toMatchObject({
+      url: undefined
+    });
+
+    expect(
+      parseProductCard(
+        {
+          text: "ADD\n₹32\nAmul Taaza Toned Milk\n1 pack (500 ml)",
+          href: "javascript:alert('raw')"
+        },
+        0
+      )
+    ).toMatchObject({
+      url: undefined
+    });
+  });
+
   it("ignores image-only navigation cards without product details", () => {
     expect(
       parseProductCard(
