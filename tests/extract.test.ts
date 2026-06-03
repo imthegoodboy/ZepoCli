@@ -1540,6 +1540,42 @@ describe("Zepto page extraction helpers", () => {
     expect(parseOrdersFromText("Order #ZEP1234 Daily essentials arriving in 8 mins Total ₹249")).toEqual([]);
   });
 
+  it("does not parse no-id order action or summary rows as orders", () => {
+    for (const text of [
+      "My Orders Refunds Delivered Total ₹249",
+      "Rate your order Delivered Total ₹249",
+      "Review order Delivered Total ₹249",
+      "My Orders Order Summary Total ₹249 Delivered",
+      "My Orders Bill Summary Delivered Total ₹249",
+      "My Orders Invoice Delivered Total ₹249",
+      "My Orders Customer Support Delivered Total ₹249"
+    ]) {
+      expect(parseOrdersFromText(text)).toEqual([]);
+    }
+  });
+
+  it("keeps id-bearing or tracking-context order rows with adjacent action labels", () => {
+    expect(parseOrdersFromText("Order #ZEP1234 Invoice Delivered Total ₹249")).toEqual([
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Order #ZEP1234 Invoice Delivered Total ₹249"
+      }
+    ]);
+
+    expect(parseOrdersFromText("Track order Support Delivered Total ₹249")).toEqual([
+      {
+        id: undefined,
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Track order Support Delivered Total ₹249"
+      }
+    ]);
+  });
+
   it("does not parse bare order ids without readable order details", () => {
     expect(parseOrdersFromText("Order #ZEP1234")).toEqual([]);
   });

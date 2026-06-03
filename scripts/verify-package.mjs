@@ -472,6 +472,7 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
   const packageDir = join(prefixDir, "node_modules", packageJson.name);
   const sharedCommandSource = readFileSync(join(packageDir, "dist", "commands", "shared.js"), "utf8");
   const runtimeSource = readFileSync(join(packageDir, "dist", "config", "runtime.js"), "utf8");
+  const browserAutomationSource = readFileSync(join(packageDir, "dist", "automation", "browser.js"), "utf8");
   const searchServiceSource = readFileSync(join(packageDir, "dist", "services", "search.js"), "utf8");
   const cartServiceSource = readFileSync(join(packageDir, "dist", "services", "cart.js"), "utf8");
   const ordersServiceSource = readFileSync(join(packageDir, "dist", "services", "orders.js"), "utf8");
@@ -486,6 +487,15 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
   assert(
     runtimeSource.includes("headless: options.headless ?? true"),
     "expected installed runtime to default browser automation to headless"
+  );
+  assert(
+    browserAutomationSource.includes("launchPersistentContext") &&
+      browserAutomationSource.includes("buildPersistentContextOptions(headless, this.runtime.options)"),
+    "expected installed browser automation to pass the runtime headless mode into Chromium launch options"
+  );
+  assert(
+    browserAutomationSource.includes("return {") && browserAutomationSource.includes("headless,"),
+    "expected installed browser context options to include the headless flag"
   );
 
   assert(
@@ -1250,6 +1260,47 @@ async function verifyInstalledOrderExtractionContract(prefixDir) {
       }
     ],
     "expected installed order parser not to skip through sub total to a price"
+  );
+  for (const text of [
+    "My Orders Refunds Delivered Total ₹249",
+    "Rate your order Delivered Total ₹249",
+    "Review order Delivered Total ₹249",
+    "My Orders Order Summary Total ₹249 Delivered",
+    "My Orders Bill Summary Delivered Total ₹249",
+    "My Orders Invoice Delivered Total ₹249",
+    "My Orders Customer Support Delivered Total ₹249"
+  ]) {
+    assertDeepEqual(
+      parseOrdersFromText(text),
+      [],
+      `expected installed order parser to reject no-id action row: ${text}`
+    );
+  }
+  assertDeepEqual(
+    parseOrdersFromText("Order #ZEP1234 Invoice Delivered Total ₹249"),
+    [
+      {
+        id: "ZEP1234",
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Order #ZEP1234 Invoice Delivered Total ₹249"
+      }
+    ],
+    "expected installed order parser to keep id-bearing order rows with action labels"
+  );
+  assertDeepEqual(
+    parseOrdersFromText("Track order Support Delivered Total ₹249"),
+    [
+      {
+        id: undefined,
+        status: "Delivered",
+        eta: undefined,
+        total: "₹249",
+        rawText: "Track order Support Delivered Total ₹249"
+      }
+    ],
+    "expected installed order parser to keep tracking-context order rows with action labels"
   );
   console.log("pass installed order extraction contract");
 }

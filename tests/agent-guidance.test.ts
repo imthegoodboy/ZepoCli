@@ -82,6 +82,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Cart parsing must skip delivery-address blocks with custom saved-address labels");
       expect(guidance).toContain("inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows");
       expect(guidance).toContain("not a fixed address-label list or service-city allow-list");
+      expect(guidance).toContain(
+        "No-id order rows with support, invoice/receipt, refund/return/cancel-action, rating/review, order-summary, bill-summary, or view-bill copy require explicit track/tracking context"
+      );
       expect(guidance).toContain("Hidden Zepto API 403/429 responses without visible verification text");
       expect(guidance).toContain("`--browser-locale`");
       expect(guidance).toContain("`--browser-timezone`");

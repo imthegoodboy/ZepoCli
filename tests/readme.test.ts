@@ -150,6 +150,9 @@ describe("README package guidance", () => {
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'
     );
     expect(readme).toContain("no-id history rows need stronger evidence than a bare status word");
+    expect(readme).toContain(
+      "No-id order rows with support, invoice/receipt, refund/return/cancel-action, rating/review, order-summary, bill-summary, or view-bill copy require explicit track/tracking context"
+    );
     expect(readme).toContain("Order-history navigation clicks only visible, enabled, explicit orders/history controls");
     expect(readme).toContain(
       "unrelated cart, account, address, checkout, payment-method/payment, tracking, reorder, final-order, support, invoice/receipt, refund/return/cancel, or rating/review actions are rejected"

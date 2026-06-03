@@ -282,6 +282,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("verifyInstalledBackgroundAutomationModeContract");
     expect(verifier).toContain("expected installed CLI runtime options to keep --visible as the only global visible-browser switch");
     expect(verifier).toContain("expected installed runtime to default browser automation to headless");
+    expect(verifier).toContain("expected installed browser automation to pass the runtime headless mode into Chromium launch options");
+    expect(verifier).toContain("expected installed browser context options to include the headless flag");
     expect(verifier).toContain("expected installed search service not to force visible browser mode");
     expect(verifier).toContain("expected installed cart service not to force visible browser mode");
     expect(verifier).toContain("expected installed orders service not to force visible browser mode");
@@ -389,6 +391,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed order parser not to report items total as final order total");
     expect(verifier).toContain("expected installed order parser not to report sub total as final order total");
     expect(verifier).toContain("expected installed order parser not to skip through sub total to a price");
+    expect(verifier).toContain("expected installed order parser to reject no-id action row");
+    expect(verifier).toContain("expected installed order parser to keep id-bearing order rows with action labels");
+    expect(verifier).toContain("expected installed order parser to keep tracking-context order rows with action labels");
     expect(verifier).toContain("verifyInstalledOrderAutomationContract");
     expect(verifier).toContain("expected installed order navigation label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed account-menu label to be unsafe: ${label}");

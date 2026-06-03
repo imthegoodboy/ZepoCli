@@ -680,6 +680,10 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
     return false;
   }
 
+  if (!order.id && hasNoIdOrderActionOnlyContext(order.rawText) && !hasNoIdTrackingContext(order.rawText)) {
+    return false;
+  }
+
   if (order.id && (order.status || order.eta)) {
     return true;
   }
@@ -704,9 +708,26 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
 }
 
 function hasExplicitOrderStatusPhrase(text: string): boolean {
-  return /\border\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/i.test(
+  for (const match of text.matchAll(/\border\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/gi)) {
+    const prefix = normalizeText(text.slice(Math.max(0, (match.index ?? 0) - 32), match.index ?? 0));
+    if (/\b(rate your|rate|rating|review|write review|review your)\s*$/i.test(prefix)) {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+function hasNoIdOrderActionOnlyContext(text: string): boolean {
+  return /\b(customer support|help(?:\s+(?:centre|center|desk))?|support(?:\s+(?:centre|center|ticket|desk))?|contact support|invoice|receipt|refunds?|returns?(?:\s+(?:order|request))?|cancel(?:\s+(?:order|request))?|cancellation policy|refund policy|rate(?:\s*(?:&|and)\s*review|\s+(?:order|your order))?|rating|(?:write\s+)?review\s+(?:order|your order)|write\s+review|order summary|bill summary|view bill)\b/i.test(
     text
   );
+}
+
+function hasNoIdTrackingContext(text: string): boolean {
+  return /\b(track order|tracking)\b/i.test(text);
 }
 
 function isDeliveryMarketingStatusMatch(block: string, matchIndex: number): boolean {
