@@ -592,6 +592,7 @@ async function verifyInstalledPaymentLabelContract(prefixDir) {
 }
 
 async function verifyInstalledFinalActionLabelContract(prefixDir) {
+  const packageDir = join(prefixDir, "node_modules", packageJson.name);
   const finalActionModulePath = join(
     prefixDir,
     "node_modules",
@@ -635,6 +636,27 @@ async function verifyInstalledFinalActionLabelContract(prefixDir) {
     isFinalCheckoutSurfaceText("Pay ₹249") === false,
     "expected installed amount-bearing pay label not to prove checkout surface"
   );
+  for (const file of [
+    "address.js",
+    "auth.js",
+    "cart.js",
+    "checkout.js",
+    "extract.js",
+    "login-inputs.js",
+    "orders.js",
+    "search.js"
+  ]) {
+    const source = readFileSync(join(packageDir, "dist", "automation", file), "utf8");
+    assert(source.includes("./final-action-labels.js"), `expected installed automation module to import final action labels: ${file}`);
+    assert(
+      !/const FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN(?:_SOURCE)?\s*=/.test(source),
+      `expected installed automation module not to redefine final payment/order labels: ${file}`
+    );
+    assert(
+      !/const FINAL_CHECKOUT_SURFACE_PATTERN(?:_SOURCE)?\s*=/.test(source),
+      `expected installed automation module not to redefine final checkout labels: ${file}`
+    );
+  }
   console.log("pass installed final action label contract");
 }
 

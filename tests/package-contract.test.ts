@@ -335,6 +335,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed proceed-to-pay handoff label not to be final action");
     expect(verifier).toContain("expected installed broad final action not to prove checkout surface");
     expect(verifier).toContain("expected installed amount-bearing pay label not to prove checkout surface");
+    expect(verifier).toContain("expected installed automation module to import final action labels: ${file}");
+    expect(verifier).toContain("expected installed automation module not to redefine final payment/order labels: ${file}");
+    expect(verifier).toContain("expected installed automation module not to redefine final checkout labels: ${file}");
     expect(verifier).toContain("pass installed final action label contract");
     expect(verifier).toContain("expected installed checkout order-action label to be unsafe: ${label}");
     expect(verifier).toContain("expected installed bare proceed label to be unsafe");

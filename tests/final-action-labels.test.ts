@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -57,6 +60,25 @@ describe("final payment and order action labels", () => {
 
     for (const label of ["Review Order", "Checkout and Pay", "Pay with UPI", "Pay ₹249", "Order Now"]) {
       expect(isFinalCheckoutSurfaceText(label)).toBe(false);
+    }
+  });
+
+  it("keeps final action matching centralized across automation modules", () => {
+    for (const file of [
+      "address.ts",
+      "auth.ts",
+      "cart.ts",
+      "checkout.ts",
+      "extract.ts",
+      "login-inputs.ts",
+      "orders.ts",
+      "search.ts"
+    ]) {
+      const source = readFileSync(resolve(import.meta.dirname, "..", "src", "automation", file), "utf8");
+
+      expect(source).toContain("./final-action-labels.js");
+      expect(source).not.toMatch(/const FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN(?:_SOURCE)?\s*=/);
+      expect(source).not.toMatch(/const FINAL_CHECKOUT_SURFACE_PATTERN(?:_SOURCE)?\s*=/);
     }
   });
 });
