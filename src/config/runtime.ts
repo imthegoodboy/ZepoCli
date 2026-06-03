@@ -31,7 +31,7 @@ export function createRuntime(options: Partial<RuntimeOptions> = {}): AppRuntime
 
   const paths = resolveAppPaths(runtimeOptions.dataDir);
   const sqlite = new SqliteStore(paths.dbPath);
-  const session = new SessionStore(paths, sqlite);
+  const session = new SessionStore(paths, sqlite, runtimeOptions);
   const preferences = new PreferencesStore(sqlite);
   const logDestination = pino.destination(paths.logPath);
   const logger = pino(

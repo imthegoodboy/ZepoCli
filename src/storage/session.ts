@@ -12,7 +12,8 @@ import {
 import { BASE_URL } from "../config/constants.js";
 import { PACKAGE_VERSION } from "../config/package.js";
 import type { AppPaths } from "../config/paths.js";
-import type { SessionStatus } from "../types.js";
+import { browserAutomationModeStatus } from "../config/browser-mode.js";
+import type { RuntimeOptions, SessionStatus } from "../types.js";
 import type { SqliteStore } from "./sqlite.js";
 
 const ZEPTO_SESSION_HOSTS = [new URL(BASE_URL).hostname.replace(/^www\./, ""), "zeptonow.com"];
@@ -20,7 +21,8 @@ const ZEPTO_SESSION_HOSTS = [new URL(BASE_URL).hostname.replace(/^www\./, ""), "
 export class SessionStore {
   constructor(
     private readonly paths: AppPaths,
-    private readonly sqlite: SqliteStore
+    private readonly sqlite: SqliteStore,
+    private readonly runtimeOptions: Pick<RuntimeOptions, "headless"> = { headless: true }
   ) {}
 
   get storageStatePath(): string {
@@ -123,6 +125,7 @@ export class SessionStore {
       browserProfileDir: this.paths.browserProfileDir,
       diagnosticsDir: this.paths.diagnosticsDir,
       browserLock,
+      browserAutomationMode: browserAutomationModeStatus(this.runtimeOptions),
       browserAutomation: getBrowserAutomationReadiness({
         browserLock,
         headlessBrowserThrottle,

@@ -35,6 +35,11 @@ const {
 function automationDiagnosticsPayload() {
   return {
     version: packageJson.version,
+    browserAutomationMode: {
+      default: "background_headless",
+      current: "background_headless",
+      visibleRequested: false
+    },
     browserAutomation: { ready: true, reasons: [], retryAfterMs: 0 },
     browserLock: { present: false, stale: false },
     headlessBrowserThrottle: {
@@ -48,9 +53,21 @@ function automationDiagnosticsPayload() {
   };
 }
 
+function automationDiagnosticsPayloadWithoutMode() {
+  const { browserAutomationMode: _browserAutomationMode, ...payload } = automationDiagnosticsPayload();
+  return payload;
+}
+
 function statusDiagnosticsPayload() {
   return {
     ...automationDiagnosticsPayload(),
+    cache: { searches: 0, cartSnapshots: 0, addresses: 0, orders: 0 }
+  };
+}
+
+function statusDiagnosticsPayloadWithoutMode() {
+  return {
+    ...automationDiagnosticsPayloadWithoutMode(),
     cache: { searches: 0, cartSnapshots: 0, addresses: 0, orders: 0 }
   };
 }
@@ -2505,6 +2522,19 @@ describe("live verification runner", () => {
         stdout: JSON.stringify({
           ok: true,
           checks: [{ name: "Playwright Chromium", status: "pass" }],
+          ...automationDiagnosticsPayloadWithoutMode()
+        }),
+        error: {
+          code: "live_doctor_contract_mismatch",
+          message: "Doctor JSON did not report ready browser automation and passing Playwright Chromium checks."
+        }
+      },
+      {
+        name: "doctor",
+        args: ["--data-dir", ".zepo-live", "doctor", "--json"],
+        stdout: JSON.stringify({
+          ok: true,
+          checks: [{ name: "Playwright Chromium", status: "pass" }],
           ...automationDiagnosticsPayload(),
           browserAutomation: {
             ready: false,
@@ -2521,6 +2551,15 @@ describe("live verification runner", () => {
         name: "status",
         args: ["--data-dir", ".zepo-live", "status", "--json"],
         stdout: JSON.stringify({ confirmedSession: true }),
+        error: {
+          code: "live_status_contract_mismatch",
+          message: "Status JSON did not include expected session and browser automation fields."
+        }
+      },
+      {
+        name: "status",
+        args: ["--data-dir", ".zepo-live", "status", "--json"],
+        stdout: JSON.stringify({ confirmedSession: true, ...statusDiagnosticsPayloadWithoutMode() }),
         error: {
           code: "live_status_contract_mismatch",
           message: "Status JSON did not include expected session and browser automation fields."

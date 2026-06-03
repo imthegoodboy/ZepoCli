@@ -89,12 +89,17 @@ function printStatus(status: SessionStatus): void {
   const browserAutomation = status.browserAutomation.ready
     ? chalk.green("ready")
     : chalk.yellow(formatBrowserAutomationReadiness(status.browserAutomation));
+  const browserMode =
+    status.browserAutomationMode.current === "background_headless"
+      ? chalk.green("background/headless")
+      : chalk.yellow("visible human-controlled");
 
   console.log(`${chalk.bold("Version:")} ${status.version}`);
   console.log(`${chalk.bold("Auth state:")} ${auth}`);
   console.log(`${chalk.bold("Browser profile:")} ${profile}`);
   console.log(`${chalk.bold("Marked logged in:")} ${loginMarker}`);
   console.log(`${chalk.bold("Confirmed session:")} ${confirmedSession}`);
+  console.log(`${chalk.bold("Browser mode:")} ${browserMode}`);
   console.log(`${chalk.bold("Browser automation:")} ${browserAutomation}`);
   console.log(`${chalk.bold("Browser lock:")} ${browserLock}`);
   console.log(`${chalk.bold("Headless throttle:")} ${headlessThrottle}`);

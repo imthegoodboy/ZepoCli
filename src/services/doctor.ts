@@ -13,6 +13,7 @@ import {
   LAST_ACCESS_CHALLENGE_META_KEY
 } from "../automation/browser.js";
 import { PACKAGE_VERSION } from "../config/package.js";
+import { browserAutomationModeStatus } from "../config/browser-mode.js";
 import type { AppRuntime } from "../config/runtime.js";
 import type { DoctorCheck, DoctorReport } from "../types.js";
 
@@ -58,6 +59,7 @@ export class DoctorService {
       generatedAt: new Date().toISOString(),
       dataDir: this.runtime.paths.dataDir,
       browserLock,
+      browserAutomationMode: browserAutomationModeStatus(this.runtime.options),
       browserAutomation,
       headlessBrowserThrottle,
       accessChallenge,

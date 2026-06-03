@@ -46,6 +46,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("browserAutomation.ready");
     expect(readme).toContain("browserAutomation.reasons");
     expect(readme).toContain("browserAutomation.retryAfterMs");
+    expect(readme).toContain("browserAutomationMode.current");
+    expect(readme).toContain("normal package runs should report `background_headless`");
+    expect(readme).toContain("`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`");
     expect(readme).toContain("Browser lock JSON includes the lock owner `pid`, `createdAt`, and `staleReason`");
     expect(readme).toContain("Browser commands register interrupt handlers so Ctrl+C/SIGTERM attempts to close the Playwright browser context");
     expect(readme).toContain("Browser context close is bounded and best-effort");
@@ -57,7 +60,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("`zepo status --json` includes `version`");
     expect(readme).toContain("`--browser-locale <locale>` and `--browser-timezone <timezone>`");
     expect(readme).toContain("do not add a custom user agent");
-    expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
+    expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("Installed-package commands run browser automation in background/headless mode by default");
     expect(readme).toContain("human-only login, address-add, or checkout handoff is required");
     expect(readme).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");

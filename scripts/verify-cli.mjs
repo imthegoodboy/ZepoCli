@@ -310,6 +310,8 @@ const checks = [
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
       assert(stdout.includes(`Version: ${packageJson.version}`), "expected status to print package version");
+      assert(stdout.includes("Browser mode:"), "expected status to print browser mode");
+      assert(stdout.includes("background/headless"), "expected status to print background browser mode");
       assert(stdout.includes("Confirmed session:"), "expected status readiness output");
     }
   },
@@ -321,6 +323,8 @@ const checks = [
       assert(stderr === "", "expected empty stderr");
       assert(stdout.includes("ZepoCli doctor"), "expected doctor heading");
       assert(stdout.includes(`Version: ${packageJson.version}`), "expected doctor to print package version");
+      assert(stdout.includes("Browser mode:"), "expected doctor to print browser mode");
+      assert(stdout.includes("background/headless"), "expected doctor to print background browser mode");
     }
   },
   {
@@ -989,6 +993,7 @@ function assertFreshStatus(payload, dataDir) {
   assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected browser lock path");
   assert(payload.browserLock?.present === false, "expected no browser lock");
   assert(payload.browserLock?.stale === false, "expected browser lock not stale");
+  assertBrowserAutomationMode(payload.browserAutomationMode);
   assert(payload.browserAutomation?.ready === true, "expected browser automation ready");
   assert(Array.isArray(payload.browserAutomation?.reasons), "expected browser automation reasons array");
   assert(payload.browserAutomation.reasons.length === 0, "expected no browser automation stop reasons");
@@ -1010,6 +1015,7 @@ function assertDoctorReport(payload, dataDir, options = { browser: false }) {
   assert(payload.browserLock?.path === join(dataDir, "browser.lock"), "expected doctor browser lock path");
   assert(payload.browserLock?.present === false, "expected doctor no browser lock");
   assert(payload.browserLock?.stale === false, "expected doctor browser lock not stale");
+  assertBrowserAutomationMode(payload.browserAutomationMode);
   assert(payload.browserAutomation?.ready === true, "expected doctor browser automation ready");
   assert(Array.isArray(payload.browserAutomation?.reasons), "expected doctor browser automation reasons array");
   assert(payload.browserAutomation.reasons.length === 0, "expected doctor no browser automation stop reasons");
@@ -1038,6 +1044,12 @@ function assertDoctorReport(payload, dataDir, options = { browser: false }) {
   } else {
     assert(!checkNames.includes("Playwright Chromium"), "expected browser check to be skipped");
   }
+}
+
+function assertBrowserAutomationMode(mode) {
+  assert(mode?.default === "background_headless", "expected default browser automation mode to be headless");
+  assert(mode?.current === "background_headless", "expected current browser automation mode to be headless");
+  assert(mode?.visibleRequested === false, "expected visible browser mode not to be requested");
 }
 
 function assertCheckoutHandoffContract(payload) {

@@ -214,6 +214,10 @@ function verifyInstalledReadmeContract(prefixDir) {
     "declared runtime packages load and required dev-tool binaries are present",
     "Installed-package commands run browser automation in background/headless mode by default",
     "human-only login, address-add, or checkout handoff is required",
+    "browserAutomationMode.current",
+    "normal package runs should report `background_headless`",
+    "`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`",
+    "`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`",
     "Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`",
     "zepo login",
     "zepo checkout",
@@ -3942,6 +3946,8 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(status === 0, "expected exit code 0");
         assert(stderr === "", "expected empty stderr");
         assert(stdout.includes(`Version: ${packageJson.version}`), "expected installed status to print package version");
+        assert(stdout.includes("Browser mode:"), "expected installed status to print browser mode");
+        assert(stdout.includes("background/headless"), "expected installed status to print background browser mode");
         assert(stdout.includes("Confirmed session:"), "expected installed status readiness output");
       }
     },
@@ -3956,6 +3962,8 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
           stdout.includes(`Version: ${packageJson.version}`),
           "expected installed doctor to print package version"
         );
+        assert(stdout.includes("Browser mode:"), "expected installed doctor to print browser mode");
+        assert(stdout.includes("background/headless"), "expected installed doctor to print background browser mode");
       }
     },
     {
@@ -4945,6 +4953,7 @@ function assertFreshStatus(payload, expectedDataDir) {
   assert(payload.browserLock?.path === join(expectedDataDir, "browser.lock"), "expected browser lock path");
   assert(payload.browserLock?.present === false, "expected no browser lock");
   assert(payload.browserLock?.stale === false, "expected browser lock not stale");
+  assertBrowserAutomationMode(payload.browserAutomationMode);
   assert(payload.browserAutomation?.ready === true, "expected browser automation ready");
   assert(Array.isArray(payload.browserAutomation?.reasons), "expected browser automation reasons array");
   assert(payload.browserAutomation.reasons.length === 0, "expected no browser automation stop reasons");
@@ -4966,6 +4975,7 @@ function assertDoctorReport(payload, expectedDataDir, options = { browser: false
   assert(payload.browserLock?.path === join(expectedDataDir, "browser.lock"), "expected doctor browser lock path");
   assert(payload.browserLock?.present === false, "expected doctor no browser lock");
   assert(payload.browserLock?.stale === false, "expected doctor browser lock not stale");
+  assertBrowserAutomationMode(payload.browserAutomationMode);
   assert(payload.browserAutomation?.ready === true, "expected doctor browser automation ready");
   assert(Array.isArray(payload.browserAutomation?.reasons), "expected doctor browser automation reasons array");
   assert(payload.browserAutomation.reasons.length === 0, "expected doctor no browser automation stop reasons");
@@ -4996,6 +5006,12 @@ function assertDoctorReport(payload, expectedDataDir, options = { browser: false
   }
 }
 
+function assertBrowserAutomationMode(mode) {
+  assert(mode?.default === "background_headless", "expected installed default browser automation mode to be headless");
+  assert(mode?.current === "background_headless", "expected installed current browser automation mode to be headless");
+  assert(mode?.visibleRequested === false, "expected installed visible browser mode not to be requested");
+}
+
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected installed checkout handoff status");
   assert(payload.payment === "handled_by_zepto", "expected installed Zepto-handled payment marker");
@@ -5009,6 +5025,11 @@ function assertCheckoutHandoffContract(payload) {
 function installedLiveStatusDiagnosticsPayload() {
   return {
     version: packageJson.version,
+    browserAutomationMode: {
+      default: "background_headless",
+      current: "background_headless",
+      visibleRequested: false
+    },
     browserAutomation: { ready: true, reasons: [], retryAfterMs: 0 },
     browserLock: { present: false, stale: false },
     headlessBrowserThrottle: {

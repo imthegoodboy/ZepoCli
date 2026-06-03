@@ -27,6 +27,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("support/help, invoice/receipt, refund/return/cancel, or rating/review controls");
       expect(guidance).toContain("unsafe phone-like payment/cart/address/search/support/refund/rating fields");
       expect(guidance).toContain("background/headless mode by default");
+      expect(guidance).toContain("browserAutomationMode.current");
+      expect(guidance).toContain("background_headless");
       expect(guidance).toContain("human-only login, address-add, or checkout handoff");
       expect(guidance).toContain("Background/headless mode is for explicit user-requested CLI commands only");
       expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");

@@ -75,10 +75,14 @@ describe("CLI command smokes", () => {
 
     expect(status.exitCode).toBe(0);
     expect(status.stdout).toContain(`Version: ${packageJson.version}`);
+    expect(status.stdout).toContain("Browser mode:");
+    expect(status.stdout).toContain("background/headless");
     expect(status.stdout).toContain("Confirmed session:");
     expect(doctor.exitCode).toBe(0);
     expect(doctor.stdout).toContain("ZepoCli doctor");
     expect(doctor.stdout).toContain(`Version: ${packageJson.version}`);
+    expect(doctor.stdout).toContain("Browser mode:");
+    expect(doctor.stdout).toContain("background/headless");
   }, CLI_TEST_TIMEOUT_MS);
 
   it("prints machine-readable status for a fresh data directory", async () => {
@@ -102,6 +106,11 @@ describe("CLI command smokes", () => {
         reasons: string[];
         retryAfterMs: number;
         hint?: string;
+      };
+      browserAutomationMode: {
+        default: string;
+        current: string;
+        visibleRequested: boolean;
       };
       headlessBrowserThrottle: {
         windowMs: number;
@@ -131,6 +140,11 @@ describe("CLI command smokes", () => {
       path: join(dataDir, "browser.lock"),
       present: false,
       stale: false
+    });
+    expect(status.browserAutomationMode).toEqual({
+      default: "background_headless",
+      current: "background_headless",
+      visibleRequested: false
     });
     expect(status.browserAutomation).toEqual({
       ready: true,
@@ -312,6 +326,11 @@ describe("CLI command smokes", () => {
         reasons: string[];
         retryAfterMs: number;
       };
+      browserAutomationMode: {
+        default: string;
+        current: string;
+        visibleRequested: boolean;
+      };
       headlessBrowserThrottle: {
         windowMs: number;
         limit: number;
@@ -333,6 +352,11 @@ describe("CLI command smokes", () => {
       path: join(dataDir, "browser.lock"),
       present: false,
       stale: false
+    });
+    expect(report.browserAutomationMode).toEqual({
+      default: "background_headless",
+      current: "background_headless",
+      visibleRequested: false
     });
     expect(report.browserAutomation).toEqual({
       ready: true,

@@ -1632,6 +1632,7 @@ function hasStatusDiagnostics(payload) {
 function hasAutomationDiagnostics(payload) {
   return (
     hasReadableText(payload.version) &&
+    hasBrowserAutomationModeDiagnostics(payload.browserAutomationMode) &&
     isObject(payload.browserAutomation) &&
     typeof payload.browserAutomation.ready === "boolean" &&
     Array.isArray(payload.browserAutomation.reasons) &&
@@ -1650,6 +1651,22 @@ function hasAutomationDiagnostics(payload) {
     typeof payload.accessChallenge.cooldownActive === "boolean" &&
     Number.isFinite(payload.accessChallenge.retryAfterMs)
   );
+}
+
+function hasBrowserAutomationModeDiagnostics(value) {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  if (value.default !== "background_headless") {
+    return false;
+  }
+
+  if (value.current !== "background_headless" && value.current !== "visible_human_controlled") {
+    return false;
+  }
+
+  return value.visibleRequested === (value.current === "visible_human_controlled");
 }
 
 function hasPassingCheck(payload, name) {

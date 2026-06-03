@@ -285,6 +285,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Installed-package commands run browser automation in background/headless mode by default");
     expect(verifier).toContain("human-only login, address-add, or checkout handoff is required");
     expect(verifier).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");
+    expect(verifier).toContain("browserAutomationMode.current");
+    expect(verifier).toContain("normal package runs should report `background_headless`");
+    expect(verifier).toContain("expected installed current browser automation mode to be headless");
+    expect(verifier).toContain("expected installed visible browser mode not to be requested");
     expect(verifier).toContain("expected installed visible option to document headless default");
     expect(verifier).toContain("Safe-click checks inspect visible text");
     expect(verifier).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");

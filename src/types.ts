@@ -8,6 +8,14 @@ export interface RuntimeOptions {
   timeoutMs: number;
 }
 
+export type BrowserAutomationMode = "background_headless" | "visible_human_controlled";
+
+export interface BrowserAutomationModeStatus {
+  default: "background_headless";
+  current: BrowserAutomationMode;
+  visibleRequested: boolean;
+}
+
 export interface SessionStatus {
   version: string;
   dataDir: string;
@@ -15,6 +23,7 @@ export interface SessionStatus {
   browserProfileDir: string;
   diagnosticsDir: string;
   browserLock: BrowserRunLockStatus;
+  browserAutomationMode: BrowserAutomationModeStatus;
   browserAutomation: BrowserAutomationReadiness;
   headlessBrowserThrottle: BrowserRunThrottleStatus;
   accessChallenge: AccessChallengeStatus;
@@ -101,6 +110,7 @@ export interface DoctorReport {
   generatedAt: string;
   dataDir: string;
   browserLock: BrowserRunLockStatus;
+  browserAutomationMode: BrowserAutomationModeStatus;
   browserAutomation: BrowserAutomationReadiness;
   headlessBrowserThrottle: BrowserRunThrottleStatus;
   accessChallenge: AccessChallengeStatus;

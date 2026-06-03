@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { ZodError } from "zod";
 
 import { parseRuntimeOptions, toRuntimeSetupError } from "../src/commands/shared.js";
+import { browserAutomationModeStatus } from "../src/config/browser-mode.js";
 import { closeRuntime, closeRuntimeBestEffort, createRuntime } from "../src/config/runtime.js";
 import { UserFacingError } from "../src/utils/errors.js";
 
@@ -43,6 +44,19 @@ describe("global runtime options", () => {
       input: false,
       timeout: 45000,
       dataDir: ".zepo-test"
+    });
+  });
+
+  it("reports stable browser automation modes for agents", () => {
+    expect(browserAutomationModeStatus({ headless: true })).toEqual({
+      default: "background_headless",
+      current: "background_headless",
+      visibleRequested: false
+    });
+    expect(browserAutomationModeStatus({ headless: false })).toEqual({
+      default: "background_headless",
+      current: "visible_human_controlled",
+      visibleRequested: true
     });
   });
 
