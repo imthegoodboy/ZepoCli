@@ -47,7 +47,7 @@ export class CartService {
       if (products.length === 0) {
         throw new UserFacingError(`No Zepto products found for "${cleanQuery}".`, {
           code: "product_not_found",
-          hint: "Try a more specific product name or set a delivery location with `zepo address add`."
+          hint: "Try a more specific product name or set a delivery location with `zepo --visible address add`."
         });
       }
 

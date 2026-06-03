@@ -7,7 +7,7 @@ import { wantsJson, withRuntime } from "./shared.js";
 export function registerLoginCommand(program: Command): void {
   program
     .command("login")
-    .description("Open Zepto login and save the browser session")
+    .description("Start visible Zepto login and save the browser session")
     .option("--phone <number>", "prefill phone number when the login form exposes it")
     .option("--json", "print machine-readable JSON")
     .action((options: { phone?: string; json?: boolean }, command: Command) =>
@@ -71,6 +71,6 @@ export function logoutOutput(): LogoutOutput {
     status: "session_removed",
     sessionRemoved: true,
     cacheCleared: true,
-    next: "Run `zepo login` before account-dependent commands."
+    next: "Run `zepo --visible login` before account-dependent commands."
   };
 }

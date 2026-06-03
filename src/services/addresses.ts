@@ -36,7 +36,7 @@ export class AddressService {
     requireInteractiveInput(
       this.runtime,
       "Zepto address add requires interactive input.",
-      "Rerun `zepo address add` without `--no-input` so you can add or confirm the address in the browser."
+      "Rerun `zepo --visible address add` without `--no-input` so you can add or confirm the address in the browser."
     );
     requireVisibleBrowser(
       this.runtime,

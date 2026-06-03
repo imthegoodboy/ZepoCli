@@ -79,7 +79,7 @@ When `--json` is requested and a command fails, errors are emitted as JSON on st
     "type": "user_error",
     "code": "no_confirmed_session",
     "message": "No confirmed Zepto session found.",
-    "hint": "Run `zepo login` first.",
+    "hint": "Run `zepo --visible login` first.",
     "exitCode": 1
   }
 }

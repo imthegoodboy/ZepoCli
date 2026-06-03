@@ -26,7 +26,7 @@ vi.mock("../src/automation/browser.js", () => ({
 
     throw Object.assign(new Error("No confirmed Zepto session found."), {
       code: "no_confirmed_session",
-      hint: "Run `zepo login` first."
+      hint: "Run `zepo --visible login` first."
     });
   },
   BrowserAutomation: class {

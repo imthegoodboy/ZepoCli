@@ -17,7 +17,7 @@ export class CheckoutService {
     requireInteractiveInput(
       this.runtime,
       "Zepto checkout requires interactive input.",
-      "Rerun `zepo checkout` without `--no-input` so payment stays inside the visible Zepto browser."
+      "Rerun `zepo --visible checkout` without `--no-input` so payment stays inside the visible Zepto browser."
     );
     requireVisibleBrowser(
       this.runtime,

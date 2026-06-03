@@ -70,7 +70,8 @@ export async function searchProducts(page: Page, query: string, limit: number): 
     if (isLocationSetupRequiredText(searchPageBodyText)) {
       throw new UserFacingError("Zepto needs a delivery location before search results are readable.", {
         code: "delivery_location_required",
-        hint: "Run `zepo login`, then set or select a delivery location with `zepo address add` or `zepo address use <query>`."
+        hint:
+          "Run `zepo --visible login`, then set or select a delivery location with `zepo --visible address add` or `zepo address use <query>`."
       });
     }
 
@@ -81,7 +82,7 @@ export async function searchProducts(page: Page, query: string, limit: number): 
 
     throw new UserFacingError("Zepto search did not expose readable product results.", {
       code: "search_results_unreadable",
-      hint: "Set a delivery location with `zepo address add` or rerun search with `--visible`."
+      hint: "Set a delivery location with `zepo --visible address add` or rerun search with `--visible`."
     });
   }
 

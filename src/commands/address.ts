@@ -52,7 +52,7 @@ export function registerAddressCommand(program: Command): void {
 
   address
     .command("add")
-    .description("Open Zepto address flow in the browser")
+    .description("Start visible Zepto address flow")
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {

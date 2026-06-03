@@ -110,7 +110,7 @@ const checks = [
     expect: ({ status, stdout, stderr }) => {
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
-      assert(stdout.includes("Open Zepto login and save the browser session"), "expected login description");
+      assert(stdout.includes("Start visible Zepto login and save the browser session"), "expected login description");
       assert(stdout.includes("--phone <number>"), "expected login phone option");
       assert(stdout.includes("--json"), "expected login json option");
     }
@@ -241,7 +241,7 @@ const checks = [
     expect: ({ status, stdout, stderr }) => {
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
-      assert(stdout.includes("Open Zepto address flow in the browser"), "expected address add description");
+      assert(stdout.includes("Start visible Zepto address flow"), "expected address add description");
       assert(stdout.includes("--json"), "expected address add json option");
     }
   },
@@ -251,7 +251,7 @@ const checks = [
     expect: ({ status, stdout, stderr }) => {
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
-      assert(stdout.includes("Open Zepto checkout for user-completed payment"), "expected checkout description");
+      assert(stdout.includes("Start visible Zepto checkout for user-completed payment"), "expected checkout description");
       assert(stdout.includes("--json"), "expected checkout json option");
     }
   },
@@ -477,7 +477,7 @@ const checks = [
       assert(payload.sessionRemoved === true, "expected logout confirmation");
       assert(payload.cacheCleared === true, "expected logout cache cleanup confirmation");
       assert(
-        payload.next === "Run `zepo login` before account-dependent commands.",
+        payload.next === "Run `zepo --visible login` before account-dependent commands.",
         "expected logout next-step guidance"
       );
     }

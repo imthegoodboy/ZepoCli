@@ -21,7 +21,7 @@ export class AuthService {
     requireInteractiveInput(
       this.runtime,
       "Zepto login requires interactive input.",
-      "Rerun `zepo login` without `--no-input` so you can complete Zepto login or OTP in the browser."
+      "Rerun `zepo --visible login` without `--no-input` so you can complete Zepto login or OTP in the browser."
     );
     requireVisibleBrowser(
       this.runtime,
@@ -64,7 +64,7 @@ export class AuthService {
           if (!confirmed) {
             throw new UserFacingError("Zepto login was not confirmed.", {
               code: "login_not_confirmed",
-              hint: "Run `zepo login` again and confirm only after Zepto shows your account."
+              hint: "Run `zepo --visible login` again and confirm only after Zepto shows your account."
             });
           }
         }
@@ -101,7 +101,7 @@ export class AuthService {
         checkedAt: new Date().toISOString(),
         demotedLocalSession: false,
         message: "No confirmed local Zepto session is available for live verification.",
-        hint: "Run `zepo login` first."
+        hint: "Run `zepo --visible login` first."
       };
     }
 
@@ -126,7 +126,7 @@ export function liveSessionStatusFromLoginState(state: LoginState, runtime: AppR
       checkedAt: new Date().toISOString(),
       demotedLocalSession: true,
       message: "Zepto asked for login or OTP again; the local session marker was demoted.",
-      hint: "Run `zepo login` again before account-dependent commands."
+      hint: "Run `zepo --visible login` again before account-dependent commands."
     };
   }
 
@@ -146,7 +146,7 @@ export function liveSessionStatusFromLoginState(state: LoginState, runtime: AppR
     checkedAt: new Date().toISOString(),
     demotedLocalSession: false,
     message: "Zepto loaded, but the CLI could not confidently verify the account state.",
-    hint: "Rerun `zepo status --live --visible` or `zepo login` before checkout-critical work."
+    hint: "Rerun `zepo status --live --visible` or `zepo --visible login` before checkout-critical work."
   };
 }
 
@@ -161,7 +161,7 @@ export function assertSavedLoginSession(status: Pick<SessionStatus, "confirmedSe
 
   throw new UserFacingError("Zepto login finished, but no usable local session was saved.", {
     code: "session_save_failed",
-    hint: "Run `zepo login` again and continue only after Zepto shows your account, address, or cart in the browser."
+    hint: "Run `zepo --visible login` again and continue only after Zepto shows your account, address, or cart in the browser."
   });
 }
 
@@ -199,7 +199,7 @@ export function normalizeLoginPhone(phone: string | undefined): string | undefin
 function invalidLoginPhoneError(): UserFacingError {
   return new UserFacingError("Phone number must be a valid 10-digit Indian mobile number.", {
     code: "invalid_input",
-    hint: "Use a value like `zepo login --phone 9876543210`."
+    hint: "Use a value like `zepo --visible login --phone 9876543210`."
   });
 }
 

@@ -2346,7 +2346,7 @@ describe("live verification runner", () => {
       '    "type": "user_error",',
       '    "code": "no_confirmed_session",',
       '    "message": "No confirmed Zepto session found.",',
-      '    "hint": "Run `zepo login` first.",',
+      '    "hint": "Run `zepo --visible login` first.",',
       '    "exitCode": 1',
       "  }",
       "}"
@@ -2356,7 +2356,7 @@ describe("live verification runner", () => {
     expect(summarizeCommandError(parsed?.error, mixedStderr)).toEqual({
       code: "no_confirmed_session",
       message: "No confirmed Zepto session found.",
-      hint: "Run `zepo login` first."
+      hint: "Run `zepo --visible login` first."
     });
   });
 

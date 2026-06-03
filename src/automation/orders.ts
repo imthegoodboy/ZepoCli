@@ -36,7 +36,7 @@ export async function openOrders(page: Page): Promise<void> {
   if (!opened) {
     throw new UserFacingError("Could not find Zepto order history navigation.", {
       code: "orders_navigation_unavailable",
-      hint: "Make sure you are logged in, then check the browser manually with `zepo login`."
+      hint: "Make sure you are logged in, then check the browser manually with `zepo --visible login`."
     });
   }
 
@@ -47,7 +47,7 @@ export async function openOrders(page: Page): Promise<void> {
   if (!isOrdersPageText(bodyText)) {
     throw new UserFacingError("Could not open Zepto orders.", {
       code: "orders_unavailable",
-      hint: "Make sure you are logged in, then check the browser manually with `zepo login`."
+      hint: "Make sure you are logged in, then check the browser manually with `zepo --visible login`."
     });
   }
 }

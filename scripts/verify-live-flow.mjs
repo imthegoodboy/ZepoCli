@@ -152,7 +152,7 @@ async function main() {
     addManualFailure(
       "live session",
       "Zepto live session was not verified as logged-in.",
-      "Run `zepo status --live --visible --json` or `zepo login` before cart, address, checkout, or order verification."
+      "Run `zepo status --live --visible --json` or `zepo --visible login` before cart, address, checkout, or order verification."
     );
     return;
   }

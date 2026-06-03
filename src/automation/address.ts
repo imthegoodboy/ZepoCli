@@ -59,7 +59,7 @@ export async function openAddressManager(page: Page): Promise<void> {
   if (!clicked) {
     throw new UserFacingError("Could not open Zepto address controls.", {
       code: "address_controls_unavailable",
-      hint: "Open `zepo login` first and confirm your location/address in the browser."
+      hint: "Open `zepo --visible login` first and confirm your location/address in the browser."
     });
   }
 

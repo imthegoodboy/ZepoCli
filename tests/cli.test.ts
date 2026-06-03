@@ -207,7 +207,7 @@ describe("CLI command smokes", () => {
       state: "skipped",
       demotedLocalSession: false,
       message: "No confirmed local Zepto session is available for live verification.",
-      hint: "Run `zepo login` first."
+      hint: "Run `zepo --visible login` first."
     });
   }, CLI_TEST_TIMEOUT_MS);
 
@@ -264,7 +264,7 @@ describe("CLI command smokes", () => {
       status: "session_removed",
       sessionRemoved: true,
       cacheCleared: true,
-      next: "Run `zepo login` before account-dependent commands."
+      next: "Run `zepo --visible login` before account-dependent commands."
     });
     expect(result.stderr).toBe("");
   }, CLI_TEST_TIMEOUT_MS);
@@ -858,7 +858,7 @@ describe("CLI command smokes", () => {
         type: "user_error",
         code: "invalid_input",
         message: "Phone number must be a valid 10-digit Indian mobile number.",
-        hint: "Use a value like `zepo login --phone <redacted-phone>`.",
+        hint: "Use a value like `zepo --visible login --phone <redacted-phone>`.",
         exitCode: 1
       }
     });
@@ -871,7 +871,7 @@ describe("CLI command smokes", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("Phone number must be a valid 10-digit Indian mobile number.");
-    expect(result.stderr).toContain("Use a value like `zepo login --phone <redacted-phone>`.");
+    expect(result.stderr).toContain("Use a value like `zepo --visible login --phone <redacted-phone>`.");
     expect(result.stderr).not.toContain("9876543210");
   }, CLI_TEST_TIMEOUT_MS);
 
@@ -1025,7 +1025,7 @@ describe("CLI command smokes", () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("No confirmed Zepto session found.");
-    expect(result.stderr).toContain("Run `zepo login` first.");
+    expect(result.stderr).toContain("Run `zepo --visible login` first.");
     expect(result.stderr).not.toContain("Reading Zepto cart");
   }, CLI_TEST_TIMEOUT_MS);
 
@@ -1049,7 +1049,7 @@ describe("CLI command smokes", () => {
     expect(payload.error.type).toBe("user_error");
     expect(payload.error.code).toBe("no_confirmed_session");
     expect(payload.error.message).toBe("No confirmed Zepto session found.");
-    expect(payload.error.hint).toBe("Run `zepo login` first.");
+    expect(payload.error.hint).toBe("Run `zepo --visible login` first.");
     expect(payload.error.exitCode).toBe(1);
   }, CLI_TEST_TIMEOUT_MS);
 
@@ -1063,7 +1063,7 @@ describe("CLI command smokes", () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("No confirmed Zepto session found.");
-    expect(result.stderr).toContain("Run `zepo login` again");
+    expect(result.stderr).toContain("Run `zepo --visible login` again");
   }, CLI_TEST_TIMEOUT_MS);
 });
 

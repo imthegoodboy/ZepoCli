@@ -145,7 +145,7 @@ export class DoctorService {
         name: "Zepto session",
         status: "warn",
         message: "Partial Zepto session data was found, but login is not confirmed.",
-        hint: "Run `zepo login` again before account-dependent commands."
+        hint: "Run `zepo --visible login` again before account-dependent commands."
       };
     }
 
@@ -154,7 +154,7 @@ export class DoctorService {
         name: "Zepto session",
         status: "warn",
         message: "Browser profile data exists, but no saved Zepto login session was found.",
-        hint: "Run `zepo login` before account-dependent commands."
+        hint: "Run `zepo --visible login` before account-dependent commands."
       };
     }
 
@@ -162,7 +162,7 @@ export class DoctorService {
       name: "Zepto session",
       status: "warn",
       message: "No saved Zepto login session was found.",
-      hint: "Run `zepo login` before account-dependent commands."
+      hint: "Run `zepo --visible login` before account-dependent commands."
     };
   }
 

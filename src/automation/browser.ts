@@ -765,18 +765,18 @@ export function assertConfirmedSession(runtime: Pick<AppRuntime, "session">): vo
 
 function confirmedSessionHint(status: SessionStatus): string {
   if (!status.hasAuthState) {
-    return "Run `zepo login` first.";
+    return "Run `zepo --visible login` first.";
   }
 
   if (!status.markedLoggedIn) {
-    return "Run `zepo login` again and confirm only after Zepto shows your account.";
+    return "Run `zepo --visible login` again and confirm only after Zepto shows your account.";
   }
 
   if (!status.hasBrowserProfileData) {
-    return "The persistent browser profile is missing. Run `zepo login` again.";
+    return "The persistent browser profile is missing. Run `zepo --visible login` again.";
   }
 
-  return "Run `zepo status` to inspect local session state, then retry `zepo login` if needed.";
+  return "Run `zepo status` to inspect local session state, then retry `zepo --visible login` if needed.";
 }
 
 export async function gotoZepto(page: Page, path = "/"): Promise<void> {
@@ -1051,7 +1051,7 @@ function expiredSessionError(): UserFacingError {
   return new UserFacingError("Zepto session appears to require login again.", {
     code: "zepto_login_required",
     hint:
-      "Run `zepo login` again, then retry the command. Agents should run `zepo status --live --json` before account workflows."
+      "Run `zepo --visible login` again, then retry the command. Agents should run `zepo status --live --json` before account workflows."
   });
 }
 

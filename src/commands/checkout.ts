@@ -7,7 +7,7 @@ import { wantsJson, withRuntime } from "./shared.js";
 export function registerCheckoutCommand(program: Command): void {
   program
     .command("checkout")
-    .description("Open Zepto checkout for user-completed payment")
+    .description("Start visible Zepto checkout for user-completed payment")
     .option("--json", "print machine-readable JSON")
     .action((options: { json?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
