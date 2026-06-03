@@ -19,12 +19,12 @@ export class CheckoutService {
       "Zepto checkout requires interactive input.",
       "Rerun `zepo checkout` without `--no-input` so payment stays inside the visible Zepto browser."
     );
-    assertConfirmedSession(this.runtime);
     requireVisibleBrowser(
       this.runtime,
       "Zepto checkout requires a visible browser.",
       "Rerun `zepo --visible checkout` so checkout/payment stays in a human-controlled Zepto browser."
     );
+    assertConfirmedSession(this.runtime);
 
     await this.browser.withPage(
       { captureFailures: false, requireSession: true, headless: false, saveState: true },

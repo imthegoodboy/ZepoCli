@@ -953,13 +953,13 @@ describe("CLI command smokes", () => {
         hint: "zepo --visible login"
       },
       {
-        setup: markConfirmedSession,
+        setup: () => undefined,
         args: ["address", "add", "--json"],
         message: "Zepto address add requires a visible browser.",
         hint: "zepo --visible address add"
       },
       {
-        setup: markConfirmedSession,
+        setup: () => undefined,
         args: ["checkout", "--json"],
         message: "Zepto checkout requires a visible browser.",
         hint: "zepo --visible checkout"
@@ -1138,21 +1138,6 @@ function setRuntimeMeta(dataDir: string, key: string, value: string): void {
   const sqlite = new SqliteStore(resolveAppPaths(dataDir).dbPath);
   try {
     sqlite.setMeta(key, value);
-  } finally {
-    sqlite.close();
-  }
-}
-
-function markConfirmedSession(dataDir: string): void {
-  const paths = resolveAppPaths(dataDir);
-  mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
-  writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
-  mkdirSync(join(dataDir, "storage"), { recursive: true });
-  writeFileSync(paths.authStatePath, AUTH_STATE);
-
-  const sqlite = new SqliteStore(paths.dbPath);
-  try {
-    sqlite.markSession(true, paths.authStatePath);
   } finally {
     sqlite.close();
   }

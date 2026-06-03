@@ -51,7 +51,7 @@ Use this skill when changing the ZepoCli command surface, browser automation, st
 4. Automation behavior.
    - Prefer resilient Playwright selectors: roles, visible text, form inputs, and short DOM walks.
    - If a selector becomes unreliable, fail with a specific error and hint.
-   - Installed-package commands should run browser automation in background/headless mode by default. Show the browser only when the user explicitly passes `--visible`; human-only login, address-add, and checkout handoffs must fail with `visible_browser_required` in background mode instead of opening a surprise browser. Background/headless mode is for explicit user-requested CLI commands only, not autonomous ordering or payment.
+   - Installed-package commands should run browser automation in background/headless mode by default. Show the browser only when the user explicitly passes `--visible`; human-only login, address-add, and checkout handoffs must fail with `visible_browser_required` in background mode before session checks instead of opening a surprise browser. Background/headless mode is for explicit user-requested CLI commands only, not autonomous ordering or payment.
    - Browser launch failures should surface as user-facing errors with browser-install and doctor hints.
    - Do not capture debug HTML or screenshots for Zepto browser flows that may use the persistent profile, including search, live status, login, cart, address, checkout, orders, and reorder.
    - Do not add stealth automation, anti-detection bypasses, CAPTCHA bypasses, or aggressive retry loops.

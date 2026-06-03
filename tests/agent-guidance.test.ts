@@ -30,6 +30,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("browserAutomationMode.current");
       expect(guidance).toContain("background_headless");
       expect(guidance).toContain("human-only login, address-add, and checkout handoffs must fail with `visible_browser_required`");
+      expect(guidance).toContain("before session checks instead of opening a surprise browser");
       expect(guidance).toContain("Background/headless mode is for explicit user-requested CLI commands only");
       expect(guidance).toContain("Show the browser only when the user explicitly passes `--visible`");
       expect(guidance).toContain("revalidate labels plus disabled state after any scroll into view before clicking");

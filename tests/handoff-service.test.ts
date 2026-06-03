@@ -75,11 +75,21 @@ describe("human-controlled browser handoff services", () => {
   });
 
   it("does not open checkout unless a visible browser is explicitly requested", async () => {
-    const runtime = createRuntime({ confirmedSession: true });
+    const runtime = createRuntime();
 
     await expect(new CheckoutService(runtime).checkout()).rejects.toMatchObject({
       code: "visible_browser_required",
       message: "Zepto checkout requires a visible browser."
+    });
+    expect(mocks.withPageCalls).toEqual([]);
+    expect(mocks.openCheckout).not.toHaveBeenCalled();
+  });
+
+  it("requires a confirmed session after checkout is explicitly visible", async () => {
+    const runtime = createRuntime({ headless: false });
+
+    await expect(new CheckoutService(runtime).checkout()).rejects.toMatchObject({
+      code: "no_confirmed_session"
     });
     expect(mocks.withPageCalls).toEqual([]);
     expect(mocks.openCheckout).not.toHaveBeenCalled();
@@ -99,11 +109,21 @@ describe("human-controlled browser handoff services", () => {
   });
 
   it("does not open address add unless a visible browser is explicitly requested", async () => {
-    const runtime = createRuntime({ confirmedSession: true });
+    const runtime = createRuntime();
 
     await expect(new AddressService(runtime).add()).rejects.toMatchObject({
       code: "visible_browser_required",
       message: "Zepto address add requires a visible browser."
+    });
+    expect(mocks.withPageCalls).toEqual([]);
+    expect(mocks.startAddAddress).not.toHaveBeenCalled();
+  });
+
+  it("requires a confirmed session after address add is explicitly visible", async () => {
+    const runtime = createRuntime({ headless: false });
+
+    await expect(new AddressService(runtime).add()).rejects.toMatchObject({
+      code: "no_confirmed_session"
     });
     expect(mocks.withPageCalls).toEqual([]);
     expect(mocks.startAddAddress).not.toHaveBeenCalled();

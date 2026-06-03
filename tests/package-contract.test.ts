@@ -290,7 +290,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed checkout service to be the visible human-controlled payment handoff");
     expect(verifier).toContain("expected installed login service to require explicit --visible before opening a browser");
     expect(verifier).toContain("expected installed address add service to require session and explicit --visible before opening a browser");
+    expect(verifier).toContain("expected installed address add service to require explicit --visible before checking session state");
     expect(verifier).toContain("expected installed checkout service to require session and explicit --visible before opening a browser");
+    expect(verifier).toContain("expected installed checkout service to require explicit --visible before checking session state");
     expect(verifier).toContain("pass installed background automation mode contract");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");

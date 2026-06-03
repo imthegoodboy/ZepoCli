@@ -13,18 +13,6 @@ const INSTALLED_CLI_COMMAND_TIMEOUT_MS = 120_000;
 const INSTALLED_HELPER_COMMAND_TIMEOUT_MS = 15_000;
 const NPM_COMMAND_TIMEOUT_MS = 180_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
-const AUTH_STATE = JSON.stringify({
-  cookies: [
-    {
-      name: "sid",
-      value: "1",
-      domain: "www.zepto.com",
-      path: "/"
-    }
-  ],
-  origins: []
-});
-
 class InstalledFakeElement {
   parentElement = null;
   children = [];
@@ -109,14 +97,6 @@ const accountDependentNoSessionCommands = [
   {
     name: "address use",
     args: ["address", "use", "home", "--json"]
-  },
-  {
-    name: "address add",
-    args: ["address", "add", "--json"]
-  },
-  {
-    name: "checkout",
-    args: ["checkout", "--json"]
   },
   {
     name: "track",
@@ -531,6 +511,11 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
     "expected installed address add service to require session and explicit --visible before opening a browser"
   );
   assert(
+    addressesServiceSource.indexOf("requireVisibleBrowser(this.runtime") <
+      addressesServiceSource.indexOf("assertConfirmedSession(this.runtime"),
+    "expected installed address add service to require explicit --visible before checking session state"
+  );
+  assert(
     countSourceOccurrences(checkoutServiceSource, "headless: false") === 1,
     "expected installed checkout service to be the visible human-controlled payment handoff"
   );
@@ -539,6 +524,11 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
       checkoutServiceSource.includes("requireVisibleBrowser") &&
       checkoutServiceSource.includes("Zepto checkout requires a visible browser."),
     "expected installed checkout service to require session and explicit --visible before opening a browser"
+  );
+  assert(
+    checkoutServiceSource.indexOf("requireVisibleBrowser(this.runtime") <
+      checkoutServiceSource.indexOf("assertConfirmedSession(this.runtime"),
+    "expected installed checkout service to require explicit --visible before checking session state"
   );
   console.log("pass installed background automation mode contract");
 }
@@ -5546,11 +5536,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
     },
     {
       name: "installed visible required address add",
-      args: () => {
-        const visibleDataDir = join(tempRoot, "data-visible-address-add");
-        markInstalledConfirmedSession(runtimeModules, visibleDataDir);
-        return ["--data-dir", visibleDataDir, "address", "add", "--json"];
-      },
+      args: ["--data-dir", join(tempRoot, "data-visible-address-add"), "address", "add", "--json"],
       expect: (result) => {
         const payload = expectJsonError(
           result,
@@ -5573,11 +5559,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
     },
     {
       name: "installed visible required checkout",
-      args: () => {
-        const visibleDataDir = join(tempRoot, "data-visible-checkout");
-        markInstalledConfirmedSession(runtimeModules, visibleDataDir);
-        return ["--data-dir", visibleDataDir, "checkout", "--json"];
-      },
+      args: ["--data-dir", join(tempRoot, "data-visible-checkout"), "checkout", "--json"],
       expect: (result) => {
         const payload = expectJsonError(
           result,
@@ -5854,39 +5836,6 @@ function setRuntimeMeta(runtimeModules, targetDataDir, keyExportName, value) {
     const sqlite = new SqliteStore(resolveAppPaths(${JSON.stringify(targetDataDir)}).dbPath);
     try {
       sqlite.setMeta(metaKey, ${JSON.stringify(value)});
-    } finally {
-      sqlite.close();
-    }
-  `;
-
-  run(process.execPath, ["--input-type=module", "--eval", script], {
-    cwd: rootDir,
-    timeout: INSTALLED_HELPER_COMMAND_TIMEOUT_MS,
-    env: sanitizedChildEnv(process.env, {
-      FORCE_COLOR: "0",
-      NO_COLOR: "1"
-    })
-  });
-}
-
-function markInstalledConfirmedSession(runtimeModules, targetDataDir) {
-  const pathsModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "config", "paths.js")).href;
-  const sqliteModuleUrl = pathToFileURL(join(runtimeModules.packageDir, "dist", "storage", "sqlite.js")).href;
-  const script = `
-    import { mkdirSync, writeFileSync } from "node:fs";
-    import { join } from "node:path";
-    import { resolveAppPaths } from ${JSON.stringify(pathsModuleUrl)};
-    import { SqliteStore } from ${JSON.stringify(sqliteModuleUrl)};
-
-    const paths = resolveAppPaths(${JSON.stringify(targetDataDir)});
-    mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
-    writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
-    mkdirSync(join(${JSON.stringify(targetDataDir)}, "storage"), { recursive: true });
-    writeFileSync(paths.authStatePath, ${JSON.stringify(AUTH_STATE)});
-
-    const sqlite = new SqliteStore(paths.dbPath);
-    try {
-      sqlite.markSession(true, paths.authStatePath);
     } finally {
       sqlite.close();
     }

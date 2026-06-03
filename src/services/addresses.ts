@@ -38,12 +38,12 @@ export class AddressService {
       "Zepto address add requires interactive input.",
       "Rerun `zepo address add` without `--no-input` so you can add or confirm the address in the browser."
     );
-    assertConfirmedSession(this.runtime);
     requireVisibleBrowser(
       this.runtime,
       "Zepto address add requires a visible browser.",
       "Rerun `zepo --visible address add` so address entry stays in a human-controlled Zepto browser."
     );
+    assertConfirmedSession(this.runtime);
 
     const addresses = await this.browser.withPage(
       { captureFailures: false, requireSession: true, headless: false },

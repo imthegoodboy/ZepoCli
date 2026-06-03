@@ -11,17 +11,6 @@ const cliPath = resolve(rootDir, "dist", "index.js");
 const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "utf8"));
 const CLI_COMMAND_TIMEOUT_MS = 120_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
-const AUTH_STATE = JSON.stringify({
-  cookies: [
-    {
-      name: "sid",
-      value: "1",
-      domain: "www.zepto.com",
-      path: "/"
-    }
-  ],
-  origins: []
-});
 const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "dist", "commands", "checkout.js")).href);
 const { isCheckoutHandoffClickText, isCheckoutHandoffText, isUnsafeCheckoutAutomationClickText } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "checkout.js")).href
@@ -59,14 +48,6 @@ const accountDependentNoSessionCommands = [
   {
     name: "address use",
     args: ["address", "use", "home", "--json"]
-  },
-  {
-    name: "address add",
-    args: ["address", "add", "--json"]
-  },
-  {
-    name: "checkout",
-    args: ["checkout", "--json"]
   },
   {
     name: "track",
@@ -836,10 +817,7 @@ const checks = [
   },
   {
     name: "visible required address add",
-    args: ({ dataDir }) => {
-      markConfirmedSession(dataDir);
-      return ["--data-dir", dataDir, "address", "add", "--json"];
-    },
+    args: ({ dataDir }) => ["--data-dir", dataDir, "address", "add", "--json"],
     expect: (result) => {
       const payload = expectJsonError(
         result,
@@ -859,10 +837,7 @@ const checks = [
   },
   {
     name: "visible required checkout",
-    args: ({ dataDir }) => {
-      markConfirmedSession(dataDir);
-      return ["--data-dir", dataDir, "checkout", "--json"];
-    },
+    args: ({ dataDir }) => ["--data-dir", dataDir, "checkout", "--json"],
     expect: (result) => {
       const payload = expectJsonError(result, "user_error", "Zepto checkout requires a visible browser.", "visible_browser_required");
       assert(String(payload.error?.hint).includes("zepo --visible checkout"), "expected visible checkout hint");
@@ -1019,21 +994,6 @@ function setRuntimeMeta(dataDir, key, value) {
   const sqlite = new SqliteStore(resolveAppPaths(dataDir).dbPath);
   try {
     sqlite.setMeta(key, value);
-  } finally {
-    sqlite.close();
-  }
-}
-
-function markConfirmedSession(dataDir) {
-  const paths = resolveAppPaths(dataDir);
-  mkdirSync(join(paths.browserProfileDir, "Default"), { recursive: true });
-  writeFileSync(join(paths.browserProfileDir, "Default", "Cookies"), "cookie-data");
-  mkdirSync(join(dataDir, "storage"), { recursive: true });
-  writeFileSync(paths.authStatePath, AUTH_STATE);
-
-  const sqlite = new SqliteStore(paths.dbPath);
-  try {
-    sqlite.markSession(true, paths.authStatePath);
   } finally {
     sqlite.close();
   }
