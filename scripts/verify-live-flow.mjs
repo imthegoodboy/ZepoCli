@@ -10,6 +10,7 @@ import {
   buildLiveCommandTimeoutStep,
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
+  hasLiveReportAddressDetailText,
   hasLiveReportMissingCoverage,
   LIVE_REPORT_NOTE,
   redactArgsForLiveConsole,
@@ -563,16 +564,19 @@ function summarizePayload(name, payload) {
 
   if (name === "address add" || name === "address list") {
     const addresses = Array.isArray(payload) ? payload : [];
+    const addressCount = readableAddressCount(addresses);
     return {
-      addressCount: readableAddressCount(addresses),
-      selectedCount: readableSelectedAddressCount(addresses)
+      addressCount,
+      selectedCount: readableSelectedAddressCount(addresses),
+      hasAddressDetail: addressCount > 0
     };
   }
 
   if (name === "address use") {
     return {
       selected: payload.selected === true,
-      hasAddressText: typeof payload.text === "string" && payload.text.trim().length > 0
+      hasAddressText: typeof payload.text === "string" && payload.text.trim().length > 0,
+      hasAddressDetail: hasLiveReportAddressDetailText(payload.text)
     };
   }
 
@@ -619,12 +623,12 @@ function readableProductCount(payload) {
 }
 
 function readableAddressCount(payload) {
-  return Array.isArray(payload) ? payload.filter(hasReadableAddressText).length : 0;
+  return Array.isArray(payload) ? payload.filter(hasReadableAddressDetail).length : 0;
 }
 
 function readableSelectedAddressCount(payload) {
   return Array.isArray(payload)
-    ? payload.filter((address) => address?.selected === true && hasReadableAddressText(address)).length
+    ? payload.filter((address) => address?.selected === true && hasReadableAddressDetail(address)).length
     : 0;
 }
 
@@ -640,8 +644,8 @@ function hasReadableRecordName(value) {
   return hasReadableText(value?.name);
 }
 
-function hasReadableAddressText(value) {
-  return hasReadableText(value?.text);
+function hasReadableAddressDetail(value) {
+  return hasLiveReportAddressDetailText(value?.text);
 }
 
 function hasReadableText(value) {

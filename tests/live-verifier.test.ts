@@ -146,7 +146,8 @@ function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
       ok: true,
       summary: {
         selected: true,
-        hasAddressText: true
+        hasAddressText: true,
+        hasAddressDetail: true
       }
     },
     {
@@ -304,8 +305,10 @@ describe("live verification runner", () => {
     expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
     expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
     expect(script).toContain("productCount: readableProductCount(payload)");
-    expect(script).toContain("addressCount: readableAddressCount(addresses)");
+    expect(script).toContain("const addressCount = readableAddressCount(addresses)");
+    expect(script).toContain("addressCount,");
     expect(script).toContain("selectedCount: readableSelectedAddressCount(addresses)");
+    expect(script).toContain("hasAddressDetail: addressCount > 0");
     expect(script).toContain("cartItemCount: readableCartItemCount(payload)");
     expect(script).toContain("orderCount: readableOrderCount(orders)");
     expect(script).toContain('const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium")');
@@ -1110,7 +1113,8 @@ describe("live verification runner", () => {
             ok: true,
             summary: {
               addressCount: 1,
-              selectedCount: 2
+              selectedCount: 2,
+              hasAddressDetail: true
             }
           },
           ...acceptedLiveReport().steps.slice(3)
@@ -2932,9 +2936,14 @@ describe("live verification runner", () => {
     });
   });
 
-  it("fails address list live report steps without readable addresses", () => {
+  it("fails address list live report steps without structural address detail", () => {
     for (const name of ["address add", "address list"]) {
-      for (const stdout of ["[]", JSON.stringify([{}]), JSON.stringify([{ text: "Home" }, {}])]) {
+      for (const stdout of [
+        "[]",
+        JSON.stringify([{}]),
+        JSON.stringify([{ text: "Home" }]),
+        JSON.stringify([{ text: "Home" }, { text: "Flat 12 Tower 7 MG Road" }])
+      ]) {
         const { step } = buildLiveReportStep({
           name,
           args: ["--data-dir", ".zepo-live", "--visible", "address", name.endsWith("add") ? "add" : "list", "--json"],
@@ -2950,72 +2959,80 @@ describe("live verification runner", () => {
         expect(step.ok).toBe(false);
         expect(step.error).toEqual({
           code: "live_address_contract_mismatch",
-          message: "Address JSON did not include readable address records."
+          message: "Address JSON did not include address records with readable address detail."
         });
       }
     }
   });
 
-  it("accepts address list live report steps with readable addresses", () => {
+  it("accepts address list live report steps with structural address detail", () => {
     for (const name of ["address add", "address list"]) {
       const { step } = buildLiveReportStep({
         name,
         args: ["--data-dir", ".zepo-live", "--visible", "address", name.endsWith("add") ? "add" : "list", "--json"],
         status: 0,
-        stdout: JSON.stringify([{ text: "Home", selected: true }]),
+        stdout: JSON.stringify([{ text: "Flat 12 Tower 7 MG Road", selected: true }]),
         stderr: "",
-        summarizePayload: () => ({ addressCount: 1 })
+        summarizePayload: () => ({ addressCount: 1, hasAddressDetail: true })
       });
 
       expect(step).toMatchObject({
         exitCode: 0,
         ok: true,
         summary: {
-          addressCount: 1
+          addressCount: 1,
+          hasAddressDetail: true
         }
       });
     }
   });
 
-  it("fails address use live report steps without a selected readable address", () => {
-    const { step } = buildLiveReportStep({
-      name: "address use",
-      args: ["--data-dir", ".zepo-live", "--visible", "address", "use", "home", "--json"],
-      status: 0,
-      stdout: JSON.stringify({ text: "Home", selected: false }),
-      stderr: "",
-      summarizePayload: () => {
-        throw new Error("unselected address payload should not be summarized");
-      }
-    });
+  it("fails address use live report steps without a selected address with detail", () => {
+    for (const stdout of [
+      JSON.stringify({ text: "Flat 12 Tower 7 MG Road", selected: false }),
+      JSON.stringify({ text: "Home", selected: true })
+    ]) {
+      const { step } = buildLiveReportStep({
+        name: "address use",
+        args: ["--data-dir", ".zepo-live", "--visible", "address", "use", "home", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("unusable address payload should not be summarized");
+        }
+      });
 
-    expect(step).toEqual({
-      name: "address use",
-      command: "zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json",
-      exitCode: 1,
-      ok: false,
-      error: {
-        code: "live_address_contract_mismatch",
-        message: "Address selection JSON did not include a selected readable address."
-      }
-    });
+      expect(step).toEqual({
+        name: "address use",
+        command: "zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_address_contract_mismatch",
+          message: "Address selection JSON did not include a selected address with readable address detail."
+        }
+      });
+    }
   });
 
-  it("accepts address use live report steps with a selected readable address", () => {
+  it("accepts address use live report steps with a selected address with detail", () => {
     const { step } = buildLiveReportStep({
       name: "address use",
       args: ["--data-dir", ".zepo-live", "--visible", "address", "use", "home", "--json"],
       status: 0,
-      stdout: JSON.stringify({ text: "Home", selected: true }),
+      stdout: JSON.stringify({ text: "Flat 12 Tower 7 MG Road", selected: true }),
       stderr: "",
-      summarizePayload: () => ({ selected: true })
+      summarizePayload: () => ({ selected: true, hasAddressText: true, hasAddressDetail: true })
     });
 
     expect(step).toMatchObject({
       exitCode: 0,
       ok: true,
       summary: {
-        selected: true
+        selected: true,
+        hasAddressText: true,
+        hasAddressDetail: true
       }
     });
   });

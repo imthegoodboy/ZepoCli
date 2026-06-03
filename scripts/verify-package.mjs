@@ -266,7 +266,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "<redacted-browser-timezone>",
     "browser locale/timezone values",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
-    "counts of readable address/product/cart records and status/ETA-bearing order records",
+    "counts of structural address-detail records, readable product/cart records, and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -1135,8 +1135,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     liveVerifierSource.includes("productCount: readableProductCount(payload)") &&
-      liveVerifierSource.includes("addressCount: readableAddressCount(addresses)") &&
+      liveVerifierSource.includes("const addressCount = readableAddressCount(addresses)") &&
+      liveVerifierSource.includes("addressCount,") &&
       liveVerifierSource.includes("selectedCount: readableSelectedAddressCount(addresses)") &&
+      liveVerifierSource.includes("hasAddressDetail: addressCount > 0") &&
       liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload)") &&
       liveVerifierSource.includes("orderCount: readableOrderCount(orders)"),
     "expected installed live verifier summaries to count readable records"
@@ -1793,7 +1795,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       ok: true,
       summary: {
         selected: true,
-        hasAddressText: true
+        hasAddressText: true,
+        hasAddressDetail: true
       }
     },
     {
@@ -2408,7 +2411,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
           ok: true,
           summary: {
             addressCount: 1,
-            selectedCount: 2
+            selectedCount: 2,
+            hasAddressDetail: true
           }
         },
         ...acceptedLiveReport.steps.slice(3)
@@ -3594,7 +3598,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     unreadableAddressStep.ok === false &&
       unreadableAddressStep.error?.code === "live_address_contract_mismatch",
-    "expected installed address live report contract to require readable address records"
+    "expected installed address live report contract to require structural address detail"
   );
 
   const unreadableAddStep = buildLiveReportStep({

@@ -50,6 +50,8 @@ const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
   "history",
   "reorder"
 ];
+const LIVE_REPORT_ADDRESS_DETAIL_PATTERN =
+  /\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\s+code|india)\b|\b[a-z]\s*[-/]\s*\d{2,}\b|\d{3,}/i;
 
 export function summarizeCommandError(error, stderr, args = []) {
   const redactions = liveReportTextRedactions(args);
@@ -710,7 +712,19 @@ function validateLiveReportSummaryConsistencyContract(name, summary, issues) {
     if (
       Number.isInteger(summary.addressCount) &&
       Number.isInteger(summary.selectedCount) &&
-      summary.selectedCount > summary.addressCount
+      (summary.selectedCount > summary.addressCount ||
+        (summary.addressCount === 0 && summary.hasAddressDetail === true) ||
+        (summary.addressCount > 0 && summary.hasAddressDetail !== true))
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
+  if (name === "address use") {
+    if (
+      (summary.hasAddressDetail === true && summary.hasAddressText !== true) ||
+      (summary.selected === true && summary.hasAddressDetail !== true)
     ) {
       addLiveReportStepContractMismatchIssue(issues);
     }
@@ -1047,9 +1061,9 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["search", new Set(["productCount"])],
-  ["address add", new Set(["addressCount", "selectedCount"])],
-  ["address list", new Set(["addressCount", "selectedCount"])],
-  ["address use", new Set(["selected", "hasAddressText"])],
+  ["address add", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
+  ["address list", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
+  ["address use", new Set(["selected", "hasAddressText", "hasAddressDetail"])],
   ["add", new Set(["productAdded", "cartItemCount"])],
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
@@ -1072,9 +1086,9 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["search", new Set(["productCount"])],
-  ["address add", new Set(["addressCount", "selectedCount"])],
-  ["address list", new Set(["addressCount", "selectedCount"])],
-  ["address use", new Set(["selected", "hasAddressText"])],
+  ["address add", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
+  ["address list", new Set(["addressCount", "selectedCount", "hasAddressDetail"])],
+  ["address use", new Set(["selected", "hasAddressText", "hasAddressDetail"])],
   ["add", new Set(["productAdded", "cartItemCount"])],
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
@@ -1087,6 +1101,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
 const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "browserAutomationReady",
   "confirmedSession",
+  "hasAddressDetail",
   "hasAddressText",
   "hasTotal",
   "latestHasEta",
@@ -1217,17 +1232,20 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   {
     capability: "addressAdd",
     step: "address add",
-    accepts: (step) => step.summary?.addressCount > 0
+    accepts: (step) => step.summary?.addressCount > 0 && step.summary?.hasAddressDetail === true
   },
   {
     capability: "addressList",
     step: "address list",
-    accepts: (step) => step.summary?.addressCount > 0
+    accepts: (step) => step.summary?.addressCount > 0 && step.summary?.hasAddressDetail === true
   },
   {
     capability: "addressUse",
     step: "address use",
-    accepts: (step) => step.summary?.selected === true && step.summary?.hasAddressText === true
+    accepts: (step) =>
+      step.summary?.selected === true &&
+      step.summary?.hasAddressText === true &&
+      step.summary?.hasAddressDetail === true
   },
   {
     capability: "add",
@@ -1488,18 +1506,18 @@ function validateAddressListPayloadContract(payload) {
 
   return {
     code: "live_address_contract_mismatch",
-    message: "Address JSON did not include readable address records."
+    message: "Address JSON did not include address records with readable address detail."
   };
 }
 
 function validateAddressUsePayloadContract(payload) {
-  if (isObject(payload) && payload.selected === true && hasReadableText(payload.text)) {
+  if (isObject(payload) && payload.selected === true && hasLiveReportAddressDetailText(payload.text)) {
     return undefined;
   }
 
   return {
     code: "live_address_contract_mismatch",
-    message: "Address selection JSON did not include a selected readable address."
+    message: "Address selection JSON did not include a selected address with readable address detail."
   };
 }
 
@@ -1575,13 +1593,26 @@ function hasReadableCartItemPayload(value) {
 }
 
 function hasReadableAddressPayload(value) {
-  return isObject(value) && hasReadableText(value.text);
+  return isObject(value) && hasLiveReportAddressDetailText(value.text);
 }
 
 function isReadableHistoryOrderPayload(value) {
   return (
     isObject(value) &&
     (hasReadableText(value.status) || hasReadableText(value.eta))
+  );
+}
+
+export function hasLiveReportAddressDetailText(value) {
+  if (!hasReadableText(value)) {
+    return false;
+  }
+
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return (
+    normalized.length > 12 &&
+    normalized.length < 400 &&
+    LIVE_REPORT_ADDRESS_DETAIL_PATTERN.test(normalized)
   );
 }
 
