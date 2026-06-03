@@ -623,7 +623,7 @@ export function shouldCaptureBrowserFailure(
   options: Pick<BrowserRunOptions, "captureFailures">,
   debug: boolean
 ): boolean {
-  return debug && (options.captureFailures ?? true);
+  return debug && options.captureFailures === true;
 }
 
 export function shouldSaveBrowserState(options: Pick<BrowserRunOptions, "requireSession" | "saveState">): boolean {

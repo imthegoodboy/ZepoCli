@@ -86,6 +86,7 @@ try {
   verifyInstalledBinShim(zepoBin);
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
+  await verifyInstalledBrowserDiagnosticsContract(installDir);
   await verifyInstalledPaymentLabelContract(installDir);
   await verifyInstalledFinalActionLabelContract(installDir);
   await verifyInstalledOrderActionLabelContract(installDir);
@@ -348,6 +349,41 @@ async function verifyInstalledEnvSanitizerContract(prefixDir) {
   assert(isNpmAuthEnvironmentKey("COREPACK_NPM_TOKEN") === true, "expected installed env sanitizer to match Corepack tokens");
   assert(isNpmAuthEnvironmentKey("COREPACK_HOME") === false, "expected installed env sanitizer to keep Corepack home");
   console.log("pass installed env sanitizer contract");
+}
+
+async function verifyInstalledBrowserDiagnosticsContract(prefixDir) {
+  const browserAutomationModulePath = join(
+    prefixDir,
+    "node_modules",
+    packageJson.name,
+    "dist",
+    "automation",
+    "browser.js"
+  );
+  const { shouldCaptureBrowserFailure } = await import(pathToFileURL(browserAutomationModulePath).href);
+
+  assert(
+    shouldCaptureBrowserFailure({}, false) === false,
+    "expected installed browser failure capture to stay off without debug"
+  );
+  assert(
+    shouldCaptureBrowserFailure({}, true) === false,
+    "expected installed browser failure capture to default off even with debug"
+  );
+  assert(
+    shouldCaptureBrowserFailure({ captureFailures: false }, true) === false,
+    "expected installed browser failure capture opt-out to stay off"
+  );
+  assert(
+    shouldCaptureBrowserFailure({ captureFailures: true }, false) === false,
+    "expected installed browser failure capture opt-in to still require debug"
+  );
+  assert(
+    shouldCaptureBrowserFailure({ captureFailures: true }, true) === true,
+    "expected installed browser failure capture to require explicit opt-in and debug"
+  );
+
+  console.log("pass installed browser diagnostics contract");
 }
 
 async function verifyInstalledPaymentLabelContract(prefixDir) {

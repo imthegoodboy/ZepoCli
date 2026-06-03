@@ -69,10 +69,11 @@ describe("browser automation helpers", () => {
     expect(error.hint).toContain("profile path is locked");
   });
 
-  it("captures debug failure artifacts only when debug and flow settings allow it", () => {
+  it("captures debug failure artifacts only when debug and flow settings explicitly allow it", () => {
     expect(shouldCaptureBrowserFailure({}, false)).toBe(false);
-    expect(shouldCaptureBrowserFailure({}, true)).toBe(true);
+    expect(shouldCaptureBrowserFailure({}, true)).toBe(false);
     expect(shouldCaptureBrowserFailure({ captureFailures: false }, true)).toBe(false);
+    expect(shouldCaptureBrowserFailure({ captureFailures: true }, false)).toBe(false);
     expect(shouldCaptureBrowserFailure({ captureFailures: true }, true)).toBe(true);
   });
 

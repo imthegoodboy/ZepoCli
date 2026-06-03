@@ -276,6 +276,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed env sanitizer to remove Yarn npm auth tokens");
     expect(verifier).toContain("expected installed env sanitizer to remove Corepack npm tokens");
     expect(verifier).toContain("pass installed env sanitizer contract");
+    expect(verifier).toContain("verifyInstalledBrowserDiagnosticsContract");
+    expect(verifier).toContain("expected installed browser failure capture to default off even with debug");
+    expect(verifier).toContain("pass installed browser diagnostics contract");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
