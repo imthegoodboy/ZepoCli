@@ -684,6 +684,22 @@ describe("Zepto page extraction helpers", () => {
     }
   });
 
+  it("does not parse account, login, or location prompts as product cards", () => {
+    for (const text of [
+      "Delivery Location\n1 pack\n₹99",
+      "Select delivery location\n1 pack\n₹99",
+      "Add delivery address\n1 pack\n₹99",
+      "Delivering to\n1 pack\n₹99",
+      "Login / Sign Up\n1 pack\n₹99",
+      "Continue with Phone\n1 pack\n₹99",
+      "Enter mobile number\n1 pack\n₹99",
+      "Verify OTP\n1 pack\n₹99",
+      "My Account\n1 pack\n₹99"
+    ]) {
+      expect(parseProductCard({ text }, 0)).toBeUndefined();
+    }
+  });
+
   it("does not treat ordinary card or wallet product names as payment panels", () => {
     for (const product of [
       {
@@ -794,6 +810,46 @@ describe("Zepto page extraction helpers", () => {
         ₹32
         Qty 1
         Grand Total ₹32
+      `)
+    ).toEqual([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "1 pack (500 ml)",
+        quantity: "1"
+      }
+    ]);
+  });
+
+  it("does not parse account, login, or location prompts as active cart items", () => {
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Delivery Location
+        1 pack
+        ₹99
+        Qty 1
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Login / Sign Up
+        1 pack
+        ₹99
+        Qty 1
+      `)
+    ).toEqual([]);
+
+    expect(
+      parseCartItemsFromText(`
+        Cart
+        Amul Taaza Toned Milk
+        1 pack (500 ml)
+        ₹32
+        Qty 1
+        Login / Sign Up
       `)
     ).toEqual([
       {

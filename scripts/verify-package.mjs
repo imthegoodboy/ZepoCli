@@ -284,7 +284,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
-    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
+    "account/login/OTP/location/address prompts",
+    "inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
     "not a fixed address-label list or service-city allow-list",
     "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, promotional/merchandising/payment/membership rows, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
@@ -1585,6 +1586,27 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
       `expected installed product parser to reject cart service row: ${text.split("\n")[0]}`
     );
   }
+  for (const text of [
+    "Delivery Location\n1 pack\n₹99",
+    "Select delivery location\n1 pack\n₹99",
+    "Add delivery address\n1 pack\n₹99",
+    "Delivering to\n1 pack\n₹99",
+    "Login / Sign Up\n1 pack\n₹99",
+    "Continue with Phone\n1 pack\n₹99",
+    "Enter mobile number\n1 pack\n₹99",
+    "Verify OTP\n1 pack\n₹99",
+    "My Account\n1 pack\n₹99"
+  ]) {
+    assert(
+      parseProductCard(
+        {
+          text
+        },
+        0
+      ) === undefined,
+      `expected installed product parser to reject account/location prompt: ${text.split("\n")[0]}`
+    );
+  }
   assert(
     parseCartItemsFromText(`
       Cart
@@ -1691,6 +1713,19 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
         Grand Total ₹249
       `).length === 0,
       `expected installed cart parser to reject cart service row: ${row.split("\n")[0]}`
+    );
+  }
+  for (const prompt of ["Delivery Location", "Select delivery location", "Add delivery address", "Login / Sign Up", "Verify OTP"]) {
+    assert(
+      parseCartItemsFromText(`
+        Cart
+        ${prompt}
+        1 pack
+        ₹99
+        Qty 1
+        Grand Total ₹99
+      `).length === 0,
+      `expected installed cart parser to reject account/location prompt: ${prompt}`
     );
   }
   for (const unsafeText of [

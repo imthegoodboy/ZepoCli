@@ -407,6 +407,7 @@ function isCommerceUiOrPromoLine(line: string): boolean {
 
   return (
     isCartOrCheckoutServiceLine(normalized) ||
+    isAccountLocationOrVerificationUiLine(normalized) ||
     /^(checkout|payment methods?|payments?|upi|cards?|wallets?|net banking|cash on delivery|cod|free gift|zepto pass|membership|subscription|unlocked at checkout|unlock at checkout|gift unlocked|reward|rewards|cashback|offer zone|offers?|deals?|deals for you|buy more save more|save more|sale|sale zone|promo|promos?|voucher|coupons?)$/i.test(
       normalized
     ) ||
@@ -415,6 +416,17 @@ function isCommerceUiOrPromoLine(line: string): boolean {
       normalized
     ) ||
     isPaymentUiSurfaceText(normalized)
+  );
+}
+
+function isAccountLocationOrVerificationUiLine(line: string): boolean {
+  return (
+    /^(?:account|my account|profile|login|log in|sign in|sign up|login\s*\/\s*sign\s*up|login\/sign up|continue with (?:phone|mobile)|enter (?:phone|mobile)(?: number)?|verify otp|otp verification)$/i.test(
+      line
+    ) ||
+    /^(?:delivery location|select location|select delivery location|choose delivery location|set delivery location|change delivery location|add location|add delivery location|delivery address|select delivery address|add delivery address|saved addresses?|deliver(?:ing)? to)$/i.test(
+      line
+    )
   );
 }
 

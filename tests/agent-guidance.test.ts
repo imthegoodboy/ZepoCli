@@ -59,6 +59,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("try the direct search URL before returning only query-matched homepage fallback cards");
       expect(guidance).toContain("Homepage fallback must not override explicit search-page no-results");
       expect(guidance).toContain("Zepto exposes as product-card control labels");
+      expect(guidance).toContain("account/login/OTP/location/address prompts");
       expect(guidance).toContain("checkout/payment panels, cart/checkout service rows such as fees, charges, tips, discounts, donations, taxes, and GST, promo gift panels, offer/upsell panels, merchandising headings, membership rows");
       expect(guidance).toContain("image alt/accessibility text");
       expect(guidance).toContain("not explicit product-add labels");
@@ -81,6 +82,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("explicit add/enter delivery address or location labels");
       expect(guidance).toContain("rather than a hardcoded service-city allow-list");
       expect(guidance).toContain("Cart parsing must skip delivery-address blocks with custom saved-address labels");
+      expect(guidance).toContain("skip account/login/OTP/location/address prompts");
       expect(guidance).toContain("inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows");
       expect(guidance).toContain("not a fixed address-label list or service-city allow-list");
       expect(guidance).toContain(

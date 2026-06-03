@@ -102,6 +102,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("the CLI tries the direct search URL before returning only query-matched homepage fallback cards");
     expect(readme).toContain("Homepage fallback never overrides explicit search-page no-results");
     expect(readme).toContain("Zepto exposes as product-card control labels");
+    expect(readme).toContain("account/login/OTP/location/address prompts");
     expect(readme).toContain("checkout/payment panels, cart/checkout service rows such as fees, charges, tips, discounts, donations, taxes, and GST, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text");
     expect(readme).toContain("not explicit product-add labels");
     expect(readme).toContain("product-specific accessible labels such as `Add <product> to cart`");
@@ -144,7 +145,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
-    expect(readme).toContain("skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows");
+    expect(readme).toContain("skips account/login/OTP/location/address prompts");
+    expect(readme).toContain("inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows");
     expect(readme).toContain("not a fixed address-label list or service-city allow-list");
     expect(readme).toContain(
       'Empty-history marketing copy such as groceries "delivered in minutes" or snacks "arriving in 8 mins" is ignored'

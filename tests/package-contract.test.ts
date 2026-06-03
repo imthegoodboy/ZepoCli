@@ -425,6 +425,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed product parser to reject cart upsell panels");
     expect(verifier).toContain("expected installed product parser to reject offer panels");
     expect(verifier).toContain("expected installed product parser to reject cart service row");
+    expect(verifier).toContain("expected installed product parser to reject account/location prompt");
     expect(verifier).toContain("expected installed cart parser to ignore inactive saved/unavailable cart sections");
     expect(verifier).toContain("expected installed cart parser to reject promo gift rows");
     expect(verifier).toContain("expected installed cart parser to reject membership rows");
@@ -432,6 +433,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed cart parser to reject cart upsell rows");
     expect(verifier).toContain("expected installed cart parser to reject offer rows");
     expect(verifier).toContain("expected installed cart parser to reject cart service row");
+    expect(verifier).toContain("expected installed cart parser to reject account/location prompt");
     expect(verifier).toContain("Use Current Location");
     expect(verifier).toContain("Change to current location");
     expect(verifier).toContain("Confirm Address");
