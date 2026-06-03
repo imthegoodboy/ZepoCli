@@ -332,6 +332,10 @@ describe("live verification runner", () => {
     expect(script).toContain("hasAddressDetail: addressCount > 0");
     expect(script).toContain("cartItemCount: readableCartItemCount(payload)");
     expect(script).toContain("orderCount: readableOrderCount(orders)");
+    expect(script).toContain("latestHasStatus: hasReadableText(orders[0]?.status)");
+    expect(script).toContain("latestHasEta: hasReadableText(orders[0]?.eta)");
+    expect(script).not.toContain('latestHasStatus: typeof orders[0]?.status === "string"');
+    expect(script).not.toContain('latestHasEta: typeof orders[0]?.eta === "string"');
     expect(script).toContain('const playwrightChromiumCheck = checks.find((check) => check.name === "Playwright Chromium")');
     expect(script).toContain('playwrightChromiumPassed: playwrightChromiumCheck?.status === "pass"');
   });

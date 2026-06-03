@@ -496,6 +496,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live verifier to sanitize report write failures");
     expect(verifier).toContain("expected installed live verifier to write sanitized partial reports on interrupts");
     expect(verifier).toContain("expected installed live verifier summaries to count readable records");
+    expect(verifier).toContain("latestHasStatus: hasReadableText(orders[0]?.status)");
+    expect(verifier).toContain("latestHasEta: hasReadableText(orders[0]?.eta)");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
     expect(verifier).toContain("expected installed status live report contract to require browser readiness");
     expect(verifier).toContain("expected installed search live report contract to require product detail");

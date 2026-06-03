@@ -2020,7 +2020,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("selectedCount: readableSelectedAddressCount(addresses)") &&
       liveVerifierSource.includes("hasAddressDetail: addressCount > 0") &&
       liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload)") &&
-      liveVerifierSource.includes("orderCount: readableOrderCount(orders)"),
+      liveVerifierSource.includes("orderCount: readableOrderCount(orders)") &&
+      liveVerifierSource.includes("latestHasStatus: hasReadableText(orders[0]?.status)") &&
+      liveVerifierSource.includes("latestHasEta: hasReadableText(orders[0]?.eta)"),
     "expected installed live verifier summaries to count readable records and product detail evidence"
   );
   assert(

@@ -610,8 +610,8 @@ function summarizePayload(name, payload) {
     const orders = Array.isArray(payload) ? payload : [];
     return {
       orderCount: readableOrderCount(orders),
-      latestHasStatus: typeof orders[0]?.status === "string",
-      latestHasEta: typeof orders[0]?.eta === "string"
+      latestHasStatus: hasReadableText(orders[0]?.status),
+      latestHasEta: hasReadableText(orders[0]?.eta)
     };
   }
 
