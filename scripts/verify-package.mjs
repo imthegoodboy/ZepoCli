@@ -304,12 +304,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "The tagged saved-address row is revalidated against Zepto's current visible row text before click, including after any scroll into view",
     "rather than a hardcoded service-city allow-list",
     "Cart parsing skips delivery-address blocks with custom saved-address labels",
-    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, fees, charges, taxes/GST, tips, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
+    "skips inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows",
     "not a fixed address-label list or service-city allow-list",
     "Tagged remove/decrease controls are rejected if any visible or accessible label points at coupon, address, checkout, payment-method/payment, inactive saved/unavailable item actions, promotional/merchandising/payment/membership rows, or order actions",
     "whose readable order-card text matches the latest detected order, including after any scroll into view before clicking",
     "Implicit delivery/arriving time copy is treated as ETA only when the same order block exposes an active tracking status.",
-    "checkout/payment panels, cart/checkout service rows such as fees, charges, taxes, and GST, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text",
+    "checkout/payment panels, cart/checkout service rows such as fees, charges, tips, discounts, donations, taxes, and GST, promo gift panels, offer/upsell panels, merchandising headings, membership rows, and image alt/accessibility text",
     "Public product URLs are kept only for Zepto-owned HTTP(S) links, with query strings and hash fragments stripped; offsite or unsafe-scheme hrefs are omitted.",
     "product-specific accessible labels such as `Add <product> to cart`",
     "Quantity-only labels such as `Add 2 to cart` are not product-specific ADD controls.",
@@ -1496,7 +1496,16 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "GST\n₹8",
     "Taxes and Charges\n₹20",
     "Service Charge\n₹10",
-    "Service Charges\n₹10"
+    "Service Charges\n₹10",
+    "Rain Fee\n₹20",
+    "Rain Charges\n₹20",
+    "High Demand Fee\n₹15",
+    "Long Distance Fee\n₹10",
+    "Tip your delivery partner\n₹10",
+    "Partner Tip\n₹10",
+    "Donation\n₹1",
+    "Feeding India Donation\n₹1",
+    "Wallet Discount\n₹50"
   ]) {
     assert(
       parseProductCard(
@@ -1595,7 +1604,17 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     "GST\n₹8",
     "Taxes and Charges\n₹20",
     "Service Charge\n₹10",
-    "Service Charges\n₹10"
+    "Service Charges\n₹10",
+    "Rain Fee\n₹20",
+    "Rain Charges\n₹20",
+    "High Demand Fee\n₹15",
+    "Long Distance Fee\n₹10",
+    "Tip your delivery partner\n₹10",
+    "Partner Tip\n₹10",
+    "Donation\n₹1",
+    "Feeding India Donation\n₹1",
+    "Wallet Discount\n₹50",
+    "Round Off\n₹1"
   ]) {
     assert(
       parseCartItemsFromText(`

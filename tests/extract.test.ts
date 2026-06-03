@@ -669,7 +669,16 @@ describe("Zepto page extraction helpers", () => {
       "GST\n₹8",
       "Taxes and Charges\n₹20",
       "Service Charge\n₹10",
-      "Service Charges\n₹10"
+      "Service Charges\n₹10",
+      "Rain Fee\n₹20",
+      "Rain Charges\n₹20",
+      "High Demand Fee\n₹15",
+      "Long Distance Fee\n₹10",
+      "Tip your delivery partner\n₹10",
+      "Partner Tip\n₹10",
+      "Donation\n₹1",
+      "Feeding India Donation\n₹1",
+      "Wallet Discount\n₹50"
     ]) {
       expect(parseProductCard({ text }, 0)).toBeUndefined();
     }
@@ -990,7 +999,17 @@ describe("Zepto page extraction helpers", () => {
       "GST\n₹8",
       "Taxes and Charges\n₹20",
       "Service Charge\n₹10",
-      "Service Charges\n₹10"
+      "Service Charges\n₹10",
+      "Rain Fee\n₹20",
+      "Rain Charges\n₹20",
+      "High Demand Fee\n₹15",
+      "Long Distance Fee\n₹10",
+      "Tip your delivery partner\n₹10",
+      "Partner Tip\n₹10",
+      "Donation\n₹1",
+      "Feeding India Donation\n₹1",
+      "Wallet Discount\n₹50",
+      "Round Off\n₹1"
     ]) {
       expect(
         parseCartItemsFromText(`

@@ -426,6 +426,13 @@ function isCartOrCheckoutServiceLine(line: string): boolean {
     /\b(delivery|handling|platform|convenience|surge|packing|packaging|service)\s+(?:fees?|charges?)\b/i.test(
       line
     ) ||
+    /\b(rain|high demand|peak demand|long distance|distance|late night|priority)\s+(?:fees?|charges?)\b/i.test(
+      line
+    ) ||
+    /\b(tip your delivery partner|partner tip|delivery partner tip|delivery tip|rider tip)\b/i.test(line) ||
+    /\b(donation|charity|round off|rounding adjustment|wallet discount|coupon discount|promo discount|voucher discount)\b/i.test(
+      line
+    ) ||
     /\b(gst|tax(?:es)?|tax(?:es)?\s*(?:&|and)\s*charges?|charges?\s*(?:&|and)\s*tax(?:es)?|fees?\s*(?:&|and)\s*tax(?:es)?|tax(?:es)?\s*(?:&|and)\s*fees?)\b/i.test(
       line
     )
@@ -626,7 +633,7 @@ function cartItemDetailWindow(lines: string[], index: number): string[] {
 function isCartSummaryLine(line: string): boolean {
   return (
     isCartOrCheckoutServiceLine(normalizeText(line)) ||
-    /\b(subtotal|grand total|item total|to pay|payable|delivery|handling|platform|convenience|surge|small cart|fees?|charges?|coupon|discount|saving|wallet|tip|donation|tax(?:es)?|gst|packing|packaging|bill total)\b/i.test(
+    /\b(subtotal|grand total|item total|to pay|payable|delivery|handling|platform|convenience|surge|small cart|fees?|charges?|coupon|discount|saving|wallet|tip|donation|round off|tax(?:es)?|gst|packing|packaging|bill total)\b/i.test(
       line
     )
   );
