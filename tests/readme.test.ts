@@ -252,6 +252,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence"
     );
+    expect(readme).toContain(
+      "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
+    );
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
       "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command"

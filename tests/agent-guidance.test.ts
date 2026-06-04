@@ -137,6 +137,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("npm --silent run verify:live");
       expect(guidance).toContain("interrupted with Ctrl+C/SIGTERM");
       expect(guidance).toContain("write the same sanitized partial report when possible");
+      expect(guidance).toContain(
+        "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
+      );
       expect(guidance).toContain("`verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats");
       expect(guidance).toContain("npm --silent run verify:live:report -- <report-path>");
       expect(guidance).toContain("npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>");
@@ -267,6 +270,9 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
     expect(liveVerifierSkill).toContain("--production-scope --search milk --address home --add");
     expect(liveVerifierSkill).toContain("`--production-scope` is the final readiness preset shape");
+    expect(liveVerifierSkill).toContain(
+      "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
+    );
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(liveVerifierSkill).toContain(
       "npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json"

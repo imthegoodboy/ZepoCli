@@ -365,6 +365,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Use `--production-scope` for the final readiness run",
     "then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled",
     "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
+    "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking",
     "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
     "<redacted-browser-locale>",
     "<redacted-browser-timezone>",
@@ -2233,6 +2234,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     liveVerifierSource.includes("parsed.checkoutWait = true"),
     "expected installed verify:live production-scope preset to enable checkout wait"
   );
+  assert(
+    liveVerifierSource.includes("shouldContinueAfterManualCheckout(checkoutResult)") &&
+      liveVerifierSource.includes("function shouldContinueAfterManualCheckout(result)") &&
+      liveVerifierSource.includes("!options.productionScope") &&
+      liveVerifierSource.includes("Production-scope verification stops before tracking because checkout handoff coverage is missing."),
+    "expected installed verify:live production-scope to stop before track when checkout handoff coverage is missing"
+  );
 
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
@@ -2264,6 +2272,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     result.stdout.includes("Use --production-scope for the final production readiness run"),
     "expected installed verify:live help to explain production-scope preset"
+  );
+  assert(
+    result.stdout.includes("If checkout remains at checkout_manual_action_required, production-scope verification stops before track"),
+    "expected installed verify:live help to explain production-scope stops before track without checkout handoff"
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
   assert(result.stdout.includes("npm-token-shaped values"), "expected installed verify:live npm-token redaction guidance");

@@ -268,6 +268,9 @@ describe("live verification runner", () => {
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
     );
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
+    expect(result.stdout).toContain(
+      "If checkout remains at checkout_manual_action_required, production-scope verification stops before track"
+    );
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
     expect(result.stdout).toContain(
@@ -388,9 +391,23 @@ describe("live verification runner", () => {
     expect(script).toContain("options.checkoutWait");
     expect(script).toContain("parsed.checkoutWait = true");
     expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait")');
-    expect(script).toContain("options.checkoutWait && options.track && isManualCheckoutContinuation(checkoutResult)");
+    expect(script).toContain("shouldContinueAfterManualCheckout(checkoutResult)");
+    expect(script).toContain("function shouldContinueAfterManualCheckout(result)");
+    expect(script).toContain("!options.productionScope");
     expect(script).toContain("Checkout stopped at Zepto's manual payment-control boundary; continuing to track because --checkout-wait was requested.");
     expect(script).toContain('result?.payload?.status === "checkout_manual_action_required"');
+  });
+
+  it("stops production-scope verification before tracking when checkout remains manual-only", () => {
+    const script = readFileSync(scriptPath, "utf8");
+
+    expect(script).toContain(
+      "Production-scope verification stops before tracking because checkout handoff coverage is missing."
+    );
+    expect(script.indexOf("!options.productionScope")).toBeGreaterThan(script.indexOf("function shouldContinueAfterManualCheckout"));
+    expect(script).toContain(
+      "If checkout remains at checkout_manual_action_required, production-scope verification stops before track"
+    );
   });
 
   it("stores the package version in sanitized live reports", () => {

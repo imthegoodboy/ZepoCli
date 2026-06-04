@@ -1,9 +1,10 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 04:51 IST.
+Last updated: 2026-06-05 05:13 IST.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-05 at 05:13 IST after making production-scope live verification stop before `track` when checkout remains at `checkout_manual_action_required`: secret scan, dependency readiness, build, 34 test files, 649 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 04:39 IST after hardening checkout manual-action detection to read accessible control labels, including `aria-description` and referenced `aria-labelledby`/`aria-describedby` text: secret scan, dependency readiness, build, 34 test files, 648 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 03:43 IST after making `verify:live` preflight mode-aware so requested live account workflows use visible doctor/status readiness while no-account/local smokes keep background preflight: secret scan, dependency readiness, build, 34 test files, 647 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 03:05 IST after adding mode-specific browser automation readiness diagnostics for background/headless versus visible human-controlled flows: secret scan, dependency readiness, build, 34 test files, 646 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.

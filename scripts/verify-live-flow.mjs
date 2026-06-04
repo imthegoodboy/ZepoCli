@@ -247,7 +247,12 @@ async function main() {
       checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait");
     }
     const checkoutResult = await runStep("checkout", checkoutArgs);
-    if (!checkoutResult.ok && !(options.checkoutWait && options.track && isManualCheckoutContinuation(checkoutResult))) {
+    if (!checkoutResult.ok && !shouldContinueAfterManualCheckout(checkoutResult)) {
+      if (options.productionScope && isManualCheckoutContinuation(checkoutResult)) {
+        console.error(
+          "\nProduction-scope verification stops before tracking because checkout handoff coverage is missing."
+        );
+      }
       return;
     }
     if (!checkoutResult.ok) {
@@ -364,6 +369,15 @@ function isManualCheckoutContinuation(result) {
     result?.ok === false &&
     result?.error?.code === "live_verification_incomplete" &&
     result?.payload?.status === "checkout_manual_action_required"
+  );
+}
+
+function shouldContinueAfterManualCheckout(result) {
+  return (
+    options.checkoutWait &&
+    options.track &&
+    !options.productionScope &&
+    isManualCheckoutContinuation(result)
   );
 }
 
@@ -1056,6 +1070,7 @@ Example:
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
 Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
+If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
