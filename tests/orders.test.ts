@@ -16,6 +16,7 @@ import {
   isUnsafeOrdersOpenClickText,
   isUnsafeReorderActionClickText,
   ORDERS_OPEN_CLICK_LABELS,
+  openOrders,
   REORDER_ACTION_CLICK_LABELS,
   requireReadableOrders,
   requireReadableLatestOrderForReorder,
@@ -122,6 +123,47 @@ describe("order automation helpers", () => {
       }
     ]);
     expect(() => requireReadableOrders("My Orders Reorder Order summary")).toThrow(
+      "Zepto orders page did not expose readable order history."
+    );
+  });
+
+  it("parses Zepto no-id order cards with status, placed-at text, and total", () => {
+    expect(
+      requireReadableOrders(`
+        Orders
+        Order delivered
+        Placed at 26th May 2026, 01:04 pm
+        ₹128
+        Rate order
+        Order Again
+        Order delivered
+        Placed at 23rd May 2026, 07:46 pm
+        ₹171
+        Rate order
+        Order Again
+      `)
+    ).toEqual([
+      {
+        status: "Delivered",
+        eta: undefined,
+        total: "₹128",
+        placedAt: "26th May 2026, 01:04 pm",
+        rawText:
+          "Order delivered Placed at 26th May 2026, 01:04 pm ₹128 Rate order Order Again"
+      },
+      {
+        status: "Delivered",
+        eta: undefined,
+        total: "₹171",
+        placedAt: "23rd May 2026, 07:46 pm",
+        rawText:
+          "Order delivered Placed at 23rd May 2026, 07:46 pm ₹171 Rate order Order Again"
+      }
+    ]);
+  });
+
+  it("rejects no-id order action rows without card evidence", () => {
+    expect(() => requireReadableOrders("Orders Order delivered Rate order Order Again")).toThrow(
       "Zepto orders page did not expose readable order history."
     );
   });
@@ -404,6 +446,17 @@ describe("order automation helpers", () => {
     expect(page.clicked).toBe(false);
   });
 
+  it("opens orders through Zepto account controls without using a direct orders route", async () => {
+    const page = createOrdersOpenViaAccountPage();
+
+    await expect(openOrders(page as never)).resolves.toBeUndefined();
+
+    expect(page.accountClicked).toBe(true);
+    expect(page.ordersClicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/orders")).toBe(false);
+  });
+
   it("does not click disabled reorder controls", async () => {
     const page = createDisabledReorderPage();
 
@@ -679,6 +732,46 @@ function createScrollRerenderedAccountMenuPage(textBeforeScroll: string, textAft
   return page;
 }
 
+function createOrdersOpenViaAccountPage() {
+  let location = "blank";
+  let bodyText = "";
+  const page = {
+    accountClicked: false,
+    ordersClicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Cart Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Profile")) {
+        return createVisibleLocator("Profile", async () => {
+          page.accountClicked = true;
+          location = "account";
+          bodyText = "Settings Orders Saved Addresses Profile";
+        });
+      }
+
+      if (location === "account" && role === "link" && matchesLocatorName(options.name, "Orders")) {
+        return createVisibleLocator("Orders", async () => {
+          page.ordersClicked = true;
+          bodyText = "Orders Order delivered Placed at 26th May 2026 Total ₹128";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createTextLocator(bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDisabledReorderPage() {
   const page = {
     clicked: false,
@@ -892,6 +985,13 @@ function createTextLocator(text: string) {
     getAttribute: async () => null,
     scrollIntoViewIfNeeded: async () => undefined,
     click: async () => undefined
+  };
+}
+
+function createNavigationResponse(url: string) {
+  return {
+    status: () => 200,
+    url: () => url
   };
 }
 

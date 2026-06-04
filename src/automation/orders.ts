@@ -16,7 +16,6 @@ export const REORDER_ACTION_CLICK_LABELS = [/^reorder$/i, /^order again$/i, /^re
 const ORDER_CONTROL_SCAN_LIMIT = 8;
 
 export async function openOrders(page: Page): Promise<void> {
-  await gotoZepto(page, "/orders");
   let bodyText = await page.locator("body").innerText().catch(() => "");
   if (isOrdersPageText(bodyText)) {
     return;

@@ -167,7 +167,7 @@ export function parseOrdersFromText(rawText: string): OrderSnapshot[] {
     };
   });
 
-  return orders.filter((order) => isLikelyOrderSnapshot(order));
+  return dedupeOrders([...orders, ...parseNoIdOrderCardsFromText(rawText)].filter((order) => isLikelyOrderSnapshot(order)));
 }
 
 function extractOrderStatus(block: string): string | undefined {
@@ -241,6 +241,64 @@ function cleanOrderEta(value: string | undefined): string | undefined {
 
 function isActiveOrderStatus(status: string | undefined): boolean {
   return status !== undefined && status !== "Delivered" && !isTerminalOrderStatus(status);
+}
+
+function parseNoIdOrderCardsFromText(rawText: string): OrderSnapshot[] {
+  const lines = splitVisibleLines(rawText);
+  if (!hasOrderHistorySurfaceLine(lines)) {
+    return [];
+  }
+
+  const starts = lines
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => isNoIdOrderStatusLine(line))
+    .map(({ index }) => index);
+  const orders: OrderSnapshot[] = [];
+  for (let startIndex = 0; startIndex < starts.length; startIndex += 1) {
+    const start = starts[startIndex]!;
+    const end = starts[startIndex + 1] ?? lines.length;
+    const blockLines = lines.slice(start, end);
+    const block = normalizeText(blockLines.join(" "));
+    const status = extractOrderStatus(block);
+    const eta = extractOrderEta(block, status);
+    const total = extractOrderTotal(block) ?? extractNoIdOrderCardTotal(blockLines);
+    const placedAt = extractOrderPlacedAt(block);
+
+    orders.push({
+      status,
+      eta,
+      total,
+      placedAt,
+      rawText: block
+    });
+  }
+
+  return orders;
+}
+
+function hasOrderHistorySurfaceLine(lines: string[]): boolean {
+  return lines.some((line) => /\b(my orders|orders|order history|past orders)\b/i.test(line));
+}
+
+function isNoIdOrderStatusLine(line: string): boolean {
+  return /^\s*order\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/i.test(
+    line
+  );
+}
+
+function extractNoIdOrderCardTotal(lines: string[]): string | undefined {
+  const prices = lines
+    .filter((line) => !isOrderActionLabelText(line) && !/\b(refund|cashback|saving|discount|coupon)\b/i.test(line))
+    .flatMap((line) => extractPrices(line));
+  return prices[0];
+}
+
+function extractOrderPlacedAt(block: string): string | undefined {
+  const match = block.match(
+    /\bPlaced at\s+(.+?)(?=\s+(?:Rate order|Reorder|Order Again|Repeat Order|Track Order|Customer Support|Support|Invoice|Receipt|Refund|Cancel|Return|₹|Rs\.?\s*\d|INR\s*\d|Order\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded))\b|$)/i
+  );
+  const value = normalizeText(match?.[1] ?? "");
+  return value.length > 0 ? value : undefined;
 }
 
 function extractOrderTotal(block: string): string | undefined {
@@ -710,7 +768,12 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
     return false;
   }
 
-  if (!order.id && hasNoIdOrderActionOnlyContext(order) && !hasNoIdTrackingContext(order.rawText)) {
+  if (
+    !order.id &&
+    hasNoIdOrderActionOnlyContext(order) &&
+    !hasNoIdTrackingContext(order.rawText) &&
+    !hasNoIdOrderCardEvidence(order)
+  ) {
     return false;
   }
 
@@ -735,6 +798,14 @@ function isLikelyOrderSnapshot(order: OrderSnapshot): boolean {
   }
 
   return false;
+}
+
+function hasNoIdOrderCardEvidence(order: OrderSnapshot): boolean {
+  return (
+    order.status !== undefined &&
+    hasExplicitOrderStatusPhrase(order.rawText) &&
+    (order.eta !== undefined || order.total !== undefined || order.placedAt !== undefined)
+  );
 }
 
 function hasExplicitOrderStatusPhrase(text: string): boolean {
@@ -825,6 +896,22 @@ function dedupeCartItems(items: CartItem[]): CartItem[] {
     }
     seen.add(key);
     deduped.push(item);
+  }
+
+  return deduped;
+}
+
+function dedupeOrders(orders: OrderSnapshot[]): OrderSnapshot[] {
+  const seen = new Set<string>();
+  const deduped: OrderSnapshot[] = [];
+  for (const order of orders) {
+    const key = [order.id ?? "", order.status ?? "", order.eta ?? "", order.total ?? "", order.placedAt ?? ""].join("|");
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    deduped.push(order);
   }
 
   return deduped;
