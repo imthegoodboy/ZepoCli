@@ -567,6 +567,8 @@ function isLikelyCartProductName(line: string): boolean {
     ) ||
     isCartSummaryLine(line) ||
     isRecommendationHeaderLine(line) ||
+    isCartSwapSuggestionHeaderLine(line) ||
+    isCartSwapActionLine(line) ||
     isInactiveCartSectionHeaderLine(line)
   ) {
     return false;
@@ -636,11 +638,20 @@ function isCartNonActiveContextLine(lines: string[], index: number): boolean {
       continue;
     }
 
-    if (isCartSummaryLine(candidate) || isCartAddressHeaderLine(candidate) || /^cart$/i.test(candidate)) {
+    if (
+      isCartSummaryLine(candidate) ||
+      isCartAddressHeaderLine(candidate) ||
+      isCartSwapActionLine(candidate) ||
+      /^cart$/i.test(candidate)
+    ) {
       return false;
     }
 
-    if (isRecommendationHeaderLine(candidate) || isInactiveCartSectionHeaderLine(candidate)) {
+    if (
+      isRecommendationHeaderLine(candidate) ||
+      isCartSwapSuggestionHeaderLine(candidate) ||
+      isInactiveCartSectionHeaderLine(candidate)
+    ) {
       return true;
     }
   }
@@ -660,6 +671,14 @@ function isRecommendationHeaderLine(line: string): boolean {
   return /\b(you may also like|similar products|recommended|frequently bought|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|sponsored|before you checkout|complete your cart|customers also bought|add more items?)\b/i.test(
     line
   );
+}
+
+function isCartSwapSuggestionHeaderLine(line: string): boolean {
+  return /^(?:swap\s*(?:&|and)\s*save|swap\s+suggestions?|swap\s+recommendations?)$/i.test(normalizeText(line));
+}
+
+function isCartSwapActionLine(line: string): boolean {
+  return /^swap$/i.test(normalizeText(line));
 }
 
 function isInactiveCartSectionHeaderLine(line: string): boolean {

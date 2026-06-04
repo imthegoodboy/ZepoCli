@@ -1304,6 +1304,41 @@ describe("Zepto page extraction helpers", () => {
     ]);
   });
 
+  it("does not parse swap suggestions on cart pages as active cart items", () => {
+    const items = parseCartItemsFromText(`
+      Cart
+      Kurkure Namkeen Masala Munch | Crunchy Snacks
+      1 pack (75 g)
+      ₹20
+      Qty 1
+      Swap & save
+      Too Yumm Munchy Masala Karare
+      1 pack (71.5 g)
+      ₹20
+      Swap
+      Kurkure Namkeen Green Chutney Style | Crunchy Snacks
+      1 pack (68 g)
+      ₹20
+      Qty 1
+      Grand Total ₹40
+    `);
+
+    expect(items).toEqual([
+      {
+        name: "Kurkure Namkeen Masala Munch | Crunchy Snacks",
+        price: "₹20",
+        unit: "1 pack (75 g)",
+        quantity: "1"
+      },
+      {
+        name: "Kurkure Namkeen Green Chutney Style | Crunchy Snacks",
+        price: "₹20",
+        unit: "1 pack (68 g)",
+        quantity: "1"
+      }
+    ]);
+  });
+
   it("does not parse saved-for-later rows as active cart items", () => {
     const items = parseCartItemsFromText(`
       Cart

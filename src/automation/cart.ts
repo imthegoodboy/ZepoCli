@@ -162,8 +162,41 @@ async function isSafeCartOpenControl(locator: Locator): Promise<boolean> {
 }
 
 export async function readCart(page: Page): Promise<CartSnapshot> {
+  try {
+    await openCart(page);
+    return await readVisibleCart(page);
+  } catch (error) {
+    if (!isRecoverableCartReadError(error)) {
+      throw error;
+    }
+
+    await recoverCartOpenForRead(page);
+    return readVisibleCart(page);
+  }
+}
+
+function isRecoverableCartReadError(error: unknown): error is UserFacingError {
+  return error instanceof UserFacingError && (
+    error.code === "cart_unreadable" ||
+    error.code === "cart_navigation_unverified"
+  );
+}
+
+async function recoverCartOpenForRead(page: Page): Promise<void> {
+  await page.waitForTimeout(1_500);
+  await assertNoAccessChallenge(page);
+  await gotoZepto(page);
+
+  if (await isCurrentCartPage(page)) {
+    return;
+  }
+
+  if (await clickCartOpenButton(page)) {
+    await waitForCartContentSettled(page);
+    return;
+  }
+
   await openCart(page);
-  return readVisibleCart(page);
 }
 
 export async function removeCartItem(page: Page, query: string): Promise<CartSnapshot> {
