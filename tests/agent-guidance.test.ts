@@ -329,9 +329,13 @@ describe("agent guidance", () => {
     expect(agentStatus).toContain("manual session precondition with `live_verification_incomplete`");
     expect(agentStatus).toContain("did not claim login, live-session, checkout, or order coverage");
     expect(agentStatus).toContain("confirmed local session marker");
-    expect(agentStatus).toContain("live-session coverage is still unproven");
+    expect(agentStatus).toContain("focused human-controlled visible live-session probe");
+    expect(agentStatus).toContain("passed `doctor`, local `status`, and visible `status --live --json`");
+    expect(agentStatus).toContain("saved focused report was accepted");
+    expect(agentStatus).toContain("proves fresh browser preflight, local status, and live-session coverage only");
+    expect(agentStatus).toContain("does not prove address selection, search, add, cart, checkout handoff, or track");
     expect(agentStatus).toContain("including one retry after the cooldown cleared");
-    expect(agentStatus).toContain("repeated headless live-session checks should stop");
+    expect(agentStatus).toContain("do not loop headless live-session checks");
     expect(agentStatus).toContain("was checked with `verify:live:report --require-production-scope --max-age-minutes 1440`");
     expect(agentStatus).toContain("was rejected");
     expect(agentStatus).toContain("checkout handoff coverage did not pass");
