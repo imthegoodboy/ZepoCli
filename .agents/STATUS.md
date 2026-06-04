@@ -4,6 +4,7 @@ Last updated: 2026-06-04.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-04 at 20:18 IST after adding explicit checkout wait support: secret scan, dependency readiness, build, 34 test files, 633 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 19:40 IST after the cart-read recovery and swap-suggestion parser fixes: secret scan, dependency readiness, build, 34 test files, 631 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally again on 2026-06-04 at 18:02 IST after the order-history navigation hardening: 34 test files, 628 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - A fresh compiled CLI smoke on 2026-06-04 with `node dist/index.js --data-dir ./.zepo-final-smoke status --json` reported `browserAutomationMode.default: "background_headless"`, `browserAutomationMode.current: "background_headless"`, `browserAutomationMode.visibleRequested: false`, `browserAutomation.ready: true`, no browser lock, no profile data, no headless run history, and no access cooldown.
@@ -12,6 +13,7 @@ Last updated: 2026-06-04.
 - Compiled and installed-package verifiers also assert that `zepo --data-dir <new-dir> completion bash` does not create the requested data directory, proving shell completion generation does not initialize runtime storage, services, SQLite, or Playwright.
 - The packed npm package now ships the exposed verifier entrypoints `scripts/verify-cli.mjs`, `scripts/verify-package.mjs`, `scripts/verify-live-flow.mjs`, and `scripts/verify-live-report.mjs`; installed-package checks assert `verify:live` and `verify:live:report` are wired to those scripts, and disposable installed-package `npm run verify:cli --silent` and `npm run verify:package --silent` smokes passed on 2026-06-04. Installed-package `verify:package` uses `npm pack --ignore-scripts` for its nested pack so runtime installs do not need dev-only `tsc`.
 - Installed-package commands default to background/headless browser automation. Human-only login, address-add, and checkout handoffs require `--visible` and fail early with `visible_browser_required` before browser launch/profile writes/headless run accounting.
+- `zepo --visible checkout --json` still returns structured checkout evidence immediately for agents. Callers can now pass `--wait` explicitly when a human wants the visible Zepto checkout/payment browser to stay open before JSON returns; `verify:live --checkout-wait` passes that option and may continue to `track` after the manual Zepto boundary, but manual payment controls still do not count as checkout handoff coverage.
 - Final CLI help now describes `login`, `address add`, and `checkout` as commands that require `--visible`, while the global `--visible` option documents that the default remains background/headless. After that wording change, `npm run check` passed on 2026-06-04.
 - Do not parallelize browser-capable commands against the same `--data-dir`, including quick status/search/login/checkout experiments. ZepoCli intentionally serializes browser work per data directory and will report `browser_lock_active` on overlapping runs; run such checks serially or use separate data directories only for independent sessions.
 
@@ -24,6 +26,7 @@ Last updated: 2026-06-04.
 ## Live Zepto Evidence
 
 - A safe no-account `verify:live` smoke on 2026-06-04 using `./.zepo-live-smoke-current` passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`; it did not claim login, live-session, checkout, or order coverage. The ordinary report validator rejected the saved report with `live_report_not_ok`, which is correct because this smoke is incomplete evidence, not an acceptable live pass.
+- A disposable no-account checkout-wait smoke on 2026-06-04 using `./.zepo-checkout-wait-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. It did not launch checkout, did not claim live-session/checkout coverage, and the ordinary report validator rejected the saved report as incomplete.
 - A conservative public headless search smoke on 2026-06-04 returned Zepto HTTP 429 and the CLI emitted structured `error.code: "zepto_access_challenge"` with `retryAfterMs: 900000`.
 - A `.zepo-live-prod` local-status check on 2026-06-04 showed a confirmed local session marker with no active browser lock. Earlier headless `status --live --json` checks returned Zepto HTTP 429 with `error.code: "zepto_access_challenge"` and `retryAfterMs: 900000`, including one retry after the cooldown cleared; do not loop headless live-session checks after this signal.
 - A focused human-controlled visible live-session probe on 2026-06-04 using `.zepo-live-prod` and `npm --silent run verify:live -- --data-dir ./.zepo-live-prod --login --report ./.zepo-live-prod/live-session-report.json --step-timeout 120000` passed `doctor`, local `status`, and visible `status --live --json`. The saved focused report was accepted by `npm --silent run verify:live:report -- --max-age-minutes 1440 ./.zepo-live-prod/live-session-report.json`. This proves fresh browser preflight, local status, and live-session coverage only; it does not prove address selection, search, add, cart, checkout handoff, or track.
@@ -41,6 +44,12 @@ Last updated: 2026-06-04.
 
 ```bash
 npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-scope --search <query> --address <query> --add <query>
+```
+
+- Optional checkout-wait continuation when a human is ready to complete Zepto-side checkout/payment before tracking:
+
+```bash
+npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-scope --checkout-wait --search <query> --address <query> --add <query>
 ```
 
 - Required acceptance command:

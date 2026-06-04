@@ -1109,7 +1109,7 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
   ["cart", liveCommandPattern("--visible cart --json")],
   ["remove", liveCommandPattern("--visible remove <redacted-cart-query> --json")],
   ["clear", liveCommandPattern("--visible clear --json")],
-  ["checkout", liveCommandPattern("--visible checkout --json")],
+  ["checkout", liveCommandPattern("--visible checkout(?: --wait)? --json")],
   ["track", liveCommandPattern("--visible track --json")],
   ["history", liveCommandPattern("--visible history --json")],
   ["reorder", liveCommandPattern("--visible reorder last --json")]

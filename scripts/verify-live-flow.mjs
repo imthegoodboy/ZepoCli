@@ -241,8 +241,18 @@ async function main() {
     console.error(
       "\nCheckout verification opens Zepto checkout/payment in a visible browser. Complete only the Zepto-side actions you choose; ZepoCli will not click final payment or order-placement controls."
     );
-    if (!(await runStep("checkout", [...baseCliArgs({ visible: true }), "checkout", "--json"])).ok) {
+    const checkoutArgs = [...baseCliArgs({ visible: true }), "checkout", "--json"];
+    if (options.checkoutWait) {
+      checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait");
+    }
+    const checkoutResult = await runStep("checkout", checkoutArgs);
+    if (!checkoutResult.ok && !(options.checkoutWait && options.track && isManualCheckoutContinuation(checkoutResult))) {
       return;
+    }
+    if (!checkoutResult.ok) {
+      console.error(
+        "\nCheckout stopped at Zepto's manual payment-control boundary; continuing to track because --checkout-wait was requested."
+      );
     }
   }
 
@@ -340,6 +350,15 @@ function isRetryableUnknownLiveStatus(result) {
     result?.payload?.liveSession?.checked === true &&
     result?.payload?.liveSession?.state === "unknown" &&
     result?.payload?.accessChallenge?.cooldownActive !== true
+  );
+}
+
+function isManualCheckoutContinuation(result) {
+  return (
+    result?.name === "checkout" &&
+    result?.ok === false &&
+    result?.error?.code === "live_verification_incomplete" &&
+    result?.payload?.status === "checkout_manual_action_required"
   );
 }
 
@@ -719,6 +738,7 @@ function parseArgs(args) {
     addressList: false,
     cart: false,
     checkout: false,
+    checkoutWait: false,
     help: false,
     history: false,
     login: false,
@@ -773,6 +793,8 @@ function parseArgs(args) {
       parsed.clear = true;
     } else if (arg === "--checkout") {
       parsed.checkout = true;
+    } else if (arg === "--checkout-wait") {
+      parsed.checkoutWait = true;
     } else if (arg === "--track") {
       parsed.track = true;
     } else if (arg === "--history") {
@@ -932,6 +954,11 @@ function validateOptions(parsed) {
     validateProductionScopeOptions(parsed);
   }
 
+  if (parsed.checkoutWait && !parsed.checkout) {
+    console.error("--checkout-wait can only be used with --checkout or --production-scope.");
+    process.exit(1);
+  }
+
   if (parsed.address && parsed.addressList) {
     console.error("--address cannot be combined with --address-list because address selection already verifies the address flow.");
     process.exit(1);
@@ -1009,6 +1036,7 @@ Options:
   --remove <query>      Remove a matching cart item
   --clear               Remove all detected cart items; cannot be combined with --checkout
   --checkout            Open checkout/payment handoff in a visible Zepto browser
+  --checkout-wait       During --checkout, wait for a human Zepto-side checkout/payment action before returning JSON; manual payment controls still do not count as checkout handoff coverage
   --track               Read latest order status
   --history             Read order history
   --reorder-last        Reorder the latest readable order and read the cart

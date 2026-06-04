@@ -244,6 +244,8 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--clear");
     expect(result.stdout).toContain("--reorder-last");
     expect(result.stdout).toContain("--choose-add");
+    expect(result.stdout).toContain("--checkout-wait");
+    expect(result.stdout).toContain("manual payment controls still do not count as checkout handoff coverage");
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
@@ -350,6 +352,16 @@ describe("live verification runner", () => {
 
     expect(script).toContain("options.chooseAdd");
     expect(script).toContain('addArgs.splice(addArgs.length - 1, 0, "--choose")');
+  });
+
+  it("can pause checkout for manual Zepto continuation before tracking", () => {
+    const script = readFileSync(scriptPath, "utf8");
+
+    expect(script).toContain("options.checkoutWait");
+    expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait")');
+    expect(script).toContain("options.checkoutWait && options.track && isManualCheckoutContinuation(checkoutResult)");
+    expect(script).toContain("Checkout stopped at Zepto's manual payment-control boundary; continuing to track because --checkout-wait was requested.");
+    expect(script).toContain('result?.payload?.status === "checkout_manual_action_required"');
   });
 
   it("stores the package version in sanitized live reports", () => {
@@ -2217,6 +2229,18 @@ describe("live verification runner", () => {
     expect(chooseWithoutAdd.status).toBe(1);
     expect(chooseWithoutAdd.stderr).toContain("--choose-add can only be used with --add.");
 
+    const checkoutWaitWithoutCheckout = spawnSync(
+      process.execPath,
+      [scriptPath, "--data-dir", ".zepo-live", "--checkout-wait"],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(checkoutWaitWithoutCheckout.status).toBe(1);
+    expect(checkoutWaitWithoutCheckout.stderr).toContain("--checkout-wait can only be used with --checkout or --production-scope.");
+
     const addressAndList = spawnSync(
       process.execPath,
       [scriptPath, "--data-dir", ".zepo-live", "--address", "home", "--address-list"],
@@ -2960,7 +2984,7 @@ describe("live verification runner", () => {
   it("does not count manual checkout action as live checkout handoff coverage", () => {
     const { step } = buildLiveReportStep({
       name: "checkout",
-      args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+      args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--wait", "--json"],
       status: 0,
       stdout: JSON.stringify({
         status: "checkout_manual_action_required",
@@ -2978,7 +3002,7 @@ describe("live verification runner", () => {
 
     expect(step).toEqual({
       name: "checkout",
-      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
       exitCode: 1,
       ok: false,
       error: {
@@ -2986,6 +3010,24 @@ describe("live verification runner", () => {
         message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
       }
     });
+  });
+
+  it("accepts sanitized checkout wait command strings in live reports", () => {
+    const report = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              ...step,
+              command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json"
+            }
+          : step
+      )
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    expect(validateLiveReportAcceptance(report, { expectedVersion: packageJson.version }).accepted).toBe(true);
   });
 
   it("accepts checkout live report steps that preserve the payment handoff contract", () => {

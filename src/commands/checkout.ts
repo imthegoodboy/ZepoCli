@@ -10,11 +10,12 @@ export function registerCheckoutCommand(program: Command): void {
     .command("checkout")
     .description("Open Zepto checkout handoff (requires --visible)")
     .option("--json", "print machine-readable JSON")
-    .action((options: { json?: boolean }, command: Command) =>
+    .option("--wait", "wait for a human Zepto-side checkout/payment action before returning")
+    .action((options: { json?: boolean; wait?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
-        const handoff = await new ZeptoService(runtime).checkout.checkout({ waitForCompletion: !json });
+        const handoff = await new ZeptoService(runtime).checkout.checkout({ waitForCompletion: !json || options.wait === true });
         if (json) {
           printJson(checkoutHandoffOutput(handoff.mode));
           return;

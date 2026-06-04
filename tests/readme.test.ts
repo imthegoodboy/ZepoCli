@@ -221,6 +221,8 @@ describe("README package guidance", () => {
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain('status: "checkout_manual_action_required"');
     expect(readme).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
+    expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
+    expect(readme).toContain("unless the caller explicitly passes `--wait`");
     expect(readme).toContain("manual amount-bearing payment control");
     expect(readme).toContain("must not be counted as checkout handoff coverage");
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");

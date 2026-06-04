@@ -254,6 +254,7 @@ const checks = [
       assert(stderr === "", "expected empty stderr");
       assert(stdout.includes("Open Zepto checkout handoff (requires --visible)"), "expected checkout description");
       assert(stdout.includes("--json"), "expected checkout json option");
+      assert(stdout.includes("--wait"), "expected checkout wait option");
     }
   },
   {

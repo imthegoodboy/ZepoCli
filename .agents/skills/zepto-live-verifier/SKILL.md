@@ -57,7 +57,7 @@ npm --silent run verify:live:report -- --require-production-scope --max-age-minu
 
 `verify:live:report` does not contact Zepto or prove a fresh run happened. It only checks the saved report contract before agents treat the report as acceptance evidence.
 Use `--require-production-scope` for final readiness so a valid partial report cannot be mistaken for core production workflow proof. Use `--max-age-minutes 1440` for final readiness so stale saved reports cannot be reused as current evidence.
-`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for an Enter prompt, so live verification can parse the checkout boundary without hanging. `status: "checkout_manual_action_required"` proves only a readable non-empty cart plus safe manual Zepto continuation. The live runner reports it as `live_verification_incomplete`, and it is intentionally not accepted as checkout handoff coverage or production-scope readiness evidence.
+`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for an Enter prompt, so live verification can parse the checkout boundary without hanging. Use `--checkout-wait` only when a human is ready to complete Zepto-side checkout/payment in the visible browser before the runner continues to tracking. `status: "checkout_manual_action_required"` proves only a readable non-empty cart plus safe manual Zepto continuation. The live runner reports it as `live_verification_incomplete`, and it is intentionally not accepted as checkout handoff coverage or production-scope readiness evidence.
 
 Optional focused passes:
 

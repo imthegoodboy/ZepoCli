@@ -302,6 +302,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "zepo --visible login",
     "zepo --visible checkout",
     "JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt",
+    "explicit JSON wait mode (`zepo --visible checkout --json --wait`)",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "status: \"checkout_manual_action_required\"",
     "manual amount-bearing payment control",
@@ -5234,6 +5235,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stderr === "", "expected empty stderr");
         assert(stdout.includes("Open Zepto checkout handoff (requires --visible)"), "expected checkout description");
         assert(stdout.includes("--json"), "expected checkout json option");
+        assert(stdout.includes("--wait"), "expected checkout wait option");
       }
     },
     {
