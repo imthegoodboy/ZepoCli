@@ -98,11 +98,15 @@ async function readBodyText(page: Page): Promise<string> {
 
 export async function clickCartOpenButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
+  const cartLabelElements = page.locator(
+    "button, [role='button'], a, [aria-label], [title], [tabindex], [data-testid], div, span"
+  );
   for (const label of CART_OPEN_CLICK_LABELS) {
     const candidates = [
       page.getByRole("button", { name: label }),
       page.getByRole("link", { name: label }),
-      controls.filter({ hasText: label })
+      controls.filter({ hasText: label }),
+      cartLabelElements.filter({ hasText: label })
     ];
 
     for (const candidate of candidates) {

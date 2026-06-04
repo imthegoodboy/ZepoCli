@@ -603,6 +603,16 @@ describe("cart automation helpers", () => {
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
 
+  it("opens cart from a non-semantic Zepto header cart label without using a direct cart URL", async () => {
+    const page = createNonSemanticCartOpenViaHomePage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.clicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
   it("recovers from a Zepto not-found surface before opening the real cart", async () => {
     const page = createCartOpenFromNotFoundPage();
 
@@ -1074,6 +1084,41 @@ function createCartOpenViaHomePage() {
   return page;
 }
 
+function createNonSemanticCartOpenViaHomePage() {
+  let location = "current";
+  let bodyText = "Search milk Account Profile";
+  const page = {
+    clicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 11 Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return createBodyTextLocator(() => bodyText);
+      }
+
+      if (location === "home" && selector.includes("div, span")) {
+        return createVisibleLocator("Cart\n11", async () => {
+          page.clicked = true;
+          bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
+        });
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
 function createCartOpenFromNotFoundPage() {
   let location = "not-found";
   let bodyText =
@@ -1319,8 +1364,8 @@ function createVisibleLocator(
     first() {
       return this;
     },
-    filter() {
-      return createHiddenLocator();
+    filter(options?: { hasText?: RegExp | string }) {
+      return matchesLocatorName(options?.hasText, resolveLocatorText(text)) ? this : createHiddenLocator();
     },
     isVisible: async () => true,
     innerText: async () => resolveLocatorText(text),
