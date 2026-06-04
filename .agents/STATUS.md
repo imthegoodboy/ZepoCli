@@ -1,6 +1,6 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-04.
+Last updated: 2026-06-05.
 
 ## Local Package State
 
@@ -43,6 +43,7 @@ Last updated: 2026-06-04.
 - A `.zepo-live-prod` headless `cart --json` probe on 2026-06-04 stopped on Zepto HTTP 429 from the Zepto home page and emitted structured `error.code: "zepto_access_challenge"` with `retryAfterMs: 900000`; no direct `/cart` route was used.
 - A `.zepo-live-prod` local-status check on 2026-06-04 showed a confirmed local session marker with no active browser lock. Earlier headless `status --live --json` checks returned Zepto HTTP 429 with `error.code: "zepto_access_challenge"` and `retryAfterMs: 900000`, including one retry after the cooldown cleared; do not loop headless live-session checks after this signal.
 - A focused human-controlled visible live-session probe on 2026-06-04 using `.zepo-live-prod` and `npm --silent run verify:live -- --data-dir ./.zepo-live-prod --login --report ./.zepo-live-prod/live-session-report.json --step-timeout 120000` passed `doctor`, local `status`, and visible `status --live --json`. The saved focused report was accepted by `npm --silent run verify:live:report -- --max-age-minutes 1440 ./.zepo-live-prod/live-session-report.json`. This proves fresh browser preflight, local status, and live-session coverage only; it does not prove address selection, search, add, cart, checkout handoff, or track.
+- Focused `.zepo-live-prod` reports for `search`, `address list`, `address use`, `add` plus non-empty `cart`, `history`, and `track` were revalidated on 2026-06-05 with `npm --silent run verify:live:report -- --max-age-minutes 1440 <report>`, and each was accepted. This proves those focused workflow contracts still have fresh saved evidence, but focused reports cannot be combined as final production-scope proof.
 - A focused human-controlled visible order-history probe on 2026-06-04 using `.zepo-live-prod` and `npm --silent run verify:live -- --data-dir ./.zepo-live-prod --login --history --report ./.zepo-live-prod/live-history-report.json --step-timeout 180000` passed `doctor`, local `status`, visible `status --live --json`, and visible `history --json` after adding a bounded account-surface settle and `/account` fallback that still avoids direct `/orders`. The saved report was accepted by `npm --silent run verify:live:report -- --max-age-minutes 1440 ./.zepo-live-prod/live-history-report.json`. This proves focused history coverage only; it does not prove checkout handoff or post-payment order tracking.
 - A focused visible add/cart probe on 2026-06-04 using `.zepo-live-prod` and a current exact product query passed `zepo add --json` after the bounded cart-read recovery. It proved the add command can recover when Zepto opens an unhydrated or initially unconfirmed cart surface, while still avoiding any direct `/cart` URL.
 - A sanitized visible cart probe after the swap-suggestion parser fix reported a non-empty cart with a total and zero cart rows named as Zepto swap controls. This proves the cart parser no longer counts Zepto's swap suggestion controls as active cart items in that live session.
@@ -52,6 +53,7 @@ Last updated: 2026-06-04.
 - A later `.zepo-live-prod` production-scope attempt exposed a separate `cart_unreadable` after add even though add had reported a non-empty cart. `readCart` now performs one additional bounded recovery for repeated unhydrated cart shells, still without using a direct `/cart` URL.
 - A direct `.zepo-live-prod` visible cart probe after the bounded recovery fix read a non-empty live cart with 11 readable items and a total while still avoiding direct `/cart` navigation.
 - A focused `.zepo-live-prod` checkout/track run on 2026-06-04 passed browser preflight, local status, visible live session, and `track`. Checkout stopped at `checkout_manual_action_required` with sanitized manual evidence, and the ordinary report validator correctly rejected the report with `live_report_not_ok`/missing checkout handoff coverage because no Zepto-side payment-control action was completed by a human.
+- The saved `.zepo-live-prod/live-production-current-report.json` was rechecked on 2026-06-05 with `verify:live:report --require-production-scope --max-age-minutes 1440` and remains rejected. It is not current final evidence because the saved run predates the latest bounded cart recovery and is missing cart, checkout handoff, and track coverage.
 - Do not loop headless Zepto commands after this signal. Wait for cooldown or use an explicitly human-controlled visible flow when the user asks for it.
 - This 429 result is not a product-search failure to work around with stealth, custom user agents, CAPTCHA bypasses, or aggressive retries. It is correct stop behavior under the project safety rules.
 
