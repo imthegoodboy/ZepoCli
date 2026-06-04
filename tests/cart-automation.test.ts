@@ -13,6 +13,7 @@ import {
   isLikelyRemovableCartItemText,
   isUnsafeCartOpenClickText,
   isUnsafeCartRemoveControlText,
+  openCart,
   parseActiveCartItemFromControlText,
   requireReadableCartSnapshot
 } from "../src/automation/cart.js";
@@ -524,6 +525,25 @@ describe("cart automation helpers", () => {
     }
   });
 
+  it("does not navigate when the current page already exposes a cart surface", async () => {
+    const page = createAlreadyOpenCartPage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.urls).toEqual([]);
+    expect(page.clicked).toBe(false);
+  });
+
+  it("opens cart through the visible Zepto cart control instead of a direct cart URL", async () => {
+    const page = createCartOpenViaHomePage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.clicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
   it("does not click disabled cart navigation controls", async () => {
     const page = createDisabledCartOpenPage();
 
@@ -877,6 +897,59 @@ function createScrollRerenderedCartOpenPage(textBeforeScroll: string, textAfterS
   return page;
 }
 
+function createAlreadyOpenCartPage() {
+  const page = {
+    clicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) =>
+      selector === "body"
+        ? createBodyTextLocator(() => "My Cart Your cart is empty Add items to continue")
+        : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartOpenViaHomePage() {
+  let location = "current";
+  let bodyText = "Search milk Cart Account Profile";
+  const page = {
+    clicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Cart")) {
+        return createVisibleLocator("Cart", async () => {
+          page.clicked = true;
+          bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createTaggedCartRemovePage(
   attributes: Record<string, string | null> = {},
   cardText = "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove"
@@ -911,6 +984,21 @@ function createHiddenTaggedCartRemovePage() {
   return {
     clicked: false,
     locator: () => createHiddenLocator()
+  };
+}
+
+function createNavigationResponse(url: string) {
+  return {
+    status: () => 200,
+    url: () => url
+  };
+}
+
+function createBodyTextLocator(readText: () => string) {
+  return {
+    ...createHiddenLocator(),
+    isVisible: async () => true,
+    innerText: async () => readText()
   };
 }
 

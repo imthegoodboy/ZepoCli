@@ -27,31 +27,51 @@ const NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE =
   `\\b(recommended|you may also like|frequently bought|similar products|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|deals for you|offer zone|buy more save more|save more|sponsored|ad|add more|saved for later|currently unavailable|unavailable items?|out of stock|sold out|move to cart|move to bag|notify me|notify when available|before you checkout|complete your cart|customers also bought|checkout|payment methods?|payment options?|payment mode|select payment|choose payment|pay with|make payment|cash on delivery|cod|card offers?|saved cards?|upi (?:cashback|offers?|payment)|wallet (?:cashback|offers?)|free gift|gift unlocked|unlocked at checkout|unlock at checkout|zepto pass|membership|subscription|promo|promos?|voucher|coupons?|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 
 export async function openCart(page: Page): Promise<void> {
-  await gotoZepto(page, "/cart");
+  if (await isCurrentCartPage(page)) {
+    return;
+  }
 
-  const bodyText = await page.locator("body").innerText().catch(() => "");
-  if (isCartPageText(bodyText)) {
+  if (await openCartFromVisibleControl(page)) {
     return;
   }
 
   await gotoZepto(page);
-  const opened = await clickCartOpenButton(page);
-  if (!opened) {
-    throw new UserFacingError("Could not open the Zepto cart.", {
-      code: "cart_unavailable",
-      hint: "Log in and add an item first, then rerun the command."
-    });
+  if (await isCurrentCartPage(page)) {
+    return;
   }
 
-  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
-  await assertNoAccessChallenge(page);
-  const openedText = await page.locator("body").innerText().catch(() => "");
-  if (!isCartPageText(openedText)) {
-    throw new UserFacingError("Could not confirm the Zepto cart page after opening cart.", {
-      code: "cart_navigation_unverified",
-      hint: "Rerun with `--visible` to inspect Zepto's cart navigation before changing cart contents."
-    });
+  if (await openCartFromVisibleControl(page)) {
+    return;
   }
+
+  throw new UserFacingError("Could not open the Zepto cart.", {
+    code: "cart_unavailable",
+    hint: "Log in and add an item first, then rerun the command."
+  });
+}
+
+async function isCurrentCartPage(page: Page): Promise<boolean> {
+  return isCartPageText(await readBodyText(page));
+}
+
+async function openCartFromVisibleControl(page: Page): Promise<boolean> {
+  if (!(await clickCartOpenButton(page))) {
+    return false;
+  }
+
+  await waitForCartContentSettled(page);
+  if (await isCurrentCartPage(page)) {
+    return true;
+  }
+
+  throw new UserFacingError("Could not confirm the Zepto cart page after opening cart.", {
+    code: "cart_navigation_unverified",
+    hint: "Rerun with `--visible` to inspect Zepto's cart navigation before changing cart contents."
+  });
+}
+
+async function readBodyText(page: Page): Promise<string> {
+  return page.locator("body").innerText().catch(() => "");
 }
 
 export async function clickCartOpenButton(page: Page): Promise<boolean> {
