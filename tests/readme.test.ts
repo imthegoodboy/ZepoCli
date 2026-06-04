@@ -230,7 +230,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
-      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --checkout-wait --search milk --address home --add "Amul Milk 500ml"'
     );
     expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
@@ -244,7 +244,10 @@ describe("README package guidance", () => {
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");
     expect(readme).toContain(
-      "Use `--production-scope` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage"
+      "Use `--production-scope --checkout-wait` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage"
+    );
+    expect(readme).toContain(
+      "The explicit wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence"
     );
     expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
@@ -304,13 +307,13 @@ describe("README package guidance", () => {
     expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate");
     expect(readme).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout evidence from explicit `--checkout-wait`"
     );
     expect(readme).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
-    expect(readme).toContain("Production-scope acceptance rejects missing freshness windows");
-    expect(readme).toContain("stale saved reports cannot be reused as current evidence");
+    expect(readme).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
+    expect(readme).toContain("stale saved reports or stale order-history tracking cannot be reused as current evidence");
     expect(readme).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );

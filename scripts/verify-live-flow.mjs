@@ -1019,7 +1019,7 @@ Required:
 
 Options:
   --login               Run visible zepo login if no confirmed session exists
-  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart, checkout handoff, and track
+  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart, checkout handoff, and track; accepted final reports also need --checkout-wait
   --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
   --browser-locale <locale>
                         Pass a validated browser locale to every child zepo command
@@ -1045,11 +1045,11 @@ Options:
 
 Example:
   npm run build
-  npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --checkout-wait --search milk --address home --add "Amul Milk 500ml"
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
-Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage.
+Use --production-scope with --checkout-wait for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, then lets a human complete Zepto-side checkout/payment before tracking.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart

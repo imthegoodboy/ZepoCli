@@ -191,7 +191,10 @@ function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
         hasTotal: true
       }
     },
-    acceptedLiveReport().steps[4],
+    {
+      ...acceptedLiveReport().steps[4],
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json"
+    },
     {
       name: "track",
       command: "zepo --data-dir <redacted-data-dir> --visible track --json",
@@ -238,6 +241,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--checkout");
     expect(result.stdout).toContain("--production-scope");
     expect(result.stdout).toContain("Final readiness preset");
+    expect(result.stdout).toContain("accepted final reports also need --checkout-wait");
     expect(result.stdout).toContain("--browser-locale <locale>");
     expect(result.stdout).toContain("--browser-timezone <timezone>");
     expect(result.stdout).toContain("--remove <query>");
@@ -246,6 +250,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--choose-add");
     expect(result.stdout).toContain("--checkout-wait");
     expect(result.stdout).toContain("manual payment controls still do not count as checkout handoff coverage");
+    expect(result.stdout).toContain(
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --checkout-wait --search milk --address home --add "Amul Milk 500ml"'
+    );
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
@@ -266,7 +273,7 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).toContain(
-      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage."
+      "Use --production-scope with --checkout-wait for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, then lets a human complete Zepto-side checkout/payment before tracking."
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
@@ -288,6 +295,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("local status readiness");
     expect(result.stdout).toContain(
       "core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage"
+    );
+    expect(result.stdout).toContain(
+      "checkout evidence comes from explicit --checkout-wait so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -687,6 +697,30 @@ describe("live verification runner", () => {
       accepted: true,
       issues: []
     });
+    const noWaitProductionScope = productionScopeLiveReport({
+      generatedAt: new Date().toISOString(),
+      steps: productionScopeLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              ...step,
+              command: "zepo --data-dir <redacted-data-dir> --visible checkout --json"
+            }
+          : step
+      )
+    });
+    noWaitProductionScope.attempted = summarizeLiveReportAttempts(noWaitProductionScope.steps);
+    noWaitProductionScope.coverage = summarizeLiveReportCoverage(noWaitProductionScope.steps);
+    noWaitProductionScope.missingCoverage = summarizeLiveReportMissingCoverage(
+      noWaitProductionScope.requested,
+      noWaitProductionScope.coverage
+    );
+    expect(
+      validateLiveReportAcceptance(noWaitProductionScope, {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true,
+        maxAgeMs: 60_000
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_checkout_wait_missing");
     expect(
       validateLiveReportAcceptance(productionScopeLiveReport({ generatedAt: new Date().toISOString() }), {
         expectedVersion: packageJson.version,

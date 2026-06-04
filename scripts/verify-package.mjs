@@ -357,11 +357,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token/password/secret URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
-    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
+    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --checkout-wait --search milk --address home --add "Amul Milk 500ml"',
     "both preflight steps must report `browserAutomation.ready === true`",
     "doctor must also show a passing `Playwright Chromium` check",
-    "Use `--production-scope` for the final readiness run",
+    "Use `--production-scope --checkout-wait` for the final readiness run",
     "then requests non-empty cart, checkout handoff, and track coverage",
+    "The explicit wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
     "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
     "<redacted-browser-locale>",
     "<redacted-browser-timezone>",
@@ -378,7 +379,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "sanitized non-future `generatedAt` plus data/report path metadata, optional `--max-age-minutes` freshness",
     "the fixed runner note",
-    "Production-scope acceptance rejects missing freshness windows",
+    "Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -396,7 +397,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
-    "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered",
+    "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout evidence from explicit `--checkout-wait`",
+    "stale saved reports or stale order-history tracking cannot be reused as current evidence",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
@@ -2254,7 +2256,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live help to keep manual preconditions separate from workflow attempts"
   );
   assert(
-    result.stdout.includes("Use --production-scope for the final production readiness run"),
+    result.stdout.includes("Use --production-scope with --checkout-wait for the final production readiness run"),
     "expected installed verify:live help to explain production-scope preset"
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
@@ -2898,7 +2900,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         hasTotal: true
       }
     },
-    acceptedLiveReportSteps[4],
+    {
+      ...acceptedLiveReportSteps[4],
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json"
+    },
     {
       name: "track",
       command: "zepo --data-dir <redacted-data-dir> --visible track --json",
@@ -3012,6 +3017,31 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       maxAgeMs: 60_000
     }).accepted === true,
     "expected installed live report acceptance helper to accept production-scope report evidence"
+  );
+  const noWaitProductionScopeLiveReport = {
+    ...freshProductionScopeLiveReport,
+    steps: freshProductionScopeLiveReport.steps.map((step) =>
+      step.name === "checkout"
+        ? {
+            ...step,
+            command: "zepo --data-dir <redacted-data-dir> --visible checkout --json"
+          }
+        : step
+    )
+  };
+  noWaitProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(noWaitProductionScopeLiveReport.steps);
+  noWaitProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(noWaitProductionScopeLiveReport.steps);
+  noWaitProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    noWaitProductionScopeLiveReport.requested,
+    noWaitProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(noWaitProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true,
+      maxAgeMs: 60_000
+    }).issues.some((issue) => issue.code === "live_report_production_scope_checkout_wait_missing"),
+    "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
   );
   assert(
     validateLiveReportAcceptance(freshProductionScopeLiveReport, {

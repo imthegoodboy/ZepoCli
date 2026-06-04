@@ -532,12 +532,13 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live:report production-scope cart-state guidance");
     expect(verifier).toContain("expected installed verify:live:report production-scope focused-workflow exclusion guidance");
     expect(verifier).toContain("expected installed verify:live:report manual/internal command marker guidance");
-    expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows");
+    expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("local status readiness");
     expect(verifier).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
+    expect(verifier).toContain("with checkout evidence from explicit `--checkout-wait`");
     expect(verifier).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
@@ -646,6 +647,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject stale report evidence");
     expect(verifier).toContain("expected installed live report acceptance helper to reject partial reports for production scope");
     expect(verifier).toContain("expected installed live report acceptance helper to accept production-scope report evidence");
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
+    );
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without freshness"
     );

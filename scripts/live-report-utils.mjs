@@ -50,6 +50,8 @@ const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
   "history",
   "reorder"
 ];
+const LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN =
+  /^zepo --data-dir <redacted-data-dir>(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)? --visible checkout --wait --json$/;
 const LIVE_REPORT_ADDRESS_DETAIL_PATTERN =
   /\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\s+code|india)\b|\b[a-z]\s*[-/]\s*\d{2,}\b|\d{3,}/i;
 const LIVE_REPORT_ADDRESS_PLACEHOLDER_PATTERN =
@@ -459,6 +461,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
 
   if (options.requireProductionScope === true && steps) {
     validateLiveReportProductionScopeCartState(steps, issues);
+    validateLiveReportProductionScopeCheckoutWait(steps, issues);
   }
 
   if (options.requireProductionScope === true && options.maxAgeMs === undefined) {
@@ -509,6 +512,19 @@ function validateLiveReportProductionScopeCartState(steps, issues) {
   issues.push({
     code: "live_report_production_scope_cart_empty",
     message: "Live report production-scope cart evidence must show at least one cart item."
+  });
+}
+
+function validateLiveReportProductionScopeCheckoutWait(steps, issues) {
+  const checkoutStep = steps.find((step) => step?.name === "checkout" && step?.ok === true);
+  if (!checkoutStep || LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN.test(checkoutStep.command)) {
+    return;
+  }
+
+  issues.push({
+    code: "live_report_production_scope_checkout_wait_missing",
+    message:
+      "Production-scope checkout evidence must use explicit checkout wait so a human can complete Zepto-side checkout/payment before tracking."
   });
 }
 

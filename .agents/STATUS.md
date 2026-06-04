@@ -4,6 +4,7 @@ Last updated: 2026-06-04.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-04 at 21:59 IST after requiring explicit checkout wait-mode evidence for final production-scope report acceptance: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 21:18 IST after adding checkout wait-mode handoff refresh: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 20:54 IST after adding explicit `--no-input` coverage for `zepo checkout --json --wait`: secret scan, dependency readiness, build, 34 test files, 633 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 20:18 IST after adding explicit checkout wait support: secret scan, dependency readiness, build, 34 test files, 633 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
@@ -32,6 +33,7 @@ Last updated: 2026-06-04.
 - A safe no-account `verify:live` smoke on 2026-06-04 using `./.zepo-live-smoke-current` passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`; it did not claim login, live-session, checkout, or order coverage. The ordinary report validator rejected the saved report with `live_report_not_ok`, which is correct because this smoke is incomplete evidence, not an acceptable live pass.
 - A disposable no-account checkout-wait smoke on 2026-06-04 using `./.zepo-checkout-wait-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. It did not launch checkout, did not claim live-session/checkout coverage, and the ordinary report validator rejected the saved report as incomplete.
 - A disposable no-account checkout-refresh smoke on 2026-06-04 using `./.zepo-refresh-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected as incomplete, confirming the refreshed wait-mode code does not bypass the login/live-session precondition.
+- A disposable no-account production-scope wait smoke on 2026-06-04 using `./.zepo-wait-required-smoke` ran the final command shape with `--production-scope --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected by `verify:live:report --require-production-scope --max-age-minutes 60` because live session, search, address selection, add, cart, checkout handoff, and track coverage were all missing, confirming the final gate still does not bypass login or checkout preconditions.
 - A conservative public headless search smoke on 2026-06-04 returned Zepto HTTP 429 and the CLI emitted structured `error.code: "zepto_access_challenge"` with `retryAfterMs: 900000`.
 - A `.zepo-live-prod` local-status check on 2026-06-04 showed a confirmed local session marker with no active browser lock. Earlier headless `status --live --json` checks returned Zepto HTTP 429 with `error.code: "zepto_access_challenge"` and `retryAfterMs: 900000`, including one retry after the cooldown cleared; do not loop headless live-session checks after this signal.
 - A focused human-controlled visible live-session probe on 2026-06-04 using `.zepo-live-prod` and `npm --silent run verify:live -- --data-dir ./.zepo-live-prod --login --report ./.zepo-live-prod/live-session-report.json --step-timeout 120000` passed `doctor`, local `status`, and visible `status --live --json`. The saved focused report was accepted by `npm --silent run verify:live:report -- --max-age-minutes 1440 ./.zepo-live-prod/live-session-report.json`. This proves fresh browser preflight, local status, and live-session coverage only; it does not prove address selection, search, add, cart, checkout handoff, or track.
@@ -48,12 +50,6 @@ Last updated: 2026-06-04.
 - Required final command shape:
 
 ```bash
-npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-scope --search <query> --address <query> --add <query>
-```
-
-- Optional checkout-wait continuation when a human is ready to complete Zepto-side checkout/payment before tracking:
-
-```bash
 npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-scope --checkout-wait --search <query> --address <query> --add <query>
 ```
 
@@ -63,4 +59,4 @@ npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-
 npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>
 ```
 
-- Final readiness requires passing coverage for browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track. Checkout handoff is not payment proof; payment and final order placement remain Zepto-side and unobserved by ZepoCli.
+- Final readiness requires passing coverage for browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track, with checkout evidence from explicit wait mode before tracking. Checkout handoff is not payment proof; payment and final order placement remain Zepto-side and unobserved by ZepoCli.
