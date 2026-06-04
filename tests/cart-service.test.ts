@@ -91,6 +91,30 @@ describe("cart service verification helpers", () => {
     ).toThrow('No confident Zepto product match was found for "milk 1l".');
   });
 
+  it("does not fuzzy-match a brand-specific add query to a different brand", () => {
+    expect(() =>
+      requireBestMatch(
+        [
+          {
+            index: 0,
+            automationId: 1,
+            name: "Nandini Toned Fresh Milk | Pouch",
+            unit: "1 pack (500 ml)",
+            price: "₹24"
+          },
+          {
+            index: 1,
+            automationId: 2,
+            name: "Arokya Toned Fresh Milk | Pouch",
+            unit: "1 pack (500 ml)",
+            price: "₹26"
+          }
+        ],
+        "Amul Taaza Toned Fresh Milk | Pouch"
+      )
+    ).toThrow('No confident Zepto product match was found for "Amul Taaza Toned Fresh Milk | Pouch".');
+  });
+
   it("returns only products with mapped ADD buttons for add flows", () => {
     const addable = {
       index: 0,

@@ -120,6 +120,10 @@ describe("cart automation helpers", () => {
       items: [],
       total: undefined
     });
+    expect(isCartPageText("Your cart is empty Cart16 Cart Go to Cart")).toBe(false);
+    expect(() => requireReadableCartSnapshot("Your cart is empty Cart16 Cart Go to Cart")).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
     expect(requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toMatchObject({
       items: [
         {
@@ -482,10 +486,35 @@ describe("cart automation helpers", () => {
     });
   });
 
+  it("does not parse back-in-stock promo rows as active cart items", () => {
+    expect(
+      requireReadableCartSnapshot(`
+        Delivering in 5 mins
+        1 item
+        Amul Gold Full Cream Fresh Milk | Pouch
+        ₹34
+        Back in stock
+        ₹34
+        Bill Summary
+        To Pay
+        ₹34
+      `)
+    ).toMatchObject({
+      items: [
+        {
+          name: "Amul Gold Full Cream Fresh Milk | Pouch",
+          price: "₹34"
+        }
+      ],
+      total: "₹34"
+    });
+  });
+
   it("rejects active cart row parser noise from promos, summaries, and asset alts", () => {
     expect(parseActiveCartItemFromControlText("1 ₹50 OFF 1 pack")).toBeUndefined();
     expect(parseActiveCartItemFromControlText("1 ₹50 Coupons & offers")).toBeUndefined();
     expect(parseActiveCartItemFromControlText("1 ₹599 Bill Summary To Pay")).toBeUndefined();
+    expect(parseActiveCartItemFromControlText("1 ₹36 Back in stock")).toBeUndefined();
     expect(parseActiveCartItemFromControlText("1 ₹27 1 pack", "scooter-filled.png")).toBeUndefined();
   });
 

@@ -15,10 +15,10 @@ import { isOrderActionLabelText, ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./ord
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
 export const CART_OPEN_CLICK_LABELS = [
-  /^cart(?:\s+[1-9]\d*)?$/i,
-  /^my cart(?:\s+[1-9]\d*)?$/i,
+  /^go to cart$/i,
   /^view cart$/i,
-  /^go to cart$/i
+  /^my cart(?:\s+[1-9]\d*)?$/i,
+  /^cart(?:\s+[1-9]\d*)?$/i
 ] as const;
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
 const CART_READ_RECOVERY_ATTEMPTS = 2;
@@ -30,7 +30,7 @@ const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-âˆ
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|currently unavailable|unavailable|out of stock|sold out|move to cart|move to bag|notify me|clear cart)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
 const NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE =
-  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|deals for you|offer zone|buy more save more|save more|sponsored|ad|add more|saved for later|currently unavailable|unavailable items?|out of stock|sold out|move to cart|move to bag|notify me|notify when available|before you checkout|complete your cart|customers also bought|checkout|payment methods?|payment options?|payment mode|select payment|choose payment|pay with|make payment|cash on delivery|cod|card offers?|saved cards?|upi (?:cashback|offers?|payment)|wallet (?:cashback|offers?)|free gift|gift unlocked|unlocked at checkout|unlock at checkout|zepto pass|membership|subscription|promo|promos?|voucher|coupons?|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
+  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|deals for you|offer zone|buy more save more|save more|sponsored|ad|add more|saved for later|currently unavailable|unavailable items?|out of stock|sold out|back in stock|move to cart|move to bag|notify me|notify when available|before you checkout|complete your cart|customers also bought|checkout|payment methods?|payment options?|payment mode|select payment|choose payment|pay with|make payment|cash on delivery|cod|card offers?|saved cards?|upi (?:cashback|offers?|payment)|wallet (?:cashback|offers?)|free gift|gift unlocked|unlocked at checkout|unlock at checkout|zepto pass|membership|subscription|promo|promos?|voucher|coupons?|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 
 export async function openCart(page: Page): Promise<void> {
   if (await isCurrentCartPage(page)) {
@@ -321,7 +321,7 @@ export function isCartPageText(text: string): boolean {
     return hasStrongCartSurfaceEvidence(normalized);
   }
 
-  if (isEmptyCartText(normalized)) {
+  if (isEmptyCartText(normalized) && !hasNonEmptyCartEvidence(normalized)) {
     return true;
   }
 
@@ -905,8 +905,14 @@ async function waitForCartContentSettled(page: Page): Promise<void> {
           return true;
         }
 
-        return /\b(cart is empty|cart empty|empty cart|your cart is empty|no items in cart|no items added)\b/i.test(
-          text
+        const hasNonEmptyCartEvidence =
+          /\b([1-9]\d*\s+items?|view cart|go to cart|view bill|bill summary|item total|grand total|to pay|payable|checkout|proceed to checkout|qty|quantity|remove|delete|decrease)\b/i.test(
+            text
+          ) || /\bcart\s*[1-9]\d*\b/i.test(text);
+        return (
+          /\b(cart is empty|cart empty|empty cart|your cart is empty|no items in cart|no items added)\b/i.test(
+            text
+          ) && !hasNonEmptyCartEvidence
         );
       },
       undefined,
@@ -1430,8 +1436,10 @@ function hasNonEmptyCartEvidence(text: string): boolean {
     return false;
   }
 
-  return /\b([1-9]\d*\s+items?|view bill|bill summary|item total|grand total|to pay|payable|checkout|proceed to checkout|qty|quantity|remove|delete|decrease)\b/i.test(
-    normalized
+  return (
+    /\b([1-9]\d*\s+items?|view cart|go to cart|view bill|bill summary|item total|grand total|to pay|payable|checkout|proceed to checkout|qty|quantity|remove|delete|decrease)\b/i.test(
+      normalized
+    ) || /\bcart\s*[1-9]\d*\b/i.test(normalized)
   );
 }
 

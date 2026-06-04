@@ -2,7 +2,7 @@ import type { Locator, Page } from "playwright";
 
 import { UserFacingError } from "../utils/errors.js";
 import { hasStrongCartSurfaceEvidence, parseReadableCartItemsFromText, readCart } from "./cart.js";
-import { assertNoAccessChallenge } from "./browser.js";
+import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { isFinalCheckoutSurfaceText, isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
@@ -18,6 +18,8 @@ export const CHECKOUT_HANDOFF_CLICK_LABELS = [
   /^proceed\s+to\s+(?:checkout|payment|pay)$/i
 ] as const;
 const CHECKOUT_HANDOFF_CONTROL_SCAN_LIMIT = 8;
+const CHECKOUT_EMPTY_CART_REREAD_ATTEMPTS = 6;
+const CHECKOUT_EMPTY_CART_REREAD_DELAY_MS = 5_000;
 
 export type CheckoutHandoffMode = "checkout_or_payment_page" | "manual_payment_control_visible";
 
@@ -140,7 +142,14 @@ async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
 
 async function readCheckoutCartPrecondition(page: Page) {
   try {
-    return await readCart(page);
+    let cart = await readCart(page);
+    for (let attempt = 1; cart.items.length === 0 && attempt < CHECKOUT_EMPTY_CART_REREAD_ATTEMPTS; attempt += 1) {
+      await page.waitForTimeout(CHECKOUT_EMPTY_CART_REREAD_DELAY_MS);
+      await gotoZepto(page);
+      cart = await readCart(page);
+    }
+
+    return cart;
   } catch (error) {
     if (
       error instanceof UserFacingError &&

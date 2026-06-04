@@ -569,7 +569,8 @@ function isLikelyCartProductName(line: string): boolean {
     isRecommendationHeaderLine(line) ||
     isCartSwapSuggestionHeaderLine(line) ||
     isCartSwapActionLine(line) ||
-    isInactiveCartSectionHeaderLine(line)
+    isInactiveCartSectionHeaderLine(line) ||
+    /^back in stock$/i.test(normalizeText(line))
   ) {
     return false;
   }

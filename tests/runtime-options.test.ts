@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 
 import { parseRuntimeOptions, toRuntimeSetupError } from "../src/commands/shared.js";
 import { browserAutomationModeStatus } from "../src/config/browser-mode.js";
+import { DEFAULT_TIMEOUT_MS } from "../src/config/constants.js";
 import { closeRuntime, closeRuntimeBestEffort, createRuntime } from "../src/config/runtime.js";
 import { UserFacingError } from "../src/utils/errors.js";
 
@@ -19,6 +20,8 @@ describe("global runtime options", () => {
     try {
       expect(runtime.options.headless).toBe(true);
       expect(runtime.options.interactive).toBe(true);
+      expect(runtime.options.timeoutMs).toBe(DEFAULT_TIMEOUT_MS);
+      expect(DEFAULT_TIMEOUT_MS).toBe(60_000);
     } finally {
       closeRuntimeBestEffort(runtime);
       rmSync(dataDir, { recursive: true, force: true });

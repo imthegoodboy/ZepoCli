@@ -419,6 +419,17 @@ describe("checkout handoff detection", () => {
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
 
+  it("recovers checkout precondition when Zepto first exposes a stale empty cart", async () => {
+    const page = createCheckoutEmptyCartRecoveryPage();
+
+    await expect(openCheckout(page as never)).resolves.toEqual({ mode: "checkout_or_payment_page" });
+
+    expect(page.waits).toEqual([5000]);
+    expect(page.cartClicks).toBe(1);
+    expect(page.checkoutClicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+  });
+
   it("lets cart recovery handle unverified checkout cart navigation", async () => {
     const page = createCheckoutCartNavigationRecoveryPage();
 
@@ -467,6 +478,71 @@ function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: stri
       };
     }
   };
+}
+
+function createCheckoutEmptyCartRecoveryPage() {
+  let location = "empty-cart";
+  let bodyText = "My Cart Your cart is empty";
+  const page = {
+    cartClicks: 0,
+    checkoutClicked: false,
+    waits: [] as number[],
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 2 Account Profile";
+      return {
+        status: () => 200,
+        url: () => String(url)
+      };
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async (ms: number) => {
+      page.waits.push(ms);
+    },
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      return source.includes("bodyTexts") ? { bodyTexts: [], controlRows: [] } : [];
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Cart 2")) {
+        return createVisibleLocator("Cart 2", async () => {
+          page.cartClicks += 1;
+          location = "cart";
+          bodyText = [
+            "My Cart",
+            "Amul Taaza Toned Milk",
+            "1 pack (500 ml)",
+            "₹32",
+            "Qty 1",
+            "Grand Total ₹32",
+            "Checkout"
+          ].join("\n");
+        });
+      }
+
+      if (location === "cart" && role === "button" && matchesLocatorName(options.name, "Checkout")) {
+        return createVisibleLocator("Checkout", async () => {
+          page.checkoutClicked = true;
+          location = "checkout";
+          bodyText = "Select payment method UPI Card Wallet";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => bodyText
+          }
+        : createHiddenLocator()
+  };
+
+  return page;
 }
 
 function createCheckoutCartRecoveryPage() {

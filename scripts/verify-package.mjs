@@ -5012,7 +5012,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     name: "cart",
     args: ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "cart", "--json"],
     status: 0,
-    stdout: JSON.stringify({ items: [] }),
+    stdout: JSON.stringify({ items: [{ name: "Readable cart item" }] }),
     stderr: "",
     summarizePayload: () => {
       throw new Error("Summary failed near C:\\Users\\parth\\.zepo-live\\trace.txt with OTP 123456.");

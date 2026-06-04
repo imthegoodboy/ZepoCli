@@ -27,7 +27,7 @@ const PRODUCT_ADD_CONTROL_PATTERN_SOURCE = `^add(?:\\s+to\\s+cart|\\s+(?!(?:${PR
 const PRODUCT_ADD_UNSAFE_CONTROL_PATTERN_SOURCE =
   `^(?:remove|delete|increase|increment|decrease|[+\\-−]|qty\\s*\\+|quantity\\s*\\+)$|^add\\s+${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE}\\s+to\\s+cart$|^add\\s+(?!(?:to\\s+cart|(?!(?:${PRODUCT_ADD_QUANTITY_ONLY_TERM_PATTERN_SOURCE})\\s+to\\s+cart$).+\\s+to\\s+cart)$).+|${PRODUCT_ADD_UNSAFE_WORKFLOW_PATTERN_SOURCE}`;
 const QUANTITY_CLICK_PAUSE_MS = 400;
-const ADD_CLICK_SETTLE_MS = 700;
+const ADD_CLICK_SETTLE_MS = 1_600;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
 const SEARCH_SUBMIT_PAUSE_MS = 150;
 const SEARCH_RENDER_SIGNAL_TIMEOUT_MS = 7_000;

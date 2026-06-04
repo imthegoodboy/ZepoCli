@@ -161,6 +161,7 @@ const SAFE_REPORT_ERROR_CODES = new Set([
   "visible_browser_required",
   "zepto_access_challenge",
   "zepto_access_cooldown",
+  "zepto_navigation_timeout",
   "zepto_access_protection",
   "zepto_login_required"
 ]);
@@ -1507,7 +1508,11 @@ function validateLiveReportPayloadContract(name, payload) {
     return validateReorderPayloadContract(payload);
   }
 
-  if (name === "cart" || name === "remove") {
+  if (name === "cart") {
+    return validateNonEmptyCartSnapshotPayloadContract(payload);
+  }
+
+  if (name === "remove") {
     return validateCartSnapshotPayloadContract(payload);
   }
 
@@ -1691,6 +1696,17 @@ function validateCartSnapshotPayloadContract(payload) {
   return {
     code: "live_cart_contract_mismatch",
     message: "Cart JSON did not include a readable cart item array."
+  };
+}
+
+function validateNonEmptyCartSnapshotPayloadContract(payload) {
+  if (isReadableCartSnapshotPayload(payload) && payload.items.length > 0) {
+    return undefined;
+  }
+
+  return {
+    code: "live_cart_contract_mismatch",
+    message: "Cart JSON did not include readable non-empty cart items."
   };
 }
 

@@ -3,16 +3,35 @@ import { select } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
 import type { CartItem, CartSnapshot, Product } from "../types.js";
-import { BrowserAutomation } from "../automation/browser.js";
+import { BrowserAutomation, gotoZepto } from "../automation/browser.js";
 import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
 import { clickProductAdd, increaseProductQuantity, searchProducts, waitForProductAddSettled } from "../automation/search.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
 import { requireInteractiveInput } from "../utils/interactive.js";
-import { queryHasSpecificSizeTerm, textMatchesProductQuery } from "../utils/product-matching.js";
+import {
+  normalizeProductMatchText,
+  queryHasSpecificSizeTerm,
+  textMatchesProductQuery
+} from "../utils/product-matching.js";
 import { promptContext } from "../utils/prompts.js";
 import { parseDecimalInteger } from "../utils/validation.js";
 
 const MAX_ADD_QUANTITY = 12;
+const EMPTY_CART_REREAD_DELAY_MS = 5_000;
+const EMPTY_CART_READ_REREAD_ATTEMPTS = 6;
+const POST_ADD_EMPTY_CART_REREAD_ATTEMPTS = 6;
+const GENERIC_AUTO_ADD_TERMS = new Set([
+  "fresh",
+  "milk",
+  "pouch",
+  "pack",
+  "packet",
+  "toned",
+  "standardized",
+  "standardised",
+  "homogenised",
+  "homogenized"
+]);
 
 export interface AddOptions {
   quantity?: unknown;
@@ -56,7 +75,7 @@ export class CartService {
       await clickProductAdd(page, product);
       await waitForProductAddSettled(page);
       await increaseProductQuantity(page, product, quantity);
-      const cart = await readCart(page);
+      const cart = await readCartWithEmptyRecovery(page, POST_ADD_EMPTY_CART_REREAD_ATTEMPTS);
       assertCartContainsProduct(cart, product, quantity);
       this.runtime.sqlite.saveCartSnapshot(cart);
 
@@ -68,7 +87,9 @@ export class CartService {
   }
 
   async read(): Promise<CartSnapshot> {
-    const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) => readCart(page));
+    const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
+      readCartWithEmptyRecovery(page, EMPTY_CART_READ_REREAD_ATTEMPTS)
+    );
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
@@ -87,6 +108,20 @@ export class CartService {
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
   }
+}
+
+async function readCartWithEmptyRecovery(
+  page: Parameters<typeof readCart>[0],
+  attempts: number
+): Promise<CartSnapshot> {
+  let cart = await readCart(page);
+  for (let attempt = 1; cart.items.length === 0 && attempt < attempts; attempt += 1) {
+    await page.waitForTimeout(EMPTY_CART_REREAD_DELAY_MS);
+    await gotoZepto(page);
+    cart = await readCart(page);
+  }
+
+  return cart;
 }
 
 export function parseAddQuantity(quantityInput: unknown): number {
@@ -185,7 +220,7 @@ export function requireBestMatch(products: Product[], query: string): Product {
     ignoreLocation: true
   });
   const match = fuse.search(query)[0]?.item;
-  if (match) {
+  if (match && hasDistinctiveQueryTermOverlap(match, query)) {
     return match;
   }
 
@@ -197,6 +232,23 @@ export function requireBestMatch(products: Product[], query: string): Product {
 
 function productSearchText(product: Product): string {
   return [product.name, product.unit].filter(Boolean).join(" ");
+}
+
+function hasDistinctiveQueryTermOverlap(product: Product, query: string): boolean {
+  const distinctiveTerms = distinctiveAutoAddTerms(query);
+  if (distinctiveTerms.length === 0) {
+    return true;
+  }
+
+  const productText = productSearchText(product);
+  return distinctiveTerms.some((term) => textMatchesProductQuery(productText, term));
+}
+
+function distinctiveAutoAddTerms(query: string): string[] {
+  return normalizeProductMatchText(query)
+    .split(/[^a-z0-9.]+/i)
+    .filter((term) => /^[a-z][a-z0-9]{2,}$/i.test(term))
+    .filter((term) => !GENERIC_AUTO_ADD_TERMS.has(term));
 }
 
 export function requireAddableProducts(products: Product[], query: string): Product[] {

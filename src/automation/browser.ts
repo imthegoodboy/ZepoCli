@@ -786,10 +786,28 @@ export async function gotoZepto(page: Page, path = "/"): Promise<void> {
 
 export async function gotoWithAccessProtection(page: Page, url: string | URL): Promise<void> {
   const targetUrl = String(url);
-  const response = await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+  const response = await page.goto(targetUrl, { waitUntil: "domcontentloaded" }).catch((error: unknown) => {
+    throw toNavigationTimeoutError(error, targetUrl);
+  });
   await handleNavigationAccessChallengeResponse(page, response, targetUrl);
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
   await assertNoAccessChallenge(page);
+}
+
+function toNavigationTimeoutError(error: unknown, targetUrl: string): UserFacingError {
+  if (!isNavigationTimeoutError(error)) {
+    throw error;
+  }
+
+  return new UserFacingError("Zepto navigation timed out before the page became ready.", {
+    code: "zepto_navigation_timeout",
+    hint: `Retry with \`--visible\` or a larger \`--timeout <ms>\` value if Zepto is slow. Target: ${urlWithoutQuery(targetUrl)}`
+  });
+}
+
+function isNavigationTimeoutError(error: unknown): boolean {
+  const message = firstErrorLine(error);
+  return /\b(?:timeout|navigation timeout)\b/i.test(message ?? "") && /\b(?:page\.goto|navigating|navigation)\b/i.test(message ?? "");
 }
 
 export function assertNoAccessChallengeResponse(response: Pick<Response, "status"> | null | undefined): void {

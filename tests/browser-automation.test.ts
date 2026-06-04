@@ -578,6 +578,19 @@ describe("browser automation helpers", () => {
     clearPageAccessChallengeHandling(page as never);
   });
 
+  it("converts Zepto navigation timeouts into stable user-facing errors", async () => {
+    const page = createNavigationTimeoutPage();
+
+    await expect(gotoWithAccessProtection(page as never, "https://www.zepto.com/search?query=milk")).rejects.toMatchObject({
+      code: "zepto_navigation_timeout",
+      message: "Zepto navigation timed out before the page became ready."
+    });
+
+    await expect(gotoWithAccessProtection(page as never, "https://www.zepto.com/search?query=milk")).rejects.not.toThrow(
+      "query=milk"
+    );
+  });
+
   it("does not treat blocked non-Zepto or static asset responses as Zepto access challenges", async () => {
     const page = createResponseAwarePage();
     configurePageAccessChallengeHandling(page as never, { allowManualResolution: false, waitMs: 90_000 });
@@ -674,6 +687,21 @@ describe("browser automation helpers", () => {
     };
 
     return page;
+  }
+
+  function createNavigationTimeoutPage() {
+    return {
+      goto: async () => {
+        throw new Error(
+          'page.goto: Timeout 60000ms exceeded.\nCall log:\n  - navigating to "https://www.zepto.com/search?query=milk", waiting until "domcontentloaded"'
+        );
+      },
+      waitForLoadState: async () => undefined,
+      title: async () => "Zepto",
+      locator: () => ({
+        innerText: async () => "Search for milk"
+      })
+    };
   }
 
   function createResponse(status: number, resourceType: string, url: string) {

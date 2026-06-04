@@ -3539,13 +3539,36 @@ describe("live verification runner", () => {
         expect(step.ok).toBe(false);
         expect(step.error).toEqual({
           code: "live_cart_contract_mismatch",
-          message: "Cart JSON did not include a readable cart item array."
+          message:
+            name === "cart"
+              ? "Cart JSON did not include readable non-empty cart items."
+              : "Cart JSON did not include a readable cart item array."
         });
       }
     }
   });
 
-  it("accepts cart and remove live report steps with cart-shaped JSON", () => {
+  it("requires non-empty cart live report steps but allows remove to empty the cart", () => {
+    const emptyCartStep = buildLiveReportStep({
+      name: "cart",
+      args: ["--data-dir", ".zepo-live", "--visible", "cart", "--json"],
+      status: 0,
+      stdout: JSON.stringify({ items: [] }),
+      stderr: "",
+      summarizePayload: () => ({ cartItemCount: 0 })
+    }).step;
+
+    expect(emptyCartStep).toEqual({
+      name: "cart",
+      command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "live_cart_contract_mismatch",
+        message: "Cart JSON did not include readable non-empty cart items."
+      }
+    });
+
     for (const name of ["cart", "remove"]) {
       const { step } = buildLiveReportStep({
         name,
@@ -3554,16 +3577,16 @@ describe("live verification runner", () => {
             ? ["--data-dir", ".zepo-live", "--visible", "cart", "--json"]
             : ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
         status: 0,
-        stdout: JSON.stringify({ items: [] }),
+        stdout: JSON.stringify(name === "cart" ? { items: [{ name: "Milk" }] } : { items: [] }),
         stderr: "",
-        summarizePayload: () => ({ cartItemCount: 0 })
+        summarizePayload: () => ({ cartItemCount: name === "cart" ? 1 : 0 })
       });
 
       expect(step).toMatchObject({
         exitCode: 0,
         ok: true,
         summary: {
-          cartItemCount: 0
+          cartItemCount: name === "cart" ? 1 : 0
         }
       });
     }
@@ -3621,7 +3644,7 @@ describe("live verification runner", () => {
       name: "cart",
       args: ["--data-dir", ".zepo-live", "--visible", "cart", "--json"],
       status: 0,
-      stdout: "{\"items\":[]}",
+      stdout: "{\"items\":[{\"name\":\"Milk\"}]}",
       stderr: "",
       summarizePayload: (name: string, value: { items?: unknown[] }) => ({
         name,
@@ -3629,7 +3652,7 @@ describe("live verification runner", () => {
       })
     });
 
-    expect(payload).toEqual({ items: [] });
+    expect(payload).toEqual({ items: [{ name: "Milk" }] });
     expect(step).toEqual({
       name: "cart",
       command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
@@ -3637,7 +3660,7 @@ describe("live verification runner", () => {
       ok: true,
       summary: {
         name: "cart",
-        cartItemCount: 0
+        cartItemCount: 1
       }
     });
   });
@@ -3647,7 +3670,7 @@ describe("live verification runner", () => {
       name: "cart",
       args: ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "cart", "--json"],
       status: 0,
-      stdout: "{\"items\":[]}",
+      stdout: "{\"items\":[{\"name\":\"Milk\"}]}",
       stderr: "",
       summarizePayload: () => {
         throw new Error(
