@@ -296,7 +296,7 @@ describe("agent guidance", () => {
   it("records current local readiness separately from missing live production proof", () => {
     expect(agentStatus).toContain("Last updated: 2026-06-04");
     expect(agentStatus).toContain("`npm run check` passed locally");
-    expect(agentStatus).toContain("34 test files, 613 tests");
+    expect(agentStatus).toContain("34 test files, 628 tests");
     expect(agentStatus).toContain("publish dry-run");
     expect(agentStatus).toContain("`zepo completion <bash|zsh|fish|powershell>`");
     expect(agentStatus).toContain("includes `help`, nested help topics");
@@ -336,6 +336,11 @@ describe("agent guidance", () => {
     expect(agentStatus).toContain("saved focused report was accepted");
     expect(agentStatus).toContain("proves fresh browser preflight, local status, and live-session coverage only");
     expect(agentStatus).toContain("does not prove address selection, search, add, cart, checkout handoff, or track");
+    expect(agentStatus).toContain("focused human-controlled visible order-history probe");
+    expect(agentStatus).toContain("visible `history --json`");
+    expect(agentStatus).toContain("bounded account-surface settle");
+    expect(agentStatus).toContain("still avoids direct `/orders`");
+    expect(agentStatus).toContain("focused history coverage only");
     expect(agentStatus).toContain("including one retry after the cooldown cleared");
     expect(agentStatus).toContain("do not loop headless live-session checks");
     expect(agentStatus).toContain("was checked with `verify:live:report --require-production-scope --max-age-minutes 1440`");

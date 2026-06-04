@@ -14,6 +14,7 @@ export const ORDERS_OPEN_CLICK_LABELS = [/^my orders$/i, /^orders$/i, /^order hi
 export const ACCOUNT_MENU_CLICK_LABELS = [/^account$/i, /^profile$/i] as const;
 export const REORDER_ACTION_CLICK_LABELS = [/^reorder$/i, /^order again$/i, /^repeat order$/i] as const;
 const ORDER_CONTROL_SCAN_LIMIT = 8;
+const ACCOUNT_SURFACE_SETTLE_MS = 500;
 
 export async function openOrders(page: Page): Promise<void> {
   let bodyText = await page.locator("body").innerText().catch(() => "");
@@ -27,9 +28,20 @@ export async function openOrders(page: Page): Promise<void> {
     const openedAccountMenu = await clickAccountMenuControl(page);
     if (openedAccountMenu) {
       await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+      await waitForAccountSurfaceSettle(page);
       await assertNoAccessChallenge(page);
       opened = await clickOrdersNavigationControl(page);
     }
+  }
+  if (!opened) {
+    await gotoZepto(page, "/account");
+    await waitForAccountSurfaceSettle(page);
+    bodyText = await page.locator("body").innerText().catch(() => "");
+    if (isOrdersPageText(bodyText)) {
+      return;
+    }
+
+    opened = await clickOrdersNavigationControl(page);
   }
 
   if (!opened) {
@@ -49,6 +61,11 @@ export async function openOrders(page: Page): Promise<void> {
       hint: "Make sure you are logged in, then check the browser manually with `zepo --visible login`."
     });
   }
+}
+
+async function waitForAccountSurfaceSettle(page: Page): Promise<void> {
+  const waitable = page as { waitForTimeout?: (timeoutMs: number) => Promise<void> };
+  await waitable.waitForTimeout?.(ACCOUNT_SURFACE_SETTLE_MS).catch(() => undefined);
 }
 
 export async function clickOrdersNavigationControl(page: Page): Promise<boolean> {

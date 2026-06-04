@@ -457,6 +457,27 @@ describe("order automation helpers", () => {
     expect(page.urls.some((url) => new URL(url).pathname === "/orders")).toBe(false);
   });
 
+  it("falls back to Zepto account surface without using a direct orders route", async () => {
+    const page = createOrdersOpenViaAccountFallbackPage();
+
+    await expect(openOrders(page as never)).resolves.toBeUndefined();
+
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/", "/account"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/orders")).toBe(false);
+  });
+
+  it("waits briefly for account orders controls to render after profile opens", async () => {
+    const page = createDelayedOrdersAccountMenuPage();
+
+    await expect(openOrders(page as never)).resolves.toBeUndefined();
+
+    expect(page.accountClicked).toBe(true);
+    expect(page.waitedForAccountSurface).toBe(true);
+    expect(page.ordersClicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/orders")).toBe(false);
+  });
+
   it("does not click disabled reorder controls", async () => {
     const page = createDisabledReorderPage();
 
@@ -765,6 +786,83 @@ function createOrdersOpenViaAccountPage() {
 
       return createHiddenLocator();
     },
+    locator: (selector: string) =>
+      selector === "body" ? createTextLocator(bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createDelayedOrdersAccountMenuPage() {
+  let location = "blank";
+  let bodyText = "";
+  let accountSurfaceSettled = false;
+  const page = {
+    accountClicked: false,
+    ordersClicked: false,
+    waitedForAccountSurface: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      accountSurfaceSettled = false;
+      bodyText = "Welcome to Zepto Cart Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => {
+      if (location === "account") {
+        page.waitedForAccountSurface = true;
+        accountSurfaceSettled = true;
+      }
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Profile")) {
+        return createVisibleLocator("Profile", async () => {
+          page.accountClicked = true;
+          location = "account";
+          bodyText = "Settings Saved Addresses Profile";
+        });
+      }
+
+      if (
+        location === "account" &&
+        accountSurfaceSettled &&
+        role === "link" &&
+        matchesLocatorName(options.name, "Orders")
+      ) {
+        return createVisibleLocator("Orders", async () => {
+          page.ordersClicked = true;
+          bodyText = "Orders Order delivered Placed at 26th May 2026 Total ₹128";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createTextLocator(bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createOrdersOpenViaAccountFallbackPage() {
+  let bodyText = "";
+  const page = {
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      const path = new URL(String(url)).pathname;
+      bodyText =
+        path === "/account"
+          ? "Orders Order delivered Placed at 26th May 2026 Total ₹128"
+          : "Welcome to Zepto Cart";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    getByRole: () => createHiddenLocator(),
     locator: (selector: string) =>
       selector === "body" ? createTextLocator(bodyText) : createHiddenLocator()
   };
