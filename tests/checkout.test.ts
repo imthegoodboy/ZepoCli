@@ -8,6 +8,7 @@ import {
   isCheckoutHandoffClickText,
   isCheckoutHandoffText,
   isManualCheckoutActionText,
+  openCheckout,
   isUnsafeCheckoutAutomationClickText
 } from "../src/automation/checkout.js";
 import { checkoutHandoffOutput } from "../src/commands/checkout.js";
@@ -406,6 +407,28 @@ describe("checkout handoff detection", () => {
       detectCheckoutHandoffMode(createCheckoutHandoffDetectionPage("Cart Bill Summary Checkout") as never)
     ).resolves.toBeUndefined();
   });
+
+  it("recovers a readable cart precondition before checkout when Zepto first shows a cart shell", async () => {
+    const page = createCheckoutCartRecoveryPage();
+
+    await expect(openCheckout(page as never)).resolves.toEqual({ mode: "checkout_or_payment_page" });
+
+    expect(page.cartClicks).toBe(1);
+    expect(page.checkoutClicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
+  it("lets cart recovery handle unverified checkout cart navigation", async () => {
+    const page = createCheckoutCartNavigationRecoveryPage();
+
+    await expect(openCheckout(page as never)).resolves.toEqual({ mode: "checkout_or_payment_page" });
+
+    expect(page.cartClicks).toBe(4);
+    expect(page.checkoutClicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/", "/", "/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
 });
 
 function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: string[] = []) {
@@ -444,6 +467,136 @@ function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: stri
       };
     }
   };
+}
+
+function createCheckoutCartRecoveryPage() {
+  let location = "stale-cart";
+  let bodyText = "My Cart 2 items View Bill To Pay ₹120";
+  const page = {
+    cartClicks: 0,
+    checkoutClicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 2 Account Profile";
+      return {
+        status: () => 200,
+        url: () => String(url)
+      };
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      return source.includes("bodyTexts") ? { bodyTexts: [], controlRows: [] } : [];
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Cart 2")) {
+        return createVisibleLocator("Cart 2", async () => {
+          page.cartClicks += 1;
+          location = "cart";
+          bodyText = [
+            "My Cart",
+            "Amul Taaza Toned Milk",
+            "1 pack (500 ml)",
+            "₹32",
+            "Qty 1",
+            "Grand Total ₹32",
+            "Checkout"
+          ].join("\n");
+        });
+      }
+
+      if (location === "cart" && role === "button" && matchesLocatorName(options.name, "Checkout")) {
+        return createVisibleLocator("Checkout", async () => {
+          page.checkoutClicked = true;
+          location = "checkout";
+          bodyText = "Select payment method UPI Card Wallet";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => bodyText
+          }
+        : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCheckoutCartNavigationRecoveryPage() {
+  let location = "home";
+  let bodyText = "Welcome to Zepto Search Cart 2 Account Profile";
+  const page = {
+    cartClicks: 0,
+    checkoutClicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 2 Account Profile";
+      return {
+        status: () => 200,
+        url: () => String(url)
+      };
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      return source.includes("bodyTexts") ? { bodyTexts: [], controlRows: [] } : [];
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Cart 2")) {
+        return createVisibleLocator("Cart 2", async () => {
+          page.cartClicks += 1;
+          if (page.cartClicks >= 4) {
+            location = "cart";
+            bodyText = [
+              "My Cart",
+              "Amul Taaza Toned Milk",
+              "1 pack (500 ml)",
+              "₹32",
+              "Qty 1",
+              "Grand Total ₹32",
+              "Checkout"
+            ].join("\n");
+            return;
+          }
+
+          location = "stuck";
+          bodyText = "Search results Cart 2 Account Profile";
+        });
+      }
+
+      if (location === "cart" && role === "button" && matchesLocatorName(options.name, "Checkout")) {
+        return createVisibleLocator("Checkout", async () => {
+          page.checkoutClicked = true;
+          location = "checkout";
+          bodyText = "Select payment method UPI Card Wallet";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => bodyText
+          }
+        : createHiddenLocator()
+  };
+
+  return page;
 }
 
 function createAriaCheckoutPage() {

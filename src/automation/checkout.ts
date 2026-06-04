@@ -1,7 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { UserFacingError } from "../utils/errors.js";
-import { hasStrongCartSurfaceEvidence, openCart, parseReadableCartItemsFromText, readVisibleCart } from "./cart.js";
+import { hasStrongCartSurfaceEvidence, parseReadableCartItemsFromText, readCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { isFinalCheckoutSurfaceText, isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
@@ -26,7 +26,6 @@ export interface CheckoutHandoffResult {
 }
 
 export async function openCheckout(page: Page): Promise<CheckoutHandoffResult> {
-  await openCart(page);
   const cart = await readCheckoutCartPrecondition(page);
   const cartText = cart.rawText ?? "";
   assertReadableCheckoutCart(cartText, cart.items);
@@ -141,9 +140,12 @@ async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
 
 async function readCheckoutCartPrecondition(page: Page) {
   try {
-    return await readVisibleCart(page);
+    return await readCart(page);
   } catch (error) {
-    if (error instanceof UserFacingError && error.code === "cart_unreadable") {
+    if (
+      error instanceof UserFacingError &&
+      (error.code === "cart_unreadable" || error.code === "cart_navigation_unverified")
+    ) {
       throw checkoutCartUnreadableError();
     }
     throw error;

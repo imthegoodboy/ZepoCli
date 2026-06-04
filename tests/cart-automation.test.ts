@@ -656,6 +656,26 @@ describe("cart automation helpers", () => {
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
 
+  it("uses a second bounded cart recovery when Zepto reopens another unhydrated shell", async () => {
+    const page = createCartSecondRecoveryPage();
+
+    await expect(readCart(page as never)).resolves.toMatchObject({
+      items: [
+        {
+          name: "Amul Taaza Toned Milk",
+          price: "₹32",
+          unit: "1 pack (500 ml)",
+          quantity: "1"
+        }
+      ],
+      total: "₹32"
+    });
+
+    expect(page.cartClicks).toBe(2);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/", "/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
   it("recovers a readable cart after Zepto cannot confirm cart navigation", async () => {
     const page = createCartNavigationRecoveryPage();
 
@@ -1248,6 +1268,47 @@ function createCartReadRecoveryPage() {
           page.cartClicks += 1;
           location = "cart";
           bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartSecondRecoveryPage() {
+  let location = "stale-cart";
+  let bodyText = "My Cart 2 items View Bill To Pay ₹120";
+  const page = {
+    cartClicks: 0,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 2 Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      return source.includes("bodyTexts") ? { bodyTexts: [], controlRows: [] } : [];
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location === "home" && role === "button" && matchesLocatorName(options.name, "Cart 2")) {
+        return createVisibleLocator("Cart 2", async () => {
+          page.cartClicks += 1;
+          location = "cart";
+          bodyText =
+            page.cartClicks >= 2
+              ? "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32"
+              : "My Cart 2 items View Bill To Pay ₹120";
         });
       }
 

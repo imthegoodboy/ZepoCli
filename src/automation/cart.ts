@@ -21,6 +21,7 @@ export const CART_OPEN_CLICK_LABELS = [
   /^go to cart$/i
 ] as const;
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
+const CART_READ_RECOVERY_ATTEMPTS = 2;
 const CART_RENDER_SIGNAL_TIMEOUT_MS = 12_000;
 const CART_SCROLL_SETTLE_MS = 140;
 const CART_SCROLL_MIN_STEP_PX = 160;
@@ -166,17 +167,35 @@ async function isSafeCartOpenControl(locator: Locator): Promise<boolean> {
 }
 
 export async function readCart(page: Page): Promise<CartSnapshot> {
-  try {
-    await openCart(page);
-    return await readVisibleCart(page);
-  } catch (error) {
-    if (!isRecoverableCartReadError(error)) {
-      throw error;
+  let unreadableError: UserFacingError | undefined;
+  for (let attempt = 0; attempt < CART_READ_RECOVERY_ATTEMPTS; attempt += 1) {
+    try {
+      await openCart(page);
+      return await readVisibleCart(page);
+    } catch (error) {
+      if (!isRecoverableCartReadError(error)) {
+        throw error;
+      }
+
+      unreadableError = error;
     }
 
     await recoverCartOpenForRead(page);
-    return readVisibleCart(page);
+    try {
+      return await readVisibleCart(page);
+    } catch (error) {
+      if (!isRecoverableCartReadError(error)) {
+        throw error;
+      }
+
+      unreadableError = error;
+    }
   }
+
+  throw unreadableError ?? new UserFacingError("Zepto cart page did not expose readable cart items.", {
+    code: "cart_unreadable",
+    hint: "Rerun with `--visible` to inspect Zepto's cart page before treating the cart as empty."
+  });
 }
 
 function isRecoverableCartReadError(error: unknown): error is UserFacingError {
