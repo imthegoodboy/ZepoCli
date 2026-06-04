@@ -2,7 +2,7 @@ import { input } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
 import { assertConfirmedSession, BrowserAutomation } from "../automation/browser.js";
-import { openCheckout, type CheckoutHandoffResult } from "../automation/checkout.js";
+import { detectCheckoutHandoffMode, openCheckout, type CheckoutHandoffResult } from "../automation/checkout.js";
 import { requireInteractiveInput, requireVisibleBrowser } from "../utils/interactive.js";
 import { promptContext } from "../utils/prompts.js";
 
@@ -32,7 +32,7 @@ export class CheckoutService {
     return this.browser.withPage(
       { captureFailures: false, requireSession: true, headless: false, saveState: true },
       async (page) => {
-        const handoff = (await openCheckout(page)) ?? { mode: "checkout_or_payment_page" as const };
+        let handoff = (await openCheckout(page)) ?? { mode: "checkout_or_payment_page" as const };
         if (waitForCompletion) {
           await input(
             {
@@ -40,6 +40,7 @@ export class CheckoutService {
             },
             promptContext()
           );
+          handoff = (await detectCheckoutHandoffMode(page).catch(() => undefined)) ?? handoff;
         }
         return handoff;
       }

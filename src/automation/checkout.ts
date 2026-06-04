@@ -46,17 +46,30 @@ export async function openCheckout(page: Page): Promise<CheckoutHandoffResult> {
     });
   }
 
-  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
-  await assertNoAccessChallenge(page);
-  const bodyText = await page.locator("body").innerText().catch(() => "");
-  if (!isCheckoutHandoffText(bodyText)) {
+  const postClickHandoff = await detectCheckoutHandoffMode(page);
+  if (postClickHandoff?.mode !== "checkout_or_payment_page") {
     throw new UserFacingError("Zepto did not expose a checkout or payment handoff after clicking checkout.", {
       code: "checkout_handoff_unverified",
       hint: "Check the visible browser for missing address, minimum cart value, unavailable items, or changed checkout UI."
     });
   }
 
-  return { mode: "checkout_or_payment_page" };
+  return postClickHandoff;
+}
+
+export async function detectCheckoutHandoffMode(page: Page): Promise<CheckoutHandoffResult | undefined> {
+  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+  await assertNoAccessChallenge(page);
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  if (isCheckoutHandoffText(bodyText)) {
+    return { mode: "checkout_or_payment_page" };
+  }
+
+  if (await hasVisibleManualCheckoutAction(page)) {
+    return { mode: "manual_payment_control_visible" };
+  }
+
+  return undefined;
 }
 
 export async function clickCheckoutHandoffButton(page: Page): Promise<boolean> {

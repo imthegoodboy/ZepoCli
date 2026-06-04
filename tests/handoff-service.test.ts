@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   withPageCalls: [] as Array<{ options: Record<string, unknown> }>,
   input: vi.fn(async () => ""),
   confirm: vi.fn(async () => true),
+  detectCheckoutHandoffMode: vi.fn(async () => undefined),
   openCheckout: vi.fn(async () => undefined),
   startAddAddress: vi.fn(async () => undefined),
   listAddresses: vi.fn(async () => [{ text: "Home: 221B Baker Street", selected: true }]),
@@ -39,6 +40,7 @@ vi.mock("../src/automation/browser.js", () => ({
 }));
 
 vi.mock("../src/automation/checkout.js", () => ({
+  detectCheckoutHandoffMode: mocks.detectCheckoutHandoffMode,
   openCheckout: mocks.openCheckout
 }));
 
@@ -67,6 +69,7 @@ describe("human-controlled browser handoff services", () => {
     mocks.withPageCalls.length = 0;
     mocks.input.mockClear();
     mocks.confirm.mockClear();
+    mocks.detectCheckoutHandoffMode.mockClear();
     mocks.openCheckout.mockClear();
     mocks.startAddAddress.mockClear();
     mocks.listAddresses.mockClear();
@@ -106,6 +109,7 @@ describe("human-controlled browser handoff services", () => {
     });
     expect(mocks.openCheckout).toHaveBeenCalledOnce();
     expect(mocks.input).toHaveBeenCalledOnce();
+    expect(mocks.detectCheckoutHandoffMode).toHaveBeenCalledOnce();
   });
 
   it("returns checkout handoff without prompting when the caller only needs JSON evidence", async () => {
@@ -121,6 +125,7 @@ describe("human-controlled browser handoff services", () => {
     });
     expect(mocks.openCheckout).toHaveBeenCalledOnce();
     expect(mocks.input).not.toHaveBeenCalled();
+    expect(mocks.detectCheckoutHandoffMode).not.toHaveBeenCalled();
   });
 
   it("prompts for a manual Zepto payment click when checkout exposes only a cart-side payment control", async () => {
@@ -134,6 +139,28 @@ describe("human-controlled browser handoff services", () => {
       }),
       expect.anything()
     );
+  });
+
+  it("returns a refreshed handoff when manual Zepto continuation reaches a checkout surface", async () => {
+    mocks.openCheckout.mockResolvedValueOnce({ mode: "manual_payment_control_visible" });
+    mocks.detectCheckoutHandoffMode.mockResolvedValueOnce({ mode: "checkout_or_payment_page" });
+
+    const result = await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout();
+
+    expect(result).toEqual({ mode: "checkout_or_payment_page" });
+    expect(mocks.input).toHaveBeenCalledOnce();
+    expect(mocks.detectCheckoutHandoffMode).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the original manual handoff when the post-prompt page is not a readable checkout surface", async () => {
+    mocks.openCheckout.mockResolvedValueOnce({ mode: "manual_payment_control_visible" });
+    mocks.detectCheckoutHandoffMode.mockResolvedValueOnce(undefined);
+
+    const result = await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout();
+
+    expect(result).toEqual({ mode: "manual_payment_control_visible" });
+    expect(mocks.input).toHaveBeenCalledOnce();
+    expect(mocks.detectCheckoutHandoffMode).toHaveBeenCalledOnce();
   });
 
   it("does not open address add unless a visible browser is explicitly requested", async () => {

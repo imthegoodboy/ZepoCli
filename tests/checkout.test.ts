@@ -4,6 +4,7 @@ import {
   assertReadableCheckoutCart,
   CHECKOUT_HANDOFF_CLICK_LABELS,
   clickCheckoutHandoffButton,
+  detectCheckoutHandoffMode,
   isCheckoutHandoffClickText,
   isCheckoutHandoffText,
   isManualCheckoutActionText,
@@ -391,7 +392,59 @@ describe("checkout handoff detection", () => {
       next: "Click the Zepto payment control in the visible browser, complete only the Zepto-side actions you choose, then run `zepo track` to inspect order status."
     });
   });
+
+  it("detects the current checkout handoff mode without clicking controls", async () => {
+    await expect(
+      detectCheckoutHandoffMode(createCheckoutHandoffDetectionPage("Select payment method UPI Card Wallet") as never)
+    ).resolves.toEqual({ mode: "checkout_or_payment_page" });
+
+    await expect(
+      detectCheckoutHandoffMode(createCheckoutHandoffDetectionPage("Cart Bill Summary", ["Click to Pay ₹509"]) as never)
+    ).resolves.toEqual({ mode: "manual_payment_control_visible" });
+
+    await expect(
+      detectCheckoutHandoffMode(createCheckoutHandoffDetectionPage("Cart Bill Summary Checkout") as never)
+    ).resolves.toBeUndefined();
+  });
 });
+
+function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: string[] = []) {
+  return {
+    title: async () => "",
+    waitForLoadState: async () => undefined,
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return {
+          innerText: async () => bodyText
+        };
+      }
+
+      return {
+        evaluateAll: async (callback: (elements: Element[]) => unknown) => {
+          const elements = controlTexts.map((text) => ({
+            textContent: text,
+            getAttribute: () => null,
+            getBoundingClientRect: () => ({ width: 100, height: 20 }),
+            hasAttribute: () => false
+          }));
+          const previousWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
+          (globalThis as typeof globalThis & { window?: unknown }).window = {
+            getComputedStyle: () => ({ display: "block", visibility: "visible" })
+          };
+          try {
+            return callback(elements as never);
+          } finally {
+            if (previousWindow === undefined) {
+              delete (globalThis as typeof globalThis & { window?: unknown }).window;
+            } else {
+              (globalThis as typeof globalThis & { window?: unknown }).window = previousWindow;
+            }
+          }
+        }
+      };
+    }
+  };
+}
 
 function createAriaCheckoutPage() {
   const page = {

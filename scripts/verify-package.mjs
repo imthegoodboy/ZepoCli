@@ -303,6 +303,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "zepo --visible checkout",
     "JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt",
     "explicit JSON wait mode (`zepo --visible checkout --json --wait`)",
+    "Wait mode re-checks the visible page after the human presses Enter",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "status: \"checkout_manual_action_required\"",
     "manual amount-bearing payment control",
@@ -702,6 +703,7 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   );
   const { checkoutHandoffOutput } = await import(pathToFileURL(checkoutModulePath).href);
   const {
+    detectCheckoutHandoffMode,
     isCheckoutHandoffClickText,
     isCheckoutHandoffText,
     isManualCheckoutActionText,
@@ -778,7 +780,57 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     isCheckoutHandoffText("Cart Order Summary Bill Summary Select payment method UPI Cards") === true,
     "expected installed checkout detector to accept explicit payment selection text"
   );
+  assert(
+    (await detectCheckoutHandoffMode(
+      createInstalledCheckoutHandoffDetectionPage("Select payment method UPI Card Wallet")
+    ))?.mode === "checkout_or_payment_page",
+    "expected installed checkout handoff mode detector to detect payment handoff pages"
+  );
+  assert(
+    (await detectCheckoutHandoffMode(
+      createInstalledCheckoutHandoffDetectionPage("Cart Bill Summary", ["Click to Pay ₹509"])
+    ))?.mode === "manual_payment_control_visible",
+    "expected installed checkout handoff mode detector to detect manual payment controls"
+  );
   console.log("pass installed checkout handoff contract");
+}
+
+function createInstalledCheckoutHandoffDetectionPage(bodyText, controlTexts = []) {
+  return {
+    title: async () => "",
+    waitForLoadState: async () => undefined,
+    locator: (selector) => {
+      if (selector === "body") {
+        return {
+          innerText: async () => bodyText
+        };
+      }
+
+      return {
+        evaluateAll: async (callback) => {
+          const elements = controlTexts.map((text) => ({
+            textContent: text,
+            getAttribute: () => null,
+            getBoundingClientRect: () => ({ width: 100, height: 20 }),
+            hasAttribute: () => false
+          }));
+          const previousWindow = globalThis.window;
+          globalThis.window = {
+            getComputedStyle: () => ({ display: "block", visibility: "visible" })
+          };
+          try {
+            return callback(elements);
+          } finally {
+            if (previousWindow === undefined) {
+              delete globalThis.window;
+            } else {
+              globalThis.window = previousWindow;
+            }
+          }
+        }
+      };
+    }
+  };
 }
 
 async function verifyInstalledAuthAutomationContract(prefixDir) {

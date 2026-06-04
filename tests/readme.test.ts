@@ -223,6 +223,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
     expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
     expect(readme).toContain("unless the caller explicitly passes `--wait`");
+    expect(readme).toContain("Wait mode re-checks the visible page after the human presses Enter");
+    expect(readme).toContain("wait mode observes the visible page again after Enter before returning JSON");
     expect(readme).toContain("manual amount-bearing payment control");
     expect(readme).toContain("must not be counted as checkout handoff coverage");
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");
