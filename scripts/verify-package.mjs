@@ -357,12 +357,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Persistent log object keys/values, Error messages/stacks, and message strings are redacted with the same sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle",
     "auth/session/token/password/secret URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
-    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --checkout-wait --search milk --address home --add "Amul Milk 500ml"',
+    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
     "both preflight steps must report `browserAutomation.ready === true`",
     "doctor must also show a passing `Playwright Chromium` check",
-    "Use `--production-scope --checkout-wait` for the final readiness run",
-    "then requests non-empty cart, checkout handoff, and track coverage",
-    "The explicit wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
+    "Use `--production-scope` for the final readiness run",
+    "then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled",
+    "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
     "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
     "<redacted-browser-locale>",
     "<redacted-browser-timezone>",
@@ -397,7 +397,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
-    "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout evidence from explicit `--checkout-wait`",
+    "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence",
     "stale saved reports or stale order-history tracking cannot be reused as current evidence",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
@@ -2227,6 +2227,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("writeLiveReport(reportPath, report)"),
     "expected installed live verifier to write sanitized partial reports on interrupts"
   );
+  assert(
+    liveVerifierSource.includes("parsed.checkoutWait = true"),
+    "expected installed verify:live production-scope preset to enable checkout wait"
+  );
 
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
@@ -2256,7 +2260,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live help to keep manual preconditions separate from workflow attempts"
   );
   assert(
-    result.stdout.includes("Use --production-scope with --checkout-wait for the final production readiness run"),
+    result.stdout.includes("Use --production-scope for the final production readiness run"),
     "expected installed verify:live help to explain production-scope preset"
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");

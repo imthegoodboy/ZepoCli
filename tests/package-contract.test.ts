@@ -513,6 +513,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live usage to use silent npm");
     expect(verifier).toContain("expected installed verify:live step-timeout option");
     expect(verifier).toContain("expected installed verify:live production-scope option");
+    expect(verifier).toContain("expected installed verify:live production-scope preset to enable checkout wait");
     expect(verifier).toContain("expected installed verify:live help to explain production-scope preset");
     expect(verifier).toContain("expected installed verify:live:report max-age option");
     expect(verifier).toContain("expected installed verify:publish-dry-run package script");
@@ -538,7 +539,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
-    expect(verifier).toContain("with checkout evidence from explicit `--checkout-wait`");
+    expect(verifier).toContain("with checkout wait evidence");
     expect(verifier).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );

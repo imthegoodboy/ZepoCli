@@ -4,6 +4,7 @@ Last updated: 2026-06-04.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-04 at 22:27 IST after making the final `--production-scope` live-verification preset enable checkout wait automatically: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 21:59 IST after requiring explicit checkout wait-mode evidence for final production-scope report acceptance: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 21:18 IST after adding checkout wait-mode handoff refresh: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 20:54 IST after adding explicit `--no-input` coverage for `zepo checkout --json --wait`: secret scan, dependency readiness, build, 34 test files, 633 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
@@ -34,6 +35,7 @@ Last updated: 2026-06-04.
 - A disposable no-account checkout-wait smoke on 2026-06-04 using `./.zepo-checkout-wait-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. It did not launch checkout, did not claim live-session/checkout coverage, and the ordinary report validator rejected the saved report as incomplete.
 - A disposable no-account checkout-refresh smoke on 2026-06-04 using `./.zepo-refresh-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected as incomplete, confirming the refreshed wait-mode code does not bypass the login/live-session precondition.
 - A disposable no-account production-scope wait smoke on 2026-06-04 using `./.zepo-wait-required-smoke` ran the final command shape with `--production-scope --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected by `verify:live:report --require-production-scope --max-age-minutes 60` because live session, search, address selection, add, cart, checkout handoff, and track coverage were all missing, confirming the final gate still does not bypass login or checkout preconditions.
+- A disposable no-account production-scope preset smoke on 2026-06-04 using `./.zepo-production-preset-smoke` ran the simplified final command shape with `--production-scope` and no separate `--checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected by `verify:live:report --require-production-scope --max-age-minutes 60` for missing live session/search/address/add/cart/checkout/track coverage, confirming the preset does not bypass account or checkout proof.
 - A conservative public headless search smoke on 2026-06-04 returned Zepto HTTP 429 and the CLI emitted structured `error.code: "zepto_access_challenge"` with `retryAfterMs: 900000`.
 - A `.zepo-live-prod` local-status check on 2026-06-04 showed a confirmed local session marker with no active browser lock. Earlier headless `status --live --json` checks returned Zepto HTTP 429 with `error.code: "zepto_access_challenge"` and `retryAfterMs: 900000`, including one retry after the cooldown cleared; do not loop headless live-session checks after this signal.
 - A focused human-controlled visible live-session probe on 2026-06-04 using `.zepo-live-prod` and `npm --silent run verify:live -- --data-dir ./.zepo-live-prod --login --report ./.zepo-live-prod/live-session-report.json --step-timeout 120000` passed `doctor`, local `status`, and visible `status --live --json`. The saved focused report was accepted by `npm --silent run verify:live:report -- --max-age-minutes 1440 ./.zepo-live-prod/live-session-report.json`. This proves fresh browser preflight, local status, and live-session coverage only; it does not prove address selection, search, add, cart, checkout handoff, or track.
@@ -50,7 +52,7 @@ Last updated: 2026-06-04.
 - Required final command shape:
 
 ```bash
-npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-scope --checkout-wait --search <query> --address <query> --add <query>
+npm --silent run verify:live -- --data-dir <dedicated-dir> --login --production-scope --search <query> --address <query> --add <query>
 ```
 
 - Required acceptance command:

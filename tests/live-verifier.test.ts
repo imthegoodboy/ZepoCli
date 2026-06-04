@@ -241,7 +241,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--checkout");
     expect(result.stdout).toContain("--production-scope");
     expect(result.stdout).toContain("Final readiness preset");
-    expect(result.stdout).toContain("accepted final reports also need --checkout-wait");
+    expect(result.stdout).toContain("with checkout wait enabled");
     expect(result.stdout).toContain("--browser-locale <locale>");
     expect(result.stdout).toContain("--browser-timezone <timezone>");
     expect(result.stdout).toContain("--remove <query>");
@@ -251,7 +251,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--checkout-wait");
     expect(result.stdout).toContain("manual payment controls still do not count as checkout handoff coverage");
     expect(result.stdout).toContain(
-      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --checkout-wait --search milk --address home --add "Amul Milk 500ml"'
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
     );
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
@@ -273,7 +273,7 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).toContain(
-      "Use --production-scope with --checkout-wait for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, then lets a human complete Zepto-side checkout/payment before tracking."
+      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking."
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
@@ -297,7 +297,7 @@ describe("live verification runner", () => {
       "core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage"
     );
     expect(result.stdout).toContain(
-      "checkout evidence comes from explicit --checkout-wait so a human can complete Zepto-side checkout/payment before tracking"
+      "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -368,6 +368,7 @@ describe("live verification runner", () => {
     const script = readFileSync(scriptPath, "utf8");
 
     expect(script).toContain("options.checkoutWait");
+    expect(script).toContain("parsed.checkoutWait = true");
     expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait")');
     expect(script).toContain("options.checkoutWait && options.track && isManualCheckoutContinuation(checkoutResult)");
     expect(script).toContain("Checkout stopped at Zepto's manual payment-control boundary; continuing to track because --checkout-wait was requested.");
