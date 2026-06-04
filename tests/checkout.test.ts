@@ -408,6 +408,31 @@ describe("checkout handoff detection", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("detects manual checkout controls from accessible label text", async () => {
+    await expect(
+      detectCheckoutHandoffMode(
+        createCheckoutHandoffDetectionPage("Cart Bill Summary", [
+          {
+            text: "",
+            attributes: { "aria-description": "Click to Pay ₹509" }
+          }
+        ]) as never
+      )
+    ).resolves.toEqual({ mode: "manual_payment_control_visible" });
+
+    await expect(
+      detectCheckoutHandoffMode(
+        createCheckoutHandoffDetectionPage("Cart Bill Summary", [
+          {
+            text: "",
+            attributes: { "aria-describedby": "pay-hint" },
+            referencedLabels: { "pay-hint": "Click to Pay ₹509" }
+          }
+        ]) as never
+      )
+    ).resolves.toEqual({ mode: "manual_payment_control_visible" });
+  });
+
   it("recovers a readable cart precondition before checkout when Zepto first shows a cart shell", async () => {
     const page = createCheckoutCartRecoveryPage();
 
@@ -442,7 +467,15 @@ describe("checkout handoff detection", () => {
   });
 });
 
-function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: string[] = []) {
+type CheckoutDetectionControl =
+  | string
+  | {
+      text: string;
+      attributes?: Record<string, string | null>;
+      referencedLabels?: Record<string, string>;
+    };
+
+function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: CheckoutDetectionControl[] = []) {
   return {
     title: async () => "",
     waitForLoadState: async () => undefined,
@@ -455,12 +488,22 @@ function createCheckoutHandoffDetectionPage(bodyText: string, controlTexts: stri
 
       return {
         evaluateAll: async (callback: (elements: Element[]) => unknown) => {
-          const elements = controlTexts.map((text) => ({
-            textContent: text,
-            getAttribute: () => null,
-            getBoundingClientRect: () => ({ width: 100, height: 20 }),
-            hasAttribute: () => false
-          }));
+          const elements = controlTexts.map((control) => {
+            const text = typeof control === "string" ? control : control.text;
+            const attributes: Record<string, string | null> =
+              typeof control === "string" ? {} : control.attributes ?? {};
+            const referencedLabels = typeof control === "string" ? {} : control.referencedLabels ?? {};
+            return {
+              textContent: text,
+              ownerDocument: {
+                getElementById: (id: string) =>
+                  referencedLabels[id] === undefined ? null : { textContent: referencedLabels[id] }
+              },
+              getAttribute: (name: string) => attributes[name] ?? null,
+              getBoundingClientRect: () => ({ width: 100, height: 20 }),
+              hasAttribute: () => false
+            };
+          });
           const previousWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
           (globalThis as typeof globalThis & { window?: unknown }).window = {
             getComputedStyle: () => ({ display: "block", visibility: "visible" })

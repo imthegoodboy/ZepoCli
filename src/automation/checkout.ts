@@ -260,6 +260,14 @@ async function hasVisibleManualCheckoutAction(page: Page): Promise<boolean> {
     .locator("button, [role='button'], a")
     .evaluateAll((elements) => {
       const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+      const referencedLabelText = (element: Element) =>
+        `${element.getAttribute("aria-labelledby") ?? ""} ${element.getAttribute("aria-describedby") ?? ""}`
+          .split(/\s+/)
+          .map((id) => id.trim())
+          .filter(Boolean)
+          .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? "")
+          .map(normalize)
+          .filter(Boolean);
       const isVisible = (element: Element) => {
         const rect = element.getBoundingClientRect();
         const style = window.getComputedStyle(element);
@@ -282,7 +290,10 @@ async function hasVisibleManualCheckoutAction(page: Page): Promise<boolean> {
               element.textContent,
               element.getAttribute("aria-label"),
               element.getAttribute("title"),
-              element.getAttribute("value")
+              element.getAttribute("placeholder"),
+              element.getAttribute("value"),
+              element.getAttribute("aria-description"),
+              ...referencedLabelText(element)
             ]
               .filter(Boolean)
               .join(" ")
