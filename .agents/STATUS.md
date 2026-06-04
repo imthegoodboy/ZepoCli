@@ -1,6 +1,6 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 03:43 IST.
+Last updated: 2026-06-05 03:54 IST.
 
 ## Local Package State
 
@@ -40,6 +40,7 @@ Last updated: 2026-06-05 03:43 IST.
 
 - A safe no-account `verify:live` smoke on 2026-06-04 using `./.zepo-live-smoke-current` passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`; it did not claim login, live-session, checkout, or order coverage. The ordinary report validator rejected the saved report with `live_report_not_ok`, which is correct because this smoke is incomplete evidence, not an acceptable live pass.
 - A disposable visible-preflight `verify:live` smoke on 2026-06-05 using `./.zepo-visible-preflight-smoke` and a requested search workflow passed `--visible doctor --json` and `--visible status --json`, then stopped at the missing-session precondition with `live_verification_incomplete`. This confirms requested live workflows no longer fail browser preflight solely because background/headless is cooling down; it did not touch search/cart/checkout and is not acceptance evidence.
+- A focused no-mutation `.zepo-live-prod` live-session report on 2026-06-05 using `./.zepo-live-prod/live-session-visible-preflight-report.json` passed `--visible doctor --json`, `--visible status --json`, and visible `status --live --json`; `npm --silent run verify:live:report -- --max-age-minutes 60 ./.zepo-live-prod/live-session-visible-preflight-report.json` accepted the saved report. This proves the new mode-aware preflight works for an existing confirmed session without changing cart or checkout state; it is focused live-session evidence only, not final production-scope proof.
 - A disposable no-account checkout-wait smoke on 2026-06-04 using `./.zepo-checkout-wait-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. It did not launch checkout, did not claim live-session/checkout coverage, and the ordinary report validator rejected the saved report as incomplete.
 - A disposable no-account checkout-refresh smoke on 2026-06-04 using `./.zepo-refresh-smoke` ran `verify:live --checkout --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected as incomplete, confirming the refreshed wait-mode code does not bypass the login/live-session precondition.
 - A disposable no-account production-scope wait smoke on 2026-06-04 using `./.zepo-wait-required-smoke` ran the final command shape with `--production-scope --checkout-wait`, passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`. The saved report was rejected by `verify:live:report --require-production-scope --max-age-minutes 60` because live session, search, address selection, add, cart, checkout handoff, and track coverage were all missing, confirming the final gate still does not bypass login or checkout preconditions.
