@@ -49,6 +49,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("browserAutomation.ready");
     expect(readme).toContain("browserAutomation.reasons");
     expect(readme).toContain("browserAutomation.retryAfterMs");
+    expect(readme).toContain("browserAutomation.modes.backgroundHeadless");
+    expect(readme).toContain("browserAutomation.modes.visibleHumanControlled");
     expect(readme).toContain("browserAutomationMode.current");
     expect(readme).toContain("normal package runs should report `background_headless`");
     expect(readme).toContain("`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`");

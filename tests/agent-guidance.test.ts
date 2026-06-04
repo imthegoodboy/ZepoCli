@@ -29,6 +29,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("unsafe phone-like payment/cart/address/search/support/refund/rating fields");
       expect(guidance).toContain("background/headless mode by default");
       expect(guidance).toContain("browserAutomationMode.current");
+      expect(guidance).toContain("browserAutomation.modes.backgroundHeadless");
+      expect(guidance).toContain("browserAutomation.modes.visibleHumanControlled");
       expect(guidance).toContain("background_headless");
       expect(guidance).toContain("human-only login, address-add, and checkout handoffs must fail with `visible_browser_required`");
       expect(guidance).toContain("before session checks instead of opening a surprise browser");

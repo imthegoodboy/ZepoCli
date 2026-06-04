@@ -320,6 +320,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("nested topics such as `zepo help address`");
     expect(verifier).toContain("PowerShell completion also accepts `pwsh` and `ps1` as aliases for `powershell`");
     expect(verifier).toContain("browserAutomationMode.current");
+    expect(verifier).toContain("assertBrowserAutomationReadinessModes");
+    expect(verifier).toContain("browserAutomation.modes.backgroundHeadless");
+    expect(verifier).toContain("browserAutomation.modes.visibleHumanControlled");
     expect(verifier).toContain("normal package runs should report `background_headless`");
     expect(verifier).toContain("expected installed current browser automation mode to be headless");
     expect(verifier).toContain("expected installed visible browser mode not to be requested");

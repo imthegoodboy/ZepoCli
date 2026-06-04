@@ -146,7 +146,7 @@ describe("CLI command smokes", () => {
       current: "background_headless",
       visibleRequested: false
     });
-    expect(status.browserAutomation).toEqual({
+    expect(status.browserAutomation).toMatchObject({
       ready: true,
       reasons: [],
       retryAfterMs: 0
@@ -358,7 +358,7 @@ describe("CLI command smokes", () => {
       current: "background_headless",
       visibleRequested: false
     });
-    expect(report.browserAutomation).toEqual({
+    expect(report.browserAutomation).toMatchObject({
       ready: true,
       reasons: [],
       retryAfterMs: 0

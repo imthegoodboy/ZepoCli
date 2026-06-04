@@ -9,6 +9,8 @@ import type { AppRuntime } from "../config/runtime.js";
 import { hasVisibleLoginFormInput } from "./login-inputs.js";
 import type {
   AccessChallengeStatus,
+  BrowserAutomationMode,
+  BrowserAutomationModeReadiness,
   BrowserAutomationReadiness,
   BrowserAutomationReadinessReason,
   BrowserRunLockStatus,
@@ -293,19 +295,51 @@ export function getBrowserAutomationReadiness(input: {
   browserLock: BrowserRunLockStatus;
   headlessBrowserThrottle: BrowserRunThrottleStatus;
   accessChallenge: AccessChallengeStatus;
+  currentMode?: BrowserAutomationMode;
 }): BrowserAutomationReadiness {
+  const backgroundHeadless = getModeBrowserAutomationReadiness({
+    browserLock: input.browserLock,
+    headlessBrowserThrottle: input.headlessBrowserThrottle,
+    accessChallenge: input.accessChallenge,
+    includeHeadlessStops: true
+  });
+  const visibleHumanControlled = getModeBrowserAutomationReadiness({
+    browserLock: input.browserLock,
+    headlessBrowserThrottle: input.headlessBrowserThrottle,
+    accessChallenge: input.accessChallenge,
+    includeHeadlessStops: false
+  });
+  const current = input.currentMode === "visible_human_controlled" ? visibleHumanControlled : backgroundHeadless;
+
+  return {
+    ...current,
+    modes: {
+      backgroundHeadless,
+      visibleHumanControlled
+    }
+  };
+}
+
+function getModeBrowserAutomationReadiness(input: {
+  browserLock: BrowserRunLockStatus;
+  headlessBrowserThrottle: BrowserRunThrottleStatus;
+  accessChallenge: AccessChallengeStatus;
+  includeHeadlessStops: boolean;
+}): BrowserAutomationModeReadiness {
   const reasons: BrowserAutomationReadinessReason[] = [];
   if (input.browserLock.present && !input.browserLock.stale) {
     reasons.push("browser_lock_active");
   }
-  if (input.headlessBrowserThrottle.throttleActive) {
+  if (input.includeHeadlessStops && input.headlessBrowserThrottle.throttleActive) {
     reasons.push("headless_browser_throttle");
   }
-  if (input.accessChallenge.cooldownActive) {
+  if (input.includeHeadlessStops && input.accessChallenge.cooldownActive) {
     reasons.push("zepto_access_cooldown");
   }
 
-  const retryAfterMs = Math.max(input.headlessBrowserThrottle.retryAfterMs, input.accessChallenge.retryAfterMs, 0);
+  const retryAfterMs = input.includeHeadlessStops
+    ? Math.max(input.headlessBrowserThrottle.retryAfterMs, input.accessChallenge.retryAfterMs, 0)
+    : 0;
   if (reasons.length === 0) {
     return {
       ready: true,

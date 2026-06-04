@@ -78,6 +78,17 @@ export interface BrowserAutomationReadiness {
   reasons: BrowserAutomationReadinessReason[];
   retryAfterMs: number;
   hint?: string;
+  modes: {
+    backgroundHeadless: BrowserAutomationModeReadiness;
+    visibleHumanControlled: BrowserAutomationModeReadiness;
+  };
+}
+
+export interface BrowserAutomationModeReadiness {
+  ready: boolean;
+  reasons: BrowserAutomationReadinessReason[];
+  retryAfterMs: number;
+  hint?: string;
 }
 
 export interface BrowserRunThrottleStatus {

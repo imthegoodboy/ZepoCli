@@ -67,7 +67,7 @@ describe("doctor service", () => {
       current: "background_headless",
       visibleRequested: false
     });
-    expect(report.browserAutomation).toEqual({
+    expect(report.browserAutomation).toMatchObject({
       ready: true,
       reasons: [],
       retryAfterMs: 0

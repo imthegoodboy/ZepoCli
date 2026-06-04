@@ -290,6 +290,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "browserAutomationMode.current",
     "normal package runs should report `background_headless`",
     "`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`",
+    "browserAutomation.modes.backgroundHeadless",
+    "browserAutomation.modes.visibleHumanControlled",
     "`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`",
     "Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`",
     "zepo completion bash",
@@ -6405,6 +6407,7 @@ function assertFreshStatus(payload, expectedDataDir) {
   assert(Array.isArray(payload.browserAutomation?.reasons), "expected browser automation reasons array");
   assert(payload.browserAutomation.reasons.length === 0, "expected no browser automation stop reasons");
   assert(payload.browserAutomation?.retryAfterMs === 0, "expected zero browser automation retry delay");
+  assertBrowserAutomationReadinessModes(payload.browserAutomation, "status");
   assert(payload.headlessBrowserThrottle?.windowMs === 600_000, "expected headless throttle window");
   assert(payload.headlessBrowserThrottle?.limit === 8, "expected headless throttle limit");
   assert(payload.headlessBrowserThrottle?.recentRuns === 0, "expected no recent headless browser runs");
@@ -6427,6 +6430,7 @@ function assertDoctorReport(payload, expectedDataDir, options = { browser: false
   assert(Array.isArray(payload.browserAutomation?.reasons), "expected doctor browser automation reasons array");
   assert(payload.browserAutomation.reasons.length === 0, "expected doctor no browser automation stop reasons");
   assert(payload.browserAutomation?.retryAfterMs === 0, "expected doctor zero browser automation retry delay");
+  assertBrowserAutomationReadinessModes(payload.browserAutomation, "doctor");
   assert(payload.headlessBrowserThrottle?.windowMs === 600_000, "expected doctor headless throttle window");
   assert(payload.headlessBrowserThrottle?.limit === 8, "expected doctor headless throttle limit");
   assert(payload.headlessBrowserThrottle?.recentRuns === 0, "expected doctor no recent headless runs");
@@ -6457,6 +6461,16 @@ function assertBrowserAutomationMode(mode) {
   assert(mode?.default === "background_headless", "expected installed default browser automation mode to be headless");
   assert(mode?.current === "background_headless", "expected installed current browser automation mode to be headless");
   assert(mode?.visibleRequested === false, "expected installed visible browser mode not to be requested");
+}
+
+function assertBrowserAutomationReadinessModes(readiness, label) {
+  for (const mode of ["backgroundHeadless", "visibleHumanControlled"]) {
+    const modeReadiness = readiness?.modes?.[mode];
+    assert(modeReadiness?.ready === true, `expected installed ${label} ${mode} readiness`);
+    assert(Array.isArray(modeReadiness?.reasons), `expected installed ${label} ${mode} readiness reasons`);
+    assert(modeReadiness.reasons.length === 0, `expected installed ${label} ${mode} readiness reasons to be empty`);
+    assert(modeReadiness.retryAfterMs === 0, `expected installed ${label} ${mode} zero retry delay`);
+  }
 }
 
 function assertCheckoutHandoffContract(payload) {

@@ -117,6 +117,7 @@ export class SessionStore {
       this.sqlite.getMeta(HEADLESS_BROWSER_RUN_HISTORY_META_KEY)
     );
     const accessChallenge = getAccessChallengeCooldownStatus(this.sqlite.getMeta(LAST_ACCESS_CHALLENGE_META_KEY));
+    const browserAutomationMode = browserAutomationModeStatus(this.runtimeOptions);
 
     return {
       version: PACKAGE_VERSION,
@@ -125,11 +126,12 @@ export class SessionStore {
       browserProfileDir: this.paths.browserProfileDir,
       diagnosticsDir: this.paths.diagnosticsDir,
       browserLock,
-      browserAutomationMode: browserAutomationModeStatus(this.runtimeOptions),
+      browserAutomationMode,
       browserAutomation: getBrowserAutomationReadiness({
         browserLock,
         headlessBrowserThrottle,
-        accessChallenge
+        accessChallenge,
+        currentMode: browserAutomationMode.current
       }),
       headlessBrowserThrottle,
       accessChallenge,

@@ -34,10 +34,12 @@ export class DoctorService {
     const accessChallenge = getAccessChallengeCooldownStatus(
       this.runtime.sqlite.getMeta(LAST_ACCESS_CHALLENGE_META_KEY)
     );
+    const browserAutomationMode = browserAutomationModeStatus(this.runtime.options);
     const browserAutomation = getBrowserAutomationReadiness({
       browserLock,
       headlessBrowserThrottle,
-      accessChallenge
+      accessChallenge,
+      currentMode: browserAutomationMode.current
     });
     const checks: DoctorCheck[] = [
       checkNodeVersion(process.versions.node),
@@ -59,7 +61,7 @@ export class DoctorService {
       generatedAt: new Date().toISOString(),
       dataDir: this.runtime.paths.dataDir,
       browserLock,
-      browserAutomationMode: browserAutomationModeStatus(this.runtime.options),
+      browserAutomationMode,
       browserAutomation,
       headlessBrowserThrottle,
       accessChallenge,

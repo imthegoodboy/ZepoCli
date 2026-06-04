@@ -416,7 +416,19 @@ describe("browser automation helpers", () => {
     expect(ready).toEqual({
       ready: true,
       reasons: [],
-      retryAfterMs: 0
+      retryAfterMs: 0,
+      modes: {
+        backgroundHeadless: {
+          ready: true,
+          reasons: [],
+          retryAfterMs: 0
+        },
+        visibleHumanControlled: {
+          ready: true,
+          reasons: [],
+          retryAfterMs: 0
+        }
+      }
     });
 
     const blocked = getBrowserAutomationReadiness({
@@ -443,12 +455,67 @@ describe("browser automation helpers", () => {
     expect(blocked).toMatchObject({
       ready: false,
       reasons: ["browser_lock_active", "headless_browser_throttle", "zepto_access_cooldown"],
-      retryAfterMs: 200_000
+      retryAfterMs: 200_000,
+      modes: {
+        backgroundHeadless: {
+          ready: false,
+          reasons: ["browser_lock_active", "headless_browser_throttle", "zepto_access_cooldown"],
+          retryAfterMs: 200_000
+        },
+        visibleHumanControlled: {
+          ready: false,
+          reasons: ["browser_lock_active"],
+          retryAfterMs: 0
+        }
+      }
     });
     expect(blocked.hint).toContain("wait for the active browser command");
     expect(blocked.hint).toContain("wait 4 minutes");
     expect(blocked.hint).toContain("--visible");
     expect(blocked.hint).toContain("Do not loop headless Zepto commands");
+  });
+
+  it("reports visible-mode readiness separately from headless cooldowns", () => {
+    const status = getBrowserAutomationReadiness({
+      browserLock: {
+        path: "browser.lock",
+        present: false,
+        stale: false
+      },
+      headlessBrowserThrottle: {
+        windowMs: 600_000,
+        limit: 8,
+        recentRuns: 8,
+        throttleActive: true,
+        retryAfterMs: 100_000
+      },
+      accessChallenge: {
+        detected: true,
+        lastDetectedAt: "1970-01-01T00:00:00.000Z",
+        cooldownActive: true,
+        retryAfterMs: 200_000
+      },
+      currentMode: "visible_human_controlled"
+    });
+
+    expect(status).toEqual({
+      ready: true,
+      reasons: [],
+      retryAfterMs: 0,
+      modes: {
+        backgroundHeadless: {
+          ready: false,
+          reasons: ["headless_browser_throttle", "zepto_access_cooldown"],
+          retryAfterMs: 200_000,
+          hint: expect.stringContaining("Do not loop headless Zepto commands")
+        },
+        visibleHumanControlled: {
+          ready: true,
+          reasons: [],
+          retryAfterMs: 0
+        }
+      }
+    });
   });
 
   it("detects Zepto access challenge text without treating normal OTP copy as a block", () => {
