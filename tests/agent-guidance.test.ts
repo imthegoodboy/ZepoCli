@@ -298,8 +298,9 @@ describe("agent guidance", () => {
   });
 
   it("records current local readiness separately from missing live production proof", () => {
-    expect(agentStatus).toContain("Last updated: 2026-06-04");
+    expect(agentStatus).toContain("Last updated: 2026-06-05");
     expect(agentStatus).toContain("`npm run check` passed locally");
+    expect(agentStatus).toContain("34 test files, 641 tests");
     expect(agentStatus).toContain("34 test files, 628 tests");
     expect(agentStatus).toContain("publish dry-run");
     expect(agentStatus).toContain("`zepo completion <bash|zsh|fish|powershell>`");
@@ -340,6 +341,8 @@ describe("agent guidance", () => {
     expect(agentStatus).toContain("saved focused report was accepted");
     expect(agentStatus).toContain("proves fresh browser preflight, local status, and live-session coverage only");
     expect(agentStatus).toContain("does not prove address selection, search, add, cart, checkout handoff, or track");
+    expect(agentStatus).toContain("Focused `.zepo-live-prod` reports for `search`, `address list`, `address use`, `add` plus non-empty `cart`, `history`, and `track` were revalidated on 2026-06-05");
+    expect(agentStatus).toContain("focused reports cannot be combined as final production-scope proof");
     expect(agentStatus).toContain("focused human-controlled visible order-history probe");
     expect(agentStatus).toContain("visible `history --json`");
     expect(agentStatus).toContain("bounded account-surface settle");
@@ -352,6 +355,8 @@ describe("agent guidance", () => {
     expect(agentStatus).toContain("checkout handoff coverage did not pass");
     expect(agentStatus).toContain("track coverage did not pass");
     expect(agentStatus).toContain("production-scope coverage is missing");
+    expect(agentStatus).toContain("remains rejected");
+    expect(agentStatus).toContain("missing cart, checkout handoff, and track coverage");
     expect(agentStatus).toContain('error.code: "zepto_access_challenge"');
     expect(agentStatus).toContain("retryAfterMs: 900000");
     expect(agentStatus).toContain("Do not loop headless Zepto commands");
