@@ -5922,6 +5922,19 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       }
     },
     {
+      name: "installed no-input checkout wait",
+      args: ["--data-dir", dataDir, "--no-input", "checkout", "--json", "--wait"],
+      expect: (result) => {
+        expectJsonError(
+          result,
+          "user_error",
+          "Zepto checkout requires interactive input.",
+          "interactive_input_required"
+        );
+        assertInstalledNoBrowserWork(installedCliPath, dataDir);
+      }
+    },
+    {
       name: "installed visible required checkout",
       args: ["--data-dir", visibleCheckoutDataDir, "checkout", "--json"],
       expect: (result) => {

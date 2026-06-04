@@ -912,6 +912,10 @@ describe("CLI command smokes", () => {
       {
         args: ["address", "add", "--json"],
         message: "Zepto address add requires interactive input."
+      },
+      {
+        args: ["checkout", "--json", "--wait"],
+        message: "Zepto checkout requires interactive input."
       }
     ]) {
       dataDir = mkdtempSync(join(tmpdir(), "zepo-cli-no-input-"));

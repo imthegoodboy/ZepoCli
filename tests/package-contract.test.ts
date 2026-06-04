@@ -362,6 +362,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed checkout manual action status");
     expect(verifier).toContain("expected installed checkout manual-action next-step guidance");
     expect(verifier).toContain("expected checkout wait option");
+    expect(verifier).toContain("installed no-input checkout wait");
     expect(verifier).toContain("expected installed continue-to-pay label to be unsafe");
     expect(verifier).toContain("expected installed continue-to-payment label to be unsafe");
     expect(verifier).toContain("expected installed card payment-method label to be unsafe");

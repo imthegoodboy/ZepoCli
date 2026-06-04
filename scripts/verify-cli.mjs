@@ -939,6 +939,14 @@ const checks = [
     }
   },
   {
+    name: "no input checkout wait",
+    args: ({ dataDir }) => ["--data-dir", dataDir, "--no-input", "checkout", "--json", "--wait"],
+    expect: (result, { dataDir }) => {
+      expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+      assertNoBrowserWork(dataDir);
+    }
+  },
+  {
     name: "visible required checkout",
     args: ({ dataDir }) => ["--data-dir", dataDir, "checkout", "--json"],
     expect: (result, { dataDir }) => {
