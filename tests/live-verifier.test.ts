@@ -3040,11 +3040,75 @@ describe("live verification runner", () => {
       command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
       exitCode: 1,
       ok: false,
+      manualEvidence: {
+        status: "checkout_manual_action_required",
+        cartPrecondition: "non_empty_cart_verified",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      },
       error: {
         code: "live_verification_incomplete",
         message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
       }
     });
+
+    const report = acceptedLiveReport({
+      ok: false,
+      requested: summarizeLiveReportRequests({
+        search: "milk",
+        checkout: true
+      }),
+      steps: acceptedLiveReport().steps.map((candidate) => (candidate.name === "checkout" ? step : candidate))
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
+    expect(result.accepted).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_not_ok");
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_requested_coverage_missing");
+    expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_unexpected_field");
+    expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_step_result_mismatch");
+    expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_step_contract_mismatch");
+  });
+
+  it("rejects malformed manual checkout evidence in live reports", () => {
+    const report = acceptedLiveReport({
+      ok: false,
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              name: "checkout",
+              command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+              exitCode: 1,
+              ok: false,
+              manualEvidence: {
+                status: "checkout_handoff_returned",
+                cartPrecondition: "non_empty_cart_verified",
+                paymentStatus: "not_observed_by_zepocli",
+                orderPlacement: "not_confirmed_by_zepocli",
+                orderStatusCommand: "zepo track",
+                rawPageText: "Amul Milk 500ml"
+              },
+              error: {
+                code: "live_verification_incomplete",
+                message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+              }
+            }
+          : step
+      )
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
+    expect(result.accepted).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_unexpected_field");
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+    expect(JSON.stringify(result.issues)).not.toContain("Amul Milk");
   });
 
   it("accepts sanitized checkout wait command strings in live reports", () => {

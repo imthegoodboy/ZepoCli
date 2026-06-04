@@ -533,6 +533,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live:report production-scope cart-state guidance");
     expect(verifier).toContain("expected installed verify:live:report production-scope focused-workflow exclusion guidance");
     expect(verifier).toContain("expected installed verify:live:report manual/internal command marker guidance");
+    expect(verifier).toContain("expected installed live report checkout manual-continuation steps to keep sanitized manual evidence");
+    expect(verifier).toContain("expected installed live report manual checkout evidence to remain diagnostic only");
     expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("local status readiness");

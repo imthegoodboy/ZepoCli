@@ -4,6 +4,7 @@ Last updated: 2026-06-04.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-04 at 22:57 IST after adding sanitized checkout `manualEvidence` to incomplete live reports: secret scan, dependency readiness, build, 34 test files, 637 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 22:27 IST after making the final `--production-scope` live-verification preset enable checkout wait automatically: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 21:59 IST after requiring explicit checkout wait-mode evidence for final production-scope report acceptance: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-04 at 21:18 IST after adding checkout wait-mode handoff refresh: secret scan, dependency readiness, build, 34 test files, 636 tests, compiled CLI smoke, installed-package smoke, audit, pack dry-run, and publish dry-run.

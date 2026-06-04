@@ -3047,6 +3047,52 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }).issues.some((issue) => issue.code === "live_report_production_scope_checkout_wait_missing"),
     "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
   );
+  const diagnosticManualCheckoutStep = buildLiveReportStep({
+    name: "checkout",
+    args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--wait", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      status: "checkout_manual_action_required",
+      payment: "handled_by_zepto",
+      cartPrecondition: "non_empty_cart_verified",
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track"
+    }),
+    stderr: "",
+    summarizePayload: () => {
+      throw new Error("manual checkout should not be summarized as handoff coverage");
+    }
+  }).step;
+  assert(
+    diagnosticManualCheckoutStep.ok === false &&
+      diagnosticManualCheckoutStep.error?.code === "live_verification_incomplete" &&
+      diagnosticManualCheckoutStep.manualEvidence?.status === "checkout_manual_action_required" &&
+      diagnosticManualCheckoutStep.manualEvidence?.cartPrecondition === "non_empty_cart_verified",
+    "expected installed live report checkout manual-continuation steps to keep sanitized manual evidence"
+  );
+  const manualCheckoutReport = {
+    ...acceptedLiveReport,
+    ok: false,
+    steps: acceptedLiveReport.steps.map((step) => (step.name === "checkout" ? diagnosticManualCheckoutStep : step))
+  };
+  manualCheckoutReport.attempted = summarizeLiveReportAttempts(manualCheckoutReport.steps);
+  manualCheckoutReport.coverage = summarizeLiveReportCoverage(manualCheckoutReport.steps);
+  manualCheckoutReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    manualCheckoutReport.requested,
+    manualCheckoutReport.coverage
+  );
+  const manualCheckoutIssues = validateLiveReportAcceptance(manualCheckoutReport, {
+    expectedVersion: packageJson.version
+  }).issues.map((issue) => issue.code);
+  assert(
+    manualCheckoutIssues.includes("live_report_not_ok") &&
+      manualCheckoutIssues.includes("live_report_requested_coverage_missing") &&
+      !manualCheckoutIssues.includes("live_report_unexpected_field") &&
+      !manualCheckoutIssues.includes("live_report_step_result_mismatch") &&
+      !manualCheckoutIssues.includes("live_report_step_contract_mismatch"),
+    "expected installed live report manual checkout evidence to remain diagnostic only"
+  );
   assert(
     validateLiveReportAcceptance(freshProductionScopeLiveReport, {
       expectedVersion: packageJson.version,

@@ -251,6 +251,7 @@ export function buildLiveReportStep({ name, args, status, stdout, stderr, summar
     status === 0 && !missingJsonEvidence && !primitiveJsonEvidence
       ? validateLiveReportPayloadContract(name, payload)
       : undefined;
+  const manualEvidence = buildLiveReportManualEvidence(name, payload, payloadContractError);
   const ok = status === 0 && !missingJsonEvidence && !primitiveJsonEvidence && !payloadContractError;
   const { summary, summaryError } = ok && summarizePayload ? summarizeStepPayload(name, payload, args, summarizePayload) : {};
   const stepOk = ok && !summaryError;
@@ -260,6 +261,7 @@ export function buildLiveReportStep({ name, args, status, stdout, stderr, summar
     exitCode: missingJsonEvidence || primitiveJsonEvidence || payloadContractError || summaryError ? 1 : status,
     ok: stepOk,
     ...(stepOk && summary !== undefined ? { summary } : {}),
+    ...(manualEvidence !== undefined ? { manualEvidence } : {}),
     ...(status !== 0 ? { error: summarizeCommandError(errorPayload, stderr, args) } : {}),
     ...(missingJsonEvidence
       ? {
@@ -284,6 +286,24 @@ export function buildLiveReportStep({ name, args, status, stdout, stderr, summar
   return {
     step,
     payload
+  };
+}
+
+function buildLiveReportManualEvidence(name, payload, payloadContractError) {
+  if (
+    name !== "checkout" ||
+    payloadContractError?.code !== "live_verification_incomplete" ||
+    payload?.status !== "checkout_manual_action_required"
+  ) {
+    return undefined;
+  }
+
+  return {
+    status: payload.status,
+    cartPrecondition: payload.cartPrecondition,
+    paymentStatus: payload.paymentStatus,
+    orderPlacement: payload.orderPlacement,
+    orderStatusCommand: payload.orderStatusCommand
   };
 }
 
@@ -576,6 +596,12 @@ function validateLiveReportAcceptedSchema(report, issues) {
     if (isObject(step.error)) {
       validateAllowedLiveReportKeys(step.error, LIVE_REPORT_ERROR_KEYS, issues);
       validateLiveReportErrorContract(step.error, issues);
+    }
+    if (isObject(step.manualEvidence)) {
+      validateAllowedLiveReportKeys(step.manualEvidence, LIVE_REPORT_MANUAL_EVIDENCE_KEYS, issues);
+      validateLiveReportManualEvidenceContract(step, issues);
+    } else if (step.manualEvidence !== undefined) {
+      addLiveReportStepContractMismatchIssue(issues);
     }
 
     if (isObject(step.summary)) {
@@ -887,7 +913,7 @@ function validateLiveReportStepResultContract(step, issues) {
   }
 
   if (step.ok === true) {
-    if (step.exitCode !== 0 || !isObject(step.summary) || step.error !== undefined) {
+    if (step.exitCode !== 0 || !isObject(step.summary) || step.error !== undefined || step.manualEvidence !== undefined) {
       addLiveReportStepResultMismatchIssue(issues);
     }
     return;
@@ -896,6 +922,24 @@ function validateLiveReportStepResultContract(step, issues) {
   if (step.exitCode === 0 || !isObject(step.error) || step.summary !== undefined) {
     addLiveReportStepResultMismatchIssue(issues);
   }
+}
+
+function validateLiveReportManualEvidenceContract(step, issues) {
+  if (
+    step.name === "checkout" &&
+    step.ok === false &&
+    step.exitCode === 1 &&
+    step.error?.code === "live_verification_incomplete" &&
+    step.manualEvidence?.status === "checkout_manual_action_required" &&
+    step.manualEvidence?.cartPrecondition === "non_empty_cart_verified" &&
+    step.manualEvidence?.paymentStatus === "not_observed_by_zepocli" &&
+    step.manualEvidence?.orderPlacement === "not_confirmed_by_zepocli" &&
+    step.manualEvidence?.orderStatusCommand === "zepo track"
+  ) {
+    return;
+  }
+
+  addLiveReportStepContractMismatchIssue(issues);
 }
 
 function addLiveReportStepResultMismatchIssue(issues) {
@@ -1102,8 +1146,15 @@ const LIVE_REPORT_TOP_LEVEL_KEYS = new Set([
   "steps"
 ]);
 const LIVE_REPORT_CAPABILITY_KEYS = new Set(Object.keys(createLiveReportCapabilitySummary()));
-const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error"]);
+const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error", "manualEvidence"]);
 const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
+const LIVE_REPORT_MANUAL_EVIDENCE_KEYS = new Set([
+  "status",
+  "cartPrecondition",
+  "paymentStatus",
+  "orderPlacement",
+  "orderStatusCommand"
+]);
 const LIVE_REPORT_FALLBACK_SUMMARY_KEYS = new Set(["observed"]);
 const LIVE_REPORT_MANUAL_STEP_NAMES = new Set(["session precondition", "live session"]);
 const LIVE_REPORT_INTERNAL_STEP_NAMES = new Set(["live runner"]);
