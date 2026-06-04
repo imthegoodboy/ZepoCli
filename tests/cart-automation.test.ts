@@ -15,6 +15,7 @@ import {
   isUnsafeCartRemoveControlText,
   openCart,
   parseActiveCartItemFromControlText,
+  readVisibleCart,
   requireReadableCartSnapshot
 } from "../src/automation/cart.js";
 
@@ -524,6 +525,23 @@ describe("cart automation helpers", () => {
     });
   });
 
+  it("accepts a readable body cart snapshot before scroll extraction", async () => {
+    const page = createReadableCartBodyPage();
+
+    await expect(readVisibleCart(page as never)).resolves.toMatchObject({
+      items: [
+        {
+          name: "Amul Taaza Toned Milk",
+          price: "₹32",
+          unit: "1 pack (500 ml)",
+          quantity: "1"
+        }
+      ],
+      total: "₹32"
+    });
+    expect(page.evaluated).toBe(false);
+  });
+
   it("opens cart only with cart-specific labels", () => {
     for (const label of ["Cart", "Cart 11", "Cart\n11", "My Cart", "My Cart 2", "View Cart", "Go to Cart"]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(true);
@@ -592,6 +610,17 @@ describe("cart automation helpers", () => {
     expect(page.notFoundCartClicked).toBe(true);
     expect(page.homeCartClicked).toBe(true);
     expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
+  it("retries home cart opening once when Zepto misses the first cart click", async () => {
+    const page = createCartOpenAfterHomeRetryPage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.homeCartClicks).toBe(2);
+    expect(page.waits).toEqual([1500]);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/", "/"]);
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
 
@@ -1038,6 +1067,64 @@ function createCartOpenFromNotFoundPage() {
     },
     locator: (selector: string) =>
       selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartOpenAfterHomeRetryPage() {
+  let location = "current";
+  let bodyText = "Search milk Account Profile";
+  const page = {
+    homeCartClicks: 0,
+    waits: [] as number[],
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 12 Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async (waitMs: number) => {
+      page.waits.push(waitMs);
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (location !== "home" || role !== "button" || !matchesLocatorName(options.name, "Cart 12")) {
+        return createHiddenLocator();
+      }
+
+      return createVisibleLocator("Cart 12", async () => {
+        page.homeCartClicks += 1;
+        if (page.homeCartClicks >= 2) {
+          bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
+        }
+      });
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createReadableCartBodyPage() {
+  const page = {
+    evaluated: false,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async () => {
+      page.evaluated = true;
+      return [];
+    },
+    locator: (selector: string) =>
+      selector === "body"
+        ? createBodyTextLocator(() => "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32")
+        : createHiddenLocator()
   };
 
   return page;

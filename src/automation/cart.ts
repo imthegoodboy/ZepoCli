@@ -45,6 +45,16 @@ export async function openCart(page: Page): Promise<void> {
     return;
   }
 
+  if (await openCartFromVisibleControl(page, { throwOnUnverified: false })) {
+    return;
+  }
+
+  await page.waitForTimeout(1_500);
+  await gotoZepto(page);
+  if (await isCurrentCartPage(page)) {
+    return;
+  }
+
   if (await openCartFromVisibleControl(page)) {
     return;
   }
@@ -730,6 +740,12 @@ export async function readVisibleCart(page: Page): Promise<CartSnapshot> {
 }
 
 async function readVisibleCartOnce(page: Page): Promise<CartSnapshot> {
+  const rawTextBeforeScroll = await page.locator("body").innerText();
+  const preScrollSnapshot = tryRequireReadableCartSnapshot(rawTextBeforeScroll);
+  if (preScrollSnapshot) {
+    return preScrollSnapshot;
+  }
+
   const scrolledItems = await extractActiveCartItemsAcrossScroll(page);
   const controlItems = scrolledItems.length > 0 ? [] : await extractActiveCartItemsFromControls(page);
   const rawText = await page.locator("body").innerText();
@@ -742,6 +758,18 @@ async function readVisibleCartOnce(page: Page): Promise<CartSnapshot> {
         ? controlItems
         : undefined;
   return requireReadableCartSnapshot(rawText, overrideItems);
+}
+
+function tryRequireReadableCartSnapshot(rawText: string): CartSnapshot | undefined {
+  try {
+    return requireReadableCartSnapshot(rawText);
+  } catch (error) {
+    if (error instanceof UserFacingError && error.code === "cart_unreadable") {
+      return undefined;
+    }
+
+    throw error;
+  }
 }
 
 async function waitForCartContentSettled(page: Page): Promise<void> {
