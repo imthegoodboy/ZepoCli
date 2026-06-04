@@ -220,6 +220,7 @@ describe("README package guidance", () => {
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain('status: "checkout_manual_action_required"');
+    expect(readme).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
     expect(readme).toContain("manual amount-bearing payment control");
     expect(readme).toContain("must not be counted as checkout handoff coverage");
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");

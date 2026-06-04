@@ -108,6 +108,21 @@ describe("human-controlled browser handoff services", () => {
     expect(mocks.input).toHaveBeenCalledOnce();
   });
 
+  it("returns checkout handoff without prompting when the caller only needs JSON evidence", async () => {
+    await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout({
+      waitForCompletion: false
+    });
+
+    expect(mocks.withPageCalls[0]?.options).toMatchObject({
+      captureFailures: false,
+      requireSession: true,
+      headless: false,
+      saveState: true
+    });
+    expect(mocks.openCheckout).toHaveBeenCalledOnce();
+    expect(mocks.input).not.toHaveBeenCalled();
+  });
+
   it("prompts for a manual Zepto payment click when checkout exposes only a cart-side payment control", async () => {
     mocks.openCheckout.mockResolvedValueOnce({ mode: "manual_payment_control_visible" });
 

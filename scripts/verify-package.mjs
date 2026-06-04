@@ -301,6 +301,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "PowerShell completion also accepts `pwsh` and `ps1` as aliases for `powershell`",
     "zepo --visible login",
     "zepo --visible checkout",
+    "JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "status: \"checkout_manual_action_required\"",
     "manual amount-bearing payment control",
@@ -868,6 +869,8 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
   } = await import(pathToFileURL(cartAutomationModulePath).href);
 
   assert(isCartOpenClickText("Cart") === true, "expected installed cart open label to be accepted");
+  assert(isCartOpenClickText("Cart 11") === true, "expected installed cart badge label to be accepted");
+  assert(isCartOpenClickText("Cart\n11") === true, "expected installed cart newline badge label to be accepted");
   for (const label of [
     "Customer Support",
     "Invoice",
@@ -964,23 +967,23 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
     "expected installed cart remove row parser to reject pay-with rows"
   );
   assert(
-    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nItem total ₹32").total === undefined,
+    requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nItem total ₹32").total === undefined,
     "expected installed cart total parser not to report item total as final cart total"
   );
   assert(
-    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nItems total ₹32").total === undefined,
+    requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nItems total ₹32").total === undefined,
     "expected installed cart total parser not to report items total as final cart total"
   );
   assert(
-    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSubtotal ₹32").total === undefined,
+    requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSubtotal ₹32").total === undefined,
     "expected installed cart total parser not to report subtotal as final cart total"
   );
   assert(
-    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSub total ₹32").total === undefined,
+    requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nSub total ₹32").total === undefined,
     "expected installed cart total parser not to report sub total as final cart total"
   );
   assert(
-    requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nTotal\nSub total\n₹32").total ===
+    requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n500 ml\n₹32\nQty 1\nTotal\nSub total\n₹32").total ===
       undefined,
     "expected installed cart total parser not to skip through sub total to a price"
   );
@@ -5903,10 +5906,16 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       }
     },
     {
-      name: "installed no-input checkout",
+      name: "installed no-input checkout still requires visible browser",
       args: ["--data-dir", dataDir, "--no-input", "checkout", "--json"],
       expect: (result) => {
-        expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+        const payload = expectJsonError(
+          result,
+          "user_error",
+          "Zepto checkout requires a visible browser.",
+          "visible_browser_required"
+        );
+        assert(String(payload.error?.hint).includes("zepo --visible checkout"), "expected installed visible checkout hint");
         assertInstalledNoBrowserWork(installedCliPath, dataDir);
       }
     },

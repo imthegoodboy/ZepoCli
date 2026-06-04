@@ -1,10 +1,9 @@
 import type { Locator, Page } from "playwright";
 
 import { UserFacingError } from "../utils/errors.js";
-import { hasCartSurfaceEvidence, openCart, readVisibleCart } from "./cart.js";
+import { hasStrongCartSurfaceEvidence, openCart, parseReadableCartItemsFromText, readVisibleCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
-import { parseCartItemsFromText } from "./extract.js";
 import { isFinalCheckoutSurfaceText, isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
 import { isOrderActionLabelText } from "./order-action-labels.js";
 import {
@@ -138,8 +137,8 @@ async function readCheckoutCartPrecondition(page: Page) {
   }
 }
 
-export function assertReadableCheckoutCart(text: string, items = parseCartItemsFromText(text)): void {
-  if (items.length > 0 && hasCartSurfaceEvidence(text)) {
+export function assertReadableCheckoutCart(text: string, items = parseReadableCartItemsFromText(text)): void {
+  if (items.length > 0 && hasStrongCartSurfaceEvidence(text)) {
     return;
   }
 

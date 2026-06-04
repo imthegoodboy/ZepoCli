@@ -929,10 +929,11 @@ const checks = [
     }
   },
   {
-    name: "no input checkout",
+    name: "no input checkout still requires visible browser",
     args: ({ dataDir }) => ["--data-dir", dataDir, "--no-input", "checkout", "--json"],
     expect: (result, { dataDir }) => {
-      expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+      const payload = expectJsonError(result, "user_error", "Zepto checkout requires a visible browser.", "visible_browser_required");
+      assert(String(payload.error?.hint).includes("zepo --visible checkout"), "expected visible checkout hint");
       assertNoBrowserWork(dataDir);
     }
   },

@@ -102,6 +102,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("UPI/ATM PIN");
       expect(guidance).toContain('cartPrecondition: "non_empty_cart_verified"');
       expect(guidance).toContain('status: "checkout_manual_action_required"');
+      expect(guidance).toContain("`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for a prompt");
       expect(guidance).toContain("production-scope checkout handoff coverage");
       expect(guidance).toContain("manual checkout continuation use `live_verification_incomplete`");
       expect(guidance).toContain("Human spinner/status text");
@@ -286,6 +287,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(liveVerifierSkill).toContain('orderStatusCommand: "zepo track"');
     expect(liveVerifierSkill).toContain('status: "checkout_manual_action_required"');
+    expect(liveVerifierSkill).toContain("returns structured handoff evidence immediately instead of waiting for an Enter prompt");
     expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");
     expect(liveVerifierSkill).toContain("not accepted as checkout handoff coverage");
     expect(liveVerifierSkill).toContain('Checkout coverage requires `status: "checkout_handoff_returned"`');

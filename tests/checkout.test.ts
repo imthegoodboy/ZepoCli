@@ -281,7 +281,7 @@ describe("checkout handoff detection", () => {
   it("accepts checkout only when cart text contains readable items", () => {
     expect(() =>
       assertReadableCheckoutCart(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -318,6 +318,40 @@ describe("checkout handoff detection", () => {
         1 pack (500 ml)
         ₹32
         Checkout these offers
+      `)
+    ).toThrow("Zepto cart does not show any readable items for checkout.");
+  });
+
+  it("rejects cart-header product shelves as checkout cart proof", () => {
+    expect(() =>
+      assertReadableCheckoutCart(`
+        Search milk
+        Cart
+        Buy Again
+        Nandini Toned Fresh Milk | Pouch
+        1 pack (500 ml)
+        ₹24
+        Qty 1
+      `)
+    ).toThrow("Zepto cart does not show any readable items for checkout.");
+  });
+
+  it("rejects large product-shelf pages with cart summary words as checkout cart proof", () => {
+    const repeatedProductRows = Array.from({ length: 30 }, (_, index) =>
+      [
+        "OFF",
+        `Product Shelf Item ${index + 1}`,
+        "1 pack (500 ml)",
+        "₹32"
+      ].join("\n")
+    ).join("\n");
+
+    expect(() =>
+      assertReadableCheckoutCart(`
+        Cart
+        Bill Summary
+        To Pay ₹999
+        ${repeatedProductRows}
       `)
     ).toThrow("Zepto cart does not show any readable items for checkout.");
   });

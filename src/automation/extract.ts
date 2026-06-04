@@ -504,7 +504,7 @@ function isLikelyCartProductName(line: string): boolean {
 
   if (
     isCommerceUiOrPromoLine(line) ||
-    /^(cart|checkout|view bill|apply coupon|add|add to cart|added|add more|out of stock|saved|save for later|address|remove|remove item|delete|delete item|decrease|decrease quantity|increase|increase quantity)$/i.test(
+    /^(cart|my cart|your cart|checkout|view bill|apply coupon|add|add to cart|added|add more|out of stock|saved|save for later|address|remove|remove item|delete|delete item|decrease|decrease quantity|increase|increase quantity)$/i.test(
       line
     ) ||
     isCartSummaryLine(line) ||

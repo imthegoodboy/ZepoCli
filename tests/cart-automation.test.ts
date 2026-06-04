@@ -96,7 +96,7 @@ describe("cart automation helpers", () => {
   });
 
   it("detects cart page text from readable items or empty-cart copy", () => {
-    expect(isCartPageText("Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toBe(true);
+    expect(isCartPageText("My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toBe(true);
     expect(isCartPageText("My Cart Your cart is empty Add items to continue")).toBe(true);
     expect(isCartPageText("Cart 2 items View bill To pay Rs 120")).toBe(true);
     expect(
@@ -118,7 +118,7 @@ describe("cart automation helpers", () => {
       items: [],
       total: undefined
     });
-    expect(requireReadableCartSnapshot("Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toMatchObject({
+    expect(requireReadableCartSnapshot("My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toMatchObject({
       items: [
         {
           name: "Amul Taaza Toned Milk",
@@ -199,7 +199,7 @@ describe("cart automation helpers", () => {
   it("extracts cart totals only from explicit total labels", () => {
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -214,7 +214,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Total Protein Bar
         50 g
         ₹120
@@ -234,7 +234,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -248,7 +248,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -262,7 +262,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -276,7 +276,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -289,7 +289,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -303,7 +303,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -316,7 +316,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -329,7 +329,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -342,7 +342,7 @@ describe("cart automation helpers", () => {
 
     expect(
       requireReadableCartSnapshot(`
-        Cart
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -361,6 +361,46 @@ describe("cart automation helpers", () => {
     expect(isCartPageText("Sign in to view your cart")).toBe(false);
     expect(isCartPageText("Fresh groceries delivered fast Checkout these offers")).toBe(false);
     expect(isCartPageText("Cart Fresh picks Nandini Toned Fresh Milk | Pouch 1 pack (500 ml) ₹24 ADD")).toBe(false);
+  });
+
+  it("rejects cart-header product shelves with quantity controls as readable cart data", () => {
+    const productShelfText = `
+      Search milk
+      Cart
+      Buy Again
+      Nandini Toned Fresh Milk | Pouch
+      1 pack (500 ml)
+      ₹24
+      Qty 1
+      Fresh picks
+    `;
+
+    expect(isCartPageText(productShelfText)).toBe(false);
+    expect(() => requireReadableCartSnapshot(productShelfText)).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
+  });
+
+  it("rejects large Zepto pages with product shelves even when cart summary words are visible", () => {
+    const repeatedProductRows = Array.from({ length: 30 }, (_, index) =>
+      [
+        "OFF",
+        `Product Shelf Item ${index + 1}`,
+        "1 pack (500 ml)",
+        "₹32"
+      ].join("\n")
+    ).join("\n");
+    const pageText = `
+      Cart
+      Bill Summary
+      To Pay ₹999
+      ${repeatedProductRows}
+    `;
+
+    expect(isCartPageText(pageText)).toBe(false);
+    expect(() => requireReadableCartSnapshot(pageText)).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
   });
 
   it("rejects product listing text as cart page proof even when item-like rows parse", () => {
@@ -485,7 +525,7 @@ describe("cart automation helpers", () => {
   });
 
   it("opens cart only with cart-specific labels", () => {
-    for (const label of ["Cart", "My Cart", "View Cart", "Go to Cart"]) {
+    for (const label of ["Cart", "Cart 11", "Cart\n11", "My Cart", "My Cart 2", "View Cart", "Go to Cart"]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(true);
       expect(isCartOpenClickText(label)).toBe(true);
       expect(isUnsafeCartOpenClickText(label)).toBe(false);
@@ -540,6 +580,17 @@ describe("cart automation helpers", () => {
     await expect(openCart(page as never)).resolves.toBeUndefined();
 
     expect(page.clicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
+  it("recovers from a Zepto not-found surface before opening the real cart", async () => {
+    const page = createCartOpenFromNotFoundPage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.notFoundCartClicked).toBe(true);
+    expect(page.homeCartClicked).toBe(true);
     expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
@@ -942,6 +993,48 @@ function createCartOpenViaHomePage() {
       }
 
       return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartOpenFromNotFoundPage() {
+  let location = "not-found";
+  let bodyText =
+    "Cart 11 The page you’re looking for has made an egg-sit Go to Home Explore Our Top Categories";
+  const page = {
+    notFoundCartClicked: false,
+    homeCartClicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search Cart 11 Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role !== "button" || !matchesLocatorName(options.name, "Cart 11")) {
+        return createHiddenLocator();
+      }
+
+      if (location === "not-found") {
+        return createVisibleLocator("Cart 11", async () => {
+          page.notFoundCartClicked = true;
+          bodyText =
+            "Cart 11 The page you’re looking for has made an egg-sit Go to Home Explore Our Top Categories";
+        });
+      }
+
+      return createVisibleLocator("Cart 11", async () => {
+        page.homeCartClicked = true;
+        bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
+      });
     },
     locator: (selector: string) =>
       selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()

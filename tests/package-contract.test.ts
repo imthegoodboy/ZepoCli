@@ -305,6 +305,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
+    expect(verifier).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
     expect(verifier).toContain("Installed-package commands run browser automation in background/headless mode by default");
     expect(verifier).toContain("Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`");
     expect(verifier).toContain("before session checks and before browser launch");

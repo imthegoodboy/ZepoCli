@@ -14,7 +14,7 @@ export function registerCheckoutCommand(program: Command): void {
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
-        const handoff = await new ZeptoService(runtime).checkout.checkout();
+        const handoff = await new ZeptoService(runtime).checkout.checkout({ waitForCompletion: !json });
         if (json) {
           printJson(checkoutHandoffOutput(handoff.mode));
           return;

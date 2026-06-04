@@ -14,9 +14,14 @@ import {
 import { isOrderActionLabelText, ORDER_ACTION_LABEL_PATTERN_SOURCE } from "./order-action-labels.js";
 import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from "./payment-labels.js";
 
-export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
+export const CART_OPEN_CLICK_LABELS = [
+  /^cart(?:\s+[1-9]\d*)?$/i,
+  /^my cart(?:\s+[1-9]\d*)?$/i,
+  /^view cart$/i,
+  /^go to cart$/i
+] as const;
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
-const CART_RENDER_SIGNAL_TIMEOUT_MS = 7_000;
+const CART_RENDER_SIGNAL_TIMEOUT_MS = 12_000;
 const CART_SCROLL_SETTLE_MS = 140;
 const CART_SCROLL_MIN_STEP_PX = 160;
 const CART_SCROLL_MAX_SNAPSHOTS = 24;
@@ -31,7 +36,7 @@ export async function openCart(page: Page): Promise<void> {
     return;
   }
 
-  if (await openCartFromVisibleControl(page)) {
+  if (await openCartFromVisibleControl(page, { throwOnUnverified: false })) {
     return;
   }
 
@@ -54,7 +59,10 @@ async function isCurrentCartPage(page: Page): Promise<boolean> {
   return isCartPageText(await readBodyText(page));
 }
 
-async function openCartFromVisibleControl(page: Page): Promise<boolean> {
+async function openCartFromVisibleControl(
+  page: Page,
+  options: { throwOnUnverified?: boolean } = {}
+): Promise<boolean> {
   if (!(await clickCartOpenButton(page))) {
     return false;
   }
@@ -62,6 +70,10 @@ async function openCartFromVisibleControl(page: Page): Promise<boolean> {
   await waitForCartContentSettled(page);
   if (await isCurrentCartPage(page)) {
     return true;
+  }
+
+  if (options.throwOnUnverified === false) {
+    return false;
   }
 
   throw new UserFacingError("Could not confirm the Zepto cart page after opening cart.", {
@@ -239,12 +251,16 @@ export function isCartPageText(text: string): boolean {
     return false;
   }
 
-  if (parseCartItemsFromText(text).length > 0) {
+  if (parseReadableCartItemsFromText(text).length > 0) {
     return hasStrongCartSurfaceEvidence(normalized);
   }
 
   if (isEmptyCartText(normalized)) {
     return true;
+  }
+
+  if (!isCompactCartText(text) && extractActiveCartItemsText(text) === undefined) {
+    return false;
   }
 
   const cartTextWithoutAddControls = stripAddToCartControls(normalized);
@@ -262,14 +278,13 @@ function isZeptoNotFoundPageText(text: string): boolean {
 }
 
 export function requireReadableCartSnapshot(rawText: string, itemsOverride?: CartItem[]): CartSnapshot {
-  const activeCartText = extractActiveCartItemsText(rawText);
   const snapshot = {
-    items: itemsOverride ?? parseCartItemsFromText(activeCartText ?? rawText),
+    items: itemsOverride ?? parseReadableCartItemsFromText(rawText),
     total: extractCartTotal(rawText),
     rawText
   };
 
-  if (snapshot.items.length > 0 && hasCartSurfaceEvidence(rawText)) {
+  if (snapshot.items.length > 0 && hasStrongCartSurfaceEvidence(rawText)) {
     return snapshot;
   }
 
@@ -281,6 +296,21 @@ export function requireReadableCartSnapshot(rawText: string, itemsOverride?: Car
     code: "cart_unreadable",
     hint: "Rerun with `--visible` to inspect Zepto's cart page before treating the cart as empty."
   });
+}
+
+export function parseReadableCartItemsFromText(rawText: string): CartItem[] {
+  const activeCartText = extractActiveCartItemsText(rawText);
+  const parseableText = activeCartText ?? (isCompactCartText(rawText) ? rawText : "");
+  return parseCartItemsFromText(parseableText);
+}
+
+function isCompactCartText(rawText: string): boolean {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return rawText.length <= 4_000 && lines.length <= 80;
 }
 
 function extractActiveCartItemsText(rawText: string): string | undefined {
@@ -378,14 +408,16 @@ export function hasCartSurfaceEvidence(text: string): boolean {
   );
 }
 
-function hasStrongCartSurfaceEvidence(text: string): boolean {
+export function hasStrongCartSurfaceEvidence(text: string): boolean {
   const normalized = normalizeText(text);
   if (!normalized) {
     return false;
   }
 
-  return /\b(my cart|you have\s+[1-9]\d*\s+items?\s+in your cart|view bill|bill summary|item total|grand total|to pay|payable|qty|quantity|remove|delete|decrease)\b/i.test(
-    normalized
+  return (
+    /\b(my cart|you have\s+[1-9]\d*\s+items?\s+in your cart|view bill|bill summary|item total|grand total|to pay|payable)\b/i.test(
+      normalized
+    ) || /\bdeliver(?:ing)? in\b[^.]{0,120}\b[1-9]\d*\s+items?\b/i.test(normalized)
   );
 }
 
@@ -675,8 +707,29 @@ function readClosestCartRemoveCardText(element: Element): string {
 
 export async function readVisibleCart(page: Page): Promise<CartSnapshot> {
   await assertNoAccessChallenge(page);
-  await waitForCartContentSettled(page);
+  let unreadableError: UserFacingError | undefined;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await waitForCartContentSettled(page);
+    try {
+      return await readVisibleCartOnce(page);
+    } catch (error) {
+      if (!(error instanceof UserFacingError) || error.code !== "cart_unreadable") {
+        throw error;
+      }
 
+      unreadableError = error;
+      await page.waitForTimeout(1_200);
+      await assertNoAccessChallenge(page);
+    }
+  }
+
+  throw unreadableError ?? new UserFacingError("Zepto cart page did not expose readable cart items.", {
+    code: "cart_unreadable",
+    hint: "Rerun with `--visible` to inspect Zepto's cart page before treating the cart as empty."
+  });
+}
+
+async function readVisibleCartOnce(page: Page): Promise<CartSnapshot> {
   const scrolledItems = await extractActiveCartItemsAcrossScroll(page);
   const controlItems = scrolledItems.length > 0 ? [] : await extractActiveCartItemsFromControls(page);
   const rawText = await page.locator("body").innerText();
@@ -743,6 +796,11 @@ async function waitForCartContentSettled(page: Page): Promise<void> {
           return activeCartRowsReady();
         }
 
+        const text = normalize(document.body?.innerText ?? "");
+        const hasStrongCartShell =
+          /\b(my cart|you have\s+[1-9]\d*\s+items?\s+in your cart|view bill|bill summary|item total|grand total|to pay|payable)\b/i.test(
+            text
+          ) || /\bdeliver(?:ing)? in\b[^.]{0,120}\b[1-9]\d*\s+items?\b/i.test(text);
         const labels = Array.from(document.querySelectorAll("button, [role='button']"))
           .flatMap((element) => [
             element.textContent ?? "",
@@ -753,6 +811,7 @@ async function waitForCartContentSettled(page: Page): Promise<void> {
           .map(normalize)
           .filter(Boolean);
         if (
+          hasStrongCartShell &&
           labels.some((label) =>
             /^(?:remove|delete|decrease|increase|increment)(?:\s+(?:qty|quantity|item|items?))?$|^[+\-−]$|^(?:qty|quantity)\s*[+\-−]$/i.test(
               label
@@ -762,7 +821,6 @@ async function waitForCartContentSettled(page: Page): Promise<void> {
           return true;
         }
 
-        const text = normalize(document.body?.innerText ?? "");
         return /\b(cart is empty|cart empty|empty cart|your cart is empty|no items in cart|no items added)\b/i.test(
           text
         );
