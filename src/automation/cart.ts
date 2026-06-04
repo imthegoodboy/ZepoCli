@@ -1,6 +1,6 @@
 import type { Locator, Page } from "playwright";
 
-import type { CartSnapshot } from "../types.js";
+import type { CartItem, CartSnapshot } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { extractPrices, normalizeText } from "../utils/format.js";
 import { textMatchesProductQuery } from "../utils/product-matching.js";
@@ -16,6 +16,10 @@ import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from ".
 
 export const CART_OPEN_CLICK_LABELS = [/^cart$/i, /^my cart$/i, /^view cart$/i, /^go to cart$/i] as const;
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
+const CART_RENDER_SIGNAL_TIMEOUT_MS = 7_000;
+const CART_SCROLL_SETTLE_MS = 140;
+const CART_SCROLL_MIN_STEP_PX = 160;
+const CART_SCROLL_MAX_SNAPSHOTS = 24;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|currently unavailable|unavailable|out of stock|sold out|move to cart|move to bag|notify me|clear cart)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
@@ -211,8 +215,12 @@ export function isCartPageText(text: string): boolean {
     return false;
   }
 
+  if (isZeptoNotFoundPageText(normalized)) {
+    return false;
+  }
+
   if (parseCartItemsFromText(text).length > 0) {
-    return hasCartSurfaceEvidence(normalized);
+    return hasStrongCartSurfaceEvidence(normalized);
   }
 
   if (isEmptyCartText(normalized)) {
@@ -227,9 +235,16 @@ export function isCartPageText(text: string): boolean {
   );
 }
 
-export function requireReadableCartSnapshot(rawText: string): CartSnapshot {
+function isZeptoNotFoundPageText(text: string): boolean {
+  return /\b(the page you(?:'|’)re looking for has made|egg-sit|go to home|explore our top categories)\b/i.test(
+    text
+  );
+}
+
+export function requireReadableCartSnapshot(rawText: string, itemsOverride?: CartItem[]): CartSnapshot {
+  const activeCartText = extractActiveCartItemsText(rawText);
   const snapshot = {
-    items: parseCartItemsFromText(rawText),
+    items: itemsOverride ?? parseCartItemsFromText(activeCartText ?? rawText),
     total: extractCartTotal(rawText),
     rawText
   };
@@ -246,6 +261,29 @@ export function requireReadableCartSnapshot(rawText: string): CartSnapshot {
     code: "cart_unreadable",
     hint: "Rerun with `--visible` to inspect Zepto's cart page before treating the cart as empty."
   });
+}
+
+function extractActiveCartItemsText(rawText: string): string | undefined {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const start = lines.findIndex((line, index) => {
+    const next = lines[index + 1] ?? "";
+    return /^deliver(?:ing)? in\b/i.test(line) && /^[1-9]\d*\s+items?$/i.test(next);
+  });
+  if (start < 0) {
+    return undefined;
+  }
+
+  const itemStart = start + 2;
+  const end = lines.findIndex(
+    (line, index) =>
+      index > itemStart && /^(?:forgot something\??|add more items|bill summary|item total|to pay|grand total)$/i.test(line)
+  );
+  const itemLines = lines.slice(itemStart, end > itemStart ? end : undefined);
+  return itemLines.length > 0 ? itemLines.join("\n") : undefined;
 }
 
 export function isEmptyCartText(text: string): boolean {
@@ -317,6 +355,17 @@ export function hasCartSurfaceEvidence(text: string): boolean {
     /\b(my cart|view bill|bill summary|item total|grand total|to pay|qty|quantity|remove|delete|decrease)\b/i.test(
       normalized
     ) || /\bcart\b/i.test(cartTextWithoutAddControls)
+  );
+}
+
+function hasStrongCartSurfaceEvidence(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\b(my cart|you have\s+[1-9]\d*\s+items?\s+in your cart|view bill|bill summary|item total|grand total|to pay|payable|qty|quantity|remove|delete|decrease)\b/i.test(
+    normalized
   );
 }
 
@@ -604,11 +653,516 @@ function readClosestCartRemoveCardText(element: Element): string {
   return normalize(`${visibleText(element)} ${controlText}`);
 }
 
-async function readVisibleCart(page: Page): Promise<CartSnapshot> {
+export async function readVisibleCart(page: Page): Promise<CartSnapshot> {
   await assertNoAccessChallenge(page);
+  await waitForCartContentSettled(page);
 
+  const scrolledItems = await extractActiveCartItemsAcrossScroll(page);
+  const controlItems = scrolledItems.length > 0 ? [] : await extractActiveCartItemsFromControls(page);
   const rawText = await page.locator("body").innerText();
-  return requireReadableCartSnapshot(rawText);
+  const hasActiveCartSection = extractActiveCartItemsText(rawText) !== undefined;
+  const rawActiveItems = parseCartItemsFromText(extractActiveCartItemsText(rawText) ?? rawText);
+  const overrideItems =
+    scrolledItems.length > rawActiveItems.length
+      ? scrolledItems
+      : !hasActiveCartSection && controlItems.length > 0
+        ? controlItems
+        : undefined;
+  return requireReadableCartSnapshot(rawText, overrideItems);
+}
+
+async function waitForCartContentSettled(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+        const visibleLines = () =>
+          (document.body?.innerText ?? "")
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+        const activeCartRowsReady = () => {
+          const lines = visibleLines();
+          const start = lines.findIndex((line, index) => {
+            const next = lines[index + 1] ?? "";
+            return /^deliver(?:ing)? in\b/i.test(line) && /^[1-9]\d*\s+items?$/i.test(next);
+          });
+          if (start < 0) {
+            return false;
+          }
+
+          const itemStart = start + 2;
+          const expectedItems = Number.parseInt((lines[start + 1] ?? "").match(/^([1-9]\d*)\s+items?$/i)?.[1] ?? "", 10);
+          const end = lines.findIndex(
+            (line, index) =>
+              index > itemStart &&
+              /^(?:forgot something\??|add more items|bill summary|item total|to pay|grand total)$/i.test(line)
+          );
+          const itemLines = lines.slice(itemStart, end > itemStart ? end : undefined);
+          const unitCount = itemLines.filter((line) =>
+            /\b\d+(?:\.\d+)?\s*(?:ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen)\b/i.test(
+              line
+            )
+          ).length;
+          const priceCount = itemLines.filter((line) => /[₹]|rs\.?\s*\d|inr\s*\d/i.test(line)).length;
+          const expectedVisibleItems = Number.isFinite(expectedItems) ? Math.min(expectedItems, 20) : 1;
+          return (
+            unitCount >= expectedVisibleItems &&
+            priceCount >= expectedVisibleItems
+          );
+        };
+        const hasActiveCartSection = () => {
+          const lines = visibleLines();
+          return lines.some((line, index) => {
+            const next = lines[index + 1] ?? "";
+            return /^deliver(?:ing)? in\b/i.test(line) && /^[1-9]\d*\s+items?$/i.test(next);
+          });
+        };
+
+        if (hasActiveCartSection()) {
+          return activeCartRowsReady();
+        }
+
+        const labels = Array.from(document.querySelectorAll("button, [role='button']"))
+          .flatMap((element) => [
+            element.textContent ?? "",
+            element.getAttribute("aria-label") ?? "",
+            element.getAttribute("title") ?? "",
+            element.getAttribute("value") ?? ""
+          ])
+          .map(normalize)
+          .filter(Boolean);
+        if (
+          labels.some((label) =>
+            /^(?:remove|delete|decrease|increase|increment)(?:\s+(?:qty|quantity|item|items?))?$|^[+\-−]$|^(?:qty|quantity)\s*[+\-−]$/i.test(
+              label
+            )
+          )
+        ) {
+          return true;
+        }
+
+        const text = normalize(document.body?.innerText ?? "");
+        return /\b(cart is empty|cart empty|empty cart|your cart is empty|no items in cart|no items added)\b/i.test(
+          text
+        );
+      },
+      undefined,
+      { timeout: CART_RENDER_SIGNAL_TIMEOUT_MS }
+    )
+    .catch(() => undefined);
+  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+  await assertNoAccessChallenge(page);
+}
+
+async function extractActiveCartItemsAcrossScroll(page: Page): Promise<CartItem[]> {
+  const snapshots = await page
+    .evaluate(
+      async ({ maxSnapshots, minStepPx, nonCartProductSurfacePatternSource, settleMs }) => {
+        const nonCartProductSurfacePattern = new RegExp(nonCartProductSurfacePatternSource, "i");
+        const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+        const activeCartPattern = /deliver(?:ing)? in[\s\S]{0,120}?[1-9]\d*\s+items?/i;
+        const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+        const visibleText = (element: Element) =>
+          element instanceof HTMLElement ? element.innerText : (element.textContent ?? "");
+        const referencedLabelText = (element: Element) =>
+          `${element.getAttribute("aria-labelledby") ?? ""} ${element.getAttribute("aria-describedby") ?? ""}`
+            .split(/\s+/)
+            .map((id) => id.trim())
+            .filter(Boolean)
+            .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? "");
+        const controlLabels = (element: Element) =>
+          [
+            element.textContent ?? "",
+            element.getAttribute("aria-label") ?? "",
+            element.getAttribute("title") ?? "",
+            element.getAttribute("placeholder") ?? "",
+            element.getAttribute("value") ?? "",
+            element.getAttribute("aria-description") ?? "",
+            ...referencedLabelText(element)
+          ]
+            .map(normalize)
+            .filter(Boolean);
+        const isVisible = (element: Element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+        };
+        const hasDisabledState = (element: Element) => {
+          const dataDisabled = element.getAttribute("data-disabled");
+          return (
+            element.hasAttribute("disabled") ||
+            element.getAttribute("aria-disabled")?.toLowerCase() === "true" ||
+            (dataDisabled !== null && dataDisabled.toLowerCase() !== "false")
+          );
+        };
+        const isEnabledControl = (element: Element) => {
+          if (
+            element instanceof HTMLButtonElement ||
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLSelectElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            if (element.disabled) {
+              return false;
+            }
+          }
+
+          for (let current: Element | null = element; current; current = current.parentElement) {
+            if (hasDisabledState(current)) {
+              return false;
+            }
+          }
+
+          return !element.closest("fieldset[disabled]");
+        };
+        const isQuantityControl = (element: Element) => {
+          const labels = controlLabels(element);
+          return labels.some((label) =>
+            /^(?:remove|delete|decrease|increase|increment)(?:\s+(?:qty|quantity|item|items?))?$|^[+\-−]$|^(?:qty|quantity)\s*[+\-−]$/i.test(
+              label
+            )
+          );
+        };
+        const cardFor = (element: Element) => {
+          let current: Element | null = element;
+          for (let depth = 0; current && depth < 8; depth += 1) {
+            const text = visibleText(current);
+            if (
+              text.length > 0 &&
+              text.length < 1500 &&
+              /[₹]|rs\.?\s*\d/i.test(text) &&
+              !nonCartProductSurfacePattern.test(text)
+            ) {
+              return current;
+            }
+            current = current.parentElement;
+          }
+          return undefined;
+        };
+        const readControlRows = () =>
+          Array.from(document.querySelectorAll("button, [role='button']"))
+            .filter((control) => isVisible(control) && isEnabledControl(control) && isQuantityControl(control))
+            .map((control) => {
+              const card = cardFor(control);
+              if (!card) {
+                return undefined;
+              }
+
+              const text = normalize(visibleText(card));
+              if (!text) {
+                return undefined;
+              }
+
+              const image = card.querySelector("img[alt]");
+              return {
+                text,
+                imageAlt: image?.getAttribute("alt") ?? undefined
+              };
+            })
+            .filter((row): row is { text: string; imageAlt: string | undefined } => row !== undefined);
+        const findScrollTarget = () => {
+          const candidates = (Array.from(document.querySelectorAll("*")) as HTMLElement[])
+            .filter(
+              (element) =>
+                element instanceof HTMLElement &&
+                isVisible(element) &&
+                element.scrollHeight > element.clientHeight + 40 &&
+                activeCartPattern.test(visibleText(element))
+            )
+            .sort((left, right) => {
+              const leftTextLength = visibleText(left).length;
+              const rightTextLength = visibleText(right).length;
+              return (
+                leftTextLength - rightTextLength ||
+                (right.scrollHeight - right.clientHeight) - (left.scrollHeight - left.clientHeight)
+              );
+            });
+
+          if (candidates[0]) {
+            return candidates[0];
+          }
+
+          const scrollingElement = document.scrollingElement;
+          return scrollingElement instanceof HTMLElement ? scrollingElement : undefined;
+        };
+
+        const target = findScrollTarget();
+        const bodyTexts: string[] = [];
+        const controlRows: Array<{ text: string; imageAlt: string | undefined }> = [];
+        const collect = () => {
+          bodyTexts.push(document.body?.innerText ?? "");
+          controlRows.push(...readControlRows());
+        };
+
+        collect();
+        if (!target || target.scrollHeight <= target.clientHeight + 40) {
+          return { bodyTexts, controlRows };
+        }
+
+        const originalTop = target.scrollTop;
+        const maxTop = Math.max(0, target.scrollHeight - target.clientHeight);
+        const step = Math.max(minStepPx, Math.floor(target.clientHeight * 0.7));
+        const positions = new Set<number>([0, originalTop, maxTop]);
+        for (let top = 0; top <= maxTop && positions.size < maxSnapshots; top += step) {
+          positions.add(Math.min(maxTop, top));
+        }
+
+        for (const top of Array.from(positions).sort((left, right) => left - right)) {
+          target.scrollTop = top;
+          target.dispatchEvent(new Event("scroll", { bubbles: true }));
+          await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+          await wait(settleMs);
+          collect();
+        }
+
+        target.scrollTop = originalTop;
+        target.dispatchEvent(new Event("scroll", { bubbles: true }));
+        return { bodyTexts, controlRows };
+      },
+      {
+        maxSnapshots: CART_SCROLL_MAX_SNAPSHOTS,
+        minStepPx: CART_SCROLL_MIN_STEP_PX,
+        nonCartProductSurfacePatternSource: NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE,
+        settleMs: CART_SCROLL_SETTLE_MS
+      }
+    )
+    .catch(() => ({ bodyTexts: [], controlRows: [] }));
+
+  const textItems = snapshots.bodyTexts.flatMap((text) => {
+    const activeText = extractActiveCartItemsText(text);
+    return activeText ? parseCartItemsFromText(activeText) : [];
+  });
+  const controlItems = snapshots.controlRows
+    .map((row) => parseActiveCartItemFromControlText(row.text, row.imageAlt))
+    .filter((item): item is CartItem => item !== undefined);
+
+  return dedupeCartItemsFromControls([...textItems, ...controlItems]);
+}
+
+async function extractActiveCartItemsFromControls(page: Page): Promise<CartItem[]> {
+  const rows = await page.evaluate(({ nonCartProductSurfacePatternSource }) => {
+    const nonCartProductSurfacePattern = new RegExp(nonCartProductSurfacePatternSource, "i");
+    const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+    const visibleText = (element: Element) =>
+      element instanceof HTMLElement ? element.innerText : (element.textContent ?? "");
+    const referencedLabelText = (element: Element) =>
+      `${element.getAttribute("aria-labelledby") ?? ""} ${element.getAttribute("aria-describedby") ?? ""}`
+        .split(/\s+/)
+        .map((id) => id.trim())
+        .filter(Boolean)
+        .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? "");
+    const controlLabels = (element: Element) =>
+      [
+        element.textContent ?? "",
+        element.getAttribute("aria-label") ?? "",
+        element.getAttribute("title") ?? "",
+        element.getAttribute("placeholder") ?? "",
+        element.getAttribute("value") ?? "",
+        element.getAttribute("aria-description") ?? "",
+        ...referencedLabelText(element)
+      ]
+        .map(normalize)
+        .filter(Boolean);
+    const isVisible = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    };
+    const hasDisabledState = (element: Element) => {
+      const dataDisabled = element.getAttribute("data-disabled");
+      return (
+        element.hasAttribute("disabled") ||
+        element.getAttribute("aria-disabled")?.toLowerCase() === "true" ||
+        (dataDisabled !== null && dataDisabled.toLowerCase() !== "false")
+      );
+    };
+    const isEnabledControl = (element: Element) => {
+      if (
+        element instanceof HTMLButtonElement ||
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        if (element.disabled) {
+          return false;
+        }
+      }
+
+      for (let current: Element | null = element; current; current = current.parentElement) {
+        if (hasDisabledState(current)) {
+          return false;
+        }
+      }
+
+      return !element.closest("fieldset[disabled]");
+    };
+    const isQuantityControl = (element: Element) => {
+      const labels = controlLabels(element);
+      return labels.some((label) =>
+        /^(?:remove|delete|decrease|increase|increment)(?:\s+(?:qty|quantity|item|items?))?$|^[+\-−]$|^(?:qty|quantity)\s*[+\-−]$/i.test(
+          label
+        )
+      );
+    };
+    const cardFor = (element: Element) => {
+      let current: Element | null = element;
+      for (let depth = 0; current && depth < 8; depth += 1) {
+        const text = visibleText(current);
+        if (
+          text.length > 0 &&
+          text.length < 1500 &&
+          /[₹]|rs\.?\s*\d/i.test(text) &&
+          !nonCartProductSurfacePattern.test(text)
+        ) {
+          return current;
+        }
+        current = current.parentElement;
+      }
+      return undefined;
+    };
+
+    const seen = new Set<string>();
+    return Array.from(document.querySelectorAll("button, [role='button']"))
+      .filter((control) => isVisible(control) && isEnabledControl(control) && isQuantityControl(control))
+      .map((control) => {
+        const card = cardFor(control);
+        if (!card) {
+          return undefined;
+        }
+
+        const text = normalize(visibleText(card));
+        if (!text || seen.has(text)) {
+          return undefined;
+        }
+        seen.add(text);
+        const image = card.querySelector("img[alt]");
+        return {
+          text,
+          imageAlt: image?.getAttribute("alt") ?? undefined
+        };
+      })
+      .filter((row): row is { text: string; imageAlt: string | undefined } => row !== undefined);
+  }, {
+    nonCartProductSurfacePatternSource: NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE
+  });
+
+  return dedupeCartItemsFromControls(
+    rows.map((row) => parseActiveCartItemFromControlText(row.text, row.imageAlt)).filter((item): item is CartItem => item !== undefined)
+  );
+}
+
+export function parseActiveCartItemFromControlText(text: string, imageAlt?: string): CartItem | undefined {
+  const normalized = normalizeText(text);
+  if (
+    !normalized ||
+    isCartSummaryOrFeeText(normalized) ||
+    isNonCartProductSurfaceText(normalized) ||
+    !hasCartMutationSignal(normalized)
+  ) {
+    return undefined;
+  }
+
+  const price = extractPrices(normalized).find((candidate) => !isDiscountOnlyPriceText(normalized, candidate));
+  const unit = extractActiveCartUnit(normalized);
+  const quantity = extractActiveCartQuantity(normalized);
+  const name = cleanActiveCartItemName(nameFromCartImageAlt(imageAlt) ?? nameFromActiveCartText(normalized, price, unit));
+
+  if (!name || (!price && !unit)) {
+    return undefined;
+  }
+
+  return {
+    name,
+    ...(price ? { price } : {}),
+    ...(unit ? { unit } : {}),
+    ...(quantity ? { quantity } : {})
+  };
+}
+
+function dedupeCartItemsFromControls(items: CartItem[]): CartItem[] {
+  const seen = new Set<string>();
+  const deduped: CartItem[] = [];
+  for (const item of items) {
+    const key = `${item.name.toLowerCase()}|${item.unit ?? ""}|${item.price ?? ""}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    deduped.push(item);
+  }
+
+  return deduped;
+}
+
+function isDiscountOnlyPriceText(text: string, price: string): boolean {
+  return new RegExp(`${escapeRegExp(price)}\\s*(?:off|discount|save|savings?)\\b`, "i").test(text);
+}
+
+function extractActiveCartQuantity(text: string): string | undefined {
+  return (
+    text.match(/\b(?:qty|quantity)\s*:?\s*(\d{1,2})\b/i)?.[1] ??
+    text.match(/(?:^|\s)x\s*(\d{1,2})\b/i)?.[1] ??
+    text.match(/\b(\d{1,2})\s*x(?:\s|$)/i)?.[1] ??
+    text.match(/^\s*(\d{1,2})\s+(?=(?:₹|rs\.?\s*\d|inr\s*\d))/i)?.[1]
+  );
+}
+
+function extractActiveCartUnit(text: string): string | undefined {
+  const unitPattern =
+    /\b\d+(?:\.\d+)?\s*(?:pack|packs|packet|packets|pc|pcs|piece|pieces|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules)\s*(?:\([^)]{1,60}\))?|\b\d+(?:\.\d+)?\s*(?:ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs)\b(?:\s*(?:or|\/)\s*\d+(?:\.\d+)?\s*(?:ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs))?/i;
+  return normalizeText(text.match(unitPattern)?.[0] ?? "") || undefined;
+}
+
+function nameFromCartImageAlt(value: string | undefined): string | undefined {
+  const normalized = normalizeText(value ?? "").replace(/^image:\s*/i, "");
+  if (
+    !normalized ||
+    /^(zepto|image|product|product image|item|item image|thumbnail|placeholder|banner)$/i.test(normalized) ||
+    /(?:^|[\\/])[\w.-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(normalized)
+  ) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
+function nameFromActiveCartText(text: string, price: string | undefined, unit: string | undefined): string | undefined {
+  let candidate = text;
+  for (const visiblePrice of extractPrices(candidate)) {
+    candidate = candidate.replace(new RegExp(escapeRegExp(visiblePrice), "g"), " ");
+  }
+  if (unit) {
+    candidate = candidate.replace(new RegExp(escapeRegExp(unit), "i"), " ");
+  }
+
+  return candidate
+    .replace(/\b(?:qty|quantity)\s*:?\s*\d{1,2}\b/gi, " ")
+    .replace(/(?:^|\s)x\s*\d{1,2}\b/gi, " ")
+    .replace(/\b\d{1,2}\s*x(?:\s|$)/gi, " ")
+    .replace(/^\s*\d{1,2}\s+(?=(?:₹|rs\.?\s*\d|inr\s*\d))/i, " ")
+    .replace(/\b(?:remove|delete|decrease|increase|increment)(?:\s+(?:qty|quantity|item|items?))?\b/gi, " ")
+    .replace(/[+\-−]/g, " ")
+    .replace(/\b\d(?:\.\d)?\s*\([\d,.]+[km]?\)\b/gi, " ")
+    .replace(/\b\d(?:\.\d)?\b/g, " ");
+}
+
+function cleanActiveCartItemName(value: string | undefined): string | undefined {
+  const normalized = normalizeText(value ?? "");
+  if (
+    normalized.length < 3 ||
+    normalized.length > 160 ||
+    /[₹]|rs\.?\s*\d|inr\s*\d/i.test(normalized) ||
+    /^(?:off|locked|options|cart|checkout|coupon|coupons?|offer|offers?|view all coupons|savings? on this order|on this order|deliver(?:ing)?(?: in .*)?|get it on app store|other|add|remove|delete|decrease|increase)$/i.test(
+      normalized
+    ) ||
+    isCartSummaryOrFeeText(normalized) ||
+    isNonCartProductSurfaceText(normalized)
+  ) {
+    return undefined;
+  }
+
+  return /[a-z]/i.test(normalized) ? normalized : undefined;
 }
 
 function extractCartTotal(rawText: string): string | undefined {
@@ -734,9 +1288,14 @@ function hasCartMutationSignal(text: string): boolean {
     /\b(qty|quantity|remove|delete|decrease)\b/i.test(text) ||
     /(?:^|\s)x\s*\d+\b/i.test(text) ||
     /\b\d+\s*x(?:\s|$)/i.test(text) ||
+    /^\s*\d{1,2}\s+(?=(?:₹|rs\.?\s*\d|inr\s*\d))/i.test(text) ||
     /[+\-−]\s*\d+\b/.test(text) ||
     /\b\d+\s*[+\-−]/.test(text)
   );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {

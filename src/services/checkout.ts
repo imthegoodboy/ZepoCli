@@ -2,7 +2,7 @@ import { input } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
 import { assertConfirmedSession, BrowserAutomation } from "../automation/browser.js";
-import { openCheckout } from "../automation/checkout.js";
+import { openCheckout, type CheckoutHandoffResult } from "../automation/checkout.js";
 import { requireInteractiveInput, requireVisibleBrowser } from "../utils/interactive.js";
 import { promptContext } from "../utils/prompts.js";
 
@@ -13,7 +13,7 @@ export class CheckoutService {
     this.browser = new BrowserAutomation(runtime);
   }
 
-  async checkout(): Promise<void> {
+  async checkout(): Promise<CheckoutHandoffResult> {
     requireInteractiveInput(
       this.runtime,
       "Zepto checkout requires interactive input.",
@@ -26,17 +26,26 @@ export class CheckoutService {
     );
     assertConfirmedSession(this.runtime);
 
-    await this.browser.withPage(
+    return this.browser.withPage(
       { captureFailures: false, requireSession: true, headless: false, saveState: true },
       async (page) => {
-        await openCheckout(page);
+        const handoff = (await openCheckout(page)) ?? { mode: "checkout_or_payment_page" as const };
         await input(
           {
-            message: "Use Zepto checkout/payment in the browser, then press Enter here when done"
+            message: checkoutPromptMessage(handoff)
           },
           promptContext()
         );
+        return handoff;
       }
     );
   }
+}
+
+function checkoutPromptMessage(handoff: CheckoutHandoffResult): string {
+  if (handoff.mode === "manual_payment_control_visible") {
+    return "Click the Zepto payment control in the browser, complete only the Zepto-side actions you choose, then press Enter here";
+  }
+
+  return "Use Zepto checkout/payment in the browser, then press Enter here when done";
 }

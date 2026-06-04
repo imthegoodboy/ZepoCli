@@ -197,7 +197,12 @@ function hasLoggedInAccountEvidence(text: string): boolean {
 
   const hasAccountEntry = /\b(account|profile)\b/i.test(text);
   const hasAccountOnlyFeature = /\b(wallet|my orders|orders|order history)\b/i.test(text);
-  return hasAccountEntry && hasAccountOnlyFeature;
+  const accountOnlyFeatureCount = [
+    /\bwallet\b/i,
+    /\b(my orders|orders|order history)\b/i,
+    /\b(saved addresses|addresses)\b/i
+  ].filter((pattern) => pattern.test(text)).length;
+  return (hasAccountEntry && hasAccountOnlyFeature) || accountOnlyFeatureCount >= 2;
 }
 
 async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {

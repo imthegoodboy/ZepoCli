@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ADD_ADDRESS_CLICK_LABELS,
   ADDRESS_MANAGER_CLICK_LABELS,
+  addressRecordsFromTexts,
   addressMatchesQuery,
   chooseAddressSelectionCandidate,
   clickAddAddressButton,
@@ -17,7 +18,8 @@ import {
   isUserLocationConsentText,
   isLikelyAddressText,
   requireSelectedAddress,
-  startAddAddress
+  startAddAddress,
+  useAddress
 } from "../src/automation/address.js";
 
 describe("address automation helpers", () => {
@@ -101,6 +103,75 @@ describe("address automation helpers", () => {
         "home"
       )
     ).toThrow('Zepto did not show a selected address matching "home" after the selection click.');
+  });
+
+  it("accepts the current delivery address when it already matches the requested query", async () => {
+    const page = createCurrentDeliveryAddressInUsePage(
+      "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    );
+
+    await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
+      selected: true,
+      text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    });
+
+    expect(page.managerOpened).toBe(false);
+  });
+
+  it("accepts current delivery address text from a delivery-context header", async () => {
+    const page = createCurrentDeliveryAddressInUsePage(
+      "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    );
+
+    await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
+      selected: true,
+      text: "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    });
+
+    expect(page.managerOpened).toBe(false);
+  });
+
+  it("waits briefly for the current delivery address to render before opening the manager", async () => {
+    const page = createDelayedCurrentDeliveryAddressInUsePage(
+      "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    );
+
+    await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
+      selected: true,
+      text: "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    });
+
+    expect(page.managerOpened).toBe(false);
+    expect(page.waits).toBeGreaterThan(0);
+  });
+
+  it("accepts the current delivery address after opening address controls", async () => {
+    const page = createCurrentDeliveryAddressAfterManagerPage(
+      "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    );
+
+    await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
+      selected: true,
+      text: "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    });
+
+    expect(page.managerOpened).toBe(true);
+    expect(page.selectionClicked).toBe(false);
+  });
+
+  it("does not click a matching saved address that Zepto already marks selected", async () => {
+    const page = createSelectedSavedAddressCandidatePage(
+      "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+      "Selected Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    );
+
+    await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
+      selected: true,
+      text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+    });
+
+    expect(page.managerOpened).toBe(true);
+    expect(page.selectionClicked).toBe(false);
   });
 
   it("chooses a unique saved-address candidate by specific visible text", () => {
@@ -208,6 +279,7 @@ describe("address automation helpers", () => {
   it("accepts saved address text with location detail", () => {
     expect(isLikelyAddressText("Home 221B Baker Street, Bengaluru, Karnataka 560001 India")).toBe(true);
     expect(isLikelyAddressText("Work Flat 42, Tower B, MG Road, Bengaluru")).toBe(true);
+    expect(isLikelyAddressText("Study Home PG, Ramakrishna Ashrama Rd, Bengaluru")).toBe(true);
     expect(isLikelyAddressText("Parents A-1204 Sunrise Society, Near Metro Station, Karnataka 560076 India")).toBe(
       true
     );
@@ -221,6 +293,13 @@ describe("address automation helpers", () => {
 
   it("rejects product, cart, and promo copy as saved addresses", () => {
     expect(isLikelyAddressText("India Gate Basmati Rice 1 kg ₹249 ADD")).toBe(false);
+    expect(isLikelyAddressText("Beco Natural Floor Cleaner Liquid")).toBe(false);
+    expect(isLikelyAddressText("Bingo! Original Style Chilli Sprinkled | Flat Cut Spicy Potato Chips")).toBe(false);
+    expect(isLikelyAddressText("India Gate Dubar Basmati Rice | Long Slender Grains")).toBe(false);
+    expect(isLikelyAddressText("Mother Dairy Near Me |")).toBe(false);
+    expect(isLikelyAddressText("Paan shop near me |")).toBe(false);
+    expect(isLikelyAddressText("Parachute 100% Pure Coconut Oil")).toBe(false);
+    expect(isLikelyAddressText("Bare Anatomy Rosemary Water Spray for Hair Growth, 100% Natural")).toBe(false);
     expect(isLikelyAddressText("Cart Bill Summary Item Total ₹249 To Pay ₹279 Bengaluru")).toBe(false);
     expect(isLikelyAddressText("Popular picks delivered across India 500 g pack")).toBe(false);
     expect(isLikelyAddressText("Customer Support Home 221B Baker Street, Bengaluru, India")).toBe(false);
@@ -299,6 +378,29 @@ describe("address automation helpers", () => {
         "Home 221B Baker Street, Bengaluru, India"
       ])
     ).toEqual(["Home 221B Baker Street, Bengaluru, India"]);
+  });
+
+  it("filters label wrappers when the inner saved address row exists", () => {
+    expect(
+      filterAddressTexts([
+        "Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      ])
+    ).toEqual(["Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"]);
+  });
+
+  it("preserves selected state when Zepto puts it on a saved-address wrapper", () => {
+    expect(
+      addressRecordsFromTexts([
+        "Selected Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      ])
+    ).toMatchObject([
+      {
+        selected: true,
+        text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      }
+    ]);
   });
 
   it("does not automate user location-consent controls during address add", () => {
@@ -434,6 +536,8 @@ describe("address automation helpers", () => {
       "Delivering to Home",
       "Deliver to Home",
       "Select Location",
+      "Select Delivery Location",
+      "Select Delivery Address",
       "Change Location",
       "Change Delivery Address",
       "Set Location",
@@ -441,7 +545,8 @@ describe("address automation helpers", () => {
       "Choose Location",
       "Choose Delivery Address",
       "Delivery Address",
-      "Saved Addresses"
+      "Saved Addresses",
+      "Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     ]) {
       expect(isAddressManagerClickText(label)).toBe(true);
     }
@@ -453,7 +558,9 @@ describe("address automation helpers", () => {
       "Confirm Address",
       "Save Address",
       "Address selected",
-      "Current location"
+      "Current location",
+      "Other",
+      "Home"
     ]) {
       expect(isAddressManagerClickText(label)).toBe(false);
     }
@@ -507,6 +614,14 @@ describe("address automation helpers", () => {
     await expect(clickAddressManagerButton(page as never)).resolves.toBe(true);
 
     expect(page.clicks).toEqual(["safe"]);
+  });
+
+  it("finds detailed current-address controls outside explicit address-manager labels", async () => {
+    const page = createCurrentAddressManagerFallbackPage();
+
+    await expect(clickAddressManagerButton(page as never)).resolves.toBe(true);
+
+    expect(page.clicks).toEqual(["current-address"]);
   });
 
   it("revalidates address-manager controls after scrolling before clicking", async () => {
@@ -613,6 +728,26 @@ describe("address automation helpers", () => {
         index: 4,
         label: "Home",
         text: "Home 221B Baker Street, Bengaluru, India"
+      })
+    ).resolves.toBeUndefined();
+
+    expect(page.clicked).toBe(true);
+  });
+
+  it("clicks a tagged saved-address parent row while validating the exact address text", async () => {
+    const page = createTaggedAddressSelectionPage(
+      {},
+      {
+        text: "Saved Address Home 221B Baker Street, Bengaluru, India Edit"
+      }
+    );
+
+    await expect(
+      clickTaggedAddressSelection(page as never, {
+        index: 4,
+        label: "Home",
+        text: "Home 221B Baker Street, Bengaluru, India",
+        clickText: "Saved Address Home 221B Baker Street, Bengaluru, India Edit"
       })
     ).resolves.toBeUndefined();
 
@@ -781,6 +916,109 @@ function createMixedLabelAddressManagerPage(
   return page;
 }
 
+function createCurrentDeliveryAddressInUsePage(text: string) {
+  const page = {
+    managerOpened: false,
+    goto: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    title: async () => "Zepto",
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => "Zepto home"
+          }
+        : createHiddenLocator(),
+    evaluate: async () => [text],
+    getByRole: () =>
+      createVisibleLocator("Delivery Address", async () => {
+        page.managerOpened = true;
+      })
+  };
+
+  return page;
+}
+
+function createDelayedCurrentDeliveryAddressInUsePage(text: string) {
+  let reads = 0;
+  const page = createCurrentDeliveryAddressInUsePage(text);
+  const delayedPage = {
+    ...page,
+    waits: 0,
+    waitForTimeout: async () => {
+      reads += 1;
+      delayedPage.waits += 1;
+    },
+    evaluate: async () => {
+      if (reads === 0) {
+        return [];
+      }
+
+      return [text];
+    }
+  };
+
+  return delayedPage;
+}
+
+function createCurrentDeliveryAddressAfterManagerPage(text: string) {
+  const page = {
+    managerOpened: false,
+    selectionClicked: false,
+    goto: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    title: async () => "Zepto",
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => "Zepto home"
+          }
+        : createVisibleLocator("Home 221B Baker Street, Bengaluru, India", async () => {
+            page.selectionClicked = true;
+          }),
+    evaluate: async () => (page.managerOpened ? [text] : []),
+    getByRole: () =>
+      createVisibleLocator("Delivery Address", async () => {
+        page.managerOpened = true;
+      })
+  };
+
+  return page;
+}
+
+function createSelectedSavedAddressCandidatePage(text: string, clickText: string) {
+  const page = {
+    managerOpened: false,
+    selectionClicked: false,
+    goto: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    title: async () => "Zepto",
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => "Zepto home"
+          }
+        : createVisibleLocator(clickText, async () => {
+            page.selectionClicked = true;
+          }),
+    evaluate: async (_callback: unknown, args: { currentContextPattern?: string } = {}) => {
+      if (args.currentContextPattern) {
+        return [];
+      }
+
+      return [{ index: 0, text, clickText }];
+    },
+    getByRole: () =>
+      createVisibleLocator("Delivery Address", async () => {
+        page.managerOpened = true;
+      })
+  };
+
+  return page;
+}
+
 function createMixedLabelAddAddressPage(
   text: string,
   ariaLabel: string,
@@ -818,6 +1056,32 @@ function createAddressManagerCollectionPage() {
     getByRole: (role: string, options: { name?: RegExp | string } = {}) =>
       role === "button" && matchesLocatorName(options.name, "Delivery Address") ? locators : createHiddenLocator(),
     locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCurrentAddressManagerFallbackPage() {
+  const clicks: string[] = [];
+  const locators = createLocatorCollection([
+    createVisibleLocatorWithAria("Other", "Other", async () => {
+      clicks.push("label-only");
+    }),
+    createVisibleLocatorWithAria(
+      "Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+      "Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+      async () => {
+        clicks.push("current-address");
+      }
+    )
+  ]);
+  const page = {
+    clicks,
+    getByRole: () => createHiddenLocator(),
+    locator: () => ({
+      ...locators,
+      filter: () => createHiddenLocator()
+    })
   };
 
   return page;

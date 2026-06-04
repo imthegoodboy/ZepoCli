@@ -34,7 +34,10 @@ describe("README package guidance", () => {
       "zepo --visible checkout",
       "zepo track",
       "zepo history",
-      "zepo reorder last"
+      "zepo reorder last",
+      "zepo completion bash",
+      "zepo help search",
+      "zepo help address"
     ]) {
       expect(readme).toContain(command);
     }
@@ -64,7 +67,12 @@ describe("README package guidance", () => {
     expect(readme).toContain("`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`");
     expect(readme).toContain("Installed-package commands run browser automation in background/headless mode by default");
     expect(readme).toContain("Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`");
+    expect(readme).toContain("before session checks and before browser launch");
     expect(readme).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");
+    expect(readme).toContain("Generate shell completion scripts without starting runtime storage or browser automation");
+    expect(readme).toContain("Completion is generated from the registered command tree");
+    expect(readme).toContain("nested topics such as `zepo help address`");
+    expect(readme).toContain("PowerShell completion also accepts `pwsh` and `ps1` as aliases for `powershell`");
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");
     expect(readme).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
@@ -75,11 +83,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("Use ZepoCli only where permitted by Zepto and applicable law");
     expect(readme).toContain("https://www.zepto.com/s/terms-of-service");
     expect(readme).toContain("Terms of Use version 1.4");
-    expect(readme).toContain("were checked on 2026-06-03");
+    expect(readme).toContain("were checked on 2026-06-04");
     expect(readme).toContain("Last updated: 1 st November 2025");
     expect(readme).toContain("Privacy Notice version 1.1");
     expect(readme).toContain("https://staticweb.zepto.com/privacy-policy/");
-    expect(readme).toContain("was checked on 2026-06-03");
+    expect(readme).toContain("was checked on 2026-06-04");
     expect(readme).toContain("Last updated: 17th June 2025");
     expect(readme).toContain("passwords and payment instrument details as sensitive personal information");
     expect(readme).toContain("payment processing through payment gateways");
@@ -206,10 +214,15 @@ describe("README package guidance", () => {
     expect(readme).toContain("configured data directory is blank");
     expect(readme).toContain('"code": "no_confirmed_session"');
     expect(readme).toContain("visible_browser_required");
+    expect(readme).toContain("browser profile writes, and headless browser run accounting");
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
+    expect(readme).toContain('status: "checkout_manual_action_required"');
+    expect(readme).toContain("manual amount-bearing payment control");
+    expect(readme).toContain("must not be counted as checkout handoff coverage");
+    expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
@@ -217,7 +230,9 @@ describe("README package guidance", () => {
     expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
     expect(readme).toContain("It starts with normal `zepo doctor --json`, including the Playwright Chromium launch check");
-    expect(readme).toContain("the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
+    expect(readme).toContain("then local `zepo status --json`");
+    expect(readme).toContain("both preflight steps must report `browserAutomation.ready === true`");
+    expect(readme).toContain("doctor must also show a passing `Playwright Chromium` check");
     expect(readme).toContain(
       "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records"
     );
@@ -230,6 +245,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command"
     );
+    expect(readme).toContain(
+      "With no live workflow flags, a data directory that already has a confirmed local session stops after those local preflight checks instead of opening a visible `status --live`"
+    );
     expect(readme).toContain("<redacted-browser-locale>");
     expect(readme).toContain("<redacted-browser-timezone>");
     expect(readme).toContain(
@@ -237,6 +255,9 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain(
       "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified"
+    );
+    expect(readme).toContain(
+      "Manual precondition failures, such as a missing confirmed session, are reported as incomplete manual steps and are not counted as workflow attempts"
     );
     expect(readme).toContain("`checkoutHandoff`");
     expect(readme).toContain(
@@ -261,6 +282,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("accepted report schema");
     expect(readme).toContain("complete boolean capability summaries");
     expect(readme).toContain("redacted step command contract");
+    expect(readme).toContain("runner-defined manual/internal command markers only");
     expect(readme).toContain("checkout cart precondition");
     expect(readme).toContain("`ok` reports containing only passing known workflow steps");
     expect(readme).toContain("unique workflow step names");
@@ -271,12 +293,13 @@ describe("README package guidance", () => {
     expect(readme).toContain("internally consistent workflow step summaries");
     expect(readme).toContain("bounded numeric workflow step summaries");
     expect(readme).toContain("all passing workflow step summaries satisfy their known contracts");
+    expect(readme).toContain("local status readiness");
     expect(readme).toContain("login session evidence");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate");
     expect(readme).toContain(
-      "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
     expect(readme).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
@@ -284,7 +307,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Production-scope acceptance rejects missing freshness windows");
     expect(readme).toContain("stale saved reports cannot be reused as current evidence");
     expect(readme).toContain(
-      "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
@@ -323,9 +346,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("## Release");
     expect(readme).toContain("Release publishing is tag-driven");
     expect(readme).toContain("npm run check");
+    expect(readme).toContain("npm run verify:publish-dry-run");
     expect(readme).toContain("git tag v0.1.0");
     expect(readme).toContain("git push origin v0.1.0");
     expect(readme).toContain("npm publish --provenance --access public");
+    expect(readme).toContain("npm publish --dry-run --access public");
     expect(readme).toContain("NPM_TOKEN");
     expect(readme).toContain("It does not run `verify:live`");
     expect(readme).toContain("npm run verify:secrets");

@@ -30,12 +30,14 @@ const QUANTITY_CLICK_PAUSE_MS = 400;
 const ADD_CLICK_SETTLE_MS = 700;
 const SEARCH_INPUT_TYPE_DELAY_MS = 35;
 const SEARCH_SUBMIT_PAUSE_MS = 150;
+const SEARCH_RENDER_SIGNAL_TIMEOUT_MS = 7_000;
 const SEARCH_TRIGGER_CONTROL_SCAN_LIMIT = 8;
 const PRODUCT_ADD_REDISCOVERY_PRODUCT_LIMIT = 20;
 
 export async function searchProducts(page: Page, query: string, limit: number): Promise<Product[]> {
   const searchedFromHome = await searchFromHome(page, query);
   let attemptedDirectSearch = false;
+  let searchedHomeFallbackProducts: Product[] = [];
   if (!searchedFromHome) {
     await openSearch(page, query);
     attemptedDirectSearch = true;
@@ -43,6 +45,7 @@ export async function searchProducts(page: Page, query: string, limit: number): 
 
   let products = await extractProducts(page, limit);
   if (searchedFromHome && products.length > 0 && !(await isSearchResultsSurface(page))) {
+    searchedHomeFallbackProducts = filterProductsForQuery(products, query).slice(0, limit);
     products = [];
   }
 
@@ -78,6 +81,10 @@ export async function searchProducts(page: Page, query: string, limit: number): 
     const publicProducts = await searchPublicHomepageProducts(page, query, limit);
     if (publicProducts.length > 0) {
       return publicProducts;
+    }
+
+    if (searchedHomeFallbackProducts.length > 0) {
+      return searchedHomeFallbackProducts;
     }
 
     throw new UserFacingError("Zepto search did not expose readable product results.", {
@@ -253,6 +260,7 @@ async function openSearch(page: Page, query: string): Promise<void> {
   const searchUrl = new URL("/search", BASE_URL);
   searchUrl.searchParams.set("query", query);
   await gotoWithAccessProtection(page, searchUrl);
+  await waitForSearchSettled(page, query);
 }
 
 async function searchFromHome(page: Page, query: string): Promise<boolean> {
@@ -390,7 +398,7 @@ async function submitSearchInput(page: Page, input: Locator, query: string): Pro
   await input.pressSequentially(query, { delay: SEARCH_INPUT_TYPE_DELAY_MS });
   await page.waitForTimeout(SEARCH_SUBMIT_PAUSE_MS);
   await input.press("Enter");
-  await waitForSearchSettled(page);
+  await waitForSearchSettled(page, query);
 }
 
 export function isSearchTriggerClickText(text: string): boolean {
@@ -580,12 +588,41 @@ export function isLocationSetupRequiredText(text: string): boolean {
   );
 }
 
-async function waitForSearchSettled(page: Page): Promise<void> {
+async function waitForSearchSettled(page: Page, query = ""): Promise<void> {
   await page
     .waitForFunction(
-      () => /ADD|Out of stock|No results|Search/i.test(document.body.innerText),
-      undefined,
-      { timeout: 15_000 }
+      ({ queryText }) => {
+        const text = (document.body?.innerText ?? "").replace(/\s+/g, " ").trim();
+        const normalizedText = text.toLowerCase();
+        const queryTerms = queryText
+          .toLowerCase()
+          .match(/[a-z0-9]+/g)
+          ?.filter((term) => term.length > 1) ?? [];
+        const hasQueryText = queryTerms.length > 0 && queryTerms.every((term) => normalizedText.includes(term));
+        const isSearchUrl = /\bsearch\b/i.test(window.location.pathname);
+        const hasSearchResultText = /\b(search results?|results for|showing results)\b/i.test(text);
+        const hasEmptySearchText = /\b(no results|not found)\b/i.test(text);
+        const hasLocationSetupText =
+          /\b(?:select|enter|set|choose|add|change)\b.*\b(?:delivery\s+)?(?:location|address)\b|\bwhere should we deliver\b|\bplease select your location\b|\bset delivery location\b/i.test(
+            text
+          );
+        if (isSearchUrl) {
+          return (
+            hasSearchResultText ||
+            hasEmptySearchText ||
+            hasLocationSetupText ||
+            (hasQueryText && /(?:\badd\b|add to cart|out of stock|₹)/i.test(text))
+          );
+        }
+
+        return (
+          /(?:\badd\b|add to cart|out of stock|no results|not found|search results?|results for|showing results|₹)/i.test(
+            text
+          ) || hasLocationSetupText
+        );
+      },
+      { queryText: query },
+      { timeout: SEARCH_RENDER_SIGNAL_TIMEOUT_MS }
     )
     .catch(() => undefined);
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);

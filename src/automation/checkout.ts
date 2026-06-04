@@ -1,7 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { UserFacingError } from "../utils/errors.js";
-import { hasCartSurfaceEvidence, openCart } from "./cart.js";
+import { hasCartSurfaceEvidence, openCart, readVisibleCart } from "./cart.js";
 import { assertNoAccessChallenge } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { parseCartItemsFromText } from "./extract.js";
@@ -20,16 +20,27 @@ export const CHECKOUT_HANDOFF_CLICK_LABELS = [
 ] as const;
 const CHECKOUT_HANDOFF_CONTROL_SCAN_LIMIT = 8;
 
-export async function openCheckout(page: Page): Promise<void> {
+export type CheckoutHandoffMode = "checkout_or_payment_page" | "manual_payment_control_visible";
+
+export interface CheckoutHandoffResult {
+  mode: CheckoutHandoffMode;
+}
+
+export async function openCheckout(page: Page): Promise<CheckoutHandoffResult> {
   await openCart(page);
-  const cartText = await page.locator("body").innerText().catch(() => "");
-  assertReadableCheckoutCart(cartText);
+  const cart = await readCheckoutCartPrecondition(page);
+  const cartText = cart.rawText ?? "";
+  assertReadableCheckoutCart(cartText, cart.items);
   if (isCheckoutHandoffText(cartText)) {
-    return;
+    return { mode: "checkout_or_payment_page" };
   }
 
   const clicked = await clickCheckoutHandoffButton(page);
   if (!clicked) {
+    if (await hasVisibleManualCheckoutAction(page)) {
+      return { mode: "manual_payment_control_visible" };
+    }
+
     throw new UserFacingError("Could not find a checkout button in the current cart.", {
       code: "checkout_unavailable",
       hint: "Check the browser for missing address, minimum cart value, or unavailable items."
@@ -45,6 +56,8 @@ export async function openCheckout(page: Page): Promise<void> {
       hint: "Check the visible browser for missing address, minimum cart value, unavailable items, or changed checkout UI."
     });
   }
+
+  return { mode: "checkout_or_payment_page" };
 }
 
 export async function clickCheckoutHandoffButton(page: Page): Promise<boolean> {
@@ -114,12 +127,27 @@ async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
   await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
-export function assertReadableCheckoutCart(text: string): void {
-  if (parseCartItemsFromText(text).length > 0 && hasCartSurfaceEvidence(text)) {
+async function readCheckoutCartPrecondition(page: Page) {
+  try {
+    return await readVisibleCart(page);
+  } catch (error) {
+    if (error instanceof UserFacingError && error.code === "cart_unreadable") {
+      throw checkoutCartUnreadableError();
+    }
+    throw error;
+  }
+}
+
+export function assertReadableCheckoutCart(text: string, items = parseCartItemsFromText(text)): void {
+  if (items.length > 0 && hasCartSurfaceEvidence(text)) {
     return;
   }
 
-  throw new UserFacingError("Zepto cart does not show any readable items for checkout.", {
+  throw checkoutCartUnreadableError();
+}
+
+function checkoutCartUnreadableError(): UserFacingError {
+  return new UserFacingError("Zepto cart does not show any readable items for checkout.", {
     code: "checkout_cart_unreadable",
     hint: "Add an item with `zepo add`, then run `zepo cart` before retrying checkout."
   });
@@ -155,6 +183,15 @@ export function isCheckoutHandoffClickText(text: string): boolean {
   }
 
   return CHECKOUT_HANDOFF_CLICK_LABELS.some((label) => label.test(normalized));
+}
+
+export function isManualCheckoutActionText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return /\bclick\s+to\s+pay\b/i.test(normalized) && /(?:₹|rs\.?\s*\d|inr\s*\d)/i.test(normalized);
 }
 
 export function isCheckoutHandoffText(text: string): boolean {
@@ -193,6 +230,46 @@ function isExplicitCheckoutHandoffSurfaceText(text: string): boolean {
     isPaymentSelectionPromptText(text) ||
     isFinalCheckoutSurfaceText(text)
   );
+}
+
+async function hasVisibleManualCheckoutAction(page: Page): Promise<boolean> {
+  const labels = await page
+    .locator("button, [role='button'], a")
+    .evaluateAll((elements) => {
+      const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+      const isVisible = (element: Element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+      };
+      const isDisabled = (element: Element) => {
+        const dataDisabled = element.getAttribute("data-disabled");
+        return (
+          element.hasAttribute("disabled") ||
+          element.getAttribute("aria-disabled")?.toLowerCase() === "true" ||
+          (dataDisabled !== null && dataDisabled.toLowerCase() !== "false")
+        );
+      };
+
+      return elements
+        .filter((element) => isVisible(element) && !isDisabled(element))
+        .map((element) =>
+          normalize(
+            [
+              element.textContent,
+              element.getAttribute("aria-label"),
+              element.getAttribute("title"),
+              element.getAttribute("value")
+            ]
+              .filter(Boolean)
+              .join(" ")
+          )
+        )
+        .filter(Boolean);
+    })
+    .catch(() => []);
+
+  return labels.some(isManualCheckoutActionText);
 }
 
 async function* iterateLocatorCandidates(locator: Locator, limit: number): AsyncGenerator<Locator> {

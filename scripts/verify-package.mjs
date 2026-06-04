@@ -115,7 +115,7 @@ const accountDependentNoSessionCommands = [
 try {
   mkdirSync(packDir, { recursive: true });
 
-  runNpm(["pack", "--pack-destination", packDir, "--silent"], { cwd: rootDir });
+  runNpm(packagePackArgs(), { cwd: rootDir });
 
   const tarballs = readdirSync(packDir).filter((entry) => entry.endsWith(".tgz"));
   assert(tarballs.length === 1, `expected one packed tarball, found ${tarballs.length}`);
@@ -161,8 +161,11 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedCleanDistPath = join(packageDir, "scripts", "clean-dist.mjs");
   const installedNormalizeCliEntryPath = join(packageDir, "scripts", "normalize-cli-entry.mjs");
   const installedVerifyDependenciesPath = join(packageDir, "scripts", "verify-dependencies.mjs");
+  const installedVerifyCliPath = join(packageDir, "scripts", "verify-cli.mjs");
+  const installedVerifyPackagePath = join(packageDir, "scripts", "verify-package.mjs");
   const installedEnvUtilsPath = join(packageDir, "scripts", "env-utils.mjs");
   const installedVerifySecretsPath = join(packageDir, "scripts", "verify-secrets.mjs");
+  const installedVerifyLiveFlowPath = join(packageDir, "scripts", "verify-live-flow.mjs");
   const installedVerifyLiveReportPath = join(packageDir, "scripts", "verify-live-report.mjs");
   const installedEnvExamplePath = join(packageDir, ".env.example");
   const installedNpmrcExamplePath = join(packageDir, ".npmrc.example");
@@ -181,8 +184,24 @@ function verifyInstalledCliEntryContract(prefixDir) {
     "expected installed verify:dependencies package script"
   );
   assert(
+    installedPackageJson.scripts?.["verify:cli"] === "node scripts/verify-cli.mjs",
+    "expected installed verify:cli package script"
+  );
+  assert(
+    installedPackageJson.scripts?.["verify:package"] === "node scripts/verify-package.mjs",
+    "expected installed verify:package package script"
+  );
+  assert(
+    installedPackageJson.scripts?.["verify:live"] === "node scripts/verify-live-flow.mjs",
+    "expected installed verify:live package script"
+  );
+  assert(
     installedPackageJson.scripts?.["verify:live:report"] === "node scripts/verify-live-report.mjs",
     "expected installed verify:live:report package script"
+  );
+  assert(
+    installedPackageJson.scripts?.["verify:publish-dry-run"] === "npm publish --dry-run --access public",
+    "expected installed verify:publish-dry-run package script"
   );
   assert(
     installedPackageJson.scripts?.build?.includes("node scripts/normalize-cli-entry.mjs"),
@@ -192,8 +211,11 @@ function verifyInstalledCliEntryContract(prefixDir) {
   assert(existsSync(installedCleanDistPath), "expected installed clean-dist script");
   assert(existsSync(installedNormalizeCliEntryPath), "expected installed normalize-cli-entry script");
   assert(existsSync(installedVerifyDependenciesPath), "expected installed verify-dependencies script");
+  assert(existsSync(installedVerifyCliPath), "expected installed verify-cli script");
+  assert(existsSync(installedVerifyPackagePath), "expected installed verify-package script");
   assert(existsSync(installedEnvUtilsPath), "expected installed env sanitizer script");
   assert(existsSync(installedVerifySecretsPath), "expected installed verify-secrets script");
+  assert(existsSync(installedVerifyLiveFlowPath), "expected installed live verifier runner");
   assert(existsSync(installedVerifyLiveReportPath), "expected installed live report acceptance validator");
   assert(existsSync(installedEnvExamplePath), "expected installed .env.example");
   assert(existsSync(installedNpmrcExamplePath), "expected installed .npmrc.example");
@@ -264,17 +286,28 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Installed-package commands run browser automation in background/headless mode by default",
     "never show the browser unless `--visible` is explicitly used",
     "Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`",
+    "before session checks and before browser launch",
     "browserAutomationMode.current",
     "normal package runs should report `background_headless`",
     "`zepo status --json` includes `version`, `browserAutomationMode.default`, `browserAutomationMode.current`, `browserAutomationMode.visibleRequested`",
     "`zepo doctor --json` also includes `version`, `dataDir`, `browserAutomationMode`, `browserAutomation`, `browserLock`, `headlessBrowserThrottle`, and `accessChallenge`",
     "Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`",
+    "zepo completion bash",
+    "zepo help search",
+    "zepo help address",
+    "Generate shell completion scripts without starting runtime storage or browser automation",
+    "Completion is generated from the registered command tree",
+    "nested topics such as `zepo help address`",
+    "PowerShell completion also accepts `pwsh` and `ps1` as aliases for `powershell`",
     "zepo --visible login",
     "zepo --visible checkout",
     "cartPrecondition: \"non_empty_cart_verified\"",
+    "status: \"checkout_manual_action_required\"",
+    "manual amount-bearing payment control",
     "paymentStatus: \"not_observed_by_zepocli\"",
     "Checkout handoff controls are rejected if any visible or accessible label contains generic `continue`, bare `proceed`, payment-method, final-payment, final-order, support/help, invoice/receipt, refund/return/cancel, rating/review, `checkout and pay`, or amount-bearing pay text",
     "Those labels and disabled state are revalidated after any scroll into view before clicking.",
+    "browser profile writes, and headless browser run accounting",
     "Address manager/add-address controls use visible, enabled address controls only and reject mixed visible or accessible labels that point at location-consent, final address-confirmation, unrelated cart/checkout/order/bill/payment text, or payment-method/payment surfaces",
     "Address automation also rejects support, invoice/receipt, refund/return/cancel-order, and rating/review order-action labels",
     "explicit select/change/set/choose delivery address or location labels",
@@ -305,9 +338,9 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`--browser-locale <locale>` and `--browser-timezone <timezone>`",
     "do not add a custom user agent",
     "Terms of Use version 1.4",
-    "were checked on 2026-06-03",
+    "were checked on 2026-06-04",
     "Privacy Notice version 1.1",
-    "was checked on 2026-06-03",
+    "was checked on 2026-06-04",
     "Last updated: 17th June 2025",
     "passwords and payment instrument details as sensitive personal information",
     "keeps debug capture disabled for Zepto browser pages that may use the persistent profile",
@@ -322,13 +355,15 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token/password/secret URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
     'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
-    "the live report contract requires `browserAutomation.ready === true` plus a passing `Playwright Chromium` check",
+    "both preflight steps must report `browserAutomation.ready === true`",
+    "doctor must also show a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
     "then requests non-empty cart, checkout handoff, and track coverage",
     "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
     "<redacted-browser-locale>",
     "<redacted-browser-timezone>",
     "browser locale/timezone values",
+    "With no live workflow flags, a data directory that already has a confirmed local session stops after those local preflight checks instead of opening a visible `status --live`",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
     "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
@@ -349,6 +384,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "runner workflow order",
     "complete workflow step summaries",
     "typed workflow step summaries",
+    "local status readiness",
     "runner-known string and string-array workflow step summaries",
     "internally consistent workflow step summaries",
     "bounded numeric workflow step summaries",
@@ -357,10 +393,11 @@ function verifyInstalledReadmeContract(prefixDir) {
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
-    "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered",
+    "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
     "sensitive-looking key/value redaction",
+    "npm publish --dry-run --access public",
     "Live report failures use stable `error.code` values.",
     "live_verification_incomplete",
     "npm run verify:secrets",
@@ -662,10 +699,14 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "checkout.js"
   );
   const { checkoutHandoffOutput } = await import(pathToFileURL(checkoutModulePath).href);
-  const { isCheckoutHandoffClickText, isCheckoutHandoffText, isUnsafeCheckoutAutomationClickText } = await import(
-    pathToFileURL(checkoutAutomationModulePath).href
-  );
+  const {
+    isCheckoutHandoffClickText,
+    isCheckoutHandoffText,
+    isManualCheckoutActionText,
+    isUnsafeCheckoutAutomationClickText
+  } = await import(pathToFileURL(checkoutAutomationModulePath).href);
   assertCheckoutHandoffContract(checkoutHandoffOutput());
+  assertCheckoutManualActionContract(checkoutHandoffOutput("manual_payment_control_visible"));
   assert(isCheckoutHandoffClickText("Checkout") === true, "expected installed checkout label to be accepted");
   assert(
     isCheckoutHandoffClickText("Checkout 2 items") === true,
@@ -678,6 +719,18 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   assert(
     isCheckoutHandoffClickText("Checkout and Pay") === false,
     "expected installed checkout-and-pay label to be rejected"
+  );
+  assert(
+    isCheckoutHandoffClickText("Click to Pay ₹509") === false,
+    "expected installed amount-bearing click-to-pay label not to be automated checkout"
+  );
+  assert(
+    isManualCheckoutActionText("Click to Pay ₹509") === true,
+    "expected installed amount-bearing click-to-pay label to require manual action"
+  );
+  assert(
+    isManualCheckoutActionText("Pay ₹509") === false,
+    "expected installed generic pay amount not to be manual checkout action"
   );
   assert(
     isUnsafeCheckoutAutomationClickText("Continue to Pay") === true,
@@ -1408,11 +1461,17 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
   for (const label of [
     "Delivery Address",
     "Select Location",
+    "Select Delivery Location",
+    "Select Delivery Address",
     "Change Delivery Address",
     "Set Delivery Location",
-    "Choose Delivery Address"
+    "Choose Delivery Address",
+    "Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
   ]) {
     assert(isAddressManagerClickText(label) === true, `expected installed address-manager label to be accepted: ${label}`);
+  }
+  for (const label of ["Use current location", "Confirm Address", "Add Address", "Checkout", "UPI", "Pay ₹249", "Other", "Home"]) {
+    assert(isAddressManagerClickText(label) === false, `expected installed address-manager label to be rejected: ${label}`);
   }
   for (const label of [
     "Add Address",
@@ -1761,6 +1820,20 @@ async function verifyInstalledAddressAutomationContract(prefixDir) {
     );
   }
   for (const rejectedText of [
+    "Beco Natural Floor Cleaner Liquid",
+    "Bingo! Original Style Chilli Sprinkled | Flat Cut Spicy Potato Chips",
+    "India Gate Dubar Basmati Rice | Long Slender Grains",
+    "Mother Dairy Near Me |",
+    "Paan shop near me |",
+    "Parachute 100% Pure Coconut Oil",
+    "Bare Anatomy Rosemary Water Spray for Hair Growth, 100% Natural"
+  ]) {
+    assert(
+      isLikelyAddressText(rejectedText) === false,
+      `expected installed address parser to reject product copy: ${rejectedText}`
+    );
+  }
+  for (const rejectedText of [
     "Checkout",
     "Pay Now",
     "Order Summary",
@@ -2066,6 +2139,21 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed live verifier to record sanitized internal runner failures"
   );
   assert(
+    liveVerifierSource.includes("const LIVE_STATUS_MAX_ATTEMPTS = 3") &&
+      liveVerifierSource.includes("const LIVE_STATUS_RETRY_DELAY_MS = 5_000") &&
+      liveVerifierSource.includes("if (report.requested.liveSession !== true)") &&
+      liveVerifierSource.includes("const liveStatus = await runLiveStatusStep()") &&
+      liveVerifierSource.includes("isRetryableUnknownLiveStatus(result)") &&
+      liveVerifierSource.includes('result?.payload?.liveSession?.state === "unknown"') &&
+      liveVerifierSource.includes('removeLastReportStep("status live")'),
+    "expected installed live verifier to retry ambiguous live-session checks without storing failed duplicate steps"
+  );
+  assert(
+    liveVerifierSource.indexOf("if (report.requested.liveSession !== true)") <
+      liveVerifierSource.indexOf("const liveStatus = await runLiveStatusStep()"),
+    "expected installed live verifier to skip live-session checks when no live workflow was requested"
+  );
+  assert(
     liveVerifierSource.includes("const reportWriteError = writeLiveReport(reportPath, report)") &&
       liveVerifierSource.includes("Could not write live verification report.") &&
       liveVerifierSource.includes("Choose a writable report file path and rerun with --report <path>.") &&
@@ -2103,6 +2191,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     result.stdout.includes("requested, attempted, coverage, and missingCoverage booleans") &&
       result.stdout.includes("partial runs cannot be mistaken for full verification"),
     "expected installed verify:live help to explain report summary booleans"
+  );
+  assert(
+    result.stdout.includes("Manual precondition failures") &&
+      result.stdout.includes("are not counted as workflow attempts"),
+    "expected installed verify:live help to keep manual preconditions separate from workflow attempts"
   );
   assert(
     result.stdout.includes("Use --production-scope for the final production readiness run"),
@@ -2148,6 +2241,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     reportHelpResult.stdout.includes("address-add, address-list, remove, clear, history, and reorder workflows"),
     "expected installed verify:live:report production-scope focused-workflow exclusion guidance"
+  );
+  assert(
+    reportHelpResult.stdout.includes("checkout_manual_action_required is manual continuation evidence only"),
+    "expected installed verify:live:report manual checkout exclusion guidance"
+  );
+  assert(
+    reportHelpResult.stdout.includes("manual/internal command markers are accepted only for runner-defined precondition/internal failure steps"),
+    "expected installed verify:live:report manual/internal command marker guidance"
   );
 
   const invalidPhoneResult = runNpmResult(
@@ -2366,7 +2467,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live report path redaction"
   );
   assert(
-    noSessionReport.steps?.some((step) => step.name === "login" && step.error?.code === "live_verification_incomplete"),
+    noSessionReport.steps?.some(
+      (step) => step.name === "session precondition" && step.error?.code === "live_verification_incomplete"
+    ),
     "expected installed verify:live no-session report to explain login evidence is incomplete"
   );
   const noSessionDoctorStep = noSessionReport.steps?.find((step) => step.name === "doctor");
@@ -2395,9 +2498,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     noSessionReport.attempted?.browserPreflight === true &&
       noSessionReport.attempted?.localStatus === true &&
-      noSessionReport.attempted?.login === true &&
+      noSessionReport.attempted?.login === false &&
       noSessionReport.attempted?.checkoutHandoff === false,
-    "expected installed verify:live no-session report attempts to distinguish failed preconditions from skipped workflow"
+    "expected installed verify:live no-session report attempts to keep manual preconditions separate from workflow attempts"
   );
   assert(
     noSessionReport.missingCoverage?.browserPreflight === false &&
@@ -2705,7 +2808,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     steps: acceptedLiveReportSteps
   };
   const productionScopeLiveReportSteps = [
-    ...acceptedLiveReportSteps.slice(0, 4),
+    ...acceptedLiveReportSteps.slice(0, 3),
     {
       name: "address use",
       command: "zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json",
@@ -2717,6 +2820,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         hasAddressDetail: true
       }
     },
+    acceptedLiveReportSteps[3],
     {
       name: "add",
       command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
@@ -3684,6 +3788,52 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }).issues.some((issue) => issue.code === "live_report_command_mismatch"),
     "expected installed live report acceptance helper to require redacted command strings"
   );
+  const editedManualWorkflowLiveReport = {
+    ...acceptedLiveReport,
+    ok: false,
+    steps: [
+      ...acceptedLiveReport.steps,
+      {
+        name: "login",
+        command: "manual",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_verification_incomplete",
+          message: "No confirmed Zepto session is available."
+        }
+      }
+    ]
+  };
+  assert(
+    validateLiveReportAcceptance(editedManualWorkflowLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_command_mismatch"),
+    "expected installed live report acceptance helper to reject manual commands on workflow steps"
+  );
+  const editedInternalWorkflowLiveReport = {
+    ...acceptedLiveReport,
+    ok: false,
+    steps: [
+      ...acceptedLiveReport.steps,
+      {
+        name: "cart",
+        command: "internal",
+        exitCode: 1,
+        ok: false,
+        error: {
+          code: "live_runner_failed",
+          message: "Runner failed."
+        }
+      }
+    ]
+  };
+  assert(
+    validateLiveReportAcceptance(editedInternalWorkflowLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_command_mismatch"),
+    "expected installed live report acceptance helper to reject internal commands on workflow steps"
+  );
   console.log("pass installed live report command contract");
   const malformedStepResultLiveReports = [
     {
@@ -4513,6 +4663,27 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed checkout mismatch code"
   );
 
+  const { step: manualCheckoutStep } = buildLiveReportStep({
+    name: "checkout",
+    args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      status: "checkout_manual_action_required",
+      payment: "handled_by_zepto",
+      cartPrecondition: "non_empty_cart_verified",
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track"
+    }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(manualCheckoutStep.ok === false, "expected installed manual checkout live report to stay incomplete");
+  assert(
+    manualCheckoutStep.error?.code === "live_verification_incomplete",
+    "expected installed manual checkout live report to use incomplete coverage code"
+  );
+
   const { step: checkoutWithoutCartPreconditionStep } = buildLiveReportStep({
     name: "checkout",
     args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
@@ -4639,6 +4810,29 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     totalOnlyHistoryStep.ok === false &&
       totalOnlyHistoryStep.error?.code === "live_history_contract_mismatch",
     "expected installed history live report contract to reject total-only order records"
+  );
+
+  const { step: notReadyStatusStep } = buildLiveReportStep({
+    name: "status",
+    args: ["--data-dir", ".zepo-live", "status", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      confirmedSession: true,
+      ...installedLiveStatusDiagnosticsPayload(),
+      browserAutomation: {
+        ready: false,
+        reasons: ["zepto_access_cooldown"],
+        retryAfterMs: 900_000
+      },
+      accessChallenge: { detected: true, cooldownActive: true, retryAfterMs: 900_000 }
+    }),
+    stderr: "",
+    summarizePayload: () => ({ browserAutomationReady: false })
+  });
+  assert(
+    notReadyStatusStep.ok === false &&
+      notReadyStatusStep.error?.code === "live_status_contract_mismatch",
+    "expected installed status report contract to require browser readiness"
   );
 
   const { step: statusLiveStep } = buildLiveReportStep({
@@ -4831,6 +5025,10 @@ async function loadInstalledRuntimeModules(prefixDir) {
 }
 
 function verifyInstalledCli(installedCliPath, runtimeModules) {
+  const visibleLoginDataDir = join(tempRoot, "data-visible-login");
+  const visibleAddressAddDataDir = join(tempRoot, "data-visible-address-add");
+  const visibleCheckoutDataDir = join(tempRoot, "data-visible-checkout");
+  const completionRuntimeDataDir = join(tempRoot, "data-completion-runtime-free");
   const checks = [
     {
       name: "installed version",
@@ -4881,6 +5079,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         );
         assert(stdout.includes("default is background/headless"), "expected installed visible option to document headless default");
         assert(stdout.includes("checkout"), "expected checkout command in help output");
+        assert(stdout.includes("completion"), "expected installed completion command in help output");
       }
     },
     {
@@ -4889,7 +5088,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       expect: ({ status, stdout, stderr }) => {
         assert(status === 0, "expected exit code 0");
         assert(stderr === "", "expected empty stderr");
-        assert(stdout.includes("Start visible Zepto login and save the browser session"), "expected login description");
+        assert(stdout.includes("Save a Zepto login session (requires --visible)"), "expected login description");
         assert(stdout.includes("--phone <number>"), "expected login phone option");
         assert(stdout.includes("--json"), "expected login json option");
       }
@@ -5020,7 +5219,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       expect: ({ status, stdout, stderr }) => {
         assert(status === 0, "expected exit code 0");
         assert(stderr === "", "expected empty stderr");
-        assert(stdout.includes("Start visible Zepto address flow"), "expected address add description");
+        assert(stdout.includes("Open the Zepto address flow (requires --visible)"), "expected address add description");
         assert(stdout.includes("--json"), "expected address add json option");
       }
     },
@@ -5030,7 +5229,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       expect: ({ status, stdout, stderr }) => {
         assert(status === 0, "expected exit code 0");
         assert(stderr === "", "expected empty stderr");
-        assert(stdout.includes("Start visible Zepto checkout for user-completed payment"), "expected checkout description");
+        assert(stdout.includes("Open Zepto checkout handoff (requires --visible)"), "expected checkout description");
         assert(stdout.includes("--json"), "expected checkout json option");
       }
     },
@@ -5063,6 +5262,118 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stdout.includes("Reorder from Zepto order history"), "expected reorder description");
         assert(stdout.includes("[target]"), "expected reorder target argument");
         assert(stdout.includes("--json"), "expected reorder json option");
+      }
+    },
+    {
+      name: "installed completion help",
+      args: ["completion", "--help"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("Generate a shell completion script"), "expected installed completion description");
+        assert(stdout.includes("<shell>"), "expected installed completion shell argument");
+      }
+    },
+    {
+      name: "installed completion bash",
+      args: ["completion", "bash"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("complete -F _zepo_completion zepo"), "expected installed bash completion registration");
+        assert(
+          stdout.includes("login logout status doctor search add cart remove clear address checkout track history reorder completion help"),
+          "expected installed root command completions"
+        );
+        assert(
+          stdout.includes("help) candidates='login logout status doctor search add cart"),
+          "expected installed help command completions"
+        );
+        assert(
+          stdout.includes("help\\ address) candidates='list use add"),
+          "expected installed nested help command completions"
+        );
+        assert(stdout.includes("--data-dir --debug --json --no-input --visible"), "expected installed global option completions");
+      }
+    },
+    {
+      name: "installed completion runtime-free data-dir",
+      args: ["--data-dir", completionRuntimeDataDir, "completion", "bash"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("complete -F _zepo_completion zepo"), "expected installed bash completion registration");
+        assert(!existsSync(completionRuntimeDataDir), "expected installed completion command not to create runtime data dir");
+      }
+    },
+    {
+      name: "installed completion zsh",
+      args: ["completion", "zsh"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("#compdef zepo"), "expected installed zsh completion header");
+        assert(stdout.includes("_describe 'command or option' candidates"), "expected installed zsh candidate description");
+        assert(stdout.includes("address\\:address"), "expected installed zsh address candidate");
+        assert(stdout.includes("--visible\\:--visible"), "expected installed zsh global option candidate");
+      }
+    },
+    {
+      name: "installed completion fish",
+      args: ["completion", "fish"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("complete -c zepo -f"), "expected installed fish completion root");
+        assert(stdout.includes("__fish_seen_subcommand_from address"), "expected installed fish address subcommand condition");
+        assert(stdout.includes("__fish_seen_subcommand_from help address"), "expected installed fish nested help condition");
+        assert(stdout.includes("-l 'visible'"), "expected installed fish visible option");
+      }
+    },
+    {
+      name: "installed completion powershell",
+      args: ["completion", "powershell"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(
+          stdout.includes("Register-ArgumentCompleter -Native -CommandName 'zepo'"),
+          "expected installed PowerShell completer registration"
+        );
+        assert(stdout.includes("'address'"), "expected installed PowerShell address candidate");
+        assert(stdout.includes("'--visible'"), "expected installed PowerShell visible option candidate");
+      }
+    },
+    {
+      name: "installed completion pwsh alias",
+      args: ["completion", "pwsh"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(
+          stdout.includes("Register-ArgumentCompleter -Native -CommandName 'zepo'"),
+          "expected installed pwsh alias to render PowerShell completion"
+        );
+      }
+    },
+    {
+      name: "installed completion ps1 alias",
+      args: ["completion", "ps1"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(
+          stdout.includes("Register-ArgumentCompleter -Native -CommandName 'zepo'"),
+          "expected installed ps1 alias to render PowerShell completion"
+        );
+      }
+    },
+    {
+      name: "installed completion invalid shell json",
+      args: ["--json", "completion", "cmd"],
+      expect: (result) => {
+        const payload = expectJsonError(result, "user_error", "Unsupported completion shell.", "invalid_input");
+        assert(String(payload.error?.hint).includes("zepo completion bash"), "expected installed completion shell hint");
       }
     },
     {
@@ -5549,11 +5860,12 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       args: ["--data-dir", dataDir, "--no-input", "login", "--json"],
       expect: (result) => {
         expectJsonError(result, "user_error", "Zepto login requires interactive input.", "interactive_input_required");
+        assertInstalledNoBrowserWork(installedCliPath, dataDir);
       }
     },
     {
       name: "installed visible required login",
-      args: () => ["--data-dir", join(tempRoot, "data-visible-login"), "login", "--json"],
+      args: () => ["--data-dir", visibleLoginDataDir, "login", "--json"],
       expect: (result) => {
         const payload = expectJsonError(
           result,
@@ -5562,6 +5874,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
           "visible_browser_required"
         );
         assert(String(payload.error?.hint).includes("zepo --visible login"), "expected installed visible login hint");
+        assertInstalledNoBrowserWork(installedCliPath, visibleLoginDataDir);
       }
     },
     {
@@ -5569,11 +5882,12 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       args: ["--data-dir", dataDir, "--no-input", "address", "add", "--json"],
       expect: (result) => {
         expectJsonError(result, "user_error", "Zepto address add requires interactive input.", "interactive_input_required");
+        assertInstalledNoBrowserWork(installedCliPath, dataDir);
       }
     },
     {
       name: "installed visible required address add",
-      args: ["--data-dir", join(tempRoot, "data-visible-address-add"), "address", "add", "--json"],
+      args: ["--data-dir", visibleAddressAddDataDir, "address", "add", "--json"],
       expect: (result) => {
         const payload = expectJsonError(
           result,
@@ -5585,6 +5899,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
           String(payload.error?.hint).includes("zepo --visible address add"),
           "expected installed visible address add hint"
         );
+        assertInstalledNoBrowserWork(installedCliPath, visibleAddressAddDataDir);
       }
     },
     {
@@ -5592,11 +5907,12 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
       args: ["--data-dir", dataDir, "--no-input", "checkout", "--json"],
       expect: (result) => {
         expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+        assertInstalledNoBrowserWork(installedCliPath, dataDir);
       }
     },
     {
       name: "installed visible required checkout",
-      args: ["--data-dir", join(tempRoot, "data-visible-checkout"), "checkout", "--json"],
+      args: ["--data-dir", visibleCheckoutDataDir, "checkout", "--json"],
       expect: (result) => {
         const payload = expectJsonError(
           result,
@@ -5605,6 +5921,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
           "visible_browser_required"
         );
         assert(String(payload.error?.hint).includes("zepo --visible checkout"), "expected installed visible checkout hint");
+        assertInstalledNoBrowserWork(installedCliPath, visibleCheckoutDataDir);
       }
     },
     {
@@ -5755,6 +6072,18 @@ function runNpm(args, options) {
   return run(process.execPath, [npmExecPath, ...args], options);
 }
 
+function packagePackArgs() {
+  const args = ["pack", "--pack-destination", packDir, "--silent"];
+  if (!isSourceTreePackage(rootDir)) {
+    args.push("--ignore-scripts");
+  }
+  return args;
+}
+
+function isSourceTreePackage(packageDir) {
+  return existsSync(join(packageDir, "src", "index.ts")) && existsSync(join(packageDir, "tsconfig.json"));
+}
+
 function installedVerifyLiveArgs(packageDir, ...args) {
   return ["--silent", "run", "--prefix", packageDir, "verify:live", "--", ...args];
 }
@@ -5895,6 +6224,18 @@ function assertFreshCache(cache) {
   assert(cache?.orders === 0, "expected empty order cache");
 }
 
+function assertInstalledNoBrowserWork(installedCliPath, expectedDataDir) {
+  const statusResult = runInstalledCli(installedCliPath, ["--data-dir", expectedDataDir, "status", "--json"]);
+  assert(statusResult.status === 0, "expected installed status check after guarded command to pass");
+  const payload = JSON.parse(statusResult.stdout);
+  assert(payload.browserLock?.present === false, "expected installed guarded command not to create a browser lock");
+  assert(payload.hasBrowserProfileData === false, "expected installed guarded command not to write browser profile data");
+  assert(
+    payload.headlessBrowserThrottle?.recentRuns === 0,
+    "expected installed guarded command not to launch headless browser"
+  );
+}
+
 function assertFreshStatus(payload, expectedDataDir) {
   assertFreshCache(payload.cache);
   assert(payload.version === packageJson.version, "expected installed status version to match package.json");
@@ -5964,12 +6305,25 @@ function assertBrowserAutomationMode(mode) {
 
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected installed checkout handoff status");
+  assertCommonCheckoutOutputContract(payload);
+  assert(String(payload.next).includes("Complete payment in Zepto"), "expected installed checkout next-step guidance");
+}
+
+function assertCheckoutManualActionContract(payload) {
+  assert(payload.status === "checkout_manual_action_required", "expected installed checkout manual action status");
+  assertCommonCheckoutOutputContract(payload);
+  assert(
+    String(payload.next).includes("Click the Zepto payment control"),
+    "expected installed checkout manual-action next-step guidance"
+  );
+}
+
+function assertCommonCheckoutOutputContract(payload) {
   assert(payload.payment === "handled_by_zepto", "expected installed Zepto-handled payment marker");
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected installed non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected installed unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected installed track next command");
-  assert(String(payload.next).includes("Complete payment in Zepto"), "expected installed checkout next-step guidance");
 }
 
 function installedLiveStatusDiagnosticsPayload() {

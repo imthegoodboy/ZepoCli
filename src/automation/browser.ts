@@ -1027,9 +1027,7 @@ export function isLoginRequiredText(text: string): boolean {
     return true;
   }
 
-  return /\blogin\b/i.test(normalized) && !/\b(my orders|order history|wallet|logout|log out)\b/i.test(
-    normalized
-  );
+  return false;
 }
 
 function isLoggedInAccountText(text: string): boolean {
@@ -1044,7 +1042,12 @@ function isLoggedInAccountText(text: string): boolean {
 
   const hasAccountEntry = /\b(account|profile)\b/i.test(normalized);
   const hasAccountOnlyFeature = /\b(wallet|my orders|orders|order history)\b/i.test(normalized);
-  return hasAccountEntry && hasAccountOnlyFeature;
+  const accountOnlyFeatureCount = [
+    /\bwallet\b/i,
+    /\b(my orders|orders|order history)\b/i,
+    /\b(saved addresses|addresses)\b/i
+  ].filter((pattern) => pattern.test(normalized)).length;
+  return (hasAccountEntry && hasAccountOnlyFeature) || accountOnlyFeatureCount >= 2;
 }
 
 function expiredSessionError(): UserFacingError {

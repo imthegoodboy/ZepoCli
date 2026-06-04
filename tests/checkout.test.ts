@@ -6,6 +6,7 @@ import {
   clickCheckoutHandoffButton,
   isCheckoutHandoffClickText,
   isCheckoutHandoffText,
+  isManualCheckoutActionText,
   isUnsafeCheckoutAutomationClickText
 } from "../src/automation/checkout.js";
 import { checkoutHandoffOutput } from "../src/commands/checkout.js";
@@ -133,6 +134,17 @@ describe("checkout handoff detection", () => {
       expect(isCheckoutHandoffClickText(nonHandoffText)).toBe(false);
     }
   });
+
+  it("recognizes cart-side manual payment controls without allowing automated clicks", () => {
+    expect(isManualCheckoutActionText("Click to Pay ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Click to Pay Rs 509")).toBe(true);
+    expect(isManualCheckoutActionText("Pay ₹509")).toBe(false);
+    expect(isManualCheckoutActionText("Pay Now")).toBe(false);
+
+    expect(isUnsafeCheckoutAutomationClickText("Click to Pay ₹509")).toBe(true);
+    expect(isCheckoutHandoffClickText("Click to Pay ₹509")).toBe(false);
+  });
+
 
   it("uses role and aria-label checkout handoff controls before generic text matching", async () => {
     const page = createAriaCheckoutPage();
@@ -278,6 +290,19 @@ describe("checkout handoff detection", () => {
     ).not.toThrow();
   });
 
+  it("accepts checkout precondition items extracted from active cart controls", () => {
+    expect(() =>
+      assertReadableCheckoutCart("Cart You have 1 item in your cart. Recommended products Grand Total ₹102", [
+        {
+          name: "Nandini Standardized Fresh Milk | Pouch",
+          price: "₹27",
+          unit: "1 pack (500 ml)",
+          quantity: "1"
+        }
+      ])
+    ).not.toThrow();
+  });
+
   it("rejects checkout when the cart has no readable items", () => {
     expect(() => assertReadableCheckoutCart("Cart Add more items Apply coupon Checkout")).toThrow(
       "Zepto cart does not show any readable items for checkout."
@@ -318,6 +343,18 @@ describe("checkout handoff detection", () => {
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
       next: "Complete payment in Zepto, then run `zepo track` to inspect order status."
+    });
+  });
+
+  it("reports manual checkout action when Zepto only exposes a cart-side payment control", () => {
+    expect(checkoutHandoffOutput("manual_payment_control_visible")).toEqual({
+      status: "checkout_manual_action_required",
+      payment: "handled_by_zepto",
+      cartPrecondition: "non_empty_cart_verified",
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track",
+      next: "Click the Zepto payment control in the visible browser, complete only the Zepto-side actions you choose, then run `zepo track` to inspect order status."
     });
   });
 });

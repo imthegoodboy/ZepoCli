@@ -7,7 +7,7 @@ import { wantsJson, withRuntime } from "./shared.js";
 export function registerLoginCommand(program: Command): void {
   program
     .command("login")
-    .description("Start visible Zepto login and save the browser session")
+    .description("Save a Zepto login session (requires --visible)")
     .option("--phone <number>", "prefill phone number when the login form exposes it")
     .option("--json", "print machine-readable JSON")
     .action((options: { phone?: string; json?: boolean }, command: Command) =>

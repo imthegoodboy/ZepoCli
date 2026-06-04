@@ -989,6 +989,16 @@ describe("CLI command smokes", () => {
       expect(payload.error.hint).toContain(testCase.hint);
       expect(payload.error.exitCode).toBe(1);
 
+      const statusResult = await runCli(["--data-dir", dataDir, "status", "--json"]);
+      const status = JSON.parse(statusResult.stdout) as {
+        browserLock: { present: boolean };
+        hasBrowserProfileData: boolean;
+        headlessBrowserThrottle: { recentRuns: number };
+      };
+      expect(status.browserLock.present).toBe(false);
+      expect(status.hasBrowserProfileData).toBe(false);
+      expect(status.headlessBrowserThrottle.recentRuns).toBe(0);
+
       rmSync(dataDir, { recursive: true, force: true });
       dataDir = undefined;
     }
