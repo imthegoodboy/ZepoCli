@@ -24,8 +24,8 @@ npm run check
 
 For a safe no-account smoke, run `verify:live` with a disposable data directory and no `--login`. Expected result:
 
-- `doctor` passes, including normal `doctor --json` Playwright Chromium launch evidence.
-- `status` passes with structured browser automation readiness.
+- `doctor` passes, including background-mode `doctor --json` Playwright Chromium launch evidence for no-workflow/local smokes.
+- `status` passes with structured browser automation readiness for the current mode.
 - The runner stops with `live_verification_incomplete` for missing login.
 - Slow human-controlled steps fail with `live_command_timeout`; increase `--step-timeout <ms>` only when the Zepto browser step legitimately needs more time.
 - The report, live runner command echoes, and final report-path line redact data directory, report path, browser locale/timezone values, phone input, workflow query arguments, order ids, payment handles, card-like numbers, OTP/PIN values, npm-token-shaped values, standalone percent-encoded sensitive fragments, and raw Zepto page text. Stored step commands must match the runner's redacted command shapes.
@@ -40,6 +40,7 @@ npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-sco
 ```
 
 `--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
+When a live account workflow is requested, the runner uses `--visible doctor --json` and `--visible status --json` for preflight so background/headless cooldowns do not block human-controlled verification by themselves.
 With no live workflow flags, a data directory that already has a confirmed local session should stop after doctor/local status instead of opening a visible `status --live`; a no-session smoke still fails at the session precondition.
 `--production-scope` is the final readiness preset shape. It requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled so the saved report can be checked with `verify:live:report --require-production-scope --max-age-minutes 1440`; the final report validator rejects production-scope checkout evidence that did not use wait mode before tracking.
 `--browser-locale <locale>` and `--browser-timezone <timezone>` are optional; when supplied, the live runner passes the same validated browser context to every child `zepo` command and stores only `<redacted-browser-locale>` / `<redacted-browser-timezone>` in report command strings.

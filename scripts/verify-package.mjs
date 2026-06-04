@@ -360,7 +360,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token/password/secret URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
     'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
-    "both preflight steps must report `browserAutomation.ready === true`",
+    "Both preflight steps must report current-mode `browserAutomation.ready === true`",
     "doctor must also show a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
     "then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled",

@@ -236,9 +236,10 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
-    expect(readme).toContain("It starts with normal `zepo doctor --json`, including the Playwright Chromium launch check");
-    expect(readme).toContain("then local `zepo status --json`");
-    expect(readme).toContain("both preflight steps must report `browserAutomation.ready === true`");
+    expect(readme).toContain("It starts with a mode-aware `zepo doctor --json` preflight, including the Playwright Chromium launch check");
+    expect(readme).toContain("then a mode-aware local `zepo status --json`");
+    expect(readme).toContain("Both preflight steps must report current-mode `browserAutomation.ready === true`");
+    expect(readme).toContain("requested live account workflows pass `--visible`");
     expect(readme).toContain("doctor must also show a passing `Playwright Chromium` check");
     expect(readme).toContain(
       "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records"

@@ -177,7 +177,7 @@ Use silent npm for live verification examples so npm does not echo raw invocatio
 
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
 
-`verify:live` should start with normal `zepo doctor --json`, including the Playwright Chromium launch check, then local `zepo status --json`, before login/cart/checkout/order verification. Its report contract should require both preflight steps to report `browserAutomation.ready === true`, plus a passing `Playwright Chromium` check from doctor, instead of accepting skip-browser doctor output or a data directory with an active browser lock/cooldown.
+`verify:live` should start with mode-aware `zepo doctor --json`, including the Playwright Chromium launch check, then mode-aware local `zepo status --json`, before login/cart/checkout/order verification. No-workflow/local smokes use background mode; requested live workflows use `--visible` preflight so a headless cooldown does not block human-controlled verification by itself. Its report contract should require both preflight steps to report current-mode `browserAutomation.ready === true`, plus a passing `Playwright Chromium` check from doctor, instead of accepting skip-browser doctor output or a data directory with an active browser lock.
 
 `verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats as `zepo login --phone`, pass the normalized 10-digit value to the CLI, and redact phone input from reports.
 

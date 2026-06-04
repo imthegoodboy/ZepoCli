@@ -1162,8 +1162,8 @@ const LIVE_REPORT_INTERNAL_STEP_NAMES = new Set(["live runner"]);
 const LIVE_REPORT_BROWSER_CONTEXT_COMMAND_PATTERN_SOURCE =
   "(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)?";
 const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
-  ["doctor", liveCommandPattern("doctor --json")],
-  ["status", liveCommandPattern("status --json")],
+  ["doctor", liveCommandPattern("(?:--visible )?doctor --json")],
+  ["status", liveCommandPattern("(?:--visible )?status --json")],
   ["login", liveCommandPattern("--visible login(?: --phone <redacted-phone>)? --json")],
   ["status live", liveCommandPattern("--visible status --live --json")],
   ["search", liveCommandPattern("--visible search <redacted-query> --json")],

@@ -126,7 +126,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("avoid sharing login credentials, passwords, or OTPs");
       expect(guidance).toContain("Zepto browser pages that may use the persistent profile");
       expect(guidance).toContain("including search, live status, login, cart, address, checkout, orders, and reorder");
-      expect(guidance).toContain("verify:live` should start with normal `zepo doctor --json`");
+      expect(guidance).toContain("verify:live` should start with mode-aware `zepo doctor --json`");
       expect(guidance).toContain("--production-scope --search <query> --address <query> --add <query>");
       expect(guidance).toContain("--choose-add");
       expect(guidance).toContain("--add <query> --choose-add --cart");
@@ -151,8 +151,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence");
       expect(guidance).toContain("The report validator does not contact Zepto or prove a fresh run happened");
       expect(guidance).toContain("Playwright Chromium launches");
-      expect(guidance).toContain("then local `zepo status --json`");
-      expect(guidance).toContain("both preflight steps to report `browserAutomation.ready === true`");
+      expect(guidance).toContain("then mode-aware local `zepo status --json`");
+      expect(guidance).toContain("both preflight steps to report current-mode `browserAutomation.ready === true`");
+      expect(guidance).toContain("requested live workflows use `--visible` preflight");
       expect(guidance).toContain("passing `Playwright Chromium` check from doctor");
       expect(guidance).toContain("package `version`");
       expect(guidance).toContain("top-level `requested`, `attempted`, `coverage`, and `missingCoverage`");
@@ -281,7 +282,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain(
       "focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence"
     );
-    expect(liveVerifierSkill).toContain("normal `doctor --json` Playwright Chromium launch evidence");
+    expect(liveVerifierSkill).toContain("background-mode `doctor --json` Playwright Chromium launch evidence");
+    expect(liveVerifierSkill).toContain("uses `--visible doctor --json` and `--visible status --json` for preflight");
     expect(liveVerifierSkill).toContain("--data-dir ./.zepo-live --login --production-scope --search milk --address home --add");
     expect(liveVerifierSkill).toContain("Do not combine `--clear` with `--checkout`");
     expect(liveVerifierSkill).toContain("Keep OTP, UPI PIN, card, CVV");

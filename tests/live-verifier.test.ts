@@ -33,15 +33,27 @@ const {
   validateLiveReportAcceptance
 } = await import("../scripts/live-report-utils.mjs");
 
-function automationDiagnosticsPayload() {
+function automationDiagnosticsPayload(
+  mode: { current?: "background_headless" | "visible_human_controlled"; visibleRequested?: boolean } = {}
+) {
+  const current = mode.current ?? "background_headless";
+  const visibleRequested = mode.visibleRequested ?? false;
   return {
     version: packageJson.version,
     browserAutomationMode: {
       default: "background_headless",
-      current: "background_headless",
-      visibleRequested: false
+      current,
+      visibleRequested
     },
-    browserAutomation: { ready: true, reasons: [], retryAfterMs: 0 },
+    browserAutomation: {
+      ready: true,
+      reasons: [],
+      retryAfterMs: 0,
+      modes: {
+        backgroundHeadless: { ready: true, reasons: [], retryAfterMs: 0 },
+        visibleHumanControlled: { ready: true, reasons: [], retryAfterMs: 0 }
+      }
+    },
     browserLock: { present: false, stale: false },
     headlessBrowserThrottle: {
       windowMs: 600_000,
@@ -59,9 +71,11 @@ function automationDiagnosticsPayloadWithoutMode() {
   return payload;
 }
 
-function statusDiagnosticsPayload() {
+function statusDiagnosticsPayload(
+  mode: { current?: "background_headless" | "visible_human_controlled"; visibleRequested?: boolean } = {}
+) {
   return {
-    ...automationDiagnosticsPayload(),
+    ...automationDiagnosticsPayload(mode),
     cache: { searches: 0, cartSnapshots: 0, addresses: 0, orders: 0 }
   };
 }
@@ -332,10 +346,14 @@ describe("live verification runner", () => {
     expect(script).toContain("Live verification report: <redacted-report-path>");
   });
 
-  it("runs normal doctor in live verification so Chromium launch is checked", () => {
+  it("runs mode-aware doctor in live verification so Chromium launch is checked", () => {
     const script = readFileSync(scriptPath, "utf8");
 
-    expect(script).toContain('runStep("doctor", [...baseCliArgs(), "doctor", "--json"])');
+    expect(script).toContain("const preflightArgs = baseCliArgs({ visible: shouldUseVisiblePreflight() })");
+    expect(script).toContain('runStep("doctor", [...preflightArgs, "doctor", "--json"])');
+    expect(script).toContain('runStep("status", [...preflightArgs, "status", "--json"])');
+    expect(script).toContain("function shouldUseVisiblePreflight()");
+    expect(script).toContain("return report.requested.liveSession === true");
     expect(script).not.toContain('runStep("doctor", ["--data-dir", options.dataDir, "doctor", "--skip-browser", "--json"])');
     expect(script).toContain('args.push("--browser-locale", options.browserLocale)');
     expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
@@ -2559,6 +2577,62 @@ describe("live verification runner", () => {
         hint: "Stop repeated automation and retry <redacted-query> later.",
         retryAfterMs: 900_000
       }
+    });
+  });
+
+  it("accepts visible doctor and local-status preflight commands for visible live workflows", () => {
+    const summarizeVisiblePreflightPayload = (
+      name: string,
+      payload: { ok?: boolean; checks?: Array<{ name?: string; status?: string }>; confirmedSession?: boolean; browserAutomation?: { ready?: boolean } }
+    ) => {
+      if (name === "doctor") {
+        const checks = Array.isArray(payload.checks) ? payload.checks : [];
+        return {
+          ok: payload.ok === true,
+          browserAutomationReady: payload.browserAutomation?.ready === true,
+          playwrightChromiumPassed: checks.some((check) => check.name === "Playwright Chromium" && check.status === "pass"),
+          warnings: checks.filter((check) => check.status === "warn").map((check) => check.name),
+          failures: checks.filter((check) => check.status === "fail").map((check) => check.name)
+        };
+      }
+
+      return {
+        confirmedSession: payload.confirmedSession === true,
+        browserAutomationReady: payload.browserAutomation?.ready === true
+      };
+    };
+
+    const doctor = buildLiveReportStep({
+      name: "doctor",
+      args: ["--data-dir", ".zepo-live", "--visible", "doctor", "--json"],
+      status: 0,
+      stdout: JSON.stringify({
+        ok: true,
+        ...automationDiagnosticsPayload({ current: "visible_human_controlled", visibleRequested: true }),
+        checks: [{ name: "Playwright Chromium", status: "pass" }]
+      }),
+      stderr: "",
+      summarizePayload: summarizeVisiblePreflightPayload
+    }).step;
+    const status = buildLiveReportStep({
+      name: "status",
+      args: ["--data-dir", ".zepo-live", "--visible", "status", "--json"],
+      status: 0,
+      stdout: JSON.stringify({
+        confirmedSession: true,
+        ...statusDiagnosticsPayload({ current: "visible_human_controlled", visibleRequested: true })
+      }),
+      stderr: "",
+      summarizePayload: summarizeVisiblePreflightPayload
+    }).step;
+
+    expect(doctor).toMatchObject({
+      command: "zepo --data-dir <redacted-data-dir> --visible doctor --json",
+      ok: true
+    });
+    expect(status).toMatchObject({
+      command: "zepo --data-dir <redacted-data-dir> --visible status --json",
+      ok: true
     });
   });
 

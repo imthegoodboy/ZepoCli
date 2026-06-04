@@ -503,7 +503,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed cart cache migration to keep marker-only item counts");
     expect(verifier).toContain("expected installed cart cache migration to omit raw product names");
     expect(verifier).toContain("pass installed session auth-state contract");
-    expect(verifier).toContain("both preflight steps must report `browserAutomation.ready === true`");
+    expect(verifier).toContain("Both preflight steps must report current-mode `browserAutomation.ready === true`");
     expect(verifier).toContain("doctor must also show a passing `Playwright Chromium` check");
     expect(verifier).toContain('paymentStatus: \\"not_observed_by_zepocli\\"');
     expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');

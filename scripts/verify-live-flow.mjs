@@ -110,11 +110,12 @@ async function main() {
   console.log("This runs real CLI commands against Zepto with a human-controlled browser when needed.");
   console.log("It never enters OTPs, payment credentials, or clicks final Zepto payment/order controls.\n");
 
-  if (!(await runStep("doctor", [...baseCliArgs(), "doctor", "--json"])).ok) {
+  const preflightArgs = baseCliArgs({ visible: shouldUseVisiblePreflight() });
+  if (!(await runStep("doctor", [...preflightArgs, "doctor", "--json"])).ok) {
     return;
   }
 
-  const status = await runStep("status", [...baseCliArgs(), "status", "--json"]);
+  const status = await runStep("status", [...preflightArgs, "status", "--json"]);
   if (!status.ok) {
     return;
   }
@@ -265,6 +266,10 @@ async function main() {
   if (options.history) {
     await runStep("history", [...baseCliArgs({ visible: true }), "history", "--json"]);
   }
+}
+
+function shouldUseVisiblePreflight() {
+  return report.requested.liveSession === true;
 }
 
 function baseCliArgs({ visible = false } = {}) {
