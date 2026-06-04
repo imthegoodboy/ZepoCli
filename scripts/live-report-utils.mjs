@@ -217,6 +217,28 @@ export function buildLiveCommandTimeoutStep(name, args, timeoutMs) {
   };
 }
 
+export function buildLiveCommandTimeoutOrErrorStep({
+  name,
+  args,
+  timeoutMs,
+  stdout,
+  stderr,
+  summarizePayload
+}) {
+  if (typeof parseJsonFromOutput(stderr)?.error === "object") {
+    return buildLiveReportStep({
+      name,
+      args,
+      status: 1,
+      stdout,
+      stderr,
+      summarizePayload
+    }).step;
+  }
+
+  return buildLiveCommandTimeoutStep(name, args, timeoutMs);
+}
+
 export function buildLiveReportStep({ name, args, status, stdout, stderr, summarizePayload }) {
   const payload = parseJsonFromOutput(stdout);
   const errorPayload = parseJsonFromOutput(stderr)?.error;
@@ -899,8 +921,15 @@ function validateLiveReportCommandContract(step, issues) {
     return;
   }
 
-  if (step.command === "manual" || step.command === "internal") {
-    if (step.ok === true) {
+  if (step.command === "manual") {
+    if (step.ok === true || !LIVE_REPORT_MANUAL_STEP_NAMES.has(step.name)) {
+      addLiveReportCommandMismatchIssue(issues);
+    }
+    return;
+  }
+
+  if (step.command === "internal") {
+    if (step.ok === true || !LIVE_REPORT_INTERNAL_STEP_NAMES.has(step.name)) {
       addLiveReportCommandMismatchIssue(issues);
     }
     return;
@@ -1060,6 +1089,8 @@ const LIVE_REPORT_CAPABILITY_KEYS = new Set(Object.keys(createLiveReportCapabili
 const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "summary", "error"]);
 const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
 const LIVE_REPORT_FALLBACK_SUMMARY_KEYS = new Set(["observed"]);
+const LIVE_REPORT_MANUAL_STEP_NAMES = new Set(["session precondition", "live session"]);
+const LIVE_REPORT_INTERNAL_STEP_NAMES = new Set(["live runner"]);
 const LIVE_REPORT_BROWSER_CONTEXT_COMMAND_PATTERN_SOURCE =
   "(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)?";
 const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
@@ -1214,10 +1245,10 @@ const LIVE_REPORT_STEP_ORDER_BY_NAME = new Map([
   ["status", 1],
   ["login", 2],
   ["status live", 3],
-  ["search", 4],
-  ["address add", 5],
-  ["address list", 6],
-  ["address use", 6],
+  ["address add", 4],
+  ["address list", 5],
+  ["address use", 5],
+  ["search", 6],
   ["add", 7],
   ["reorder", 8],
   ["remove", 9],
@@ -1459,13 +1490,18 @@ function validateDoctorPayloadContract(payload) {
 }
 
 function validateStatusPayloadContract(payload) {
-  if (isObject(payload) && typeof payload.confirmedSession === "boolean" && hasStatusDiagnostics(payload)) {
+  if (
+    isObject(payload) &&
+    typeof payload.confirmedSession === "boolean" &&
+    hasStatusDiagnostics(payload) &&
+    payload.browserAutomation.ready === true
+  ) {
     return undefined;
   }
 
   return {
     code: "live_status_contract_mismatch",
-    message: "Status JSON did not include expected session and browser automation fields."
+    message: "Status JSON did not report ready browser automation."
   };
 }
 
@@ -1497,6 +1533,20 @@ function validateCheckoutPayloadContract(payload) {
     payload?.orderStatusCommand === "zepo track"
   ) {
     return undefined;
+  }
+
+  if (
+    payload?.status === "checkout_manual_action_required" &&
+    payload?.payment === "handled_by_zepto" &&
+    payload?.cartPrecondition === "non_empty_cart_verified" &&
+    payload?.paymentStatus === "not_observed_by_zepocli" &&
+    payload?.orderPlacement === "not_confirmed_by_zepocli" &&
+    payload?.orderStatusCommand === "zepo track"
+  ) {
+    return {
+      code: "live_verification_incomplete",
+      message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+    };
   }
 
   return {

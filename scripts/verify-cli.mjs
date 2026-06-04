@@ -102,6 +102,7 @@ const checks = [
       assert(stdout.includes("--browser-locale <locale>"), "expected browser locale option in help output");
       assert(stdout.includes("--browser-timezone <timezone>"), "expected browser timezone option in help output");
       assert(stdout.includes("checkout"), "expected checkout command in help output");
+      assert(stdout.includes("completion"), "expected completion command in help output");
     }
   },
   {
@@ -110,7 +111,7 @@ const checks = [
     expect: ({ status, stdout, stderr }) => {
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
-      assert(stdout.includes("Start visible Zepto login and save the browser session"), "expected login description");
+      assert(stdout.includes("Save a Zepto login session (requires --visible)"), "expected login description");
       assert(stdout.includes("--phone <number>"), "expected login phone option");
       assert(stdout.includes("--json"), "expected login json option");
     }
@@ -241,7 +242,7 @@ const checks = [
     expect: ({ status, stdout, stderr }) => {
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
-      assert(stdout.includes("Start visible Zepto address flow"), "expected address add description");
+      assert(stdout.includes("Open the Zepto address flow (requires --visible)"), "expected address add description");
       assert(stdout.includes("--json"), "expected address add json option");
     }
   },
@@ -251,7 +252,7 @@ const checks = [
     expect: ({ status, stdout, stderr }) => {
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
-      assert(stdout.includes("Start visible Zepto checkout for user-completed payment"), "expected checkout description");
+      assert(stdout.includes("Open Zepto checkout handoff (requires --visible)"), "expected checkout description");
       assert(stdout.includes("--json"), "expected checkout json option");
     }
   },
@@ -284,6 +285,101 @@ const checks = [
       assert(stdout.includes("Reorder from Zepto order history"), "expected reorder description");
       assert(stdout.includes("[target]"), "expected reorder target argument");
       assert(stdout.includes("--json"), "expected reorder json option");
+    }
+  },
+  {
+    name: "completion help",
+    args: ["completion", "--help"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("Generate a shell completion script"), "expected completion description");
+      assert(stdout.includes("<shell>"), "expected completion shell argument");
+    }
+  },
+  {
+    name: "completion bash",
+    args: ["completion", "bash"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("complete -F _zepo_completion zepo"), "expected bash completion registration");
+      assert(stdout.includes("login logout status doctor search add cart remove clear address checkout track history reorder completion help"), "expected root command completions");
+      assert(stdout.includes("help) candidates='login logout status doctor search add cart"), "expected help command completions");
+      assert(stdout.includes("help\\ address) candidates='list use add"), "expected nested help command completions");
+      assert(stdout.includes("--data-dir --debug --json --no-input --visible"), "expected global option completions");
+    }
+  },
+  {
+    name: "completion runtime-free data-dir",
+    args: ({ dataDir }) => ["--data-dir", join(dataDir, "completion-runtime-free"), "completion", "bash"],
+    expect: ({ status, stdout, stderr }, { dataDir }) => {
+      const completionDataDir = join(dataDir, "completion-runtime-free");
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("complete -F _zepo_completion zepo"), "expected bash completion registration");
+      assert(!existsSync(completionDataDir), "expected completion command not to create runtime data dir");
+    }
+  },
+  {
+    name: "completion zsh",
+    args: ["completion", "zsh"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("#compdef zepo"), "expected zsh completion header");
+      assert(stdout.includes("_describe 'command or option' candidates"), "expected zsh candidate description");
+      assert(stdout.includes("address\\:address"), "expected zsh address candidate");
+      assert(stdout.includes("--visible\\:--visible"), "expected zsh global option candidate");
+    }
+  },
+  {
+    name: "completion fish",
+    args: ["completion", "fish"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("complete -c zepo -f"), "expected fish completion root");
+      assert(stdout.includes("__fish_seen_subcommand_from address"), "expected fish address subcommand condition");
+      assert(stdout.includes("__fish_seen_subcommand_from help address"), "expected fish nested help condition");
+      assert(stdout.includes("-l 'visible'"), "expected fish visible option");
+    }
+  },
+  {
+    name: "completion powershell",
+    args: ["completion", "powershell"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("Register-ArgumentCompleter -Native -CommandName 'zepo'"), "expected PowerShell completer registration");
+      assert(stdout.includes("'address'"), "expected PowerShell address candidate");
+      assert(stdout.includes("'--visible'"), "expected PowerShell visible option candidate");
+    }
+  },
+  {
+    name: "completion pwsh alias",
+    args: ["completion", "pwsh"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("Register-ArgumentCompleter -Native -CommandName 'zepo'"), "expected pwsh alias to render PowerShell completion");
+    }
+  },
+  {
+    name: "completion ps1 alias",
+    args: ["completion", "ps1"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("Register-ArgumentCompleter -Native -CommandName 'zepo'"), "expected ps1 alias to render PowerShell completion");
+    }
+  },
+  {
+    name: "completion invalid shell json",
+    args: ["--json", "completion", "cmd"],
+    expect: (result) => {
+      const payload = expectJsonError(result, "user_error", "Unsupported completion shell.", "invalid_input");
+      assert(String(payload.error?.hint).includes("zepo completion bash"), "expected completion shell hint");
     }
   },
   {
@@ -771,16 +867,18 @@ const checks = [
   {
     name: "no input login",
     args: ({ dataDir }) => ["--data-dir", dataDir, "--no-input", "login", "--json"],
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
       expectJsonError(result, "user_error", "Zepto login requires interactive input.", "interactive_input_required");
+      assertNoBrowserWork(dataDir);
     }
   },
   {
     name: "visible required login",
     args: ({ dataDir }) => ["--data-dir", dataDir, "login", "--json"],
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
       const payload = expectJsonError(result, "user_error", "Zepto login requires a visible browser.", "visible_browser_required");
       assert(String(payload.error?.hint).includes("zepo --visible login"), "expected visible login hint");
+      assertNoBrowserWork(dataDir);
     }
   },
   {
@@ -811,14 +909,15 @@ const checks = [
   {
     name: "no input address add",
     args: ({ dataDir }) => ["--data-dir", dataDir, "--no-input", "address", "add", "--json"],
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
       expectJsonError(result, "user_error", "Zepto address add requires interactive input.", "interactive_input_required");
+      assertNoBrowserWork(dataDir);
     }
   },
   {
     name: "visible required address add",
     args: ({ dataDir }) => ["--data-dir", dataDir, "address", "add", "--json"],
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
       const payload = expectJsonError(
         result,
         "user_error",
@@ -826,21 +925,24 @@ const checks = [
         "visible_browser_required"
       );
       assert(String(payload.error?.hint).includes("zepo --visible address add"), "expected visible address add hint");
+      assertNoBrowserWork(dataDir);
     }
   },
   {
     name: "no input checkout",
     args: ({ dataDir }) => ["--data-dir", dataDir, "--no-input", "checkout", "--json"],
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
       expectJsonError(result, "user_error", "Zepto checkout requires interactive input.", "interactive_input_required");
+      assertNoBrowserWork(dataDir);
     }
   },
   {
     name: "visible required checkout",
     args: ({ dataDir }) => ["--data-dir", dataDir, "checkout", "--json"],
-    expect: (result) => {
+    expect: (result, { dataDir }) => {
       const payload = expectJsonError(result, "user_error", "Zepto checkout requires a visible browser.", "visible_browser_required");
       assert(String(payload.error?.hint).includes("zepo --visible checkout"), "expected visible checkout hint");
+      assertNoBrowserWork(dataDir);
     }
   },
   {
@@ -1004,6 +1106,15 @@ function assertFreshCache(cache) {
   assert(cache?.cartSnapshots === 0, "expected empty cart snapshot cache");
   assert(cache?.addresses === 0, "expected empty address cache");
   assert(cache?.orders === 0, "expected empty order cache");
+}
+
+function assertNoBrowserWork(dataDir) {
+  const statusResult = runCli(["--data-dir", dataDir, "status", "--json"]);
+  assert(statusResult.status === 0, "expected status check after guarded command to pass");
+  const payload = JSON.parse(statusResult.stdout);
+  assert(payload.browserLock?.present === false, "expected guarded command not to create a browser lock");
+  assert(payload.hasBrowserProfileData === false, "expected guarded command not to write browser profile data");
+  assert(payload.headlessBrowserThrottle?.recentRuns === 0, "expected guarded command not to launch headless browser");
 }
 
 function assertFreshStatus(payload, dataDir) {

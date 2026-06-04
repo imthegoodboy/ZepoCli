@@ -134,7 +134,7 @@ function printHelp() {
   console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>] <live-verification-report.json>
 
 Validates that a human-controlled verify:live report is acceptable evidence for the requested scope.
-Use --require-production-scope for final readiness: it also requires --max-age-minutes plus browser preflight, local status, live session, search, address selection, add, non-empty cart, checkout handoff, and track to be requested and covered without focused cleanup/history workflows.
+Use --require-production-scope for final readiness: it also requires --max-age-minutes plus browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track to be requested and covered without focused cleanup/history workflows.
 Use --max-age-minutes so old saved reports cannot be reused as current evidence.
 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
@@ -154,12 +154,14 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - all passing workflow step summaries satisfy their known contracts
 - login step summaries confirm saved session evidence when login runs
 - stored step command strings match the redacted command contract
+- manual/internal command markers are accepted only for runner-defined precondition/internal failure steps
 - step exitCode, ok, summary, and error fields are internally consistent
 - failure error objects keep stable code, message, hint, and bounded retryAfterMs fields
 - sensitive-looking report keys and values have been redacted
 - requested capabilities have passing coverage
 - missingCoverage has no true values
-- required step summaries are present for browser preflight, live session, checkout handoff, checkout cart precondition, and requested workflows
+- required step summaries are present for browser preflight, local status readiness, live session, checkout handoff, checkout cart precondition, and requested workflows
+- checkout_manual_action_required is manual continuation evidence only and is not accepted as checkout handoff coverage
 - when --require-production-scope is used, the core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage
 - when --require-production-scope is used, --max-age-minutes is also used so the report is fresh evidence
 - when --require-production-scope is used, address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered

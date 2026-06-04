@@ -367,13 +367,18 @@ function productNameFrom(imageAlt: string | undefined, lines: string[], ignoredL
 }
 
 function isGenericImageAlt(value: string): boolean {
-  return /^(zepto|image|product|product image|item|item image|thumbnail|placeholder|banner|popular searches|search|searches|category|categories|shop by category)$/i.test(
-    value
+  const normalized = normalizeText(value);
+  return (
+    !/[a-z0-9]/i.test(normalized) ||
+    /^(zepto|image|product|product image|item|item image|thumbnail|placeholder|banner|popular searches|search|searches|category|categories|shop by category)$/i.test(
+      normalized
+    ) || /(?:^|[\\/])[\w.-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(normalized)
   );
 }
 
 function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): boolean {
   return (
+    !/[a-z0-9]/i.test(line) ||
     isCommerceUiOrPromoLine(line) ||
     isProductCardControlLabel(line) ||
     isProductAddControlLine(line) ||
@@ -382,10 +387,11 @@ function isIgnoredProductLine(line: string, ignoredLines: ReadonlySet<string>): 
     /^(?:\d+\s*(?:mins?|minutes?)|delivery\s+in\s+\d+\s*(?:mins?|minutes?)|arrives?\s+in\s+\d+\s*(?:mins?|minutes?)|fast delivery|free delivery|super saver|lowest price|low price|deal|offer|new)$/i.test(line) ||
     isRecommendationHeaderLine(line) ||
     /^(limited time deal|deal of the day|only \d+ left|in stock)$/i.test(line) ||
+    isStandaloneRatingCountLine(line) ||
     looksLikePrice(line) ||
     /off$/i.test(line) ||
     looksLikeRating(line) ||
-    looksLikeUnit(line)
+    isLikelyProductUnitLine(line)
   );
 }
 
@@ -476,7 +482,19 @@ function normalizedIgnoredProductLine(line: string): string {
 }
 
 function isLikelyProductUnitLine(line: string): boolean {
-  return line.length <= 80 && looksLikeUnit(line) && !looksLikePrice(line) && !/\b(add|off)\b/i.test(line);
+  const normalized = normalizeText(line);
+  return (
+    normalized.length <= 80 &&
+    normalized.split(/\s+/).length <= 8 &&
+    !normalized.includes("|") &&
+    looksLikeUnit(normalized) &&
+    !looksLikePrice(normalized) &&
+    !/\b(add|off)\b/i.test(normalized)
+  );
+}
+
+function isStandaloneRatingCountLine(line: string): boolean {
+  return /^\(?\d+(?:\.\d+)?\s*[km]?\)?$/i.test(normalizeText(line));
 }
 
 function isLikelyCartProductName(line: string): boolean {

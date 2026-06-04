@@ -34,6 +34,8 @@ describe("login state inference", () => {
   it("detects logged-in account text when login text is absent", () => {
     expect(inferLoginStateFromText("Account My Orders Wallet")).toBe("logged-in");
     expect(inferLoginStateFromText("Profile Wallet")).toBe("logged-in");
+    expect(inferLoginStateFromText("My Orders Wallet")).toBe("logged-in");
+    expect(inferLoginStateFromText("Orders Saved Addresses")).toBe("logged-in");
     expect(inferLoginStateFromText("Account My Orders Wallet Phone number")).toBe("logged-in");
     expect(inferLoginStateFromText("Profile Wallet Mobile number")).toBe("logged-in");
     expect(inferLoginStateFromText("Log out")).toBe("logged-in");

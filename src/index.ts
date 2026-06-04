@@ -9,6 +9,7 @@ import { registerAddCommand } from "./commands/add.js";
 import { registerAddressCommand } from "./commands/address.js";
 import { registerCartCommands } from "./commands/cart.js";
 import { registerCheckoutCommand } from "./commands/checkout.js";
+import { registerCompletionCommand } from "./commands/completion.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerLoginCommand } from "./commands/login.js";
 import { registerOrderCommands } from "./commands/orders.js";
@@ -47,6 +48,7 @@ registerCartCommands(program);
 registerAddressCommand(program);
 registerCheckoutCommand(program);
 registerOrderCommands(program);
+registerCompletionCommand(program);
 
 program.parseAsync(process.argv).catch((error: unknown) => {
   const wantsJson = wantsJsonOutput(process.argv);

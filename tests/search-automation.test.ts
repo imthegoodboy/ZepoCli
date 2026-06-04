@@ -110,6 +110,38 @@ describe("search automation helpers", () => {
     expect(page.gotoUrls.filter((url) => url.includes("/search?query=milk"))).toHaveLength(1);
   });
 
+  it("uses query-matched homepage cards only after direct search was attempted", async () => {
+    const page = createHomepageSearchNoNavigationPage({
+      homepageProductText: "Amul Taaza Toned Milk\n500 ml\n₹32\nADD",
+      homepageBodyText: "Fresh picks Amul Taaza Toned Milk 500 ml ₹32 ADD",
+      directBodyText: "Search page"
+    });
+
+    await expect(searchProducts(page as never, "milk", 1)).resolves.toMatchObject([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "500 ml"
+      }
+    ]);
+
+    expect(page.gotoUrls.filter((url) => url.includes("/search?query=milk"))).toHaveLength(1);
+  });
+
+  it("waits for direct search results to render before extracting products", async () => {
+    const page = createDirectSearchRenderAfterWaitPage();
+
+    await expect(searchProducts(page as never, "milk", 1)).resolves.toMatchObject([
+      {
+        name: "Amul Taaza Toned Milk",
+        price: "₹32",
+        unit: "500 ml"
+      }
+    ]);
+
+    expect(page.waitedForRenderSignal).toBe(true);
+  });
+
   it("does not let homepage fallback mask explicit search-page no-results copy", async () => {
     const page = createExplicitSearchStateWithHomepageFallbackPage("No results found for milk");
 
@@ -1651,7 +1683,13 @@ function createReadonlyDirectSearchInputPage() {
   return page;
 }
 
-function createHomepageSearchNoNavigationPage() {
+function createHomepageSearchNoNavigationPage(
+  options: {
+    homepageProductText?: string;
+    homepageBodyText?: string;
+    directBodyText?: string;
+  } = {}
+) {
   const gotoUrls: string[] = [];
   let mode: "home" | "search" = "home";
   const searchInput = createSearchInputCandidate({
@@ -1679,7 +1717,7 @@ function createHomepageSearchNoNavigationPage() {
         ? [
             {
               automationId: 0,
-              text: "Daily Good Sona Masoori Raw Rice\n1 kg\n₹69\nADD"
+              text: options.homepageProductText ?? "Daily Good Sona Masoori Raw Rice\n1 kg\n₹69\nADD"
             }
           ]
         : [],
@@ -1689,12 +1727,68 @@ function createHomepageSearchNoNavigationPage() {
         return {
           ...createHiddenLocator(),
           innerText: async () =>
-            mode === "home" ? "Fresh picks Daily Good Sona Masoori Raw Rice 1 kg ₹69 ADD" : "No results"
+            mode === "home"
+              ? options.homepageBodyText ?? "Fresh picks Daily Good Sona Masoori Raw Rice 1 kg ₹69 ADD"
+              : options.directBodyText ?? "No results"
         };
       }
 
       if (selector.includes("input[type='search']")) {
         return createLocatorCollection(mode === "home" ? [searchInput] : []);
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
+function createDirectSearchRenderAfterWaitPage() {
+  const gotoUrls: string[] = [];
+  let mode: "home" | "search" = "home";
+  let rendered = false;
+  const page = {
+    gotoUrls,
+    waitedForRenderSignal: false,
+    goto: async (url: string | URL) => {
+      const value = String(url);
+      gotoUrls.push(value);
+      mode = value.includes("/search") ? "search" : "home";
+      return {
+        status: () => 200,
+        url: () => value
+      };
+    },
+    url: () => (mode === "search" ? "https://www.zepto.com/search?query=milk" : "https://www.zepto.com/"),
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => {
+      page.waitedForRenderSignal = true;
+      rendered = true;
+    },
+    waitForTimeout: async () => undefined,
+    title: async () => "Zepto",
+    evaluate: async () =>
+      mode === "search" && rendered
+        ? [
+            {
+              automationId: 0,
+              text: "Amul Taaza Toned Milk\n500 ml\n₹32\nADD"
+            }
+          ]
+        : [],
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return {
+          ...createHiddenLocator(),
+          innerText: async () =>
+            mode === "search" && rendered ? "Amul Taaza Toned Milk 500 ml ₹32 ADD" : "Search products"
+        };
+      }
+
+      if (selector.includes("input[type='search']")) {
+        return createHiddenLocator();
       }
 
       return createHiddenLocator();

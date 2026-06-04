@@ -753,9 +753,11 @@ describe("browser automation helpers", () => {
     expect(isLoginRequiredText("Login to continue Checkout")).toBe(true);
     expect(isLoginRequiredText("Log in to view your cart")).toBe(true);
     expect(isLoginRequiredText("Login / Sign Up Continue with phone")).toBe(true);
-    expect(isLoginRequiredText("Login Cart Your cart is empty")).toBe(true);
+    expect(isLoginRequiredText("Login Cart Your cart is empty")).toBe(false);
     expect(isLoginRequiredText("Search for milk Cart Account Profile")).toBe(false);
     expect(isLoginRequiredText("Account My Orders Wallet")).toBe(false);
+    expect(isLoginRequiredText("My Orders Wallet")).toBe(false);
+    expect(isLoginRequiredText("Orders Saved Addresses")).toBe(false);
     expect(isLoginRequiredText("Account Profile My Orders Phone number")).toBe(false);
     expect(isLoginRequiredText("Profile Wallet Mobile number")).toBe(false);
   });

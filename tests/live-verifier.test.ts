@@ -14,6 +14,7 @@ const LIVE_VERIFIER_TEST_TIMEOUT_MS = 15_000;
 const {
   adjustLiveReportRequestsForConfirmedSession,
   buildLiveCommandLaunchFailureStep,
+  buildLiveCommandTimeoutOrErrorStep,
   buildLiveCommandTimeoutStep,
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
@@ -156,7 +157,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
 
 function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
   const steps = [
-    ...acceptedLiveReport().steps.slice(0, 4),
+    ...acceptedLiveReport().steps.slice(0, 3),
     {
       name: "address use",
       command: "zepo --data-dir <redacted-data-dir> --visible address use <redacted-address-query> --json",
@@ -168,6 +169,7 @@ function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
         hasAddressDetail: true
       }
     },
+    acceptedLiveReport().steps[3],
     {
       name: "add",
       command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --json",
@@ -262,7 +264,7 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).toContain(
-      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, non-empty cart, checkout handoff, and track coverage."
+      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage."
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
@@ -281,6 +283,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("requires --max-age-minutes");
     expect(result.stdout).toContain("Use --max-age-minutes so old saved reports cannot be reused as current evidence");
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
+    expect(result.stdout).toContain("local status readiness");
     expect(result.stdout).toContain(
       "core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage"
     );
@@ -293,12 +296,14 @@ describe("live verification runner", () => {
   it("waits for timed-out live commands to close before recording timeout failures", () => {
     const script = readFileSync(scriptPath, "utf8");
 
-    expect(script).toContain("COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 5_000");
+    expect(script).toContain("COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 30_000");
     expect(script).toContain('child.kill("SIGTERM")');
     expect(script).toContain('child.kill("SIGKILL")');
     expect(script).toContain("clearForceKillTimer(forceKill)");
     expect(script).toContain("if (timedOut)");
-    expect(script).toContain("reject(liveCommandTimeoutError(options.stepTimeoutMs))");
+    expect(script.match(/liveCommandTimeoutError\(options\.stepTimeoutMs, \{ stdout, stderr \}\)/g)).toHaveLength(2);
+    expect(script).toContain("buildLiveCommandTimeoutOrErrorStep({");
+    expect(script).toContain("stderr: error.stderr");
   });
 
   it("writes sanitized partial reports when live verification is interrupted", () => {
@@ -361,6 +366,29 @@ describe("live verification runner", () => {
     expect(script).toContain("missingCoverage: summarizeLiveReportMissingCoverage");
     expect(script).toContain("hasLiveReportMissingCoverage(report.missingCoverage)");
     expect(script).toContain("updateReportCoverage()");
+  });
+
+  it("retries only ambiguous live-session checks without keeping failed duplicate report steps", () => {
+    const script = readFileSync(scriptPath, "utf8");
+
+    expect(script).toContain("const LIVE_STATUS_MAX_ATTEMPTS = 3");
+    expect(script).toContain("const LIVE_STATUS_RETRY_DELAY_MS = 5_000");
+    expect(script).toContain("if (report.requested.liveSession !== true)");
+    expect(script).toContain("const liveStatus = await runLiveStatusStep()");
+    expect(script).toContain("isRetryableUnknownLiveStatus(result)");
+    expect(script).toContain('result?.payload?.liveSession?.state === "unknown"');
+    expect(script).toContain('removeLastReportStep("status live")');
+    expect(script).not.toContain('result?.payload?.liveSession?.state !== "login-required"');
+  });
+
+  it("does not run visible live-session checks for local-only report scope", () => {
+    const script = readFileSync(scriptPath, "utf8");
+    const requestedScopeGuard = script.indexOf("if (report.requested.liveSession !== true)");
+    const liveStatusStep = script.indexOf("const liveStatus = await runLiveStatusStep()");
+
+    expect(requestedScopeGuard).toBeGreaterThan(script.indexOf("report.requested = adjustLiveReportRequestsForConfirmedSession"));
+    expect(requestedScopeGuard).toBeLessThan(liveStatusStep);
+    expect(script).toContain("if (report.requested.liveSession !== true) {\n    return;\n  }\n\n  const liveStatus");
   });
 
   it("summarizes successful live report coverage without sensitive workflow data", () => {
@@ -439,6 +467,40 @@ describe("live verification runner", () => {
       track: true,
       history: true,
       reorder: true
+    });
+  });
+
+  it("does not count manual session preconditions as login attempts", () => {
+    expect(
+      summarizeLiveReportAttempts([
+        {
+          name: "session precondition",
+          command: "manual",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "live_verification_incomplete",
+            message: "No confirmed Zepto session is available."
+          }
+        }
+      ])
+    ).toEqual({
+      browserPreflight: false,
+      localStatus: false,
+      login: false,
+      liveSession: false,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: false,
+      remove: false,
+      clear: false,
+      checkoutHandoff: false,
+      track: false,
+      history: false,
+      reorder: false
     });
   });
 
@@ -1568,7 +1630,7 @@ describe("live verification runner", () => {
       steps: [
         ...acceptedLiveReport().steps,
         {
-          name: "login",
+          name: "session precondition",
           command: "manual",
           exitCode: 1,
           ok: false,
@@ -1585,6 +1647,52 @@ describe("live verification runner", () => {
     }).issues.map((issue) => issue.code);
     expect(manualPartialReportIssueCodes).not.toContain("live_report_command_mismatch");
     expect(manualPartialReportIssueCodes).not.toContain("live_report_error_mismatch");
+
+    const editedManualWorkflowStepReport = acceptedLiveReport({
+      ok: false,
+      steps: [
+        ...acceptedLiveReport().steps,
+        {
+          name: "login",
+          command: "manual",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "live_verification_incomplete",
+            message: "No confirmed Zepto session is available."
+          }
+        }
+      ]
+    });
+
+    expect(
+      validateLiveReportAcceptance(editedManualWorkflowStepReport, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_command_mismatch");
+
+    const editedInternalWorkflowStepReport = acceptedLiveReport({
+      ok: false,
+      steps: [
+        ...acceptedLiveReport().steps,
+        {
+          name: "cart",
+          command: "internal",
+          exitCode: 1,
+          ok: false,
+          error: {
+            code: "live_runner_failed",
+            message: "Runner failed."
+          }
+        }
+      ]
+    });
+
+    expect(
+      validateLiveReportAcceptance(editedInternalWorkflowStepReport, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_command_mismatch");
 
     const malformedStepResultReports = [
       acceptedLiveReport({
@@ -2447,6 +2555,38 @@ describe("live verification runner", () => {
     expect(JSON.stringify(step)).not.toContain("parth");
   });
 
+  it("preserves structured CLI errors emitted by timed-out live commands", () => {
+    const step = buildLiveCommandTimeoutOrErrorStep({
+      name: "status live",
+      args: ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "status", "--live", "--json"],
+      timeoutMs: 120_000,
+      stdout: "",
+      stderr: JSON.stringify({
+        ok: false,
+        error: {
+          code: "zepto_access_challenge",
+          message: "Zepto returned HTTP 429 from https://www.zepto.com/.",
+          hint: "Stop repeated automation and open the flow with `--visible`.",
+          retryAfterMs: 900000
+        }
+      })
+    });
+
+    expect(step).toEqual({
+      name: "status live",
+      command: "zepo --data-dir <redacted-data-dir> --visible status --live --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "zepto_access_challenge",
+        message: "Zepto returned HTTP 429 from https://www.zepto.com/.",
+        hint: "Stop repeated automation and open the flow with `--visible`.",
+        retryAfterMs: 900000
+      }
+    });
+    expect(JSON.stringify(step)).not.toContain("parth");
+  });
+
   it("falls back to stable live report error fields for malformed JSON errors", () => {
     expect(
       summarizeCommandError(
@@ -2610,7 +2750,7 @@ describe("live verification runner", () => {
         stdout: JSON.stringify({ confirmedSession: true }),
         error: {
           code: "live_status_contract_mismatch",
-          message: "Status JSON did not include expected session and browser automation fields."
+          message: "Status JSON did not report ready browser automation."
         }
       },
       {
@@ -2619,7 +2759,25 @@ describe("live verification runner", () => {
         stdout: JSON.stringify({ confirmedSession: true, ...statusDiagnosticsPayloadWithoutMode() }),
         error: {
           code: "live_status_contract_mismatch",
-          message: "Status JSON did not include expected session and browser automation fields."
+          message: "Status JSON did not report ready browser automation."
+        }
+      },
+      {
+        name: "status",
+        args: ["--data-dir", ".zepo-live", "status", "--json"],
+        stdout: JSON.stringify({
+          confirmedSession: true,
+          ...statusDiagnosticsPayload(),
+          browserAutomation: {
+            ready: false,
+            reasons: ["zepto_access_cooldown"],
+            retryAfterMs: 900_000
+          },
+          accessChallenge: { detected: true, cooldownActive: true, retryAfterMs: 900_000 }
+        }),
+        error: {
+          code: "live_status_contract_mismatch",
+          message: "Status JSON did not report ready browser automation."
         }
       },
       {
@@ -2795,6 +2953,37 @@ describe("live verification runner", () => {
       error: {
         code: "live_checkout_contract_mismatch",
         message: "Checkout JSON did not preserve the Zepto cart, payment, and order-placement handoff contract."
+      }
+    });
+  });
+
+  it("does not count manual checkout action as live checkout handoff coverage", () => {
+    const { step } = buildLiveReportStep({
+      name: "checkout",
+      args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+      status: 0,
+      stdout: JSON.stringify({
+        status: "checkout_manual_action_required",
+        payment: "handled_by_zepto",
+        cartPrecondition: "non_empty_cart_verified",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      }),
+      stderr: "",
+      summarizePayload: () => {
+        throw new Error("manual checkout payload should not be summarized as handoff coverage");
+      }
+    });
+
+    expect(step).toEqual({
+      name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "live_verification_incomplete",
+        message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
       }
     });
   });

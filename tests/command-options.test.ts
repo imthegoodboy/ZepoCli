@@ -60,7 +60,8 @@ describe("command options", () => {
       "cart.ts",
       "address.ts",
       "checkout.ts",
-      "orders.ts"
+      "orders.ts",
+      "completion.ts"
     ]) {
       const source = readFileSync(resolve(import.meta.dirname, "..", "src", "commands", file), "utf8");
       expect(source, `${file} should not load service/browser code before command actions run`).not.toMatch(

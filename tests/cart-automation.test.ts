@@ -13,6 +13,7 @@ import {
   isLikelyRemovableCartItemText,
   isUnsafeCartOpenClickText,
   isUnsafeCartRemoveControlText,
+  parseActiveCartItemFromControlText,
   requireReadableCartSnapshot
 } from "../src/automation/cart.js";
 
@@ -97,6 +98,11 @@ describe("cart automation helpers", () => {
     expect(isCartPageText("Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\nRs 32\nQty 1")).toBe(true);
     expect(isCartPageText("My Cart Your cart is empty Add items to continue")).toBe(true);
     expect(isCartPageText("Cart 2 items View bill To pay Rs 120")).toBe(true);
+    expect(
+      isCartPageText(
+        "Cart 5 You have 5 items in your cart. The page you’re looking for has made an egg-sit Go to Home Explore Our Top Categories"
+      )
+    ).toBe(false);
   });
 
   it("distinguishes explicit empty cart copy from unreadable cart content", () => {
@@ -128,6 +134,65 @@ describe("cart automation helpers", () => {
     expect(() => requireReadableCartSnapshot("My Cart Your cart is empty 2 items View bill To pay Rs 120")).toThrow(
       "Zepto cart page did not expose readable cart items."
     );
+  });
+
+  it("parses only the active cart drawer when Zepto renders it over product shelves", () => {
+    expect(
+      requireReadableCartSnapshot(`
+        Cart
+        ADD
+        ₹185
+        Parachute 100% Pure Coconut Oil
+        1 pc (300 ml)
+        ADD
+        ₹244
+        L'Oreal Paris Conditioner
+        1 pc (175 ml)
+        Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560064, India
+        Yay! You saved ₹77 on this order
+        Coupons & offers
+        Delivering in 5 mins
+        3 items
+        Nandini Standardized Fresh Milk | Pouch
+        1 pack (500 ml)
+        1
+        ₹27
+        Heritage Toned Fresh Milk | Pouch
+        1 pack (500 ml)
+        1
+        ₹26
+        Nandini Toned Fresh Milk | Pouch
+        1 pack (500 ml)
+        1
+        ₹24
+        Forgot something?
+        Add More Items
+        Bill Summary
+        Item Total
+        ₹77
+        To Pay
+        ₹77
+      `)
+    ).toMatchObject({
+      items: [
+        {
+          name: "Nandini Standardized Fresh Milk | Pouch",
+          price: "₹27",
+          unit: "1 pack (500 ml)"
+        },
+        {
+          name: "Heritage Toned Fresh Milk | Pouch",
+          price: "₹26",
+          unit: "1 pack (500 ml)"
+        },
+        {
+          name: "Nandini Toned Fresh Milk | Pouch",
+          price: "₹24",
+          unit: "1 pack (500 ml)"
+        }
+      ],
+      total: "₹77"
+    });
   });
 
   it("extracts cart totals only from explicit total labels", () => {
@@ -294,6 +359,7 @@ describe("cart automation helpers", () => {
     expect(isCartPageText("Search milk Cart Account Profile")).toBe(false);
     expect(isCartPageText("Sign in to view your cart")).toBe(false);
     expect(isCartPageText("Fresh groceries delivered fast Checkout these offers")).toBe(false);
+    expect(isCartPageText("Cart Fresh picks Nandini Toned Fresh Milk | Pouch 1 pack (500 ml) ₹24 ADD")).toBe(false);
   });
 
   it("rejects product listing text as cart page proof even when item-like rows parse", () => {
@@ -350,6 +416,71 @@ describe("cart automation helpers", () => {
     expect(hasCartSurfaceEvidence("Cart Add to Cart Amul Taaza Toned Milk 1 pack (500 ml) ₹32")).toBe(true);
     expect(hasCartSurfaceEvidence("Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1")).toBe(true);
     expect(hasCartSurfaceEvidence("Amul Taaza Toned Milk 1 pack (500 ml) ₹32")).toBe(false);
+  });
+
+  it("parses active cart rows from compact quantity-control text", () => {
+    expect(parseActiveCartItemFromControlText("1 ₹27 Nandini Standardized Fresh Milk | Pouch 1 pack (500 ml)")).toEqual({
+      name: "Nandini Standardized Fresh Milk | Pouch",
+      price: "₹27",
+      unit: "1 pack (500 ml)",
+      quantity: "1"
+    });
+
+    expect(
+      parseActiveCartItemFromControlText(
+        "1 ₹27 decorative text 1 pack (500 ml)",
+        "Nandini Standardized Fresh Milk | Pouch"
+      )
+    ).toEqual({
+      name: "Nandini Standardized Fresh Milk | Pouch",
+      price: "₹27",
+      unit: "1 pack (500 ml)",
+      quantity: "1"
+    });
+  });
+
+  it("rejects active cart row parser noise from promos, summaries, and asset alts", () => {
+    expect(parseActiveCartItemFromControlText("1 ₹50 OFF 1 pack")).toBeUndefined();
+    expect(parseActiveCartItemFromControlText("1 ₹50 Coupons & offers")).toBeUndefined();
+    expect(parseActiveCartItemFromControlText("1 ₹599 Bill Summary To Pay")).toBeUndefined();
+    expect(parseActiveCartItemFromControlText("1 ₹27 1 pack", "scooter-filled.png")).toBeUndefined();
+  });
+
+  it("uses active cart item overrides before whole-page text parsing", () => {
+    expect(
+      requireReadableCartSnapshot(
+        `
+        Cart
+        Recommended
+        Parle Hide & Seek Choco Chip Cookies
+        1 pack (100 g)
+        ₹27
+        Qty 1
+        Nandini Standardized Fresh Milk | Pouch
+        1 pack (500 ml)
+        ₹27
+        Grand Total ₹102
+      `,
+        [
+          {
+            name: "Nandini Standardized Fresh Milk | Pouch",
+            price: "₹27",
+            unit: "1 pack (500 ml)",
+            quantity: "1"
+          }
+        ]
+      )
+    ).toMatchObject({
+      items: [
+        {
+          name: "Nandini Standardized Fresh Milk | Pouch",
+          price: "₹27",
+          unit: "1 pack (500 ml)",
+          quantity: "1"
+        }
+      ],
+      total: "₹102"
+    });
   });
 
   it("opens cart only with cart-specific labels", () => {

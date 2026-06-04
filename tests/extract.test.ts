@@ -184,6 +184,72 @@ describe("Zepto page extraction helpers", () => {
     });
   });
 
+  it("ignores decorative asset filename image alts before visible product text", () => {
+    const product = parseProductCard(
+      {
+        automationId: 20,
+        imageAlt: "scooter-filled.png",
+        text: "ADD\n₹27\nNandini Standardized Fresh Milk | Pouch\n1 pack (500 ml)\n4.6"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      index: 0,
+      automationId: 20,
+      name: "Nandini Standardized Fresh Milk | Pouch",
+      price: "₹27",
+      unit: "1 pack (500 ml)"
+    });
+  });
+
+  it("does not parse filename-only decorative cards as products", () => {
+    expect(
+      parseProductCard(
+        {
+          imageAlt: "scooter-filled.png",
+          text: "ADD\n₹99"
+        },
+        0
+      )
+    ).toBeUndefined();
+  });
+
+  it("ignores punctuation-only image alts before visible product text", () => {
+    expect(
+      parseProductCard(
+        {
+          imageAlt: "(",
+          text: "ADD\n₹75\nDaily Good Sona Masoori Raw Rice\n1 pack (1 kg)"
+        },
+        0
+      )
+    ).toMatchObject({
+      name: "Daily Good Sona Masoori Raw Rice",
+      price: "₹75",
+      unit: "1 pack (1 kg)"
+    });
+
+    expect(parseProductCard({ imageAlt: "(", text: "ADD\n₹72" }, 0)).toBeUndefined();
+  });
+
+  it("ignores punctuation-only visible text before product names", () => {
+    expect(
+      parseProductCard(
+        {
+          text: "(\nADD\n₹75\nDaily Good Sona Masoori Raw Rice\n1 pack (1 kg)"
+        },
+        0
+      )
+    ).toMatchObject({
+      name: "Daily Good Sona Masoori Raw Rice",
+      price: "₹75",
+      unit: "1 pack (1 kg)"
+    });
+
+    expect(parseProductCard({ text: "(\n₹72" }, 0)).toBeUndefined();
+  });
+
   it("ignores delivery and promo image alt text before visible product text", () => {
     expect(
       parseProductCard(
@@ -355,6 +421,26 @@ describe("Zepto page extraction helpers", () => {
       name: "Whole Farm Eggs",
       price: "₹78",
       unit: "6 pieces"
+    });
+  });
+
+  it("does not treat product titles with embedded weight claims as unit lines", () => {
+    const product = parseProductCard(
+      {
+        automationId: 20,
+        text: "ADD\n₹54\n₹59\n4.4\n(6.8k)\nCountry Delight Natural Fresh Cow Milk | 25g Protein | Pouch"
+      },
+      0
+    );
+
+    expect(product).toMatchObject({
+      index: 0,
+      automationId: 20,
+      name: "Country Delight Natural Fresh Cow Milk | 25g Protein | Pouch",
+      price: "₹54",
+      mrp: "₹59",
+      unit: undefined,
+      rating: "4.4"
     });
   });
 

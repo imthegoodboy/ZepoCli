@@ -7,7 +7,7 @@ import { sanitizedChildEnv } from "./env-utils.mjs";
 import {
   adjustLiveReportRequestsForConfirmedSession,
   buildLiveCommandLaunchFailureStep,
-  buildLiveCommandTimeoutStep,
+  buildLiveCommandTimeoutOrErrorStep,
   buildLiveReportStep,
   createLiveConsoleTextRedactor,
   hasLiveReportAddressDetailText,
@@ -28,7 +28,9 @@ const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "u
 const DEFAULT_STEP_TIMEOUT_MS = 30 * 60 * 1_000;
 const MIN_STEP_TIMEOUT_MS = 1_000;
 const MAX_STEP_TIMEOUT_MS = 60 * 60 * 1_000;
-const COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 5_000;
+const COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 30_000;
+const LIVE_STATUS_MAX_ATTEMPTS = 3;
+const LIVE_STATUS_RETRY_DELAY_MS = 5_000;
 const INTERRUPT_EXIT_CODES = {
   SIGINT: 130,
   SIGTERM: 143
@@ -121,7 +123,7 @@ async function main() {
   if (status.payload?.confirmedSession !== true) {
     if (!options.login) {
       addManualFailure(
-        "login",
+        "session precondition",
         "No confirmed Zepto session is available.",
         "Rerun with --login so a human can complete Zepto login/OTP in the visible browser."
       );
@@ -137,12 +139,11 @@ async function main() {
     }
   }
 
-  const liveStatus = await runStep("status live", [
-    ...baseCliArgs({ visible: true }),
-    "status",
-    "--live",
-    "--json"
-  ]);
+  if (report.requested.liveSession !== true) {
+    return;
+  }
+
+  const liveStatus = await runLiveStatusStep();
 
   if (!liveStatus.ok) {
     return;
@@ -155,12 +156,6 @@ async function main() {
       "Run `zepo status --live --visible --json` or `zepo --visible login` before cart, address, checkout, or order verification."
     );
     return;
-  }
-
-  if (options.search) {
-    if (!(await runStep("search", [...baseCliArgs({ visible: true }), "search", options.search, "--json"])).ok) {
-      return;
-    }
   }
 
   if (options.addressAdd) {
@@ -181,6 +176,12 @@ async function main() {
     }
   } else if (options.addressList) {
     if (!(await runStep("address list", [...baseCliArgs({ visible: true }), "address", "list", "--json"])).ok) {
+      return;
+    }
+  }
+
+  if (options.search) {
+    if (!(await runStep("search", [...baseCliArgs({ visible: true }), "search", options.search, "--json"])).ok) {
       return;
     }
   }
@@ -279,7 +280,14 @@ async function runStep(name, args) {
   } catch (error) {
     const step =
       isLiveCommandTimeoutError(error) && Number.isFinite(error.timeoutMs)
-        ? buildLiveCommandTimeoutStep(name, args, error.timeoutMs)
+        ? buildLiveCommandTimeoutOrErrorStep({
+            name,
+            args,
+            timeoutMs: error.timeoutMs,
+            stdout: error.stdout,
+            stderr: error.stderr,
+            summarizePayload
+          })
         : buildLiveCommandLaunchFailureStep(name, args, error);
     report.ok = false;
     report.steps.push(step);
@@ -307,6 +315,44 @@ async function runStep(name, args) {
     ...step,
     payload
   };
+}
+
+async function runLiveStatusStep() {
+  const args = [...baseCliArgs({ visible: true }), "status", "--live", "--json"];
+  for (let attempt = 1; attempt <= LIVE_STATUS_MAX_ATTEMPTS; attempt += 1) {
+    const result = await runStep("status live", args);
+    if (result.ok || !isRetryableUnknownLiveStatus(result) || attempt === LIVE_STATUS_MAX_ATTEMPTS) {
+      return result;
+    }
+
+    removeLastReportStep("status live");
+    console.error(
+      `Live session check was ambiguous; retrying ${attempt + 1}/${LIVE_STATUS_MAX_ATTEMPTS} after ${LIVE_STATUS_RETRY_DELAY_MS} ms.`
+    );
+    await delay(LIVE_STATUS_RETRY_DELAY_MS);
+  }
+}
+
+function isRetryableUnknownLiveStatus(result) {
+  return (
+    result?.payload?.confirmedSession === true &&
+    result?.payload?.browserAutomation?.ready === true &&
+    result?.payload?.liveSession?.checked === true &&
+    result?.payload?.liveSession?.state === "unknown" &&
+    result?.payload?.accessChallenge?.cooldownActive !== true
+  );
+}
+
+function removeLastReportStep(name) {
+  const last = report.steps.at(-1);
+  if (last?.name === name) {
+    report.steps.pop();
+    report.ok = report.steps.every((step) => step.ok === true);
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 }
 
 function runCli(args) {
@@ -356,7 +402,7 @@ function runCli(args) {
       settled = true;
       clearActiveChild(child);
       stderrRedactor.flush();
-      reject(timedOut ? liveCommandTimeoutError(options.stepTimeoutMs) : error);
+      reject(timedOut ? liveCommandTimeoutError(options.stepTimeoutMs, { stdout, stderr }) : error);
     });
     child.on("close", (status) => {
       if (settled) {
@@ -369,7 +415,7 @@ function runCli(args) {
       clearActiveChild(child);
       stderrRedactor.flush();
       if (timedOut) {
-        reject(liveCommandTimeoutError(options.stepTimeoutMs));
+        reject(liveCommandTimeoutError(options.stepTimeoutMs, { stdout, stderr }));
         return;
       }
 
@@ -490,10 +536,12 @@ function clearForceKillTimer(timer) {
   }
 }
 
-function liveCommandTimeoutError(timeoutMs) {
+function liveCommandTimeoutError(timeoutMs, output = {}) {
   const error = new Error(`Command timed out after ${timeoutMs} ms.`);
   error.code = "live_command_timeout";
   error.timeoutMs = timeoutMs;
+  error.stdout = String(output.stdout ?? "").trim();
+  error.stderr = String(output.stderr ?? "").trim();
   return error;
 }
 
@@ -973,13 +1021,14 @@ Example:
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
-Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, search, address selection, add, non-empty cart, checkout handoff, and track coverage.
+Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --clear --cart
 
 The report includes top-level requested, attempted, coverage, and missingCoverage booleans so partial runs cannot be mistaken for full verification.
+Manual precondition failures, such as a missing confirmed session, are reported as incomplete manual steps and are not counted as workflow attempts.
 The report intentionally omits raw page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments.
 It also redacts npm-token-shaped values and standalone percent-encoded sensitive fragments.
 

@@ -162,7 +162,8 @@ describe("package CLI contract", () => {
       "npm run verify:package",
       "node dist/index.js --help",
       "npm run verify:audit",
-      "npm pack --dry-run"
+      "npm pack --dry-run",
+      "npm run verify:publish-dry-run"
     ]) {
       expect(checkScript).toContain(gate);
     }
@@ -172,6 +173,7 @@ describe("package CLI contract", () => {
 
   it("exposes audit verification and keeps live verification opt-in", () => {
     expect(packageJson.scripts?.["verify:audit"]).toBe("npm audit --omit=dev");
+    expect(packageJson.scripts?.["verify:publish-dry-run"]).toBe("npm publish --dry-run --access public");
     expect(packageJson.scripts?.["verify:live"]).toBe("node scripts/verify-live-flow.mjs");
     expect(packageJson.scripts?.["verify:live:report"]).toBe("node scripts/verify-live-report.mjs");
     expect(packageJson.files).toContain("README.md");
@@ -179,6 +181,8 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("scripts/clean-dist.mjs");
     expect(packageJson.files).toContain("scripts/normalize-cli-entry.mjs");
     expect(packageJson.files).toContain("scripts/verify-dependencies.mjs");
+    expect(packageJson.files).toContain("scripts/verify-cli.mjs");
+    expect(packageJson.files).toContain("scripts/verify-package.mjs");
     expect(packageJson.files).toContain("scripts/env-utils.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
@@ -294,17 +298,46 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed checkout service to require session and explicit --visible before opening a browser");
     expect(verifier).toContain("expected installed checkout service to require explicit --visible before checking session state");
     expect(verifier).toContain("pass installed background automation mode contract");
+    expect(verifier).toContain("assertInstalledNoBrowserWork");
+    expect(verifier).toContain("expected installed guarded command not to create a browser lock");
+    expect(verifier).toContain("expected installed guarded command not to write browser profile data");
+    expect(verifier).toContain("expected installed guarded command not to launch headless browser");
     expect(verifier).toContain("expected installed package README");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("Installed-package commands run browser automation in background/headless mode by default");
     expect(verifier).toContain("Human-only login, address-add, and checkout handoffs fail with `visible_browser_required`");
+    expect(verifier).toContain("before session checks and before browser launch");
     expect(verifier).toContain("Normal search/cart/address/order commands stay background/headless unless the user explicitly passes `--visible`");
+    expect(verifier).toContain("zepo completion bash");
+    expect(verifier).toContain("zepo help search");
+    expect(verifier).toContain("zepo help address");
+    expect(verifier).toContain("Generate shell completion scripts without starting runtime storage or browser automation");
+    expect(verifier).toContain("Completion is generated from the registered command tree");
+    expect(verifier).toContain("nested topics such as `zepo help address`");
+    expect(verifier).toContain("PowerShell completion also accepts `pwsh` and `ps1` as aliases for `powershell`");
     expect(verifier).toContain("browserAutomationMode.current");
     expect(verifier).toContain("normal package runs should report `background_headless`");
     expect(verifier).toContain("expected installed current browser automation mode to be headless");
     expect(verifier).toContain("expected installed visible browser mode not to be requested");
     expect(verifier).toContain("expected installed visible option to document headless default");
+    expect(verifier).toContain("expected installed completion command in help output");
+    expect(verifier).toContain("installed completion bash");
+    expect(verifier).toContain("expected installed bash completion registration");
+    expect(verifier).toContain("installed completion runtime-free data-dir");
+    expect(verifier).toContain("expected installed completion command not to create runtime data dir");
+    expect(verifier).toContain("expected installed help command completions");
+    expect(verifier).toContain("expected installed nested help command completions");
+    expect(verifier).toContain("installed completion zsh");
+    expect(verifier).toContain("expected installed zsh completion header");
+    expect(verifier).toContain("installed completion fish");
+    expect(verifier).toContain("expected installed fish nested help condition");
+    expect(verifier).toContain("installed completion powershell");
+    expect(verifier).toContain("expected installed PowerShell completer registration");
+    expect(verifier).toContain("installed completion pwsh alias");
+    expect(verifier).toContain("installed completion ps1 alias");
+    expect(verifier).toContain("installed completion invalid shell json");
+    expect(verifier).toContain("expected installed completion shell hint");
     expect(verifier).toContain("Safe-click checks inspect visible text");
     expect(verifier).toContain("CSRF/XSRF or anti-forgery tokens, and bare login/logged UI flags are not enough to confirm local auth");
     expect(verifier).toContain("non-empty auth/session/token-like Zepto cookies or non-empty auth/session/token-like Zepto localStorage keys");
@@ -322,6 +355,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("explicit select/change/set/choose delivery address or location labels");
     expect(verifier).toContain("explicit add/enter delivery address or location labels");
     expect(verifier).toContain("expected installed promotional checkout label to be rejected");
+    expect(verifier).toContain("expected installed amount-bearing click-to-pay label not to be automated checkout");
+    expect(verifier).toContain("expected installed amount-bearing click-to-pay label to require manual action");
+    expect(verifier).toContain("expected installed checkout manual action status");
+    expect(verifier).toContain("expected installed checkout manual-action next-step guidance");
     expect(verifier).toContain("expected installed continue-to-pay label to be unsafe");
     expect(verifier).toContain("expected installed continue-to-payment label to be unsafe");
     expect(verifier).toContain("expected installed card payment-method label to be unsafe");
@@ -455,9 +492,12 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed cart cache migration to keep marker-only item counts");
     expect(verifier).toContain("expected installed cart cache migration to omit raw product names");
     expect(verifier).toContain("pass installed session auth-state contract");
-    expect(verifier).toContain("`browserAutomation.ready === true` plus a passing `Playwright Chromium` check");
+    expect(verifier).toContain("both preflight steps must report `browserAutomation.ready === true`");
+    expect(verifier).toContain("doctor must also show a passing `Playwright Chromium` check");
     expect(verifier).toContain('paymentStatus: \\"not_observed_by_zepocli\\"');
     expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');
+    expect(verifier).toContain('status: \\"checkout_manual_action_required\\"');
+    expect(verifier).toContain("manual amount-bearing payment control");
     expect(verifier).toContain("--choose-add");
     expect(verifier).toContain("--choose-add can only be used with --add.");
     expect(verifier).toContain("expected installed verify:live compatible phone to pass phone parsing");
@@ -467,14 +507,28 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live production-scope option");
     expect(verifier).toContain("expected installed verify:live help to explain production-scope preset");
     expect(verifier).toContain("expected installed verify:live:report max-age option");
+    expect(verifier).toContain("expected installed verify:publish-dry-run package script");
+    expect(verifier).toContain("expected installed verify:cli package script");
+    expect(verifier).toContain("expected installed verify:package package script");
+    expect(verifier).toContain("expected installed verify:live package script");
+    expect(verifier).toContain("expected installed verify-cli script");
+    expect(verifier).toContain("expected installed verify-package script");
+    expect(verifier).toContain("expected installed live verifier runner");
+    expect(verifier).toContain("function packagePackArgs()");
+    expect(verifier).toContain('args.push("--ignore-scripts")');
+    expect(verifier).toContain("function isSourceTreePackage");
+    expect(verifier).toContain('"src", "index.ts"');
+    expect(verifier).toContain('"tsconfig.json"');
     expect(verifier).toContain("expected installed verify:live:report freshness guidance");
     expect(verifier).toContain("expected installed verify:live:report production-scope request guidance");
     expect(verifier).toContain("expected installed verify:live:report production-scope cart-state guidance");
     expect(verifier).toContain("expected installed verify:live:report production-scope focused-workflow exclusion guidance");
+    expect(verifier).toContain("expected installed verify:live:report manual/internal command marker guidance");
     expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
+    expect(verifier).toContain("local status readiness");
     expect(verifier).toContain(
-      "browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );
     expect(verifier).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
@@ -487,8 +541,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live command-timeout code guidance");
     expect(verifier).toContain("expected installed verify:live help to mention silent npm invocation for shared logs");
     expect(verifier).toContain("expected installed verify:live help to explain report summary booleans");
+    expect(verifier).toContain("expected installed verify:live help to keep manual preconditions separate from workflow attempts");
     expect(verifier).toContain("expected installed verify:live npm-token redaction guidance");
     expect(verifier).toContain("expected installed verify:live percent-encoded fragment redaction guidance");
+    expect(verifier).toContain("npm publish --dry-run --access public");
     expect(verifier).toContain("expected installed verify:secrets to skip service-spelled local runtime data directories");
     expect(verifier).toContain("function installedVerifyLiveArgs");
     expect(verifier).toContain('"--silent", "run", "--prefix", packageDir, "verify:live"');
@@ -498,9 +554,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live verifier to sanitize report write failures");
     expect(verifier).toContain("expected installed live verifier to write sanitized partial reports on interrupts");
     expect(verifier).toContain("expected installed live verifier summaries to count readable records");
+    expect(verifier).toContain("expected installed live verifier to skip live-session checks when no live workflow was requested");
     expect(verifier).toContain("latestHasStatus: hasReadableText(orders[0]?.status)");
     expect(verifier).toContain("latestHasEta: hasReadableText(orders[0]?.eta)");
     expect(verifier).toContain("expected installed doctor live report contract to require browser automation readiness");
+    expect(verifier).toContain("expected installed status report contract to require browser readiness");
     expect(verifier).toContain("expected installed status live report contract to require browser readiness");
     expect(verifier).toContain("expected installed search live report contract to require product detail");
     expect(verifier).toContain("expected installed add live report contract to require product detail");
@@ -513,7 +571,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live no-session report coverage to distinguish preflight from account workflow");
     expect(verifier).toContain("expected installed verify:live no-session report requests to show explicit verification scope");
     expect(verifier).toContain("expected installed live report requests to include requested workflow scope without sensitive values");
-    expect(verifier).toContain("expected installed verify:live no-session report attempts to distinguish failed preconditions from skipped workflow");
+    expect(verifier).toContain("expected installed verify:live no-session report attempts to keep manual preconditions separate from workflow attempts");
     expect(verifier).toContain("expected installed live report attempts to include failed and successful workflow steps");
     expect(verifier).toContain("expected installed live report coverage to include only successful workflow steps");
     expect(verifier).toContain("expected installed live report missing coverage to include requested-but-unverified workflow steps only");
@@ -564,6 +622,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject unredacted command strings");
     expect(verifier).toContain("expected installed live report command rejection to omit raw workflow values");
     expect(verifier).toContain("expected installed live report acceptance helper to require redacted command strings");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject manual commands on workflow steps");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject internal commands on workflow steps");
     expect(verifier).toContain("pass installed live report command contract");
     expect(verifier).toContain("expected installed live report acceptance helper to reject inconsistent step result fields");
     expect(verifier).toContain("pass installed live report step result contract");
@@ -643,6 +703,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("installed visible required address add");
     expect(verifier).toContain("installed visible required checkout");
     expect(verifier).toContain("visible_browser_required");
+    expect(verifier).toContain("browser profile writes, and headless browser run accounting");
     expect(verifier).toContain("expected installed redacted phone hint");
     expect(verifier).toContain("expected installed JSON phone error to omit raw phone-shaped value");
     expect(verifier).toContain("expected runtime error to omit raw data-dir path");
@@ -656,6 +717,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("buildLiveCommandTimeoutStep");
     expect(verifier).toContain("expected installed live command timeout redaction");
     expect(verifier).toContain("expected installed checkout live report contract to require non-empty cart precondition");
+    expect(verifier).toContain("expected installed manual checkout live report to use incomplete coverage code");
+    expect(verifier).toContain("checkout_manual_action_required is manual continuation evidence only");
     expect(verifier).toContain("createLiveConsoleTextRedactor");
     expect(verifier).toContain("redactArgsForLiveConsole");
     expect(verifier).toContain("redactLiveConsoleText");
@@ -697,11 +760,31 @@ describe("package CLI contract", () => {
     expect(cliVerifier).toContain("expected JSON parser error to omit npm-token-shaped value");
     expect(cliVerifier).toContain("json equals flag parser error");
     expect(cliVerifier).toContain("expected malformed --json value parser error to keep stdout empty");
+    expect(cliVerifier).toContain("completion bash");
+    expect(cliVerifier).toContain("expected bash completion registration");
+    expect(cliVerifier).toContain("completion runtime-free data-dir");
+    expect(cliVerifier).toContain("expected completion command not to create runtime data dir");
+    expect(cliVerifier).toContain("expected help command completions");
+    expect(cliVerifier).toContain("expected nested help command completions");
+    expect(cliVerifier).toContain("completion zsh");
+    expect(cliVerifier).toContain("expected zsh completion header");
+    expect(cliVerifier).toContain("completion fish");
+    expect(cliVerifier).toContain("expected fish nested help condition");
+    expect(cliVerifier).toContain("completion powershell");
+    expect(cliVerifier).toContain("expected PowerShell completer registration");
+    expect(cliVerifier).toContain("completion pwsh alias");
+    expect(cliVerifier).toContain("completion ps1 alias");
+    expect(cliVerifier).toContain("completion invalid shell json");
+    expect(cliVerifier).toContain("expected completion shell hint");
     expect(cliVerifier).toContain("expected JSON runtime setup error to omit raw data-dir path");
     expect(cliVerifier).toContain("human runtime setup redaction");
     expect(cliVerifier).toContain("expected human runtime setup error to omit raw data-dir path");
     expect(cliVerifier).toContain("human invalid phone prefill redaction");
     expect(cliVerifier).toContain("expected human phone error to omit raw phone-shaped value");
+    expect(cliVerifier).toContain("assertNoBrowserWork");
+    expect(cliVerifier).toContain("expected guarded command not to create a browser lock");
+    expect(cliVerifier).toContain("expected guarded command not to write browser profile data");
+    expect(cliVerifier).toContain("expected guarded command not to launch headless browser");
 
     expect(runtime).toContain("redactSensitiveValue");
     expect(redaction).toContain("redactSensitiveError");
@@ -727,11 +810,13 @@ describe("package CLI contract", () => {
     const liveVerifier = readFileSync(resolve(rootDir, "scripts", "verify-live-flow.mjs"), "utf8");
 
     expect(liveVerifier).toContain("DEFAULT_STEP_TIMEOUT_MS = 30 * 60 * 1_000");
-    expect(liveVerifier).toContain("COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 5_000");
+    expect(liveVerifier).toContain("COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 30_000");
     expect(liveVerifier).toContain('child.kill("SIGTERM")');
     expect(liveVerifier).toContain('child.kill("SIGKILL")');
     expect(liveVerifier).toContain("clearForceKillTimer(forceKill)");
-    expect(liveVerifier).toContain("reject(liveCommandTimeoutError(options.stepTimeoutMs))");
+    expect(liveVerifier.match(/liveCommandTimeoutError\(options\.stepTimeoutMs, \{ stdout, stderr \}\)/g)).toHaveLength(2);
+    expect(liveVerifier).toContain("buildLiveCommandTimeoutOrErrorStep({");
+    expect(liveVerifier).toContain("stderr: error.stderr");
   });
 
   it("keeps live verification interrupts sanitized and cleanup-aware", () => {

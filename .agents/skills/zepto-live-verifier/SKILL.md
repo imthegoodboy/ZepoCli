@@ -40,6 +40,7 @@ npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-sco
 ```
 
 `--login` is conditional. If the dedicated data directory already has a confirmed session, the runner must not force a fresh login or claim login coverage; it should require `liveSession` coverage from `status --live` instead.
+With no live workflow flags, a data directory that already has a confirmed local session should stop after doctor/local status instead of opening a visible `status --live`; a no-session smoke still fails at the session precondition.
 `--production-scope` is the final readiness preset. It requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage so the saved report can be checked with `verify:live:report --require-production-scope --max-age-minutes 1440`.
 `--browser-locale <locale>` and `--browser-timezone <timezone>` are optional; when supplied, the live runner passes the same validated browser context to every child `zepo` command and stores only `<redacted-browser-locale>` / `<redacted-browser-timezone>` in report command strings.
 
@@ -56,6 +57,7 @@ npm --silent run verify:live:report -- --require-production-scope --max-age-minu
 
 `verify:live:report` does not contact Zepto or prove a fresh run happened. It only checks the saved report contract before agents treat the report as acceptance evidence.
 Use `--require-production-scope` for final readiness so a valid partial report cannot be mistaken for core production workflow proof. Use `--max-age-minutes 1440` for final readiness so stale saved reports cannot be reused as current evidence.
+`status: "checkout_manual_action_required"` proves only a readable non-empty cart plus safe manual Zepto continuation. The live runner reports it as `live_verification_incomplete`, and it is intentionally not accepted as checkout handoff coverage or production-scope readiness evidence.
 
 Optional focused passes:
 
@@ -88,6 +90,7 @@ The live report is acceptable only when:
 - `generatedAt` is a valid non-future ISO timestamp, satisfies any `--max-age-minutes` freshness window used for acceptance, `dataDir`/`reportPath` use redacted markers, and `note` matches the runner literal.
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - Stored step command strings match the redacted command contract.
+- Manual/internal command markers are valid only for runner-defined precondition/internal failure steps.
 - Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.
 - Failing step error objects use stable `code`, readable `message`/`hint`, and valid `retryAfterMs` fields bounded to runner-supported timing.
 - `ok: true` reports contain only passing known workflow steps.
@@ -105,9 +108,11 @@ The live report is acceptable only when:
 - `coverage` shows which workflow capabilities actually passed; do not treat omitted or false coverage fields as verified.
 - `requested`, `attempted`, `coverage`, and `missingCoverage` contain every supported capability as booleans.
 - `attempted` and `coverage` match the saved `steps` array; agents must reject edited summaries that do not match step evidence.
+- Manual precondition failures such as a missing confirmed session are incomplete manual steps, not workflow attempts; do not treat them as login, live-session, checkout, or order evidence.
 - The report keys and values do not contain sensitive-looking local paths, phone/order/payment/verification values, or npm-token-shaped values.
 - `missingCoverage` shows requested capabilities that did not pass; all values must be false before treating a requested scope as verified.
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.
+- Local `status` shows ready browser automation before live account workflows.
 - `login` confirms `sessionSaved: true` and `confirmedSession: true` when a login step actually runs.
 - Existing confirmed sessions with `--login` leave `requested.login` false and require `requested.liveSession` to pass instead.
 - `status live` reports ready browser automation and `liveSession.state: "logged-in"`.
@@ -115,6 +120,7 @@ The live report is acceptable only when:
 - `add` has selected product evidence with readable price or unit detail and readable cart items when requested.
 - `cart`, `remove`, `clear`, `checkout`, `track`, `history`, and `reorder` satisfy their named live report contracts when requested.
 - `checkout` preserves `cartPrecondition: "non_empty_cart_verified"`, `paymentStatus: "not_observed_by_zepocli"`, `orderPlacement: "not_confirmed_by_zepocli"`, and `orderStatusCommand: "zepo track"`.
-- With `--require-production-scope`, browser preflight, local status, live session, search, address selection, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage, focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence, and `--max-age-minutes` must be supplied so production-scope evidence is fresh.
+- Checkout coverage requires `status: "checkout_handoff_returned"`; `status: "checkout_manual_action_required"` must keep coverage missing because the user still needs to click Zepto's visible payment control manually.
+- With `--require-production-scope`, browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage, focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence, and `--max-age-minutes` must be supplied so production-scope evidence is fresh.
 
 If any step fails with a stable `live_*_contract_mismatch`, `live_command_timeout`, `command_failed`, or `live_verification_incomplete` code, the live workflow is not fully verified yet.
