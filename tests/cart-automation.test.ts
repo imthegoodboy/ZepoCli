@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CART_OPEN_CLICK_LABELS,
   cartHasMatchingItem,
+  clearCart,
   clickTaggedCartRemoveButton,
   clickCartOpenButton,
   hasCartSurfaceEvidence,
@@ -17,6 +18,7 @@ import {
   parseActiveCartItemFromControlText,
   readCart,
   readVisibleCart,
+  removeCartItem,
   requireReadableCartSnapshot
 } from "../src/automation/cart.js";
 
@@ -645,6 +647,26 @@ describe("cart automation helpers", () => {
       code: "cart_limit_exceeded"
     });
     expect(page.limitRemoveClicks).toBe(6);
+  });
+
+  it("allows explicit clear to resolve a blocking cart-limit warning before clearing the cart", async () => {
+    const page = createClearCartLimitWarningPage();
+
+    await expect(clearCart(page as never)).resolves.toMatchObject({
+      items: [],
+      total: undefined
+    });
+    expect(page.limitRemoveClicks).toBe(1);
+    expect(page.itemRemoveClicks).toBe(1);
+  });
+
+  it("does not resolve limit warnings for a single item remove request", async () => {
+    const page = createCartLimitWarningPage();
+
+    await expect(removeCartItem(page as never, "Amul")).rejects.toMatchObject({
+      code: "cart_limit_exceeded"
+    });
+    expect(page.limitRemoveClicked).toBe(false);
   });
 
   it("rejects partial active-cart rows when Zepto exposes an item count", () => {
@@ -1591,6 +1613,76 @@ function createPersistentCartLimitWarningPage() {
     },
     locator: (selector: string) =>
       selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createClearCartLimitWarningPage() {
+  const itemCardText = [
+    "Amul Gold Full Cream Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "₹34",
+    "Qty 1"
+  ].join("\n");
+  const itemText = [
+    "Delivering in 5 mins",
+    "1 item",
+    itemCardText,
+    "Bill Summary",
+    "To Pay",
+    "₹34"
+  ].join("\n");
+  const emptyText = "My Cart\nYour cart is empty\nAdd items to continue";
+  let bodyText = [
+    "You've exceeded limit for these items for today. Please order tomorrow.",
+    "Fortune Pure & Hygienic Fine Grain Sugar (1)",
+    "Remove Items",
+    itemText
+  ].join("\n");
+  const page = {
+    limitRemoveClicks: 0,
+    itemRemoveClicks: 0,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (!source.includes("data-zepo-remove-id")) {
+        return [];
+      }
+
+      return bodyText === itemText ? 0 : undefined;
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        (role === "button" || role === "link") &&
+        bodyText.includes("Remove Items") &&
+        matchesLocatorName(options.name, "Remove Items")
+      ) {
+        return createVisibleLocator("Remove Items", async () => {
+          page.limitRemoveClicks += 1;
+          bodyText = itemText;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return createBodyTextLocator(() => bodyText);
+      }
+
+      if (selector === '[data-zepo-remove-id="0"]' && bodyText === itemText) {
+        return createVisibleLocator("Remove", async () => {
+          page.itemRemoveClicks += 1;
+          bodyText = emptyText;
+        }, {}, itemCardText);
+      }
+
+      return createHiddenLocator();
+    }
   };
 
   return page;

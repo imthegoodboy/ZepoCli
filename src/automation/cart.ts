@@ -233,6 +233,7 @@ async function recoverCartOpenForRead(page: Page): Promise<void> {
 
 export async function removeCartItem(page: Page, query: string): Promise<CartSnapshot> {
   await openCart(page);
+  assertNoBlockingCartModal(await readBodyText(page));
 
   let removed = false;
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -267,7 +268,8 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
 export async function clearCart(page: Page): Promise<CartSnapshot> {
   await openCart(page);
 
-  let cart = await readVisibleCart(page);
+  const readOptions = { removeLimitItems: true };
+  let cart = await readVisibleCart(page, readOptions);
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const target = cart.items[0];
     if (!target) {
@@ -296,7 +298,7 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
     await clickTaggedCartRemoveButton(page, removeId, removeQuery);
     await page.waitForTimeout(500);
     await assertNoAccessChallenge(page);
-    cart = await readVisibleCart(page);
+    cart = await readVisibleCart(page, readOptions);
   }
 
   if (cart.items.length > 0) {
