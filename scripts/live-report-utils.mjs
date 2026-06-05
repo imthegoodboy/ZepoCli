@@ -314,7 +314,7 @@ function buildLiveReportManualEvidence(name, payload, payloadContractError) {
 }
 
 export function summarizeLiveReportCoverage(steps = []) {
-  return summarizeLiveReportStepBooleans(steps, (step) => step.ok === true);
+  return summarizeLiveReportStepBooleans(steps, liveReportStepHasPassingCoverage);
 }
 
 export function summarizeLiveReportAttempts(steps = []) {
@@ -697,6 +697,15 @@ function addLiveReportStepOrderMismatchIssue(issues) {
       message: "Live report ok=true workflow steps must follow the live runner order."
     });
   }
+}
+
+function liveReportStepHasPassingCoverage(step) {
+  if (step?.ok !== true) {
+    return false;
+  }
+
+  const requirement = LIVE_REPORT_ACCEPTANCE_REQUIREMENT_BY_STEP_NAME.get(step.name);
+  return !requirement?.accepts || requirement.accepts(step);
 }
 
 function validateLiveReportPassingStepContracts(steps, issues) {

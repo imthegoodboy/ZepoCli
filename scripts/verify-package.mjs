@@ -2987,9 +2987,31 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const installedConfirmedSessionMissingCoverage = summarizeLiveReportMissingCoverage(
     installedConfirmedSessionRequest,
     summarizeLiveReportCoverage([
-      { name: "doctor", ok: true },
-      { name: "status", ok: true },
-      { name: "status live", ok: true }
+      {
+        name: "doctor",
+        ok: true,
+        summary: {
+          ok: true,
+          browserAutomationReady: true,
+          playwrightChromiumPassed: true
+        }
+      },
+      {
+        name: "status",
+        ok: true,
+        summary: {
+          browserAutomationReady: true
+        }
+      },
+      {
+        name: "status live",
+        ok: true,
+        summary: {
+          confirmedSession: true,
+          browserAutomationReady: true,
+          liveSessionState: "logged-in"
+        }
+      }
     ])
   );
   assert(
@@ -3482,6 +3504,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   checkoutSummaryWithoutHandoffMarkersReport.missingCoverage = summarizeLiveReportMissingCoverage(
     checkoutSummaryWithoutHandoffMarkersReport.requested,
     checkoutSummaryWithoutHandoffMarkersReport.coverage
+  );
+  assert(
+    checkoutSummaryWithoutHandoffMarkersReport.coverage.checkoutHandoff === false &&
+      checkoutSummaryWithoutHandoffMarkersReport.missingCoverage.checkoutHandoff === true,
+    "expected installed live report checkout summaries without fixed handoff markers to remain uncovered"
   );
   assert(
     validateLiveReportAcceptance(checkoutSummaryWithoutHandoffMarkersReport, {
@@ -4835,10 +4862,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assertDeepEqual(
     summarizeLiveReportCoverage([
-      { name: "doctor", ok: true },
-      { name: "status", ok: true },
+      acceptedLiveReportSteps[0],
+      acceptedLiveReportSteps[1],
       { name: "login", ok: false },
-      { name: "checkout", ok: true },
+      acceptedLiveReportSteps[4],
       { name: "history", ok: false }
     ]),
     {
@@ -4859,7 +4886,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       history: false,
       reorder: false
     },
-    "expected installed live report coverage to include only successful workflow steps"
+    "expected installed live report coverage to include only accepted successful workflow steps"
   );
   assertDeepEqual(
     summarizeLiveReportMissingCoverage(
@@ -4870,11 +4897,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         history: true
       }),
       summarizeLiveReportCoverage([
-        { name: "doctor", ok: true },
-        { name: "status", ok: true },
+        acceptedLiveReportSteps[0],
+        acceptedLiveReportSteps[1],
         { name: "login", ok: false },
-        { name: "search", ok: true },
-        { name: "checkout", ok: true }
+        acceptedLiveReportSteps[3],
+        acceptedLiveReportSteps[4]
       ])
     ),
     {

@@ -612,7 +612,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report requests to include requested workflow scope without sensitive values");
     expect(verifier).toContain("expected installed verify:live no-session report attempts to keep manual preconditions separate from workflow attempts");
     expect(verifier).toContain("expected installed live report attempts to include failed and successful workflow steps");
-    expect(verifier).toContain("expected installed live report coverage to include only successful workflow steps");
+    expect(verifier).toContain(
+      "expected installed live report coverage to include only accepted successful workflow steps"
+    );
     expect(verifier).toContain("expected installed live report missing coverage to include requested-but-unverified workflow steps only");
     expect(verifier).toContain("expected installed live report acceptance helper to reject attempted summaries that do not match steps");
     expect(verifier).toContain("expected installed live report acceptance helper to reject coverage summaries that do not match steps");

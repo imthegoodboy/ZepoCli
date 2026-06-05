@@ -486,20 +486,28 @@ describe("live verification runner", () => {
   });
 
   it("summarizes successful live report coverage without sensitive workflow data", () => {
+    const productionReport = productionScopeLiveReport();
+
     expect(
       summarizeLiveReportCoverage([
-        { name: "doctor", ok: true },
-        { name: "status", ok: true },
+        productionReport.steps[0],
+        productionReport.steps[1],
         { name: "login", ok: false },
-        { name: "status live", ok: true },
-        { name: "search", ok: true },
-        { name: "address use", ok: true },
-        { name: "add", ok: true },
-        { name: "cart", ok: true },
-        { name: "checkout", ok: true },
-        { name: "track", ok: true },
+        productionReport.steps[2],
+        productionReport.steps[4],
+        productionReport.steps[3],
+        productionReport.steps[5],
+        productionReport.steps[6],
+        productionReport.steps[7],
+        productionReport.steps[8],
         { name: "history", ok: false },
-        { name: "reorder", ok: true },
+        {
+          name: "reorder",
+          ok: true,
+          summary: {
+            cartItemCount: 1
+          }
+        },
         { name: "unknown", ok: true }
       ])
     ).toEqual({
@@ -520,6 +528,34 @@ describe("live verification runner", () => {
       history: false,
       reorder: true
     });
+  });
+
+  it("does not count ok steps as coverage when known acceptance summaries fail", () => {
+    const coverage = summarizeLiveReportCoverage([
+      { name: "doctor", ok: true },
+      { name: "status", ok: true },
+      { name: "search", ok: true },
+      {
+        name: "checkout",
+        ok: true,
+        summary: {
+          status: "checkout_handoff_returned",
+          humanActionRequired: true,
+          automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+          cartPrecondition: "non_empty_cart_verified",
+          paymentStatus: "not_observed_by_zepocli",
+          orderPlacement: "not_confirmed_by_zepocli",
+          orderStatusCommand: "zepo track"
+        }
+      },
+      { name: "cart", ok: true }
+    ]);
+
+    expect(coverage.browserPreflight).toBe(false);
+    expect(coverage.localStatus).toBe(false);
+    expect(coverage.search).toBe(false);
+    expect(coverage.checkoutHandoff).toBe(false);
+    expect(coverage.cart).toBe(true);
   });
 
   it("summarizes attempted live report steps separately from passing coverage", () => {
@@ -690,11 +726,7 @@ describe("live verification runner", () => {
 
     const missingCoverage = summarizeLiveReportMissingCoverage(
       adjusted,
-      summarizeLiveReportCoverage([
-        { name: "doctor", ok: true },
-        { name: "status", ok: true },
-        { name: "status live", ok: true }
-      ])
+      summarizeLiveReportCoverage(acceptedLiveReport().steps.slice(0, 3))
     );
 
     expect(missingCoverage.login).toBe(false);
@@ -2271,11 +2303,11 @@ describe("live verification runner", () => {
       history: true
     });
     const coverage = summarizeLiveReportCoverage([
-      { name: "doctor", ok: true },
-      { name: "status", ok: true },
+      acceptedLiveReport().steps[0],
+      acceptedLiveReport().steps[1],
       { name: "login", ok: false },
-      { name: "search", ok: true },
-      { name: "checkout", ok: true }
+      acceptedLiveReport().steps[3],
+      acceptedLiveReport().steps[4]
     ]);
 
     const missingCoverage = summarizeLiveReportMissingCoverage(requested, coverage);
@@ -3484,11 +3516,13 @@ describe("live verification runner", () => {
     report.coverage = summarizeLiveReportCoverage(report.steps);
     report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
 
-    expect(report.coverage.checkoutHandoff).toBe(true);
+    expect(report.coverage.checkoutHandoff).toBe(false);
+    expect(report.missingCoverage.checkoutHandoff).toBe(true);
 
     const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
     expect(result.accepted).toBe(false);
     expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_requested_coverage_missing");
   });
 
   it("rejects production-scope reports that track after manual checkout without handoff coverage", () => {
