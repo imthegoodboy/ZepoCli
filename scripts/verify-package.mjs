@@ -2235,6 +2235,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live production-scope preset to enable checkout wait"
   );
   assert(
+    liveVerifierSource.includes("options.checkoutRemoveLimitItems") &&
+      liveVerifierSource.includes('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items")') &&
+      liveVerifierSource.includes("--checkout-remove-limit-items can only be used with --checkout or --production-scope."),
+    "expected installed verify:live to support explicit checkout item-limit warning removal"
+  );
+  assert(
     liveVerifierSource.includes("shouldContinueAfterManualCheckout(checkoutResult)") &&
       liveVerifierSource.includes("function shouldContinueAfterManualCheckout(result)") &&
       liveVerifierSource.includes("!options.productionScope") &&
@@ -2250,6 +2256,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(result.stdout.includes("--choose-add"), "expected installed verify:live choose-add option");
   assert(result.stdout.includes("--remove <query>"), "expected installed verify:live remove option");
   assert(result.stdout.includes("--clear"), "expected installed verify:live clear option");
+  assert(
+    result.stdout.includes("--checkout-remove-limit-items") &&
+      result.stdout.includes("click Zepto's Remove Items action"),
+    "expected installed verify:live checkout limit-warning removal option"
+  );
   assert(result.stdout.includes("--step-timeout <ms>"), "expected installed verify:live step-timeout option");
   assert(
     result.stdout.includes("npm --silent run verify:live"),
@@ -2276,6 +2287,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     result.stdout.includes("If checkout remains at checkout_manual_action_required, production-scope verification stops before track"),
     "expected installed verify:live help to explain production-scope stops before track without checkout handoff"
+  );
+  assert(
+    result.stdout.includes("Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings"),
+    "expected installed verify:live help to explain explicit checkout limit-warning removal"
   );
   assert(result.stdout.includes("omits raw page text"), "expected installed verify:live sanitized-report guidance");
   assert(result.stdout.includes("npm-token-shaped values"), "expected installed verify:live npm-token redaction guidance");
@@ -2400,6 +2415,30 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     !chooseAddWithoutAddResult.stderr.includes("Compiled CLI was not found"),
     "expected installed verify:live choose-add guard to fail before compiled CLI checks"
+  );
+
+  const checkoutRemoveLimitWithoutCheckoutResult = runNpmResult(
+    installedVerifyLiveArgs(
+      packageDir,
+      "--data-dir",
+      join(tempRoot, "live-checkout-remove-limit-without-checkout-data"),
+      "--checkout-remove-limit-items"
+    ),
+    { cwd: rootDir }
+  );
+  assert(
+    checkoutRemoveLimitWithoutCheckoutResult.status === 1,
+    "expected installed verify:live checkout limit-warning removal without checkout to fail"
+  );
+  assert(
+    checkoutRemoveLimitWithoutCheckoutResult.stderr.includes(
+      "--checkout-remove-limit-items can only be used with --checkout or --production-scope."
+    ),
+    "expected installed verify:live checkout limit-warning removal guard"
+  );
+  assert(
+    !checkoutRemoveLimitWithoutCheckoutResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live checkout limit-warning removal guard to fail before compiled CLI checks"
   );
 
   const productionScopeMissingInputsResult = runNpmResult(
@@ -3035,6 +3074,35 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       maxAgeMs: 60_000
     }).accepted === true,
     "expected installed live report acceptance helper to accept production-scope report evidence"
+  );
+  const checkoutLimitRemovalProductionScopeLiveReport = {
+    ...freshProductionScopeLiveReport,
+    steps: freshProductionScopeLiveReport.steps.map((step) =>
+      step.name === "checkout"
+        ? {
+            ...step,
+            command: "zepo --data-dir <redacted-data-dir> --visible checkout --remove-limit-items --wait --json"
+          }
+        : step
+    )
+  };
+  checkoutLimitRemovalProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(
+    checkoutLimitRemovalProductionScopeLiveReport.steps
+  );
+  checkoutLimitRemovalProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(
+    checkoutLimitRemovalProductionScopeLiveReport.steps
+  );
+  checkoutLimitRemovalProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    checkoutLimitRemovalProductionScopeLiveReport.requested,
+    checkoutLimitRemovalProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(checkoutLimitRemovalProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true,
+      maxAgeMs: 60_000
+    }).accepted === true,
+    "expected installed live report acceptance helper to accept production-scope checkout limit-warning removal evidence"
   );
   const noWaitProductionScopeLiveReport = {
     ...freshProductionScopeLiveReport,
@@ -5383,6 +5451,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stdout.includes("Open Zepto checkout handoff (requires --visible)"), "expected checkout description");
         assert(stdout.includes("--json"), "expected checkout json option");
         assert(stdout.includes("--wait"), "expected checkout wait option");
+        assert(stdout.includes("--remove-limit-items"), "expected checkout limit-warning removal option");
       }
     },
     {

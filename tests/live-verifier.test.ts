@@ -256,6 +256,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--production-scope");
     expect(result.stdout).toContain("Final readiness preset");
     expect(result.stdout).toContain("with checkout wait enabled");
+    expect(result.stdout).toContain("--checkout-remove-limit-items");
     expect(result.stdout).toContain("--browser-locale <locale>");
     expect(result.stdout).toContain("--browser-timezone <timezone>");
     expect(result.stdout).toContain("--remove <query>");
@@ -291,6 +292,9 @@ describe("live verification runner", () => {
     );
     expect(result.stdout).toContain(
       "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking."
+    );
+    expect(result.stdout).toContain(
+      "Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings"
     );
     expect(result.stdout).not.toContain("prefer npm --silent run verify:live");
   });
@@ -391,6 +395,8 @@ describe("live verification runner", () => {
     expect(script).toContain("options.checkoutWait");
     expect(script).toContain("parsed.checkoutWait = true");
     expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait")');
+    expect(script).toContain("options.checkoutRemoveLimitItems");
+    expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items")');
     expect(script).toContain("shouldContinueAfterManualCheckout(checkoutResult)");
     expect(script).toContain("function shouldContinueAfterManualCheckout(result)");
     expect(script).toContain("!options.productionScope");
@@ -729,6 +735,29 @@ describe("live verification runner", () => {
         requireProductionScope: true,
         maxAgeMs: 60_000
       })
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
+    expect(
+      validateLiveReportAcceptance(
+        productionScopeLiveReport({
+          generatedAt: new Date().toISOString(),
+          steps: productionScopeLiveReport().steps.map((step) =>
+            step.name === "checkout"
+              ? {
+                  ...step,
+                  command: "zepo --data-dir <redacted-data-dir> --visible checkout --remove-limit-items --wait --json"
+                }
+              : step
+          )
+        }),
+        {
+          expectedVersion: packageJson.version,
+          requireProductionScope: true,
+          maxAgeMs: 60_000
+        }
+      )
     ).toEqual({
       accepted: true,
       issues: []
@@ -2311,6 +2340,20 @@ describe("live verification runner", () => {
     expect(checkoutWaitWithoutCheckout.status).toBe(1);
     expect(checkoutWaitWithoutCheckout.stderr).toContain("--checkout-wait can only be used with --checkout or --production-scope.");
 
+    const checkoutRemoveLimitWithoutCheckout = spawnSync(
+      process.execPath,
+      [scriptPath, "--data-dir", ".zepo-live", "--checkout-remove-limit-items"],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(checkoutRemoveLimitWithoutCheckout.status).toBe(1);
+    expect(checkoutRemoveLimitWithoutCheckout.stderr).toContain(
+      "--checkout-remove-limit-items can only be used with --checkout or --production-scope."
+    );
+
     const addressAndList = spawnSync(
       process.execPath,
       [scriptPath, "--data-dir", ".zepo-live", "--address", "home", "--address-list"],
@@ -3249,21 +3292,26 @@ describe("live verification runner", () => {
   });
 
   it("accepts sanitized checkout wait command strings in live reports", () => {
-    const report = acceptedLiveReport({
-      steps: acceptedLiveReport().steps.map((step) =>
-        step.name === "checkout"
-          ? {
-              ...step,
-              command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json"
-            }
-          : step
-      )
-    });
-    report.attempted = summarizeLiveReportAttempts(report.steps);
-    report.coverage = summarizeLiveReportCoverage(report.steps);
-    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+    for (const command of [
+      "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      "zepo --data-dir <redacted-data-dir> --visible checkout --remove-limit-items --wait --json"
+    ]) {
+      const report = acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "checkout"
+            ? {
+                ...step,
+                command
+              }
+            : step
+        )
+      });
+      report.attempted = summarizeLiveReportAttempts(report.steps);
+      report.coverage = summarizeLiveReportCoverage(report.steps);
+      report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
 
-    expect(validateLiveReportAcceptance(report, { expectedVersion: packageJson.version }).accepted).toBe(true);
+      expect(validateLiveReportAcceptance(report, { expectedVersion: packageJson.version }).accepted).toBe(true);
+    }
   });
 
   it("accepts checkout live report steps that preserve the payment handoff contract", () => {

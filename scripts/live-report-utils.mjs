@@ -51,7 +51,7 @@ const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
   "reorder"
 ];
 const LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN =
-  /^zepo --data-dir <redacted-data-dir>(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)? --visible checkout --wait --json$/;
+  /^zepo --data-dir <redacted-data-dir>(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)? --visible checkout(?: --remove-limit-items)? --wait --json$/;
 const LIVE_REPORT_ADDRESS_DETAIL_PATTERN =
   /\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\s+code|india)\b|\b[a-z]\s*[-/]\s*\d{2,}\b|\d{3,}/i;
 const LIVE_REPORT_ADDRESS_PLACEHOLDER_PATTERN =
@@ -1178,7 +1178,7 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
   ["cart", liveCommandPattern("--visible cart --json")],
   ["remove", liveCommandPattern("--visible remove <redacted-cart-query> --json")],
   ["clear", liveCommandPattern("--visible clear --json")],
-  ["checkout", liveCommandPattern("--visible checkout(?: --wait)? --json")],
+  ["checkout", liveCommandPattern("--visible checkout(?: --remove-limit-items)?(?: --wait)? --json")],
   ["track", liveCommandPattern("--visible track --json")],
   ["history", liveCommandPattern("--visible history --json")],
   ["reorder", liveCommandPattern("--visible reorder last --json")]

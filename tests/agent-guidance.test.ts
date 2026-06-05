@@ -128,6 +128,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain("including search, live status, login, cart, address, checkout, orders, and reorder");
       expect(guidance).toContain("verify:live` should start with mode-aware `zepo doctor --json`");
       expect(guidance).toContain("--production-scope --search <query> --address <query> --add <query>");
+      expect(guidance).toContain("--checkout-remove-limit-items");
+      expect(guidance).toContain(
+        "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before checkout"
+      );
       expect(guidance).toContain("--choose-add");
       expect(guidance).toContain("--add <query> --choose-add --cart");
       expect(guidance).toContain("--step-timeout <ms>");
@@ -269,7 +273,11 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
     expect(liveVerifierSkill).toContain("--production-scope --search milk --address home --add");
+    expect(liveVerifierSkill).toContain("--checkout-remove-limit-items");
     expect(liveVerifierSkill).toContain("`--production-scope` is the final readiness preset shape");
+    expect(liveVerifierSkill).toContain(
+      "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before checkout"
+    );
     expect(liveVerifierSkill).toContain(
       "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
     );
@@ -301,6 +309,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain('orderStatusCommand: "zepo track"');
     expect(liveVerifierSkill).toContain('status: "checkout_manual_action_required"');
     expect(liveVerifierSkill).toContain("returns structured handoff evidence immediately instead of waiting for an Enter prompt");
+    expect(liveVerifierSkill).toContain("Use `--checkout-remove-limit-items` only for the explicit Zepto item-limit warning removal before that checkout handoff");
     expect(liveVerifierSkill).toContain("Wait mode re-checks the visible page after Enter");
     expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");
     expect(liveVerifierSkill).toContain("not accepted as checkout handoff coverage");

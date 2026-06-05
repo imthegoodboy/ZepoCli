@@ -240,6 +240,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
     );
+    expect(readme).toContain(
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --checkout-remove-limit-items'
+    );
     expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
     expect(readme).toContain("It starts with a mode-aware `zepo doctor --json` preflight, including the Playwright Chromium launch check");
@@ -257,6 +260,9 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain(
       "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence"
+    );
+    expect(readme).toContain(
+      "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before checkout"
     );
     expect(readme).toContain(
       "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"

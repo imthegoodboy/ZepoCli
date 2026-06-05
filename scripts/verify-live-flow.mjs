@@ -243,6 +243,9 @@ async function main() {
       "\nCheckout verification opens Zepto checkout/payment in a visible browser. Complete only the Zepto-side actions you choose; ZepoCli will not click final payment or order-placement controls."
     );
     const checkoutArgs = [...baseCliArgs({ visible: true }), "checkout", "--json"];
+    if (options.checkoutRemoveLimitItems) {
+      checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items");
+    }
     if (options.checkoutWait) {
       checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait");
     }
@@ -757,6 +760,7 @@ function parseArgs(args) {
     addressList: false,
     cart: false,
     checkout: false,
+    checkoutRemoveLimitItems: false,
     checkoutWait: false,
     help: false,
     history: false,
@@ -812,6 +816,8 @@ function parseArgs(args) {
       parsed.clear = true;
     } else if (arg === "--checkout") {
       parsed.checkout = true;
+    } else if (arg === "--checkout-remove-limit-items") {
+      parsed.checkoutRemoveLimitItems = true;
     } else if (arg === "--checkout-wait") {
       parsed.checkoutWait = true;
     } else if (arg === "--track") {
@@ -979,6 +985,11 @@ function validateOptions(parsed) {
     process.exit(1);
   }
 
+  if (parsed.checkoutRemoveLimitItems && !parsed.checkout) {
+    console.error("--checkout-remove-limit-items can only be used with --checkout or --production-scope.");
+    process.exit(1);
+  }
+
   if (parsed.address && parsed.addressList) {
     console.error("--address cannot be combined with --address-list because address selection already verifies the address flow.");
     process.exit(1);
@@ -1056,6 +1067,8 @@ Options:
   --remove <query>      Remove a matching cart item
   --clear               Remove all detected cart items; cannot be combined with --checkout
   --checkout            Open checkout/payment handoff in a visible Zepto browser
+  --checkout-remove-limit-items
+                        During --checkout, explicitly click Zepto's Remove Items action for item-limit warnings before checkout
   --checkout-wait       During --checkout, wait for a human Zepto-side checkout/payment action before returning JSON; manual payment controls still do not count as checkout handoff coverage
   --track               Read latest order status
   --history             Read order history
@@ -1070,6 +1083,7 @@ Example:
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
 Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
+Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
 If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
