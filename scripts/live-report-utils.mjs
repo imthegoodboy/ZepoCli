@@ -304,6 +304,8 @@ function buildLiveReportManualEvidence(name, payload, payloadContractError) {
     status: payload.status,
     humanActionRequired: payload.humanActionRequired,
     automationBoundary: payload.automationBoundary,
+    handoffUrl: payload.handoffUrl,
+    handoffSurface: payload.handoffSurface,
     cartPrecondition: payload.cartPrecondition,
     paymentStatus: payload.paymentStatus,
     orderPlacement: payload.orderPlacement,
@@ -937,6 +939,8 @@ function validateLiveReportManualEvidenceContract(step, issues) {
     step.manualEvidence?.status === "checkout_manual_action_required" &&
     step.manualEvidence?.humanActionRequired === true &&
     step.manualEvidence?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
+    step.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
+    step.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
     step.manualEvidence?.cartPrecondition === "non_empty_cart_verified" &&
     step.manualEvidence?.paymentStatus === "not_observed_by_zepocli" &&
     step.manualEvidence?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1158,6 +1162,8 @@ const LIVE_REPORT_MANUAL_EVIDENCE_KEYS = new Set([
   "status",
   "humanActionRequired",
   "automationBoundary",
+  "handoffUrl",
+  "handoffSurface",
   "cartPrecondition",
   "paymentStatus",
   "orderPlacement",
@@ -1210,6 +1216,8 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "status",
       "humanActionRequired",
       "automationBoundary",
+      "handoffUrl",
+      "handoffSurface",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1292,6 +1300,8 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
 const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
   "liveSessionState",
   "automationBoundary",
+  "handoffUrl",
+  "handoffSurface",
   "cartPrecondition",
   "orderPlacement",
   "orderStatusCommand",
@@ -1312,6 +1322,8 @@ const LIVE_REPORT_DOCTOR_CHECK_NAMES = new Set([
 const LIVE_REPORT_STRING_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
   ["liveSessionState", new Set(["skipped", "logged-in", "login-required", "unknown"])],
   ["automationBoundary", new Set(["zepocli_did_not_click_payment_or_order_controls"])],
+  ["handoffUrl", new Set(["https://www.zepto.com/?cart=open"])],
+  ["handoffSurface", new Set(["visible_zepto_browser"])],
   ["cartPrecondition", new Set(["non_empty_cart_verified"])],
   ["orderPlacement", new Set(["not_confirmed_by_zepocli"])],
   ["orderStatusCommand", new Set(["zepo track"])],
@@ -1637,6 +1649,8 @@ function validateCheckoutPayloadContract(payload) {
     payload?.payment === "handled_by_zepto" &&
     payload?.humanActionRequired === true &&
     payload?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
+    payload?.handoffUrl === "https://www.zepto.com/?cart=open" &&
+    payload?.handoffSurface === "visible_zepto_browser" &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1650,6 +1664,8 @@ function validateCheckoutPayloadContract(payload) {
     payload?.payment === "handled_by_zepto" &&
     payload?.humanActionRequired === true &&
     payload?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
+    payload?.handoffUrl === "https://www.zepto.com/?cart=open" &&
+    payload?.handoffSurface === "visible_zepto_browser" &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&

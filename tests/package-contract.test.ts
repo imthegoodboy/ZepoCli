@@ -512,6 +512,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Both preflight steps must report current-mode `browserAutomation.ready === true`");
     expect(verifier).toContain("doctor must also show a passing `Playwright Chromium` check");
     expect(verifier).toContain('paymentStatus: \\"not_observed_by_zepocli\\"');
+    expect(verifier).toContain('handoffUrl: \\"https://www.zepto.com/?cart=open\\"');
+    expect(verifier).toContain('handoffSurface: \\"visible_zepto_browser\\"');
     expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');
     expect(verifier).toContain('status: \\"checkout_manual_action_required\\"');
     expect(verifier).toContain("manual amount-bearing payment control");

@@ -41,6 +41,8 @@ export interface CheckoutHandoffOutput {
   payment: "handled_by_zepto";
   humanActionRequired: true;
   automationBoundary: "zepocli_did_not_click_payment_or_order_controls";
+  handoffUrl: "https://www.zepto.com/?cart=open";
+  handoffSurface: "visible_zepto_browser";
   cartPrecondition: "non_empty_cart_verified";
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
@@ -55,6 +57,8 @@ export function checkoutHandoffOutput(mode: CheckoutHandoffMode = "checkout_or_p
       payment: "handled_by_zepto",
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+      handoffUrl: "https://www.zepto.com/?cart=open",
+      handoffSurface: "visible_zepto_browser",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -68,6 +72,8 @@ export function checkoutHandoffOutput(mode: CheckoutHandoffMode = "checkout_or_p
     payment: "handled_by_zepto",
     humanActionRequired: true,
     automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+    handoffUrl: "https://www.zepto.com/?cart=open",
+    handoffSurface: "visible_zepto_browser",
     cartPrecondition: "non_empty_cart_verified",
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",

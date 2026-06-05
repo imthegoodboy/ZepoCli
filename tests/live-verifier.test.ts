@@ -142,6 +142,8 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
         status: "checkout_handoff_returned",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -335,7 +337,7 @@ describe("live verification runner", () => {
       "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired and automationBoundary markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, and handoffSurface markers"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -3260,6 +3262,8 @@ describe("live verification runner", () => {
         payment: "handled_by_zepto",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "paid",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3298,6 +3302,8 @@ describe("live verification runner", () => {
         payment: "handled_by_zepto",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -3330,6 +3336,8 @@ describe("live verification runner", () => {
         payment: "handled_by_zepto",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3350,6 +3358,8 @@ describe("live verification runner", () => {
         status: "checkout_manual_action_required",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3392,6 +3402,8 @@ describe("live verification runner", () => {
         status: "checkout_manual_action_required",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3536,6 +3548,8 @@ describe("live verification runner", () => {
         payment: "handled_by_zepto",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3547,12 +3561,16 @@ describe("live verification runner", () => {
         value: {
           humanActionRequired?: boolean;
           automationBoundary?: string;
+          handoffUrl?: string;
+          handoffSurface?: string;
           cartPrecondition?: string;
           orderStatusCommand?: string;
         }
       ) => ({
         humanActionRequired: value.humanActionRequired,
         automationBoundary: value.automationBoundary,
+        handoffUrl: value.handoffUrl,
+        handoffSurface: value.handoffSurface,
         cartPrecondition: value.cartPrecondition,
         orderStatusCommand: value.orderStatusCommand
       })
@@ -3566,6 +3584,8 @@ describe("live verification runner", () => {
       summary: {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
         cartPrecondition: "non_empty_cart_verified",
         orderStatusCommand: "zepo track"
       }

@@ -226,6 +226,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("browser profile writes, and headless browser run accounting");
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
+    expect(readme).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
+    expect(readme).toContain('handoffSurface: "visible_zepto_browser"');
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("`humanActionRequired: true`");

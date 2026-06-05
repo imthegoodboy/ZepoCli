@@ -384,6 +384,8 @@ describe("checkout handoff detection", () => {
       payment: "handled_by_zepto",
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+      handoffUrl: "https://www.zepto.com/?cart=open",
+      handoffSurface: "visible_zepto_browser",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -398,6 +400,8 @@ describe("checkout handoff detection", () => {
       payment: "handled_by_zepto",
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+      handoffUrl: "https://www.zepto.com/?cart=open",
+      handoffSurface: "visible_zepto_browser",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -411,6 +415,8 @@ describe("checkout handoff detection", () => {
 
     expect(output.humanActionRequired).toBe(true);
     expect(output.automationBoundary).toBe("zepocli_did_not_click_payment_or_order_controls");
+    expect(output.handoffUrl).toBe("https://www.zepto.com/?cart=open");
+    expect(output.handoffSurface).toBe("visible_zepto_browser");
     expect(output.next).toContain("A human must continue");
     expect(output.next).toContain("ZepoCli stops before payment/order controls");
     expect(output.next).not.toMatch(/^Click\b/i);
