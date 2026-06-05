@@ -5306,6 +5306,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(status === 0, "expected exit code 0");
         assert(stderr === "", "expected empty stderr");
         assert(stdout.includes("Show Zepto cart"), "expected cart description");
+        assert(stdout.includes("--remove-limit-items"), "expected cart limit resolution option");
         assert(stdout.includes("--json"), "expected cart json option");
       }
     },

@@ -43,6 +43,10 @@ export interface AddResult {
   cart: CartSnapshot;
 }
 
+export interface CartReadOptions {
+  removeLimitItems?: boolean;
+}
+
 export class CartService {
   private readonly browser: BrowserAutomation;
 
@@ -86,9 +90,9 @@ export class CartService {
     });
   }
 
-  async read(): Promise<CartSnapshot> {
+  async read(options: CartReadOptions = {}): Promise<CartSnapshot> {
     const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
-      readCartWithEmptyRecovery(page, EMPTY_CART_READ_REREAD_ATTEMPTS)
+      readCartWithEmptyRecovery(page, EMPTY_CART_READ_REREAD_ATTEMPTS, options)
     );
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;
@@ -112,13 +116,14 @@ export class CartService {
 
 async function readCartWithEmptyRecovery(
   page: Parameters<typeof readCart>[0],
-  attempts: number
+  attempts: number,
+  options: CartReadOptions = {}
 ): Promise<CartSnapshot> {
-  let cart = await readCart(page);
+  let cart = await readCart(page, options);
   for (let attempt = 1; cart.items.length === 0 && attempt < attempts; attempt += 1) {
     await page.waitForTimeout(EMPTY_CART_REREAD_DELAY_MS);
     await gotoZepto(page);
-    cart = await readCart(page);
+    cart = await readCart(page, options);
   }
 
   return cart;

@@ -100,6 +100,7 @@ const SAFE_REPORT_ERROR_CODES = new Set([
   "cart_add_unverified",
   "cart_clear_incomplete",
   "cart_item_not_found",
+  "cart_limit_exceeded",
   "cart_navigation_unverified",
   "cart_quantity_unverified",
   "cart_remove_control_disabled",

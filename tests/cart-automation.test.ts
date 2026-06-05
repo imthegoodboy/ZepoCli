@@ -572,8 +572,84 @@ describe("cart automation helpers", () => {
     expect(page.evaluated).toBe(false);
   });
 
+  it("does not include background product controls when extracting from a cart drawer", async () => {
+    const page = createVirtualizedCartWithBackgroundControlsPage();
+
+    await expect(readVisibleCart(page as never)).resolves.toMatchObject({
+      items: [
+        {
+          name: "Nandini Toned Fresh Milk | Pouch",
+          price: "₹24",
+          unit: "1 pack (500 ml)"
+        }
+      ],
+      total: "₹24"
+    });
+  });
+
+  it("fails clearly when Zepto shows an item-limit cart modal", () => {
+    expect(() =>
+      requireReadableCartSnapshot(`
+        You've exceeded limit for these items for today. Please order tomorrow.
+        Fortune Pure & Hygienic Fine Grain Sugar (1)
+        Remove Items
+        Delivering in 5 mins
+        1 item
+        Amul Gold Full Cream Fresh Milk | Pouch
+        1 pack (500 ml)
+        1
+        ₹34
+        Bill Summary
+        To Pay
+        ₹34
+      `)
+    ).toThrow("Zepto cart has item-limit warnings that require manual review.");
+  });
+
+  it("clicks Zepto's explicit limit-warning remove control only when requested", async () => {
+    const page = createCartLimitWarningPage();
+
+    await expect(readCart(page as never, { removeLimitItems: true })).resolves.toMatchObject({
+      items: [
+        {
+          name: "Amul Gold Full Cream Fresh Milk | Pouch",
+          price: "₹34",
+          unit: "1 pack (500 ml)"
+        }
+      ],
+      total: "₹34"
+    });
+    expect(page.limitRemoveClicked).toBe(true);
+  });
+
+  it("rejects partial active-cart rows when Zepto exposes an item count", () => {
+    expect(() =>
+      requireReadableCartSnapshot(`
+        Delivering in 5 mins
+        2 items
+        Amul Gold Full Cream Fresh Milk | Pouch
+        1 pack (500 ml)
+        ₹34
+        Bill Summary
+        To Pay
+        ₹34
+      `)
+    ).toThrow("Zepto cart exposes 2 items, but only 1 readable item was detected.");
+  });
+
   it("opens cart only with cart-specific labels", () => {
-    for (const label of ["Cart", "Cart 11", "Cart\n11", "My Cart", "My Cart 2", "View Cart", "Go to Cart"]) {
+    for (const label of [
+      "Cart",
+      "Cart 11",
+      "Cart\n11",
+      "11 Cart",
+      "11\nCart",
+      "My Cart",
+      "My Cart 2",
+      "2 My Cart",
+      "View Cart",
+      "Go to Cart"
+    ]) {
       expect(CART_OPEN_CLICK_LABELS.some((pattern) => pattern.test(label))).toBe(true);
       expect(isCartOpenClickText(label)).toBe(true);
       expect(isUnsafeCartOpenClickText(label)).toBe(false);
@@ -634,6 +710,16 @@ describe("cart automation helpers", () => {
 
   it("opens cart from a non-semantic Zepto header cart label without using a direct cart URL", async () => {
     const page = createNonSemanticCartOpenViaHomePage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.clicked).toBe(true);
+    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
+  it("opens cart from a badge-before-label Zepto cart control without using a direct cart URL", async () => {
+    const page = createBadgeBeforeCartOpenViaHomePage();
 
     await expect(openCart(page as never)).resolves.toBeUndefined();
 
@@ -1168,6 +1254,41 @@ function createNonSemanticCartOpenViaHomePage() {
   return page;
 }
 
+function createBadgeBeforeCartOpenViaHomePage() {
+  let location = "current";
+  let bodyText = "Search milk Account Profile";
+  const page = {
+    clicked: false,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      location = "home";
+      bodyText = "Welcome to Zepto Search 11 Cart Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return createBodyTextLocator(() => bodyText);
+      }
+
+      if (location === "home" && selector.includes("div, span")) {
+        return createVisibleLocator("11\nCart", async () => {
+          page.clicked = true;
+          bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
+        });
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
 function createCartOpenFromNotFoundPage() {
   let location = "not-found";
   let bodyText =
@@ -1263,6 +1384,99 @@ function createReadableCartBodyPage() {
       selector === "body"
         ? createBodyTextLocator(() => "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32")
         : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createVirtualizedCartWithBackgroundControlsPage() {
+  let evaluated = false;
+  const activeCartText = [
+    "Delivering in 5 mins",
+    "1 item",
+    "Nandini Toned Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "1",
+    "₹24",
+    "Forgot something?",
+    "Bill Summary",
+    "To Pay",
+    "₹24"
+  ].join("\n");
+  const page = {
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      evaluated = true;
+      const source = String(fn ?? "");
+      if (!source.includes("bodyTexts")) {
+        return [];
+      }
+
+      return {
+        bodyTexts: [activeCartText],
+        controlRows: [
+          {
+            text: "1 ₹999 Background Product Shelf Item 1 pack (1 kg)",
+            imageAlt: undefined
+          }
+        ]
+      };
+    },
+    locator: (selector: string) =>
+      selector === "body"
+        ? createBodyTextLocator(() =>
+            evaluated ? activeCartText : "My Cart View Bill To Pay ₹24 Background Product Shelf Item 1 pack (1 kg) ₹999"
+          )
+        : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartLimitWarningPage() {
+  let bodyText = [
+    "You've exceeded limit for these items for today. Please order tomorrow.",
+    "Fortune Pure & Hygienic Fine Grain Sugar (1)",
+    "Remove Items",
+    "Delivering in 5 mins",
+    "1 item",
+    "Amul Gold Full Cream Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "₹34",
+    "Bill Summary",
+    "To Pay",
+    "₹34"
+  ].join("\n");
+  const page = {
+    limitRemoveClicked: false,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Remove Items")) {
+        return createVisibleLocator("Remove Items", async () => {
+          page.limitRemoveClicked = true;
+          bodyText = [
+            "Delivering in 5 mins",
+            "1 item",
+            "Amul Gold Full Cream Fresh Milk | Pouch",
+            "1 pack (500 ml)",
+            "₹34",
+            "Bill Summary",
+            "To Pay",
+            "₹34"
+          ].join("\n");
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
   };
 
   return page;

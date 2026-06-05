@@ -7,15 +7,21 @@ export function registerCartCommands(program: Command): void {
   program
     .command("cart")
     .description("Show Zepto cart")
+    .option("--remove-limit-items", "click Zepto's Remove Items action for item-limit warnings before reading")
     .option("--json", "print machine-readable JSON")
-    .action((options: { json?: boolean }, command: Command) =>
+    .action((options: { json?: boolean; removeLimitItems?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
         const service = new ZeptoService(runtime).cart;
+        const readOptions = { removeLimitItems: Boolean(options.removeLimitItems) };
         const cart = json
-          ? await service.read()
-          : await withCommandSpinner("Reading Zepto cart", "Cart loaded.", () => service.read());
+          ? await service.read(readOptions)
+          : await withCommandSpinner(
+              options.removeLimitItems ? "Resolving Zepto cart limit warning" : "Reading Zepto cart",
+              "Cart loaded.",
+              () => service.read(readOptions)
+            );
         printCart(cart, json);
       })
     );

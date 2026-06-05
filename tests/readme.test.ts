@@ -26,6 +26,7 @@ describe("README package guidance", () => {
       'zepo add "Amul Milk 500ml"',
       'zepo add "protein bars" --choose',
       "zepo cart",
+      "zepo cart --remove-limit-items",
       "zepo remove chips",
       "zepo clear",
       "zepo address list",
@@ -155,6 +156,8 @@ describe("README package guidance", () => {
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
+    expect(readme).toContain("Plain `zepo cart` is read-only when Zepto shows item-limit warnings");
+    expect(readme).toContain("`zepo cart --remove-limit-items` only when you explicitly want ZepoCli to click Zepto's visible `Remove Items` action");
     expect(readme).toContain("skips account/login/OTP/location/address prompts");
     expect(readme).toContain("inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows");
     expect(readme).toContain("not a fixed address-label list or service-city allow-list");

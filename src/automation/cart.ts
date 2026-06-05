@@ -17,6 +17,8 @@ import { isPaymentMethodLabelText, PAYMENT_METHOD_LABEL_PATTERN_SOURCE } from ".
 export const CART_OPEN_CLICK_LABELS = [
   /^go to cart$/i,
   /^view cart$/i,
+  /^[1-9]\d*\s+my cart$/i,
+  /^[1-9]\d*\s+cart$/i,
   /^my cart(?:\s+[1-9]\d*)?$/i,
   /^cart(?:\s+[1-9]\d*)?$/i
 ] as const;
@@ -26,11 +28,18 @@ const CART_RENDER_SIGNAL_TIMEOUT_MS = 12_000;
 const CART_SCROLL_SETTLE_MS = 140;
 const CART_SCROLL_MIN_STEP_PX = 160;
 const CART_SCROLL_MAX_SNAPSHOTS = 24;
+const CART_LIMIT_RESOLUTION_ATTEMPTS = 2;
+const CART_LIMIT_REMOVE_CLICK_TIMEOUT_MS = 10_000;
+const CART_LIMIT_REMOVE_SETTLE_TIMEOUT_MS = 10_000;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|currently unavailable|unavailable|out of stock|sold out|move to cart|move to bag|notify me|clear cart)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
 const NON_CART_PRODUCT_SURFACE_PATTERN_SOURCE =
-  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|deals for you|offer zone|buy more save more|save more|sponsored|ad|add more|saved for later|currently unavailable|unavailable items?|out of stock|sold out|back in stock|move to cart|move to bag|notify me|notify when available|before you checkout|complete your cart|customers also bought|checkout|payment methods?|payment options?|payment mode|select payment|choose payment|pay with|make payment|cash on delivery|cod|card offers?|saved cards?|upi (?:cashback|offers?|payment)|wallet (?:cashback|offers?)|free gift|gift unlocked|unlocked at checkout|unlock at checkout|zepto pass|membership|subscription|promo|promos?|voucher|coupons?|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
+  `\\b(recommended|you may also like|frequently bought|similar products|popular picks|top picks|best offers?|offers for you|trending deals?|best sellers?|deals for you|offer zone|buy more save more|save more|sponsored|ad|add more|alternative items? for you|alternatives? for you|items? are out of stock|saved for later|currently unavailable|unavailable items?|out of stock|sold out|back in stock|move to cart|move to bag|notify me|notify when available|before you checkout|complete your cart|customers also bought|checkout|payment methods?|payment options?|payment mode|select payment|choose payment|pay with|make payment|cash on delivery|cod|card offers?|saved cards?|upi (?:cashback|offers?|payment)|wallet (?:cashback|offers?)|free gift|gift unlocked|unlocked at checkout|unlock at checkout|zepto pass|membership|subscription|promo|promos?|voucher|coupons?|order summary|track order|reorder|order again|repeat order)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
+
+export interface ReadCartOptions {
+  removeLimitItems?: boolean;
+}
 
 export async function openCart(page: Page): Promise<void> {
   if (await isCurrentCartPage(page)) {
@@ -166,12 +175,12 @@ async function isSafeCartOpenControl(locator: Locator): Promise<boolean> {
   return true;
 }
 
-export async function readCart(page: Page): Promise<CartSnapshot> {
+export async function readCart(page: Page, options: ReadCartOptions = {}): Promise<CartSnapshot> {
   let unreadableError: UserFacingError | undefined;
   for (let attempt = 0; attempt < CART_READ_RECOVERY_ATTEMPTS; attempt += 1) {
     try {
       await openCart(page);
-      return await readVisibleCart(page);
+      return await readVisibleCart(page, options);
     } catch (error) {
       if (!isRecoverableCartReadError(error)) {
         throw error;
@@ -182,7 +191,7 @@ export async function readCart(page: Page): Promise<CartSnapshot> {
 
     await recoverCartOpenForRead(page);
     try {
-      return await readVisibleCart(page);
+      return await readVisibleCart(page, options);
     } catch (error) {
       if (!isRecoverableCartReadError(error)) {
         throw error;
@@ -344,8 +353,11 @@ function isZeptoNotFoundPageText(text: string): boolean {
 }
 
 export function requireReadableCartSnapshot(rawText: string, itemsOverride?: CartItem[]): CartSnapshot {
+  assertNoBlockingCartModal(rawText);
+  const itemLimit = extractActiveCartItemLimit(rawText);
+  const items = enforceActiveCartItemCount(itemsOverride ?? parseReadableCartItemsFromText(rawText), itemLimit);
   const snapshot = {
-    items: itemsOverride ?? parseReadableCartItemsFromText(rawText),
+    items,
     total: extractCartTotal(rawText),
     rawText
   };
@@ -400,6 +412,23 @@ function extractActiveCartItemsText(rawText: string): string | undefined {
   );
   const itemLines = lines.slice(itemStart, end > itemStart ? end : undefined);
   return itemLines.length > 0 ? itemLines.join("\n") : undefined;
+}
+
+function extractActiveCartItemLimit(rawText: string): number | undefined {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const headerIndex = lines.findIndex((line, index) => {
+    const next = lines[index + 1] ?? "";
+    return /^deliver(?:ing)? in\b/i.test(line) && /^[1-9]\d*\s+items?$/i.test(next);
+  });
+  if (headerIndex < 0) {
+    return undefined;
+  }
+
+  const count = Number.parseInt((lines[headerIndex + 1] ?? "").match(/^([1-9]\d*)\s+items?$/i)?.[1] ?? "", 10);
+  return Number.isFinite(count) && count > 0 ? count : undefined;
 }
 
 export function isEmptyCartText(text: string): boolean {
@@ -771,13 +800,13 @@ function readClosestCartRemoveCardText(element: Element): string {
   return normalize(`${visibleText(element)} ${controlText}`);
 }
 
-export async function readVisibleCart(page: Page): Promise<CartSnapshot> {
+export async function readVisibleCart(page: Page, options: ReadCartOptions = {}): Promise<CartSnapshot> {
   await assertNoAccessChallenge(page);
   let unreadableError: UserFacingError | undefined;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await waitForCartContentSettled(page);
     try {
-      return await readVisibleCartOnce(page);
+      return await readVisibleCartOnce(page, options);
     } catch (error) {
       if (!(error instanceof UserFacingError) || error.code !== "cart_unreadable") {
         throw error;
@@ -795,8 +824,24 @@ export async function readVisibleCart(page: Page): Promise<CartSnapshot> {
   });
 }
 
-async function readVisibleCartOnce(page: Page): Promise<CartSnapshot> {
+async function readVisibleCartOnce(
+  page: Page,
+  options: ReadCartOptions,
+  limitResolutionAttempts = 0
+): Promise<CartSnapshot> {
   const rawTextBeforeScroll = await page.locator("body").innerText();
+  if (isBlockingCartLimitModalText(rawTextBeforeScroll) && options.removeLimitItems) {
+    if (limitResolutionAttempts >= CART_LIMIT_RESOLUTION_ATTEMPTS) {
+      assertNoBlockingCartModal(rawTextBeforeScroll);
+    }
+
+    await clickCartLimitRemoveItemsButton(page);
+    await waitForCartLimitWarningSettled(page);
+    await page.waitForTimeout(800);
+    await assertNoAccessChallenge(page);
+    return readVisibleCartOnce(page, options, limitResolutionAttempts + 1);
+  }
+
   const preScrollSnapshot = tryRequireReadableCartSnapshot(rawTextBeforeScroll);
   if (preScrollSnapshot) {
     return preScrollSnapshot;
@@ -1008,8 +1053,8 @@ async function extractActiveCartItemsAcrossScroll(page: Page): Promise<CartItem[
           }
           return undefined;
         };
-        const readControlRows = () =>
-          Array.from(document.querySelectorAll("button, [role='button']"))
+        const readControlRows = (root: ParentNode = document) =>
+          Array.from(root.querySelectorAll("button, [role='button']"))
             .filter((control) => isVisible(control) && isEnabledControl(control) && isQuantityControl(control))
             .map((control) => {
               const card = cardFor(control);
@@ -1060,7 +1105,7 @@ async function extractActiveCartItemsAcrossScroll(page: Page): Promise<CartItem[
         const controlRows: Array<{ text: string; imageAlt: string | undefined }> = [];
         const collect = () => {
           bodyTexts.push(document.body?.innerText ?? "");
-          controlRows.push(...readControlRows());
+          controlRows.push(...readControlRows(target ?? document));
         };
 
         collect();
@@ -1101,11 +1146,19 @@ async function extractActiveCartItemsAcrossScroll(page: Page): Promise<CartItem[
     const activeText = extractActiveCartItemsText(text);
     return activeText ? parseCartItemsFromText(activeText) : [];
   });
+  const itemLimit = extractActiveCartItemLimit(snapshots.bodyTexts.join("\n"));
+  if (itemLimit !== undefined && textItems.length === itemLimit) {
+    return textItems;
+  }
+
   const controlItems = snapshots.controlRows
     .map((row) => parseActiveCartItemFromControlText(row.text, row.imageAlt))
     .filter((item): item is CartItem => item !== undefined);
 
-  return dedupeCartItemsFromControls([...textItems, ...controlItems]);
+  return enforceActiveCartItemCount(
+    dedupeCartItemsFromControls([...textItems, ...controlItems]),
+    itemLimit
+  );
 }
 
 async function extractActiveCartItemsFromControls(page: Page): Promise<CartItem[]> {
@@ -1261,6 +1314,104 @@ function dedupeCartItemsFromControls(items: CartItem[]): CartItem[] {
   }
 
   return deduped;
+}
+
+function enforceActiveCartItemCount(items: CartItem[], expectedCount: number | undefined): CartItem[] {
+  if (expectedCount === undefined || items.length === expectedCount) {
+    return items;
+  }
+
+  throw new UserFacingError(
+    `Zepto cart exposes ${expectedCount} ${expectedCount === 1 ? "item" : "items"}, but only ${items.length} readable ${items.length === 1 ? "item was" : "items were"} detected.`,
+    {
+      code: "cart_unreadable",
+      hint: "Rerun with `--visible` to inspect Zepto's cart drawer before treating the cart as complete."
+    }
+  );
+}
+
+function assertNoBlockingCartModal(text: string): void {
+  if (!isBlockingCartLimitModalText(text)) {
+    return;
+  }
+
+  throw new UserFacingError("Zepto cart has item-limit warnings that require manual review.", {
+    code: "cart_limit_exceeded",
+    hint: "Run `zepo cart --remove-limit-items` to click Zepto's Remove Items action, or resolve the warning manually in the browser."
+  });
+}
+
+function isBlockingCartLimitModalText(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return /\byou(?:'|’)?ve exceeded limit for these items for today\b/i.test(normalized);
+}
+
+async function clickCartLimitRemoveItemsButton(page: Page): Promise<void> {
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  if (!isBlockingCartLimitModalText(bodyText)) {
+    return;
+  }
+
+  const controls = page.locator("button, [role='button'], a");
+  const candidates = [
+    page.getByRole("button", { name: /^remove items$/i }),
+    page.getByRole("link", { name: /^remove items$/i }),
+    controls.filter({ hasText: /^remove items$/i })
+  ];
+
+  for (const candidate of candidates) {
+    if (await clickFirstSafeCartLimitRemoveControl(candidate)) {
+      return;
+    }
+  }
+
+  throw new UserFacingError("Zepto cart limit warning did not expose a clickable Remove Items control.", {
+    code: "cart_limit_exceeded",
+    hint: "Resolve the warning manually in the visible Zepto cart, then rerun `zepo cart`."
+  });
+}
+
+async function clickFirstSafeCartLimitRemoveControl(locator: Locator): Promise<boolean> {
+  for await (const candidate of iterateLocatorCandidates(locator, CART_OPEN_CONTROL_SCAN_LIMIT)) {
+    if (await clickCartLimitRemoveControl(candidate)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function clickCartLimitRemoveControl(locator: Locator): Promise<boolean> {
+  if (!(await locator.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  await scrollControlIntoViewIfNeeded(locator);
+  if (!(await locator.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  return locator.click({ timeout: CART_LIMIT_REMOVE_CLICK_TIMEOUT_MS }).then(
+    () => true,
+    () => false
+  );
+}
+
+async function waitForCartLimitWarningSettled(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const text = (document.body?.innerText ?? "").replace(/\s+/g, " ").trim();
+        return !/\byou(?:'|’)?ve exceeded limit for these items for today\b/i.test(text);
+      },
+      undefined,
+      { timeout: CART_LIMIT_REMOVE_SETTLE_TIMEOUT_MS }
+    )
+    .catch(() => undefined);
 }
 
 function isDiscountOnlyPriceText(text: string, price: string): boolean {
