@@ -2080,10 +2080,18 @@ function tryParseJson(text) {
 function redactOptionValues(args, redactions) {
   const result = [...args];
   for (let index = 0; index < result.length; index += 1) {
-    const replacement = redactions.get(result[index]);
+    const arg = result[index];
+    const replacement = redactions.get(arg);
     if (replacement !== undefined && index + 1 < result.length) {
       result[index + 1] = replacement;
       index += 1;
+      continue;
+    }
+
+    const assignment = splitValueOptionAssignment(arg);
+    const assignmentReplacement = assignment ? redactions.get(assignment.option) : undefined;
+    if (assignment && assignmentReplacement !== undefined) {
+      result[index] = `${assignment.option}=${assignmentReplacement}`;
     }
   }
 
@@ -2115,12 +2123,33 @@ function liveReportTextRedactions(args) {
 
 function collectOptionValueRedactions(args, redactions, replacements) {
   for (let index = 0; index < args.length; index += 1) {
-    const replacement = replacements[args[index]];
+    const arg = args[index];
+    const replacement = replacements[arg];
     if (replacement !== undefined) {
       addRedaction(redactions, args[index + 1], replacement);
       index += 1;
+      continue;
+    }
+
+    const assignment = splitValueOptionAssignment(arg);
+    const assignmentReplacement = assignment ? replacements[assignment.option] : undefined;
+    if (assignment && assignmentReplacement !== undefined) {
+      addRedaction(redactions, assignment.value, assignmentReplacement);
     }
   }
+}
+
+function splitValueOptionAssignment(arg) {
+  const text = String(arg ?? "");
+  const equalsIndex = text.indexOf("=");
+  if (equalsIndex <= 0 || !text.startsWith("--")) {
+    return undefined;
+  }
+
+  return {
+    option: text.slice(0, equalsIndex),
+    value: text.slice(equalsIndex + 1)
+  };
 }
 
 function addRedaction(redactions, value, replacement) {

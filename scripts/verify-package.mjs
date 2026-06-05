@@ -5084,6 +5084,36 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     ],
     "expected installed live report command redaction to handle global timeout before workflow commands"
   );
+  const assignmentFormLiveCommandArgs = [
+    "--data-dir=.zepo-live",
+    "--browser-locale=hi-IN",
+    "--browser-timezone=Asia/Kolkata",
+    "--visible",
+    "login",
+    "--phone=9999999999",
+    "--report=C:\\Users\\parth\\.zepo-live\\report.json",
+    "--json"
+  ];
+  const redactedAssignmentFormLiveCommandArgs = [
+    "--data-dir=<redacted-data-dir>",
+    "--browser-locale=<redacted-browser-locale>",
+    "--browser-timezone=<redacted-browser-timezone>",
+    "--visible",
+    "login",
+    "--phone=<redacted-phone>",
+    "--report=<redacted-report-path>",
+    "--json"
+  ];
+  assertDeepEqual(
+    redactArgsForLiveReport(assignmentFormLiveCommandArgs),
+    redactedAssignmentFormLiveCommandArgs,
+    "expected installed live report command redaction to handle assignment-form option values"
+  );
+  assertDeepEqual(
+    redactArgsForLiveConsole(assignmentFormLiveCommandArgs),
+    redactedAssignmentFormLiveCommandArgs,
+    "expected installed live console command redaction to handle assignment-form option values"
+  );
   const redactedLiveStderr = redactLiveConsoleText(
     'Could not find a Zepto product matching "Amul Milk 500ml" near C:\\Users\\parth\\.zepo-live\\trace.txt.',
     ["--data-dir", ".zepo-live", "--visible", "add", "Amul Milk 500ml", "--json"]

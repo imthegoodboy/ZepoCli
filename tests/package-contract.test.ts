@@ -783,6 +783,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live console command redaction to omit local paths and phone input");
     expect(verifier).toContain("expected installed live console command redaction to omit workflow queries");
     expect(verifier).toContain("expected installed live report command redaction to handle global timeout before workflow commands");
+    expect(verifier).toContain("expected installed live report command redaction to handle assignment-form option values");
+    expect(verifier).toContain("expected installed live console command redaction to handle assignment-form option values");
     expect(verifier).toContain("expected installed live console stderr redaction to omit workflow queries and local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit Windows forward-slash local paths");
     expect(verifier).toContain("expected installed live console stderr redaction to omit Linux root and opt local paths");

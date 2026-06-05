@@ -4462,6 +4462,51 @@ describe("live verification runner", () => {
     });
   });
 
+  it("redacts assignment-form live command values", () => {
+    const args = [
+      "--data-dir=.zepo-live",
+      "--browser-locale=hi-IN",
+      "--browser-timezone=Asia/Kolkata",
+      "--visible",
+      "login",
+      "--phone=9999999999",
+      "--report=C:\\Users\\parth\\.zepo-live\\report.json",
+      "--json"
+    ];
+
+    expect(redactArgsForLiveReport(args)).toEqual([
+      "--data-dir=<redacted-data-dir>",
+      "--browser-locale=<redacted-browser-locale>",
+      "--browser-timezone=<redacted-browser-timezone>",
+      "--visible",
+      "login",
+      "--phone=<redacted-phone>",
+      "--report=<redacted-report-path>",
+      "--json"
+    ]);
+    expect(redactArgsForLiveConsole(args)).toEqual([
+      "--data-dir=<redacted-data-dir>",
+      "--browser-locale=<redacted-browser-locale>",
+      "--browser-timezone=<redacted-browser-timezone>",
+      "--visible",
+      "login",
+      "--phone=<redacted-phone>",
+      "--report=<redacted-report-path>",
+      "--json"
+    ]);
+
+    const redacted = redactLiveConsoleText(
+      "Writing C:\\Users\\parth\\.zepo-live\\report.json for phone 9999999999 in Asia/Kolkata.",
+      args
+    );
+    expect(redacted).toContain("<redacted-report-path>");
+    expect(redacted).toContain("<redacted-phone>");
+    expect(redacted).toContain("<redacted-browser-timezone>");
+    expect(redacted).not.toContain("9999999999");
+    expect(redacted).not.toContain("Asia/Kolkata");
+    expect(redacted).not.toContain("C:\\Users\\parth");
+  });
+
   it("redacts URL-encoded sensitive values from live report errors and console stderr", () => {
     const encodedUrl =
       "https://example.test/callback?phone=%2B91+98765+43210&otp=%31%32%33%34%35%36&card=4111%201111%201111%201111&upi=abc%40upi&token=raw-token-123&access_token=abc.def.ghi&password=hunter2&secret=client-secret-123&file=C%3A%2FUsers%2Fparth%2F.zepo-live%2Ftrace.txt";
