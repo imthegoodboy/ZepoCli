@@ -122,6 +122,19 @@ describe("cart automation helpers", () => {
       items: [],
       total: undefined
     });
+    const largeHomepageWithHiddenEmptyCartCopy = `
+      Welcome to Zepto
+      Search milk
+      Cart
+      Buy Again
+      ${Array.from({ length: 90 }, (_, index) => `Product ${index + 1}\n1 pack (500 ml)\n₹32`).join("\n")}
+      Your cart is empty
+      Explore categories
+    `;
+    expect(isCartPageText(largeHomepageWithHiddenEmptyCartCopy)).toBe(false);
+    expect(() => requireReadableCartSnapshot(largeHomepageWithHiddenEmptyCartCopy)).toThrow(
+      "Zepto cart page did not expose readable cart items."
+    );
     expect(isCartPageText("Your cart is empty Cart16 Cart Go to Cart")).toBe(false);
     expect(() => requireReadableCartSnapshot("Your cart is empty Cart16 Cart Go to Cart")).toThrow(
       "Zepto cart page did not expose readable cart items."
@@ -684,6 +697,36 @@ describe("cart automation helpers", () => {
     ).toThrow("Zepto cart exposes 2 items, but only 1 readable item was detected.");
   });
 
+  it("accepts high-confidence large cart reads when Zepto virtualizes a few rows", () => {
+    const rows = Array.from({ length: 20 }, (_, index) =>
+      [
+        `Readable Cart Item ${index + 1}`,
+        "1 pack (500 ml)",
+        "1",
+        `₹${index + 10}`
+      ].join("\n")
+    ).join("\n");
+
+    expect(
+      requireReadableCartSnapshot(`
+        Delivering in 5 mins
+        31 items
+        ${rows}
+        Bill Summary
+        To Pay
+        ₹999
+      `)
+    ).toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          name: "Readable Cart Item 1",
+          unit: "1 pack (500 ml)"
+        })
+      ]),
+      total: "₹999"
+    });
+  });
+
   it("opens cart only with cart-specific labels", () => {
     for (const label of [
       "Cart",
@@ -797,6 +840,20 @@ describe("cart automation helpers", () => {
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
 
+  it("falls back to Zepto's cart drawer query when visible cart clicks do not open the drawer", async () => {
+    const page = createCartOpenViaQueryParameterFallbackPage();
+
+    await expect(openCart(page as never)).resolves.toBeUndefined();
+
+    expect(page.cartClicks).toBeGreaterThan(0);
+    expect(page.urls.map((url) => `${new URL(url).pathname}${new URL(url).search}`)).toEqual([
+      "/",
+      "/",
+      "/?cart=open"
+    ]);
+    expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
+  });
+
   it("recovers a readable cart after Zepto opens an unhydrated cart shell", async () => {
     const page = createCartReadRecoveryPage();
 
@@ -855,8 +912,12 @@ describe("cart automation helpers", () => {
 
     expect(page.cartClicks).toBe(4);
     expect(page.recoveryCartClicks).toBe(1);
-    expect(page.waits).toEqual([1500, 1500]);
-    expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/", "/", "/"]);
+    expect(page.waits).toEqual([1500]);
+    expect(page.urls.map((url) => `${new URL(url).pathname}${new URL(url).search}`)).toEqual([
+      "/",
+      "/",
+      "/?cart=open"
+    ]);
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
 
@@ -1408,6 +1469,39 @@ function createCartOpenAfterHomeRetryPage() {
           bodyText = "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32";
         }
       });
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCartOpenViaQueryParameterFallbackPage() {
+  let bodyText = "Welcome to Zepto Search Cart 33 Account Profile";
+  const page = {
+    cartClicks: 0,
+    urls: [] as string[],
+    title: async () => "",
+    goto: async (url: string) => {
+      page.urls.push(String(url));
+      const target = new URL(String(url));
+      bodyText = target.searchParams.get("cart") === "open"
+        ? "My Cart\nAmul Taaza Toned Milk\n1 pack (500 ml)\n₹32\nQty 1\nGrand Total ₹32"
+        : "Welcome to Zepto Search Cart 33 Account Profile";
+      return createNavigationResponse(url);
+    },
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, "Cart 33")) {
+        return createVisibleLocator("Cart 33", async () => {
+          page.cartClicks += 1;
+        });
+      }
+
+      return createHiddenLocator();
     },
     locator: (selector: string) =>
       selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()

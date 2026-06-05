@@ -128,6 +128,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain("including search, live status, login, cart, address, checkout, orders, and reorder");
       expect(guidance).toContain("verify:live` should start with mode-aware `zepo doctor --json`");
       expect(guidance).toContain("--production-scope --search <query> --address <query> --add <query>");
+      expect(guidance).toContain("--add-remove-limit-items");
+      expect(guidance).toContain(
+        "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
+      );
       expect(guidance).toContain("--cart-remove-limit-items");
       expect(guidance).toContain(
         "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
@@ -277,6 +281,10 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("standalone percent-encoded sensitive fragments");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live");
     expect(liveVerifierSkill).toContain("--production-scope --search milk --address home --add");
+    expect(liveVerifierSkill).toContain("--add-remove-limit-items");
+    expect(liveVerifierSkill).toContain(
+      "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
+    );
     expect(liveVerifierSkill).toContain("--cart-remove-limit-items");
     expect(liveVerifierSkill).toContain(
       "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"

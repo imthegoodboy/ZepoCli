@@ -36,6 +36,7 @@ const GENERIC_AUTO_ADD_TERMS = new Set([
 export interface AddOptions {
   quantity?: unknown;
   choose?: boolean;
+  removeLimitItems?: boolean;
 }
 
 export interface AddResult {
@@ -57,6 +58,14 @@ export class CartService {
   async add(query: string, options: AddOptions = {}): Promise<AddResult> {
     const cleanQuery = requireNonEmpty(query, "Product query");
     const quantity = parseAddQuantity(options.quantity ?? 1);
+    this.runtime.logger.debug(
+      {
+        choose: options.choose === true,
+        quantity,
+        removeLimitItems: options.removeLimitItems === true
+      },
+      "cart add command starting"
+    );
     if (options.choose) {
       requireInteractiveInput(
         this.runtime,
@@ -66,7 +75,9 @@ export class CartService {
     }
 
     return this.browser.withPage({ captureFailures: false, requireSession: true }, async (page) => {
+      this.runtime.logger.debug("cart add search starting");
       const products = await searchProducts(page, cleanQuery, options.choose ? 10 : 5);
+      this.runtime.logger.debug({ productCount: products.length }, "cart add search finished");
       if (products.length === 0) {
         throw new UserFacingError(`No Zepto products found for "${cleanQuery}".`, {
           code: "product_not_found",
@@ -76,10 +87,26 @@ export class CartService {
 
       const addableProducts = requireAddableProducts(products, cleanQuery);
       const product = options.choose ? await chooseProduct(addableProducts) : requireBestMatch(addableProducts, cleanQuery);
+      this.runtime.logger.debug({ addableProductCount: addableProducts.length }, "cart add product click starting");
       await clickProductAdd(page, product);
+      this.runtime.logger.debug("cart add product click finished");
+      this.runtime.logger.debug("cart add settle starting");
       await waitForProductAddSettled(page);
+      this.runtime.logger.debug("cart add settle finished");
+      this.runtime.logger.debug({ quantity }, "cart add quantity increase starting");
       await increaseProductQuantity(page, product, quantity);
-      const cart = await readCartWithEmptyRecovery(page, POST_ADD_EMPTY_CART_REREAD_ATTEMPTS);
+      this.runtime.logger.debug("cart add quantity increase finished");
+      this.runtime.logger.debug("cart add verification read starting");
+      const cart = await readCartWithEmptyRecovery(page, POST_ADD_EMPTY_CART_REREAD_ATTEMPTS, {
+        removeLimitItems: options.removeLimitItems === true
+      });
+      this.runtime.logger.debug(
+        {
+          itemCount: cart.items.length,
+          hasTotal: cart.total !== undefined
+        },
+        "cart add verification read finished"
+      );
       assertCartContainsProduct(cart, product, quantity);
       this.runtime.sqlite.saveCartSnapshot(cart);
 
@@ -91,8 +118,19 @@ export class CartService {
   }
 
   async read(options: CartReadOptions = {}): Promise<CartSnapshot> {
+    this.runtime.logger.debug(
+      { removeLimitItems: options.removeLimitItems === true },
+      "cart read command starting"
+    );
     const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
       readCartWithEmptyRecovery(page, EMPTY_CART_READ_REREAD_ATTEMPTS, options)
+    );
+    this.runtime.logger.debug(
+      {
+        itemCount: snapshot.items.length,
+        hasTotal: snapshot.total !== undefined
+      },
+      "cart read command finished"
     );
     this.runtime.sqlite.saveCartSnapshot(snapshot);
     return snapshot;

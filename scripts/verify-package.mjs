@@ -360,12 +360,13 @@ function verifyInstalledReadmeContract(prefixDir) {
     "auth/session/token/password/secret URL-parameter, and local-path rules",
     "npm --silent run verify:live -- --data-dir ./.zepo-live",
     'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"',
-    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --cart-remove-limit-items --checkout-remove-limit-items',
+    'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --add-remove-limit-items --cart-remove-limit-items --checkout-remove-limit-items',
     "Both preflight steps must report current-mode `browserAutomation.ready === true`",
     "doctor must also show a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
     "then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled",
     "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
+    "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings",
     "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings",
     "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings",
     "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking",
@@ -502,6 +503,7 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
   const sharedCommandSource = readFileSync(join(packageDir, "dist", "commands", "shared.js"), "utf8");
   const runtimeSource = readFileSync(join(packageDir, "dist", "config", "runtime.js"), "utf8");
   const browserAutomationSource = readFileSync(join(packageDir, "dist", "automation", "browser.js"), "utf8");
+  const addCommandSource = readFileSync(join(packageDir, "dist", "commands", "add.js"), "utf8");
   const searchServiceSource = readFileSync(join(packageDir, "dist", "services", "search.js"), "utf8");
   const cartServiceSource = readFileSync(join(packageDir, "dist", "services", "cart.js"), "utf8");
   const ordersServiceSource = readFileSync(join(packageDir, "dist", "services", "orders.js"), "utf8");
@@ -534,6 +536,16 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
   assert(
     !cartServiceSource.includes("headless: false"),
     "expected installed cart service not to force visible browser mode"
+  );
+  assert(
+    addCommandSource.includes("--remove-limit-items") &&
+      addCommandSource.includes("removeLimitItems: options.removeLimitItems === true"),
+    "expected installed add command to pass explicit item-limit removal into cart service"
+  );
+  assert(
+    cartServiceSource.includes("readCartWithEmptyRecovery(page, POST_ADD_EMPTY_CART_REREAD_ATTEMPTS") &&
+      cartServiceSource.includes("removeLimitItems: options.removeLimitItems === true"),
+    "expected installed cart service to pass explicit add item-limit removal into cart recovery"
   );
   assert(
     !ordersServiceSource.includes("headless: false"),
@@ -920,6 +932,7 @@ async function verifyInstalledOrderActionLabelContract(prefixDir) {
 
 async function verifyInstalledCartAutomationContract(prefixDir) {
   const cartAutomationModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "automation", "cart.js");
+  const cartAutomationSource = readFileSync(cartAutomationModulePath, "utf8");
   const {
     isCartOpenClickText,
     isCartRemoveControlText,
@@ -929,6 +942,25 @@ async function verifyInstalledCartAutomationContract(prefixDir) {
     isUnsafeCartRemoveControlText
   } = await import(pathToFileURL(cartAutomationModulePath).href);
 
+  assert(
+    !cartAutomationSource.includes('querySelectorAll("*")') && !cartAutomationSource.includes("querySelectorAll('*')"),
+    "expected installed cart parser to avoid unbounded all-node scroll scans"
+  );
+  assert(
+    cartAutomationSource.includes('[data-testid*="cart" i]') &&
+      cartAutomationSource.includes('[class*="cart" i]') &&
+      cartAutomationSource.includes('[role="dialog"]'),
+    "expected installed cart parser to use targeted scroll container selectors"
+  );
+  assert(
+    cartAutomationSource.includes('gotoZepto(page, "/?cart=open")'),
+    "expected installed cart opener to use Zepto cart drawer query fallback"
+  );
+  assert(
+    !cartAutomationSource.includes('gotoZepto(page, "/cart")') &&
+      !cartAutomationSource.includes("gotoZepto(page, '/cart')"),
+    "expected installed cart opener not to navigate to broken /cart page"
+  );
   assert(isCartOpenClickText("Cart") === true, "expected installed cart open label to be accepted");
   assert(isCartOpenClickText("Cart 11") === true, "expected installed cart badge label to be accepted");
   assert(isCartOpenClickText("Cart\n11") === true, "expected installed cart newline badge label to be accepted");
@@ -2244,6 +2276,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live to support explicit cart item-limit warning removal"
   );
   assert(
+    liveVerifierSource.includes("options.addRemoveLimitItems") &&
+      liveVerifierSource.includes('addArgs.splice(addArgs.length - 1, 0, "--remove-limit-items")') &&
+      liveVerifierSource.includes("--add-remove-limit-items can only be used with --add."),
+    "expected installed verify:live to support explicit add item-limit warning removal"
+  );
+  assert(
     liveVerifierSource.includes("options.checkoutRemoveLimitItems") &&
       liveVerifierSource.includes('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items")') &&
       liveVerifierSource.includes("--checkout-remove-limit-items can only be used with --checkout or --production-scope."),
@@ -2263,6 +2301,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(result.stdout.includes("--production-scope"), "expected installed verify:live production-scope option");
   assert(result.stdout.includes("--reorder-last"), "expected installed verify:live reorder option");
   assert(result.stdout.includes("--choose-add"), "expected installed verify:live choose-add option");
+  assert(result.stdout.includes("--add-remove-limit-items"), "expected installed verify:live add limit-warning removal option");
   assert(result.stdout.includes("--remove <query>"), "expected installed verify:live remove option");
   assert(result.stdout.includes("--clear"), "expected installed verify:live clear option");
   assert(
@@ -2302,6 +2341,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     result.stdout.includes("If checkout remains at checkout_manual_action_required, production-scope verification stops before track"),
     "expected installed verify:live help to explain production-scope stops before track without checkout handoff"
+  );
+  assert(
+    result.stdout.includes("Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings"),
+    "expected installed verify:live help to explain explicit add limit-warning removal"
   );
   assert(
     result.stdout.includes("Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings"),
@@ -2434,6 +2477,25 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     !chooseAddWithoutAddResult.stderr.includes("Compiled CLI was not found"),
     "expected installed verify:live choose-add guard to fail before compiled CLI checks"
+  );
+
+  const addRemoveLimitWithoutAddResult = runNpmResult(
+    installedVerifyLiveArgs(
+      packageDir,
+      "--data-dir",
+      join(tempRoot, "live-add-remove-limit-without-add-data"),
+      "--add-remove-limit-items"
+    ),
+    { cwd: rootDir }
+  );
+  assert(addRemoveLimitWithoutAddResult.status === 1, "expected installed verify:live add limit-warning removal without add to fail");
+  assert(
+    addRemoveLimitWithoutAddResult.stderr.includes("--add-remove-limit-items can only be used with --add."),
+    "expected installed verify:live add limit-warning removal guard"
+  );
+  assert(
+    !addRemoveLimitWithoutAddResult.stderr.includes("Compiled CLI was not found"),
+    "expected installed verify:live add limit-warning removal guard to fail before compiled CLI checks"
   );
 
   const cartRemoveLimitWithoutCartEvidenceResult = runNpmResult(
@@ -3147,9 +3209,45 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }).accepted === true,
     "expected installed live report acceptance helper to accept production-scope checkout limit-warning removal evidence"
   );
+  const addLimitRemovalProductionScopeLiveReport = {
+    ...freshProductionScopeLiveReport,
+    steps: freshProductionScopeLiveReport.steps.map((step) =>
+      step.name === "add"
+        ? {
+            ...step,
+            command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --remove-limit-items --json"
+          }
+        : step
+    )
+  };
+  addLimitRemovalProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(
+    addLimitRemovalProductionScopeLiveReport.steps
+  );
+  addLimitRemovalProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(
+    addLimitRemovalProductionScopeLiveReport.steps
+  );
+  addLimitRemovalProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    addLimitRemovalProductionScopeLiveReport.requested,
+    addLimitRemovalProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(addLimitRemovalProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true,
+      maxAgeMs: 60_000
+    }).accepted === true,
+    "expected installed live report acceptance helper to accept production-scope add limit-warning removal evidence"
+  );
   const cartAndCheckoutLimitRemovalProductionScopeLiveReport = {
     ...freshProductionScopeLiveReport,
     steps: freshProductionScopeLiveReport.steps.map((step) => {
+      if (step.name === "add") {
+        return {
+          ...step,
+          command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --remove-limit-items --json"
+        };
+      }
+
       if (step.name === "cart") {
         return {
           ...step,
@@ -3183,7 +3281,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       requireProductionScope: true,
       maxAgeMs: 60_000
     }).accepted === true,
-    "expected installed live report acceptance helper to accept production-scope cart and checkout limit-warning removal evidence"
+    "expected installed live report acceptance helper to accept production-scope add, cart, and checkout limit-warning removal evidence"
   );
   const noWaitProductionScopeLiveReport = {
     ...freshProductionScopeLiveReport,
@@ -5445,6 +5543,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stdout.includes("Search and add a product to the Zepto cart"), "expected add description");
         assert(stdout.includes("quantity to add, maximum 12"), "expected add quantity cap in help output");
         assert(stdout.includes("--choose"), "expected add choose option");
+        assert(stdout.includes("--remove-limit-items"), "expected add limit-warning removal option");
         assert(stdout.includes("--json"), "expected add json option");
       }
     },

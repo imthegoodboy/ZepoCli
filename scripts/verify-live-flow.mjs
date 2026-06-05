@@ -196,6 +196,9 @@ async function main() {
       String(options.quantity),
       "--json"
     ];
+    if (options.addRemoveLimitItems) {
+      addArgs.splice(addArgs.length - 1, 0, "--remove-limit-items");
+    }
     if (options.chooseAdd) {
       addArgs.splice(addArgs.length - 1, 0, "--choose");
     }
@@ -762,6 +765,7 @@ function parseArgs(args) {
   const parsed = {
     addressAdd: false,
     addressList: false,
+    addRemoveLimitItems: false,
     cart: false,
     cartRemoveLimitItems: false,
     checkout: false,
@@ -809,6 +813,8 @@ function parseArgs(args) {
       parsed.addressList = true;
     } else if (arg === "--add") {
       parsed.add = requireValue(args, ++index, arg);
+    } else if (arg === "--add-remove-limit-items") {
+      parsed.addRemoveLimitItems = true;
     } else if (arg === "--choose-add") {
       parsed.chooseAdd = true;
     } else if (arg === "--quantity") {
@@ -983,6 +989,11 @@ function validateOptions(parsed) {
     process.exit(1);
   }
 
+  if (parsed.addRemoveLimitItems && !parsed.add) {
+    console.error("--add-remove-limit-items can only be used with --add.");
+    process.exit(1);
+  }
+
   if (parsed.productionScope) {
     validateProductionScopeOptions(parsed);
   }
@@ -1076,6 +1087,8 @@ Options:
   --address <query>     Select a saved address by visible text
   --address-add         Open the visible add-address flow
   --add <query>         Add a product to cart
+  --add-remove-limit-items
+                        During --add cart verification, explicitly click Zepto's Remove Items action for item-limit warnings before reading cart
   --choose-add          Use zepo add --choose for human product selection during --add
   --quantity <number>   Quantity for --add, 1 to 12
   --cart                Read the cart
@@ -1096,11 +1109,12 @@ Options:
 Example:
   npm run build
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"
-  npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --cart-remove-limit-items --checkout-remove-limit-items
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --add-remove-limit-items --cart-remove-limit-items --checkout-remove-limit-items
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
 Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
+Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
 If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.

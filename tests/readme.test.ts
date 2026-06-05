@@ -24,6 +24,7 @@ describe("README package guidance", () => {
       "zepo doctor",
       "zepo search milk",
       'zepo add "Amul Milk 500ml"',
+      'zepo add "Amul Milk 500ml" --remove-limit-items',
       'zepo add "protein bars" --choose',
       "zepo cart",
       "zepo cart --remove-limit-items",
@@ -157,9 +158,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
-    expect(readme).toContain("Plain `zepo cart` and plain `zepo --visible checkout` are read-only when Zepto shows item-limit warnings");
+    expect(readme).toContain("Plain `zepo add`, plain `zepo cart`, and plain `zepo --visible checkout` do not resolve Zepto item-limit warnings");
     expect(readme).toContain("plain `zepo --visible checkout`");
-    expect(readme).toContain("`zepo cart --remove-limit-items` or `zepo --visible checkout --remove-limit-items`");
+    expect(readme).toContain("`zepo add --remove-limit-items`, `zepo cart --remove-limit-items`, or `zepo --visible checkout --remove-limit-items`");
     expect(readme).toContain("`zepo --visible checkout --remove-limit-items`");
     expect(readme).toContain("skips account/login/OTP/location/address prompts");
     expect(readme).toContain("inactive saved-for-later sections, unavailable item sections, checkout/payment panels, cart/checkout service rows such as clear-cart actions, bill/order summaries, minimum-order-value copy, demand/rain fees, charges, taxes/GST, tips, discounts, donations, round-off rows, instructions, and policy rows, promo gift rows, offer/upsell rows, merchandising headings, and membership rows");
@@ -241,7 +242,7 @@ describe("README package guidance", () => {
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
     );
     expect(readme).toContain(
-      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --cart-remove-limit-items --checkout-remove-limit-items'
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --add-remove-limit-items --cart-remove-limit-items --checkout-remove-limit-items'
     );
     expect(readme).toContain('npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "protein bars" --choose-add --cart');
     expect(readme).toContain("live-verification-report.json");
@@ -260,6 +261,9 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain(
       "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence"
+    );
+    expect(readme).toContain(
+      "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
     );
     expect(readme).toContain(
       "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"

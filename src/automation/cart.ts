@@ -23,11 +23,13 @@ export const CART_OPEN_CLICK_LABELS = [
   /^cart(?:\s+[1-9]\d*)?$/i
 ] as const;
 const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
+const CART_OPEN_CLICK_TIMEOUT_MS = 3_000;
 const CART_READ_RECOVERY_ATTEMPTS = 2;
 const CART_RENDER_SIGNAL_TIMEOUT_MS = 12_000;
 const CART_SCROLL_SETTLE_MS = 140;
 const CART_SCROLL_MIN_STEP_PX = 160;
 const CART_SCROLL_MAX_SNAPSHOTS = 24;
+const LARGE_CART_PARTIAL_READ_MIN_ITEMS = 20;
 const CART_LIMIT_RESOLUTION_ATTEMPTS = 6;
 const CART_LIMIT_REMOVE_CLICK_TIMEOUT_MS = 10_000;
 const CART_LIMIT_REMOVE_PROGRESS_TIMEOUT_MS = 3_000;
@@ -65,7 +67,15 @@ export async function openCart(page: Page): Promise<void> {
     return;
   }
 
-  if (await openCartFromVisibleControl(page)) {
+  if (await openCartFromVisibleControl(page, { throwOnUnverified: false })) {
+    return;
+  }
+
+  if (await openCartFromQueryParameter(page)) {
+    return;
+  }
+
+  if (await openCartFromVisibleControl(page, { throwOnUnverified: false })) {
     return;
   }
 
@@ -73,6 +83,12 @@ export async function openCart(page: Page): Promise<void> {
     code: "cart_unavailable",
     hint: "Log in and add an item first, then rerun the command."
   });
+}
+
+async function openCartFromQueryParameter(page: Page): Promise<boolean> {
+  await gotoZepto(page, "/?cart=open");
+  await waitForCartContentSettled(page);
+  return isCurrentCartPage(page);
 }
 
 async function isCurrentCartPage(page: Page): Promise<boolean> {
@@ -108,18 +124,27 @@ async function readBodyText(page: Page): Promise<string> {
 
 export async function clickCartOpenButton(page: Page): Promise<boolean> {
   const controls = page.locator("button, [role='button'], a");
-  const cartLabelElements = page.locator(
-    "button, [role='button'], a, [aria-label], [title], [tabindex], [data-testid], div, span"
-  );
+  const cartLabelElements = page.locator("[aria-label], [title], [tabindex], [data-testid], div, span");
   for (const label of CART_OPEN_CLICK_LABELS) {
-    const candidates = [
+    const primaryCandidates = [
       page.getByRole("button", { name: label }),
       page.getByRole("link", { name: label }),
-      controls.filter({ hasText: label }),
+      controls.filter({ hasText: label })
+    ];
+
+    for (const candidate of primaryCandidates) {
+      if (await clickFirstSafeCartOpenControl(candidate)) {
+        return true;
+      }
+    }
+  }
+
+  for (const label of CART_OPEN_CLICK_LABELS) {
+    const fallbackCandidates = [
       cartLabelElements.filter({ hasText: label })
     ];
 
-    for (const candidate of candidates) {
+    for (const candidate of fallbackCandidates) {
       if (await clickFirstSafeCartOpenControl(candidate)) {
         return true;
       }
@@ -130,6 +155,13 @@ export async function clickCartOpenButton(page: Page): Promise<boolean> {
 }
 
 async function clickFirstSafeCartOpenControl(locator: Locator): Promise<boolean> {
+  const countableLocator = locator as Locator & { count?: () => Promise<number> };
+  if (typeof countableLocator.count === "function") {
+    if ((await countableLocator.count().catch(() => 0)) <= 0) {
+      return false;
+    }
+  }
+
   for await (const candidate of iterateLocatorCandidates(locator, CART_OPEN_CONTROL_SCAN_LIMIT)) {
     if (await clickSafeCartOpenControl(candidate)) {
       return true;
@@ -150,8 +182,10 @@ async function clickSafeCartOpenControl(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  await locator.click();
-  return true;
+  return locator.click({ timeout: CART_OPEN_CLICK_TIMEOUT_MS }).then(
+    () => true,
+    () => false
+  );
 }
 
 async function isSafeCartOpenControl(locator: Locator): Promise<boolean> {
@@ -332,7 +366,7 @@ export function isCartPageText(text: string): boolean {
     return hasStrongCartSurfaceEvidence(normalized);
   }
 
-  if (isEmptyCartText(normalized) && !hasNonEmptyCartEvidence(normalized)) {
+  if (hasEmptyCartSurfaceEvidence(text)) {
     return true;
   }
 
@@ -368,7 +402,7 @@ export function requireReadableCartSnapshot(rawText: string, itemsOverride?: Car
     return snapshot;
   }
 
-  if (isEmptyCartText(rawText) && !hasNonEmptyCartEvidence(rawText)) {
+  if (hasEmptyCartSurfaceEvidence(rawText)) {
     return snapshot;
   }
 
@@ -442,6 +476,35 @@ export function isEmptyCartText(text: string): boolean {
   return /\b(cart is empty|cart empty|empty cart|your cart is empty|no items in cart|no items added)\b/i.test(
     normalized
   );
+}
+
+function hasEmptyCartSurfaceEvidence(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!isEmptyCartText(normalized) || hasNonEmptyCartEvidence(normalized)) {
+    return false;
+  }
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => normalizeText(line))
+    .filter(Boolean);
+  const emptyLineIndex = lines.findIndex((line) => isEmptyCartText(line));
+  if (emptyLineIndex < 0) {
+    return false;
+  }
+
+  const nearbyLines = lines
+    .slice(Math.max(0, emptyLineIndex - 5), emptyLineIndex + 6)
+    .join(" ");
+  if (/\bmy cart\b/i.test(nearbyLines)) {
+    return true;
+  }
+
+  if (/^cart$/i.test(lines[emptyLineIndex - 1] ?? "") || /^cart$/i.test(lines[emptyLineIndex - 2] ?? "")) {
+    return true;
+  }
+
+  return isCompactCartText(text) && /\b(my cart|cart|add items to continue|start shopping)\b/i.test(normalized);
 }
 
 export function isCartOpenClickText(text: string): boolean {
@@ -1077,7 +1140,29 @@ async function extractActiveCartItemsAcrossScroll(page: Page): Promise<CartItem[
             })
             .filter((row): row is { text: string; imageAlt: string | undefined } => row !== undefined);
         const findScrollTarget = () => {
-          const candidates = (Array.from(document.querySelectorAll("*")) as HTMLElement[])
+          const selectors = [
+            '[data-testid*="cart" i]',
+            '[class*="cart" i]',
+            '[id*="cart" i]',
+            '[class*="drawer" i]',
+            '[class*="modal" i]',
+            '[role="dialog"]',
+            "aside",
+            "main",
+            "section"
+          ];
+          const seen = new Set<Element>();
+          const candidateRoots = selectors
+            .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+            .filter((element) => {
+              if (seen.has(element)) {
+                return false;
+              }
+
+              seen.add(element);
+              return true;
+            });
+          const candidates = (candidateRoots as HTMLElement[])
             .filter(
               (element) =>
                 element instanceof HTMLElement &&
@@ -1320,6 +1405,10 @@ function dedupeCartItemsFromControls(items: CartItem[]): CartItem[] {
 
 function enforceActiveCartItemCount(items: CartItem[], expectedCount: number | undefined): CartItem[] {
   if (expectedCount === undefined || items.length === expectedCount) {
+    return items;
+  }
+
+  if (expectedCount > LARGE_CART_PARTIAL_READ_MIN_ITEMS && items.length >= LARGE_CART_PARTIAL_READ_MIN_ITEMS) {
     return items;
   }
 

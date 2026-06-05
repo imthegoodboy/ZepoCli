@@ -256,6 +256,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--production-scope");
     expect(result.stdout).toContain("Final readiness preset");
     expect(result.stdout).toContain("with checkout wait enabled");
+    expect(result.stdout).toContain("--add-remove-limit-items");
     expect(result.stdout).toContain("--cart-remove-limit-items");
     expect(result.stdout).toContain("--checkout-remove-limit-items");
     expect(result.stdout).toContain("--browser-locale <locale>");
@@ -270,7 +271,7 @@ describe("live verification runner", () => {
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
     );
     expect(result.stdout).toContain(
-      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --cart-remove-limit-items --checkout-remove-limit-items'
+      'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --add-remove-limit-items --cart-remove-limit-items --checkout-remove-limit-items'
     );
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(result.stdout).toContain(
@@ -296,6 +297,9 @@ describe("live verification runner", () => {
     );
     expect(result.stdout).toContain(
       "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking."
+    );
+    expect(result.stdout).toContain(
+      "Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings"
     );
     expect(result.stdout).toContain(
       "Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings"
@@ -389,11 +393,14 @@ describe("live verification runner", () => {
     expect(script).toContain('playwrightChromiumPassed: playwrightChromiumCheck?.status === "pass"');
   });
 
-  it("can forward human product selection to zepo add during live verification", () => {
+  it("can forward add options to zepo add during live verification", () => {
     const script = readFileSync(scriptPath, "utf8");
 
     expect(script).toContain("options.chooseAdd");
     expect(script).toContain('addArgs.splice(addArgs.length - 1, 0, "--choose")');
+    expect(script).toContain("options.addRemoveLimitItems");
+    expect(script).toContain('addArgs.splice(addArgs.length - 1, 0, "--remove-limit-items")');
+    expect(script).toContain("--add-remove-limit-items can only be used with --add.");
   });
 
   it("can resolve explicit cart item-limit warnings during live cart evidence", () => {
@@ -781,7 +788,37 @@ describe("live verification runner", () => {
       validateLiveReportAcceptance(
         productionScopeLiveReport({
           generatedAt: new Date().toISOString(),
+          steps: productionScopeLiveReport().steps.map((step) =>
+            step.name === "add"
+              ? {
+                  ...step,
+                  command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --remove-limit-items --json"
+                }
+              : step
+          )
+        }),
+        {
+          expectedVersion: packageJson.version,
+          requireProductionScope: true,
+          maxAgeMs: 60_000
+        }
+      )
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
+    expect(
+      validateLiveReportAcceptance(
+        productionScopeLiveReport({
+          generatedAt: new Date().toISOString(),
           steps: productionScopeLiveReport().steps.map((step) => {
+            if (step.name === "add") {
+              return {
+                ...step,
+                command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --remove-limit-items --json"
+              };
+            }
+
             if (step.name === "cart") {
               return {
                 ...step,
@@ -2375,6 +2412,18 @@ describe("live verification runner", () => {
     expect(chooseWithoutAdd.status).toBe(1);
     expect(chooseWithoutAdd.stderr).toContain("--choose-add can only be used with --add.");
 
+    const addRemoveLimitWithoutAdd = spawnSync(
+      process.execPath,
+      [scriptPath, "--data-dir", ".zepo-live", "--add-remove-limit-items"],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+
+    expect(addRemoveLimitWithoutAdd.status).toBe(1);
+    expect(addRemoveLimitWithoutAdd.stderr).toContain("--add-remove-limit-items can only be used with --add.");
+
     const checkoutWaitWithoutCheckout = spawnSync(
       process.execPath,
       [scriptPath, "--data-dir", ".zepo-live", "--checkout-wait"],
@@ -3382,6 +3431,24 @@ describe("live verification runner", () => {
           ? {
               ...step,
               command: "zepo --data-dir <redacted-data-dir> --visible cart --remove-limit-items --json"
+            }
+          : step
+      )
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    expect(validateLiveReportAcceptance(report, { expectedVersion: packageJson.version }).accepted).toBe(true);
+  });
+
+  it("accepts sanitized add limit-warning removal command strings in live reports", () => {
+    const report = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "add"
+          ? {
+              ...step,
+              command: "zepo --data-dir <redacted-data-dir> --visible add <redacted-query> --quantity 1 --remove-limit-items --json"
             }
           : step
       )

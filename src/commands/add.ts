@@ -11,32 +11,39 @@ export function registerAddCommand(program: Command): void {
     .argument("<query...>", "product query")
     .option("-q, --quantity <number>", "quantity to add, maximum 12", "1")
     .option("--choose", "pick from matched products interactively")
+    .option("--remove-limit-items", "click Zepto's Remove Items action for item-limit warnings before verifying cart")
     .option("--json", "print machine-readable JSON")
-    .action((queryParts: string[], options: { quantity: string; choose?: boolean; json?: boolean }, command: Command) =>
-      withRuntime(command, async (runtime) => {
-        const { ZeptoService } = await import("../services/zepto.js");
-        const json = wantsJson(command, options);
-        const query = joinQuery(queryParts);
-        const service = new ZeptoService(runtime).cart;
-        const add = () =>
-          service.add(query, {
-            quantity: options.quantity,
-            choose: options.choose
-          });
-        if (json) {
-          printAddResult(await add());
-          return;
-        }
+    .action(
+      (
+        queryParts: string[],
+        options: { quantity: string; choose?: boolean; json?: boolean; removeLimitItems?: boolean },
+        command: Command
+      ) =>
+        withRuntime(command, async (runtime) => {
+          const { ZeptoService } = await import("../services/zepto.js");
+          const json = wantsJson(command, options);
+          const query = joinQuery(queryParts);
+          const service = new ZeptoService(runtime).cart;
+          const add = () =>
+            service.add(query, {
+              quantity: options.quantity,
+              choose: options.choose,
+              removeLimitItems: options.removeLimitItems === true
+            });
+          if (json) {
+            printAddResult(await add());
+            return;
+          }
 
-        const result = options.choose
-          ? await add()
-          : await withCommandSpinner(`Adding "${query}"`, (item) => `Added ${item.product.name}.`, add);
+          const result = options.choose
+            ? await add()
+            : await withCommandSpinner(`Adding "${query}"`, (item) => `Added ${item.product.name}.`, add);
 
-        if (options.choose) {
-          console.log(chalk.green(`Added ${result.product.name}.`));
-        }
+          if (options.choose) {
+            console.log(chalk.green(`Added ${result.product.name}.`));
+          }
 
-        printCart(result.cart);
-      })
+          printCart(result.cart);
+        })
     );
 }

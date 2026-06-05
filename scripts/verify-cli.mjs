@@ -169,6 +169,7 @@ const checks = [
       assert(stdout.includes("Search and add a product to the Zepto cart"), "expected add description");
       assert(stdout.includes("quantity to add, maximum 12"), "expected add quantity cap in help output");
       assert(stdout.includes("--choose"), "expected add choose option");
+      assert(stdout.includes("--remove-limit-items"), "expected add limit-warning removal option");
       assert(stdout.includes("--json"), "expected add json option");
     }
   },

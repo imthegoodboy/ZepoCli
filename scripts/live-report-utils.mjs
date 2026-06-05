@@ -1173,7 +1173,9 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
   ["address use", liveCommandPattern("--visible address use <redacted-address-query> --json")],
   [
     "add",
-    liveCommandPattern("--visible add <redacted-query> --quantity (?:[1-9]|1[0-2])(?: --choose)? --json")
+    liveCommandPattern(
+      "--visible add <redacted-query> --quantity (?:[1-9]|1[0-2])(?: --remove-limit-items)?(?: --choose)? --json"
+    )
   ],
   ["cart", liveCommandPattern("--visible cart(?: --remove-limit-items)? --json")],
   ["remove", liveCommandPattern("--visible remove <redacted-cart-query> --json")],

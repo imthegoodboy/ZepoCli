@@ -84,25 +84,37 @@ export class BrowserAutomation {
     }
 
     const releaseLock = acquireBrowserRunLock(this.runtime.paths.browserLockPath);
+    this.runtime.logger.debug(
+      {
+        headless,
+        accountRequired: options.requireSession === true,
+        saveState: options.saveState === true
+      },
+      "browser automation lock acquired"
+    );
     let lockReleased = false;
     let context: BrowserContext | undefined;
     const releaseBrowserResources = async () => {
+      this.runtime.logger.debug({ hasContext: context !== undefined }, "browser automation cleanup starting");
       await closeBrowserContextBestEffort(context);
       context = undefined;
       if (!lockReleased) {
         releaseLock();
         lockReleased = true;
       }
+      this.runtime.logger.debug("browser automation cleanup finished");
     };
     const disposeSignalCleanup = installProcessSignalCleanup(releaseBrowserResources);
     try {
       await this.paceBrowserRun();
+      this.runtime.logger.debug("browser automation launch starting");
 
       try {
         context = await chromium.launchPersistentContext(
           this.runtime.session.browserProfileDir,
           buildPersistentContextOptions(headless, this.runtime.options)
         );
+        this.runtime.logger.debug("browser automation launch finished");
       } catch (error) {
         this.runtime.logger.error(
           {
@@ -119,6 +131,7 @@ export class BrowserAutomation {
       browserContext.setDefaultNavigationTimeout(this.runtime.options.timeoutMs);
 
       const page = await browserContext.newPage();
+      this.runtime.logger.debug("browser automation page created");
       try {
         configurePageAccessChallengeHandling(page, {
           allowManualResolution: shouldAllowManualAccessChallengeResolution(headless, this.runtime.options.interactive),
@@ -132,7 +145,9 @@ export class BrowserAutomation {
         }
 
         try {
+          this.runtime.logger.debug("browser automation task starting");
           const result = await task(page, browserContext);
+          this.runtime.logger.debug("browser automation task finished");
           await assertNoAccessChallenge(page);
           if (shouldCheckExpiredSession(options) && (await isLoginRequiredPage(page))) {
             this.runtime.session.markLoggedOut();
