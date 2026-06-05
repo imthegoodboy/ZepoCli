@@ -384,6 +384,7 @@ describe("live verification runner", () => {
     expect(script).toContain('args.push("--browser-locale", options.browserLocale)');
     expect(script).toContain('args.push("--browser-timezone", options.browserTimezone)');
     expect(script).toContain("browserAutomationReady: payload.browserAutomation?.ready === true");
+    expect(script).toContain('liveSessionState: payload.liveSession?.state ?? "skipped"');
     expect(script).toContain("productCount: readableProductCount(payload)");
     expect(script).toContain("productDetailCount: detailedProductCount(payload)");
     expect(script).toContain("productHasDetail: hasReadableProductDetail(payload.product)");
@@ -505,7 +506,8 @@ describe("live verification runner", () => {
           name: "reorder",
           ok: true,
           summary: {
-            cartItemCount: 1
+            cartItemCount: 1,
+            hasTotal: true
           }
         },
         { name: "unknown", ok: true }
@@ -548,7 +550,22 @@ describe("live verification runner", () => {
           orderStatusCommand: "zepo track"
         }
       },
-      { name: "cart", ok: true }
+      {
+        name: "cart",
+        ok: true,
+        summary: {
+          cartItemCount: 1,
+          hasTotal: true
+        }
+      },
+      {
+        name: "remove",
+        ok: true,
+        summary: {
+          cartItemCount: "1",
+          hasTotal: true
+        }
+      }
     ]);
 
     expect(coverage.browserPreflight).toBe(false);
@@ -556,6 +573,7 @@ describe("live verification runner", () => {
     expect(coverage.search).toBe(false);
     expect(coverage.checkoutHandoff).toBe(false);
     expect(coverage.cart).toBe(true);
+    expect(coverage.remove).toBe(false);
   });
 
   it("summarizes attempted live report steps separately from passing coverage", () => {

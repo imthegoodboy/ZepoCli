@@ -610,20 +610,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
       addLiveReportStepContractMismatchIssue(issues);
     }
 
-    if (isObject(step.summary)) {
-      const expectedSummaryKeys =
-        LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS;
-      const requiredSummaryKeys =
-        LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS;
-      validateAllowedLiveReportKeys(
-        step.summary,
-        expectedSummaryKeys,
-        issues
-      );
-      validateLiveReportSummaryRequiredKeysContract(step.summary, requiredSummaryKeys, issues);
-      validateLiveReportSummaryValueContract(step.summary, issues);
-      validateLiveReportSummaryConsistencyContract(step.name, step.summary, issues);
-    }
+    validateLiveReportStepSummaryContract(step, issues);
   }
 }
 
@@ -704,8 +691,22 @@ function liveReportStepHasPassingCoverage(step) {
     return false;
   }
 
+  if (!liveReportStepSummarySatisfiesContract(step)) {
+    return false;
+  }
+
   const requirement = LIVE_REPORT_ACCEPTANCE_REQUIREMENT_BY_STEP_NAME.get(step.name);
   return !requirement?.accepts || requirement.accepts(step);
+}
+
+function liveReportStepSummarySatisfiesContract(step) {
+  if (!isObject(step?.summary)) {
+    return false;
+  }
+
+  const issues = [];
+  validateLiveReportStepSummaryContract(step, issues);
+  return issues.length === 0;
 }
 
 function validateLiveReportPassingStepContracts(steps, issues) {
@@ -729,6 +730,21 @@ function addLiveReportStepContractMismatchIssue(issues) {
       message: "Live report step summary does not satisfy acceptance requirements."
     });
   }
+}
+
+function validateLiveReportStepSummaryContract(step, issues) {
+  if (!isObject(step.summary)) {
+    return;
+  }
+
+  const expectedSummaryKeys =
+    LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS;
+  const requiredSummaryKeys =
+    LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME.get(step.name) ?? LIVE_REPORT_FALLBACK_SUMMARY_KEYS;
+  validateAllowedLiveReportKeys(step.summary, expectedSummaryKeys, issues);
+  validateLiveReportSummaryRequiredKeysContract(step.summary, requiredSummaryKeys, issues);
+  validateLiveReportSummaryValueContract(step.summary, issues);
+  validateLiveReportSummaryConsistencyContract(step.name, step.summary, issues);
 }
 
 function validateLiveReportSummaryRequiredKeysContract(summary, expectedKeys, issues) {

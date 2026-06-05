@@ -4888,6 +4888,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     "expected installed live report coverage to include only accepted successful workflow steps"
   );
+  assert(
+    summarizeLiveReportCoverage([
+      {
+        name: "cart",
+        ok: true,
+        summary: {
+          cartItemCount: "1",
+          hasTotal: true
+        }
+      }
+    ]).cart === false,
+    "expected installed live report coverage to reject malformed summary evidence"
+  );
   assertDeepEqual(
     summarizeLiveReportMissingCoverage(
       summarizeLiveReportRequests({

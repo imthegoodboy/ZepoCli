@@ -641,7 +641,7 @@ function summarizePayload(name, payload) {
     return {
       confirmedSession: payload.confirmedSession === true,
       browserAutomationReady: payload.browserAutomation?.ready === true,
-      liveSessionState: payload.liveSession?.state
+      liveSessionState: payload.liveSession?.state ?? "skipped"
     };
   }
 
