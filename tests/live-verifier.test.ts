@@ -335,6 +335,9 @@ describe("live verification runner", () => {
       "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
+      "manualEvidence is diagnostic only, must preserve humanActionRequired and automationBoundary markers"
+    );
+    expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
     );
     expect(result.stdout).toContain("--max-age-minutes is also used so the report is fresh evidence");

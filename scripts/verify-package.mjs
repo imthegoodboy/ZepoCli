@@ -2401,6 +2401,10 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live:report manual checkout exclusion guidance"
   );
   assert(
+    reportHelpResult.stdout.includes("manualEvidence is diagnostic only, must preserve humanActionRequired and automationBoundary markers"),
+    "expected installed verify:live:report manual checkout boundary guidance"
+  );
+  assert(
     reportHelpResult.stdout.includes("manual/internal command markers are accepted only for runner-defined precondition/internal failure steps"),
     "expected installed verify:live:report manual/internal command marker guidance"
   );
