@@ -13,7 +13,7 @@ export class CheckoutService {
     this.browser = new BrowserAutomation(runtime);
   }
 
-  async checkout(options: { waitForCompletion?: boolean } = {}): Promise<CheckoutHandoffResult> {
+  async checkout(options: { waitForCompletion?: boolean; removeLimitItems?: boolean } = {}): Promise<CheckoutHandoffResult> {
     const waitForCompletion = options.waitForCompletion ?? true;
     if (waitForCompletion) {
       requireInteractiveInput(
@@ -32,7 +32,9 @@ export class CheckoutService {
     return this.browser.withPage(
       { captureFailures: false, requireSession: true, headless: false, saveState: true },
       async (page) => {
-        let handoff = (await openCheckout(page)) ?? { mode: "checkout_or_payment_page" as const };
+        let handoff = (await openCheckout(page, { removeLimitItems: options.removeLimitItems === true })) ?? {
+          mode: "checkout_or_payment_page" as const
+        };
         if (waitForCompletion) {
           await input(
             {

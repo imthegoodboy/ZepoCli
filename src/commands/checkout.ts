@@ -11,11 +11,15 @@ export function registerCheckoutCommand(program: Command): void {
     .description("Open Zepto checkout handoff (requires --visible)")
     .option("--json", "print machine-readable JSON")
     .option("--wait", "wait for a human Zepto-side checkout/payment action before returning")
-    .action((options: { json?: boolean; wait?: boolean }, command: Command) =>
+    .option("--remove-limit-items", "click Zepto's Remove Items action for item-limit warnings before checkout")
+    .action((options: { json?: boolean; wait?: boolean; removeLimitItems?: boolean }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
-        const handoff = await new ZeptoService(runtime).checkout.checkout({ waitForCompletion: !json || options.wait === true });
+        const handoff = await new ZeptoService(runtime).checkout.checkout({
+          waitForCompletion: !json || options.wait === true,
+          removeLimitItems: options.removeLimitItems === true
+        });
         if (json) {
           printJson(checkoutHandoffOutput(handoff.mode));
           return;

@@ -128,6 +128,17 @@ describe("human-controlled browser handoff services", () => {
     expect(mocks.detectCheckoutHandoffMode).not.toHaveBeenCalled();
   });
 
+  it("passes explicit cart-limit removal through checkout handoff", async () => {
+    await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout({
+      waitForCompletion: false,
+      removeLimitItems: true
+    });
+
+    expect(mocks.openCheckout).toHaveBeenCalledWith(expect.anything(), {
+      removeLimitItems: true
+    });
+  });
+
   it("prompts for a manual Zepto payment click when checkout exposes only a cart-side payment control", async () => {
     mocks.openCheckout.mockResolvedValueOnce({ mode: "manual_payment_control_visible" });
 

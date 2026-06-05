@@ -27,8 +27,12 @@ export interface CheckoutHandoffResult {
   mode: CheckoutHandoffMode;
 }
 
-export async function openCheckout(page: Page): Promise<CheckoutHandoffResult> {
-  const cart = await readCheckoutCartPrecondition(page);
+export interface CheckoutOptions {
+  removeLimitItems?: boolean;
+}
+
+export async function openCheckout(page: Page, options: CheckoutOptions = {}): Promise<CheckoutHandoffResult> {
+  const cart = await readCheckoutCartPrecondition(page, options);
   const cartText = cart.rawText ?? "";
   assertReadableCheckoutCart(cartText, cart.items);
   if (isCheckoutHandoffText(cartText)) {
@@ -140,13 +144,14 @@ async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
   await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
-async function readCheckoutCartPrecondition(page: Page) {
+async function readCheckoutCartPrecondition(page: Page, options: CheckoutOptions) {
   try {
-    let cart = await readCart(page);
+    const readOptions = { removeLimitItems: options.removeLimitItems === true };
+    let cart = await readCart(page, readOptions);
     for (let attempt = 1; cart.items.length === 0 && attempt < CHECKOUT_EMPTY_CART_REREAD_ATTEMPTS; attempt += 1) {
       await page.waitForTimeout(CHECKOUT_EMPTY_CART_REREAD_DELAY_MS);
       await gotoZepto(page);
-      cart = await readCart(page);
+      cart = await readCart(page, readOptions);
     }
 
     return cart;

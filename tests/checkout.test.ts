@@ -465,6 +465,28 @@ describe("checkout handoff detection", () => {
     expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/", "/", "/"]);
     expect(page.urls.some((url) => new URL(url).pathname === "/cart")).toBe(false);
   });
+
+  it("keeps checkout read-only when Zepto shows an item-limit warning by default", async () => {
+    const page = createCheckoutRepeatedCartLimitWarningPage();
+
+    await expect(openCheckout(page as never)).rejects.toMatchObject({
+      code: "cart_limit_exceeded"
+    });
+
+    expect(page.limitRemoveClicks).toBe(0);
+    expect(page.checkoutClicked).toBe(false);
+  });
+
+  it("resolves repeated Zepto item-limit warnings before checkout when explicitly requested", async () => {
+    const page = createCheckoutRepeatedCartLimitWarningPage();
+
+    await expect(openCheckout(page as never, { removeLimitItems: true })).resolves.toEqual({
+      mode: "checkout_or_payment_page"
+    });
+
+    expect(page.limitRemoveClicks).toBe(2);
+    expect(page.checkoutClicked).toBe(true);
+  });
 });
 
 type CheckoutDetectionControl =
@@ -701,6 +723,81 @@ function createCheckoutCartNavigationRecoveryPage() {
         return createVisibleLocator("Checkout", async () => {
           page.checkoutClicked = true;
           location = "checkout";
+          bodyText = "Select payment method UPI Card Wallet";
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body"
+        ? {
+            innerText: async () => bodyText
+          }
+        : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createCheckoutRepeatedCartLimitWarningPage() {
+  const readableCartText = [
+    "My Cart",
+    "Delivering in 5 mins",
+    "1 item",
+    "Amul Gold Full Cream Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "₹34",
+    "Bill Summary",
+    "To Pay",
+    "₹34",
+    "Checkout"
+  ].join("\n");
+  const warningTexts = [
+    [
+      "You've exceeded limit for these items for today. Please order tomorrow.",
+      "Fortune Pure & Hygienic Fine Grain Sugar (1)",
+      "Remove Items",
+      readableCartText
+    ].join("\n"),
+    [
+      "You've exceeded limit for these items for today. Please order tomorrow.",
+      "Parrys White Label Sugar (1)",
+      "Remove Items",
+      readableCartText
+    ].join("\n")
+  ];
+  let bodyText = warningTexts[0] ?? readableCartText;
+  const page = {
+    checkoutClicked: false,
+    limitRemoveClicks: 0,
+    title: async () => "",
+    goto: async (url: string) => ({
+      status: () => 200,
+      url: () => String(url)
+    }),
+    waitForLoadState: async () => undefined,
+    waitForFunction: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      return source.includes("bodyTexts") ? { bodyTexts: [], controlRows: [] } : [];
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        (role === "button" || role === "link") &&
+        bodyText.includes("Remove Items") &&
+        matchesLocatorName(options.name, "Remove Items")
+      ) {
+        return createVisibleLocator("Remove Items", async () => {
+          page.limitRemoveClicks += 1;
+          bodyText = warningTexts[page.limitRemoveClicks] ?? readableCartText;
+        });
+      }
+
+      if (role === "button" && matchesLocatorName(options.name, "Checkout") && bodyText === readableCartText) {
+        return createVisibleLocator("Checkout", async () => {
+          page.checkoutClicked = true;
           bodyText = "Select payment method UPI Card Wallet";
         });
       }

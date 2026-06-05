@@ -1,9 +1,10 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 07:18 IST.
+Last updated: 2026-06-05 07:40 IST.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-05 at 07:40 IST after adding explicit `zepo --visible checkout --remove-limit-items`, so checkout can handle Zepto's repeated item-limit warning modal with the same bounded `Remove Items` loop as cart before rereading the live cart and continuing the handoff, while plain checkout remains read-only: secret scan, dependency readiness, build, 34 test files, 662 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 07:06 IST after allowing explicit `zepo clear` to resolve Zepto item-limit warnings before clearing the cart, while keeping single-item `zepo remove <query>` from resolving that modal because it could remove unrelated limited items: secret scan, dependency readiness, build, 34 test files, 659 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - Focused `npm test -- tests/cart-automation.test.ts tests/readme.test.ts` and `npm run build` passed locally on 2026-06-05 at 06:59 IST for the same clear/remove item-limit warning boundary: 2 test files, 56 tests.
 - `npm run check` passed locally on 2026-06-05 at 06:47 IST after making explicit `zepo cart --remove-limit-items` handle a bounded sequence of repeated Zepto item-limit warning modals before rereading the live cart, while stopping with `cart_limit_exceeded` if Zepto keeps reopening the warning beyond that bounded budget: secret scan, dependency readiness, build, 34 test files, 657 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
