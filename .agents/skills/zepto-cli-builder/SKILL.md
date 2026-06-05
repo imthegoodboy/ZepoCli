@@ -176,6 +176,8 @@ Use `npm --silent run verify:live -- --data-dir <dedicated-dir> ...` only for op
 
 Use silent npm for live verification examples so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
 
+`verify:live` value options should accept both `--option value` and `--option=value`; keep both forms sanitized so phone input, workflow queries, browser context values, local paths, and npm-token-shaped values never appear in report commands or console diagnostics.
+
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
 
 `verify:live` should start with mode-aware `zepo doctor --json`, including the Playwright Chromium launch check, then mode-aware local `zepo status --json`, before login/cart/checkout/order verification. No-workflow/local smokes use background mode; requested live workflows use `--visible` preflight so a headless cooldown does not block human-controlled verification by itself. Its report contract should require both preflight steps to report current-mode `browserAutomation.ready === true`, plus a passing `Playwright Chromium` check from doctor, instead of accepting skip-browser doctor output or a data directory with an active browser lock.

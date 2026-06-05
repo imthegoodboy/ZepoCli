@@ -2342,13 +2342,13 @@ describe("live verification runner", () => {
         hidden: [fakeNpmToken]
       },
       {
-        args: ["--search=Amul Milk 500ml"],
-        expected: "Unknown option: --search.",
+        args: ["--unknown-search=Amul Milk 500ml"],
+        expected: "Unknown option: --unknown-search.",
         hidden: ["Amul Milk 500ml"]
       },
       {
-        args: ["--report=C:\\Users\\parth\\.zepo-live\\secret-report.json"],
-        expected: "Unknown option: --report.",
+        args: ["--unknown-report=C:\\Users\\parth\\.zepo-live\\secret-report.json"],
+        expected: "Unknown option: --unknown-report.",
         hidden: ["C:\\Users\\parth", "secret-report.json"]
       },
       {
@@ -2372,6 +2372,43 @@ describe("live verification runner", () => {
       for (const hidden of testCase.hidden) {
         expect(output).not.toContain(hidden);
       }
+    }
+  }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
+
+  it("accepts assignment-form live verification value options before touching the compiled CLI", () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        scriptPath,
+        "--data-dir=.zepo-live",
+        "--report=.zepo-live/live-verification-report.json",
+        "--browser-locale=en-IN",
+        "--browser-timezone=Asia/Kolkata",
+        "--step-timeout=1000",
+        "--login",
+        "--phone=9999999999",
+        "--production-scope",
+        "--search=milk",
+        "--address=home",
+        "--add=milk",
+        "--quantity=2",
+        "--remove=milk"
+      ],
+      {
+        cwd: rootDir,
+        encoding: "utf8"
+      }
+    );
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "--production-scope cannot be combined with --address-add, --address-list, --remove, --clear, --history, or --reorder-last."
+    );
+    expect(result.stderr).not.toContain("Unknown option");
+    expect(result.stderr).not.toContain("Compiled CLI was not found");
+    for (const hidden of ["9999999999", "milk", "home", ".zepo-live/live-verification-report.json"]) {
+      expect(output).not.toContain(hidden);
     }
   }, LIVE_VERIFIER_TEST_TIMEOUT_MS);
 

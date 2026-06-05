@@ -47,6 +47,7 @@ With no live workflow flags, a data directory that already has a confirmed local
 `--browser-locale <locale>` and `--browser-timezone <timezone>` are optional; when supplied, the live runner passes the same validated browser context to every child `zepo` command and stores only `<redacted-browser-locale>` / `<redacted-browser-timezone>` in report command strings.
 
 Use `npm --silent run verify:live -- ...` so npm does not echo raw invocation arguments before the runner can redact internal `zepo` command lines.
+`verify:live` value options accept both `--option value` and `--option=value`; both forms must keep phone input, workflow queries, browser context values, local paths, and npm-token-shaped values redacted from report commands and console diagnostics.
 
 If `verify:live` is interrupted with Ctrl+C/SIGTERM during a visible human handoff, it should signal the active child command, write the same sanitized partial report when possible, and keep console paths redacted.
 

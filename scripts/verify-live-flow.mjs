@@ -787,44 +787,66 @@ function parseArgs(args) {
     const arg = args[index];
     if (arg === "--help" || arg === "-h") {
       parsed.help = true;
-    } else if (arg === "--data-dir") {
-      parsed.dataDir = requireValue(args, ++index, arg);
-    } else if (arg === "--report") {
-      parsed.report = requireValue(args, ++index, arg);
-    } else if (arg === "--browser-locale") {
-      parsed.browserLocale = parseBrowserLocale(requireValue(args, ++index, arg));
-    } else if (arg === "--browser-timezone") {
-      parsed.browserTimezone = parseBrowserTimezone(requireValue(args, ++index, arg));
-    } else if (arg === "--step-timeout") {
-      parsed.stepTimeoutMs = parseStepTimeout(requireValue(args, ++index, arg));
+    } else if (matchesValueOption(arg, "--data-dir")) {
+      const parsedValue = readValueOption(args, index, "--data-dir");
+      parsed.dataDir = parsedValue.value;
+      index = parsedValue.index;
+    } else if (matchesValueOption(arg, "--report")) {
+      const parsedValue = readValueOption(args, index, "--report");
+      parsed.report = parsedValue.value;
+      index = parsedValue.index;
+    } else if (matchesValueOption(arg, "--browser-locale")) {
+      const parsedValue = readValueOption(args, index, "--browser-locale");
+      parsed.browserLocale = parseBrowserLocale(parsedValue.value);
+      index = parsedValue.index;
+    } else if (matchesValueOption(arg, "--browser-timezone")) {
+      const parsedValue = readValueOption(args, index, "--browser-timezone");
+      parsed.browserTimezone = parseBrowserTimezone(parsedValue.value);
+      index = parsedValue.index;
+    } else if (matchesValueOption(arg, "--step-timeout")) {
+      const parsedValue = readValueOption(args, index, "--step-timeout");
+      parsed.stepTimeoutMs = parseStepTimeout(parsedValue.value);
+      index = parsedValue.index;
     } else if (arg === "--login") {
       parsed.login = true;
     } else if (arg === "--production-scope") {
       parsed.productionScope = true;
-    } else if (arg === "--phone") {
-      parsed.phone = normalizeLoginPhone(requireValue(args, ++index, arg));
-    } else if (arg === "--search") {
-      parsed.search = requireValue(args, ++index, arg);
-    } else if (arg === "--address") {
-      parsed.address = requireValue(args, ++index, arg);
+    } else if (matchesValueOption(arg, "--phone")) {
+      const parsedValue = readValueOption(args, index, "--phone");
+      parsed.phone = normalizeLoginPhone(parsedValue.value);
+      index = parsedValue.index;
+    } else if (matchesValueOption(arg, "--search")) {
+      const parsedValue = readValueOption(args, index, "--search");
+      parsed.search = parsedValue.value;
+      index = parsedValue.index;
+    } else if (matchesValueOption(arg, "--address")) {
+      const parsedValue = readValueOption(args, index, "--address");
+      parsed.address = parsedValue.value;
+      index = parsedValue.index;
     } else if (arg === "--address-add") {
       parsed.addressAdd = true;
     } else if (arg === "--address-list") {
       parsed.addressList = true;
-    } else if (arg === "--add") {
-      parsed.add = requireValue(args, ++index, arg);
+    } else if (matchesValueOption(arg, "--add")) {
+      const parsedValue = readValueOption(args, index, "--add");
+      parsed.add = parsedValue.value;
+      index = parsedValue.index;
     } else if (arg === "--add-remove-limit-items") {
       parsed.addRemoveLimitItems = true;
     } else if (arg === "--choose-add") {
       parsed.chooseAdd = true;
-    } else if (arg === "--quantity") {
-      parsed.quantity = parseQuantity(requireValue(args, ++index, arg));
+    } else if (matchesValueOption(arg, "--quantity")) {
+      const parsedValue = readValueOption(args, index, "--quantity");
+      parsed.quantity = parseQuantity(parsedValue.value);
+      index = parsedValue.index;
     } else if (arg === "--cart") {
       parsed.cart = true;
     } else if (arg === "--cart-remove-limit-items") {
       parsed.cartRemoveLimitItems = true;
-    } else if (arg === "--remove") {
-      parsed.remove = requireValue(args, ++index, arg);
+    } else if (matchesValueOption(arg, "--remove")) {
+      const parsedValue = readValueOption(args, index, "--remove");
+      parsed.remove = parsedValue.value;
+      index = parsedValue.index;
     } else if (arg === "--clear") {
       parsed.clear = true;
     } else if (arg === "--checkout") {
@@ -868,10 +890,40 @@ function failUnknownArgument(arg) {
   }
 
   if (String(arg ?? "").includes("=")) {
-    console.error("Use a space between a live verifier option and its value.");
+    console.error("Check the option name; supported value options accept both --option value and --option=value.");
   }
   console.error("Run `npm --silent run verify:live -- --help` for supported options.");
   process.exit(1);
+}
+
+function matchesValueOption(arg, option) {
+  return arg === option || String(arg ?? "").startsWith(`${option}=`);
+}
+
+function readValueOption(args, index, option) {
+  const arg = args[index];
+  if (arg === option) {
+    return {
+      value: requireValue(args, index + 1, option),
+      index: index + 1
+    };
+  }
+
+  const assignmentPrefix = `${option}=`;
+  if (String(arg ?? "").startsWith(assignmentPrefix)) {
+    const value = String(arg).slice(assignmentPrefix.length);
+    if (value.trim().length === 0) {
+      console.error(`${option} requires a non-empty value.`);
+      process.exit(1);
+    }
+
+    return {
+      value,
+      index
+    };
+  }
+
+  failUnknownArgument(arg);
 }
 
 function formatUnknownOptionName(arg) {

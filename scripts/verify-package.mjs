@@ -2622,17 +2622,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
 
   const unknownSearchAssignmentResult = runNpmResult(
-    installedVerifyLiveArgs(packageDir, "--search=Amul Milk 500ml"),
+    installedVerifyLiveArgs(packageDir, "--unknown-search=Amul Milk 500ml"),
     { cwd: rootDir }
   );
   assert(unknownSearchAssignmentResult.status === 1, "expected installed verify:live unknown assignment to fail");
   assert(
-    unknownSearchAssignmentResult.stderr.includes("Unknown option: --search."),
+    unknownSearchAssignmentResult.stderr.includes("Unknown option: --unknown-search."),
     "expected installed verify:live unknown assignment to keep only the option name"
   );
   assert(
-    unknownSearchAssignmentResult.stderr.includes("Use a space between a live verifier option and its value."),
-    "expected installed verify:live unknown assignment to explain option value syntax"
+    unknownSearchAssignmentResult.stderr.includes(
+      "Check the option name; supported value options accept both --option value and --option=value."
+    ),
+    "expected installed verify:live unknown assignment to explain assignment-form support"
   );
   assert(
     !`${unknownSearchAssignmentResult.stdout}\n${unknownSearchAssignmentResult.stderr}`.includes("Amul Milk 500ml"),
@@ -2641,17 +2643,55 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
 
   const unknownReportAssignmentPath = join(tempRoot, "live-secret-report.json");
   const unknownReportAssignmentResult = runNpmResult(
-    installedVerifyLiveArgs(packageDir, `--report=${unknownReportAssignmentPath}`),
+    installedVerifyLiveArgs(packageDir, `--unknown-report=${unknownReportAssignmentPath}`),
     { cwd: rootDir }
   );
   assert(unknownReportAssignmentResult.status === 1, "expected installed verify:live unknown report assignment to fail");
   assert(
-    unknownReportAssignmentResult.stderr.includes("Unknown option: --report."),
+    unknownReportAssignmentResult.stderr.includes("Unknown option: --unknown-report."),
     "expected installed verify:live unknown report assignment to keep only the option name"
   );
   assert(
     !`${unknownReportAssignmentResult.stdout}\n${unknownReportAssignmentResult.stderr}`.includes(tempRoot),
     "expected installed verify:live unknown assignment output to omit local temp paths"
+  );
+
+  const assignmentFormResult = runNpmResult(
+    installedVerifyLiveArgs(
+      packageDir,
+      "--data-dir=.zepo-live",
+      "--report=.zepo-live/live-verification-report.json",
+      "--browser-locale=en-IN",
+      "--browser-timezone=Asia/Kolkata",
+      "--step-timeout=1000",
+      "--login",
+      "--phone=9999999999",
+      "--production-scope",
+      "--search=milk",
+      "--address=home",
+      "--add=milk",
+      "--quantity=2",
+      "--remove=milk"
+    ),
+    { cwd: rootDir }
+  );
+  assert(assignmentFormResult.status === 1, "expected installed verify:live assignment form guard to fail intentionally");
+  assert(
+    assignmentFormResult.stderr.includes(
+      "--production-scope cannot be combined with --address-add, --address-list, --remove, --clear, --history, or --reorder-last."
+    ),
+    "expected installed verify:live to accept assignment-form values before production-scope validation"
+  );
+  assert(
+    !assignmentFormResult.stderr.includes("Unknown option"),
+    "expected installed verify:live assignment-form values not to be treated as unknown options"
+  );
+  assert(
+    !`${assignmentFormResult.stdout}\n${assignmentFormResult.stderr}`.includes("9999999999") &&
+      !`${assignmentFormResult.stdout}\n${assignmentFormResult.stderr}`.includes("milk") &&
+      !`${assignmentFormResult.stdout}\n${assignmentFormResult.stderr}`.includes("home") &&
+      !`${assignmentFormResult.stdout}\n${assignmentFormResult.stderr}`.includes(".zepo-live/live-verification-report.json"),
+    "expected installed verify:live assignment-form guard output to omit phone, workflow queries, and report path"
   );
 
   const noSessionDataDir = join(tempRoot, "live-no-session-data");
