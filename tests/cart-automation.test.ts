@@ -217,6 +217,61 @@ describe("cart automation helpers", () => {
     });
   });
 
+  it("ignores cart-adjacent out-of-stock and alternative product panels", () => {
+    expect(
+      requireReadableCartSnapshot(`
+        Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru
+        Yay! You saved ₹42 on this order
+        Coupons & offers
+        Save ₹50 with Z-BONUSOFF50
+        Get Upto ₹50 Cashback on using Amazon Pay
+        1 item is out of stock
+        MAGGI Spicy Cheesy Noodles
+        1 pack (76 g)
+        1 unit
+        Alternative items for you
+        MAGGI Spicy Cheesy Noodles, Instant Noodles
+        1 pack (304 g)
+        ₹100
+        Add
+        Maggi Chicken Instant Noodles
+        1 pack (71 or 76 g)
+        ₹19
+        Add
+        Delivering in 4 mins
+        2 items
+        Haldiram's Ratlami Sev | Spicy Crunchy Namkeen
+        1 pack (200 g)
+        1
+        ₹50
+        Amul Gold Full Cream Fresh Milk | Pouch
+        1 pack (500 ml)
+        1
+        ₹58
+        Forgot something?
+        Add More Items
+        Bill Summary
+        Item Total
+        ₹108
+        Click to Pay ₹108
+      `)
+    ).toMatchObject({
+      items: [
+        {
+          name: "Haldiram's Ratlami Sev | Spicy Crunchy Namkeen",
+          price: "₹50",
+          unit: "1 pack (200 g)"
+        },
+        {
+          name: "Amul Gold Full Cream Fresh Milk | Pouch",
+          price: "₹58",
+          unit: "1 pack (500 ml)"
+        }
+      ],
+      total: "₹108"
+    });
+  });
+
   it("extracts cart totals only from explicit total labels", () => {
     expect(
       requireReadableCartSnapshot(`
