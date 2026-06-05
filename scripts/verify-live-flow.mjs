@@ -699,6 +699,7 @@ function summarizePayload(name, payload) {
       automationBoundary: payload.automationBoundary,
       handoffUrl: payload.handoffUrl,
       handoffSurface: payload.handoffSurface,
+      browserOpenAfterReturn: payload.browserOpenAfterReturn,
       cartPrecondition: payload.cartPrecondition,
       paymentStatus: payload.paymentStatus,
       orderPlacement: payload.orderPlacement,

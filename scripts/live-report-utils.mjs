@@ -306,6 +306,7 @@ function buildLiveReportManualEvidence(name, payload, payloadContractError) {
     automationBoundary: payload.automationBoundary,
     handoffUrl: payload.handoffUrl,
     handoffSurface: payload.handoffSurface,
+    browserOpenAfterReturn: payload.browserOpenAfterReturn,
     cartPrecondition: payload.cartPrecondition,
     paymentStatus: payload.paymentStatus,
     orderPlacement: payload.orderPlacement,
@@ -968,6 +969,7 @@ function validateLiveReportManualEvidenceContract(step, issues) {
     step.manualEvidence?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
     step.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
     step.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
+    step.manualEvidence?.browserOpenAfterReturn === false &&
     step.manualEvidence?.cartPrecondition === "non_empty_cart_verified" &&
     step.manualEvidence?.paymentStatus === "not_observed_by_zepocli" &&
     step.manualEvidence?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1191,6 +1193,7 @@ const LIVE_REPORT_MANUAL_EVIDENCE_KEYS = new Set([
   "automationBoundary",
   "handoffUrl",
   "handoffSurface",
+  "browserOpenAfterReturn",
   "cartPrecondition",
   "paymentStatus",
   "orderPlacement",
@@ -1245,6 +1248,7 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "automationBoundary",
       "handoffUrl",
       "handoffSurface",
+      "browserOpenAfterReturn",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1283,6 +1287,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "automationBoundary",
       "handoffUrl",
       "handoffSurface",
+      "browserOpenAfterReturn",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1295,6 +1300,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
 ]);
 const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "browserAutomationReady",
+  "browserOpenAfterReturn",
   "confirmedSession",
   "hasAddressDetail",
   "hasAddressText",
@@ -1483,6 +1489,7 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
       step.summary?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
       step.summary?.handoffUrl === "https://www.zepto.com/?cart=open" &&
       step.summary?.handoffSurface === "visible_zepto_browser" &&
+      step.summary?.browserOpenAfterReturn === false &&
       step.summary?.cartPrecondition === "non_empty_cart_verified" &&
       step.summary?.paymentStatus === "not_observed_by_zepocli" &&
       step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1683,6 +1690,7 @@ function validateCheckoutPayloadContract(payload) {
     payload?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
     payload?.handoffUrl === "https://www.zepto.com/?cart=open" &&
     payload?.handoffSurface === "visible_zepto_browser" &&
+    payload?.browserOpenAfterReturn === false &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1698,6 +1706,7 @@ function validateCheckoutPayloadContract(payload) {
     payload?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
     payload?.handoffUrl === "https://www.zepto.com/?cart=open" &&
     payload?.handoffSurface === "visible_zepto_browser" &&
+    payload?.browserOpenAfterReturn === false &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&

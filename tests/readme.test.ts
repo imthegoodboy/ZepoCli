@@ -228,12 +228,14 @@ describe("README package guidance", () => {
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
     expect(readme).toContain('handoffSurface: "visible_zepto_browser"');
+    expect(readme).toContain("browserOpenAfterReturn: false");
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("`humanActionRequired: true`");
     expect(readme).toContain('automationBoundary: "zepocli_did_not_click_payment_or_order_controls"');
     expect(readme).toContain('status: "checkout_manual_action_required"');
     expect(readme).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
+    expect(readme).toContain("Use `zepo --visible checkout --wait` or human text mode");
     expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
     expect(readme).toContain("unless the caller explicitly passes `--wait`");
     expect(readme).toContain("Wait mode re-checks the visible page after the human presses Enter");

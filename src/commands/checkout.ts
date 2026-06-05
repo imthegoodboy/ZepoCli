@@ -16,12 +16,13 @@ export function registerCheckoutCommand(program: Command): void {
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
+        const waitForCompletion = !json || options.wait === true;
         const handoff = await new ZeptoService(runtime).checkout.checkout({
-          waitForCompletion: !json || options.wait === true,
+          waitForCompletion,
           removeLimitItems: options.removeLimitItems === true
         });
         if (json) {
-          printJson(checkoutHandoffOutput(handoff.mode));
+          printJson(checkoutHandoffOutput(handoff.mode, { waitForCompletion }));
           return;
         }
 
@@ -43,6 +44,7 @@ export interface CheckoutHandoffOutput {
   automationBoundary: "zepocli_did_not_click_payment_or_order_controls";
   handoffUrl: "https://www.zepto.com/?cart=open";
   handoffSurface: "visible_zepto_browser";
+  browserOpenAfterReturn: false;
   cartPrecondition: "non_empty_cart_verified";
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
@@ -50,7 +52,12 @@ export interface CheckoutHandoffOutput {
   next: string;
 }
 
-export function checkoutHandoffOutput(mode: CheckoutHandoffMode = "checkout_or_payment_page"): CheckoutHandoffOutput {
+export function checkoutHandoffOutput(
+  mode: CheckoutHandoffMode = "checkout_or_payment_page",
+  options: { waitForCompletion?: boolean } = {}
+): CheckoutHandoffOutput {
+  const waitForCompletion = options.waitForCompletion === true;
+
   if (mode === "manual_payment_control_visible") {
     return {
       status: "checkout_manual_action_required",
@@ -59,11 +66,14 @@ export function checkoutHandoffOutput(mode: CheckoutHandoffMode = "checkout_or_p
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "A human must continue in the visible Zepto browser. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
+      next: waitForCompletion
+        ? "A human continued in Zepto before this command returned. ZepoCli still did not observe payment/order placement; after any Zepto-side order action, run `zepo track` to inspect order status."
+        : "Run `zepo --visible checkout --wait` or human text checkout when a human must continue in Zepto. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
     };
   }
 
@@ -74,10 +84,13 @@ export function checkoutHandoffOutput(mode: CheckoutHandoffMode = "checkout_or_p
     automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
     handoffUrl: "https://www.zepto.com/?cart=open",
     handoffSurface: "visible_zepto_browser",
+    browserOpenAfterReturn: false,
     cartPrecondition: "non_empty_cart_verified",
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",
     orderStatusCommand: "zepo track",
-    next: "Complete payment in Zepto, then run `zepo track` to inspect order status."
+    next: waitForCompletion
+      ? "If payment/order was completed in Zepto before this command returned, run `zepo track` to inspect order status."
+      : "Run `zepo --visible checkout --wait` or human text checkout when the browser must stay open for Zepto-side payment; after any Zepto-side order action, run `zepo track` to inspect order status."
   };
 }

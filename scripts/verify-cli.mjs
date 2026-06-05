@@ -1218,11 +1218,12 @@ function assertCheckoutHandoffContract(payload) {
   );
   assert(payload.handoffUrl === "https://www.zepto.com/?cart=open", "expected checkout handoff URL marker");
   assert(payload.handoffSurface === "visible_zepto_browser", "expected checkout handoff surface marker");
+  assert(payload.browserOpenAfterReturn === false, "expected checkout browser lifecycle marker");
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected track next command");
-  assert(String(payload.next).includes("Complete payment in Zepto"), "expected checkout handoff next-step guidance");
+  assert(String(payload.next).includes("zepo --visible checkout --wait"), "expected checkout handoff next-step guidance");
   assert(isCheckoutHandoffClickText("Checkout") === true, "expected compiled checkout label to be accepted");
   assert(
     isCheckoutHandoffClickText("Proceed to Checkout") === true,

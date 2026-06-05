@@ -106,6 +106,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain('automationBoundary: "zepocli_did_not_click_payment_or_order_controls"');
       expect(guidance).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
       expect(guidance).toContain('handoffSurface: "visible_zepto_browser"');
+      expect(guidance).toContain("browserOpenAfterReturn: false");
       expect(guidance).toContain('cartPrecondition: "non_empty_cart_verified"');
       expect(guidance).toContain('status: "checkout_manual_action_required"');
       expect(guidance).toContain("`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for a prompt");
@@ -328,6 +329,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(liveVerifierSkill).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
     expect(liveVerifierSkill).toContain('handoffSurface: "visible_zepto_browser"');
+    expect(liveVerifierSkill).toContain("browserOpenAfterReturn: false");
     expect(liveVerifierSkill).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(liveVerifierSkill).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(liveVerifierSkill).toContain('orderStatusCommand: "zepo track"');

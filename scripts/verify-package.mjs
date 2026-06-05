@@ -308,6 +308,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Wait mode re-checks the visible page after the human presses Enter",
     "handoffUrl: \"https://www.zepto.com/?cart=open\"",
     "handoffSurface: \"visible_zepto_browser\"",
+    "browserOpenAfterReturn: false",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "status: \"checkout_manual_action_required\"",
     "manual amount-bearing payment control",
@@ -2418,7 +2419,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     reportHelpResult.stdout.includes(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, and handoffSurface markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, and browserOpenAfterReturn markers"
     ),
     "expected installed verify:live:report manual checkout boundary guidance"
   );
@@ -3100,6 +3101,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
+        browserOpenAfterReturn: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3417,6 +3419,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -3436,6 +3439,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         "zepocli_did_not_click_payment_or_order_controls" &&
       diagnosticManualCheckoutStep.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
       diagnosticManualCheckoutStep.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
+      diagnosticManualCheckoutStep.manualEvidence?.browserOpenAfterReturn === false &&
       diagnosticManualCheckoutStep.manualEvidence?.cartPrecondition === "non_empty_cart_verified",
     "expected installed live report checkout manual-continuation steps to keep sanitized manual evidence"
   );
@@ -5363,6 +5367,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "paid",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5411,6 +5416,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5436,6 +5442,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track"
@@ -7086,14 +7093,14 @@ function assertBrowserAutomationReadinessModes(readiness, label) {
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected installed checkout handoff status");
   assertCommonCheckoutOutputContract(payload);
-  assert(String(payload.next).includes("Complete payment in Zepto"), "expected installed checkout next-step guidance");
+  assert(String(payload.next).includes("zepo --visible checkout --wait"), "expected installed checkout next-step guidance");
 }
 
 function assertCheckoutManualActionContract(payload) {
   assert(payload.status === "checkout_manual_action_required", "expected installed checkout manual action status");
   assertCommonCheckoutOutputContract(payload);
   assert(
-    String(payload.next).includes("A human must continue in the visible Zepto browser"),
+    String(payload.next).includes("zepo --visible checkout --wait"),
     "expected installed checkout manual-action next-step guidance"
   );
   assert(
@@ -7111,6 +7118,7 @@ function assertCommonCheckoutOutputContract(payload) {
   );
   assert(payload.handoffUrl === "https://www.zepto.com/?cart=open", "expected installed checkout handoff URL marker");
   assert(payload.handoffSurface === "visible_zepto_browser", "expected installed checkout handoff surface marker");
+  assert(payload.browserOpenAfterReturn === false, "expected installed checkout browser lifecycle marker");
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected installed non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected installed unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");

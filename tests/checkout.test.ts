@@ -397,11 +397,12 @@ describe("checkout handoff detection", () => {
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "Complete payment in Zepto, then run `zepo track` to inspect order status."
+      next: "Run `zepo --visible checkout --wait` or human text checkout when the browser must stay open for Zepto-side payment; after any Zepto-side order action, run `zepo track` to inspect order status."
     });
   });
 
@@ -413,11 +414,25 @@ describe("checkout handoff detection", () => {
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
+      browserOpenAfterReturn: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "A human must continue in the visible Zepto browser. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
+      next: "Run `zepo --visible checkout --wait` or human text checkout when a human must continue in Zepto. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
+    });
+  });
+
+  it("reports wait-mode checkout guidance after a human-controlled handoff", () => {
+    expect(checkoutHandoffOutput("checkout_or_payment_page", { waitForCompletion: true })).toMatchObject({
+      status: "checkout_handoff_returned",
+      browserOpenAfterReturn: false,
+      next: "If payment/order was completed in Zepto before this command returned, run `zepo track` to inspect order status."
+    });
+    expect(checkoutHandoffOutput("manual_payment_control_visible", { waitForCompletion: true })).toMatchObject({
+      status: "checkout_manual_action_required",
+      browserOpenAfterReturn: false,
+      next: "A human continued in Zepto before this command returned. ZepoCli still did not observe payment/order placement; after any Zepto-side order action, run `zepo track` to inspect order status."
     });
   });
 
@@ -428,7 +443,8 @@ describe("checkout handoff detection", () => {
     expect(output.automationBoundary).toBe("zepocli_did_not_click_payment_or_order_controls");
     expect(output.handoffUrl).toBe("https://www.zepto.com/?cart=open");
     expect(output.handoffSurface).toBe("visible_zepto_browser");
-    expect(output.next).toContain("A human must continue");
+    expect(output.browserOpenAfterReturn).toBe(false);
+    expect(output.next).toContain("zepo --visible checkout --wait");
     expect(output.next).toContain("ZepoCli stops before payment/order controls");
     expect(output.next).not.toMatch(/^Click\b/i);
   });
