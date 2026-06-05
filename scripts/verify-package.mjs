@@ -755,8 +755,16 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "expected installed amount-bearing click-to-pay label to require manual action"
   );
   assert(
-    isManualCheckoutActionText("Pay ₹509") === false,
-    "expected installed generic pay amount not to be manual checkout action"
+    isManualCheckoutActionText("Pay ₹509") === true,
+    "expected installed amount-bearing pay label to require manual action"
+  );
+  assert(
+    isManualCheckoutActionText("Continue to Pay ₹509") === true,
+    "expected installed amount-bearing continue-to-pay label to require manual action"
+  );
+  assert(
+    isManualCheckoutActionText("Pay with UPI ₹509") === false,
+    "expected installed payment-method pay label not to be treated as cart-side manual action"
   );
   assert(
     isUnsafeCheckoutAutomationClickText("Continue to Pay") === true,
@@ -813,6 +821,12 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
       createInstalledCheckoutHandoffDetectionPage("Cart Bill Summary", ["Click to Pay ₹509"])
     ))?.mode === "manual_payment_control_visible",
     "expected installed checkout handoff mode detector to detect manual payment controls"
+  );
+  assert(
+    (await detectCheckoutHandoffMode(
+      createInstalledCheckoutHandoffDetectionPage("Cart Bill Summary", ["Pay ₹509"])
+    ))?.mode === "manual_payment_control_visible",
+    "expected installed checkout handoff mode detector to detect amount-bearing manual payment controls"
   );
   console.log("pass installed checkout handoff contract");
 }

@@ -140,11 +140,22 @@ describe("checkout handoff detection", () => {
   it("recognizes cart-side manual payment controls without allowing automated clicks", () => {
     expect(isManualCheckoutActionText("Click to Pay ₹509")).toBe(true);
     expect(isManualCheckoutActionText("Click to Pay Rs 509")).toBe(true);
-    expect(isManualCheckoutActionText("Pay ₹509")).toBe(false);
+    expect(isManualCheckoutActionText("Tap to Pay INR 509")).toBe(true);
+    expect(isManualCheckoutActionText("Pay ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Pay Now ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Continue to Pay ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Proceed to Pay ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Checkout and Pay ₹509")).toBe(true);
     expect(isManualCheckoutActionText("Pay Now")).toBe(false);
+    expect(isManualCheckoutActionText("Pay with UPI ₹509")).toBe(false);
+    expect(isManualCheckoutActionText("Get Upto ₹50 Cashback on using Amazon Pay")).toBe(false);
 
     expect(isUnsafeCheckoutAutomationClickText("Click to Pay ₹509")).toBe(true);
+    expect(isUnsafeCheckoutAutomationClickText("Pay ₹509")).toBe(true);
+    expect(isUnsafeCheckoutAutomationClickText("Continue to Pay ₹509")).toBe(true);
     expect(isCheckoutHandoffClickText("Click to Pay ₹509")).toBe(false);
+    expect(isCheckoutHandoffClickText("Pay ₹509")).toBe(false);
+    expect(isCheckoutHandoffClickText("Continue to Pay ₹509")).toBe(false);
   });
 
 
@@ -429,6 +440,10 @@ describe("checkout handoff detection", () => {
 
     await expect(
       detectCheckoutHandoffMode(createCheckoutHandoffDetectionPage("Cart Bill Summary", ["Click to Pay ₹509"]) as never)
+    ).resolves.toEqual({ mode: "manual_payment_control_visible" });
+
+    await expect(
+      detectCheckoutHandoffMode(createCheckoutHandoffDetectionPage("Cart Bill Summary", ["Pay ₹509"]) as never)
     ).resolves.toEqual({ mode: "manual_payment_control_visible" });
 
     await expect(

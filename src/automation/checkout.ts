@@ -220,7 +220,24 @@ export function isManualCheckoutActionText(text: string): boolean {
     return false;
   }
 
-  return /\bclick\s+to\s+pay\b/i.test(normalized) && /(?:₹|rs\.?\s*\d|inr\s*\d)/i.test(normalized);
+  if (!hasPaymentAmount(normalized) || isPaymentMethodOnlyManualActionText(normalized)) {
+    return false;
+  }
+
+  return (
+    /^(?:click|tap)\s+to\s+pay\b/i.test(normalized) ||
+    /^pay(?:\s+now)?\b/i.test(normalized) ||
+    /^(?:continue|proceed)\s+to\s+pay\b/i.test(normalized) ||
+    /^checkout\s+(?:and|&)\s+pay\b/i.test(normalized)
+  );
+}
+
+function hasPaymentAmount(text: string): boolean {
+  return /(?:₹\s*[\d,]+(?:\.\d+)?|(?:rs\.?|inr)\s*[\d,]+(?:\.\d+)?)/i.test(text);
+}
+
+function isPaymentMethodOnlyManualActionText(text: string): boolean {
+  return /\bpay\s+with\b|\bpayment\s+method\b|\bcashback\b|\boffers?\b/i.test(text);
 }
 
 export function isCheckoutHandoffText(text: string): boolean {

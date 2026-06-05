@@ -372,6 +372,14 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("detectCheckoutHandoffMode");
     expect(verifier).toContain("expected installed checkout handoff mode detector to detect payment handoff pages");
     expect(verifier).toContain("expected installed checkout handoff mode detector to detect manual payment controls");
+    expect(verifier).toContain(
+      "expected installed checkout handoff mode detector to detect amount-bearing manual payment controls"
+    );
+    expect(verifier).toContain("expected installed amount-bearing pay label to require manual action");
+    expect(verifier).toContain("expected installed amount-bearing continue-to-pay label to require manual action");
+    expect(verifier).toContain(
+      "expected installed payment-method pay label not to be treated as cart-side manual action"
+    );
     expect(verifier).toContain("expected installed continue-to-pay label to be unsafe");
     expect(verifier).toContain("expected installed continue-to-payment label to be unsafe");
     expect(verifier).toContain("expected installed card payment-method label to be unsafe");
