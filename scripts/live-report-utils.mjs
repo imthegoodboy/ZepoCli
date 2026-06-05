@@ -532,14 +532,23 @@ function validateLiveReportProductionScopeExclusions(requested, attempted, cover
 
 function validateLiveReportProductionScopeCartState(steps, issues) {
   const cartStep = steps.find((step) => step?.name === "cart" && step?.ok === true);
-  if (!cartStep || cartStep.summary?.cartItemCount > 0) {
+  if (!cartStep) {
     return;
   }
 
-  issues.push({
-    code: "live_report_production_scope_cart_empty",
-    message: "Live report production-scope cart evidence must show at least one cart item."
-  });
+  if (!(cartStep.summary?.cartItemCount > 0)) {
+    issues.push({
+      code: "live_report_production_scope_cart_empty",
+      message: "Live report production-scope cart evidence must show at least one cart item."
+    });
+  }
+
+  if (cartStep.summary?.hasTotal !== true) {
+    issues.push({
+      code: "live_report_production_scope_cart_total_missing",
+      message: "Live report production-scope cart evidence must preserve cart total/payable evidence."
+    });
+  }
 }
 
 function validateLiveReportProductionScopeCheckoutWait(steps, issues) {

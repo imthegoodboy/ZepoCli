@@ -307,7 +307,7 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).toContain(
-      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking."
+      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking."
     );
     expect(result.stdout).toContain(
       "Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings"
@@ -338,7 +338,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
     expect(result.stdout).toContain("local status readiness");
     expect(result.stdout).toContain(
-      "core login/session, search, address, non-empty cart, checkout handoff, and track workflow was requested and has passing coverage"
+      "core login/session, search, address, non-empty cart with total/payable evidence, checkout handoff, and track workflow was requested and has passing coverage"
     );
     expect(result.stdout).toContain(
       "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
@@ -1145,6 +1145,44 @@ describe("live verification runner", () => {
         maxAgeMs: 60_000
       }).issues.map((issue) => issue.code)
     ).toContain("live_report_production_scope_cart_empty");
+
+    const cartWithoutTotalProductionScope = productionScopeLiveReport({
+      generatedAt: new Date().toISOString(),
+      steps: productionScopeLiveReport().steps.map((step) =>
+        step.name === "cart"
+          ? {
+              ...step,
+              summary: {
+                cartItemCount: 1,
+                hasTotal: false
+              }
+            }
+          : step
+      )
+    });
+    cartWithoutTotalProductionScope.attempted = summarizeLiveReportAttempts(
+      cartWithoutTotalProductionScope.steps
+    );
+    cartWithoutTotalProductionScope.coverage = summarizeLiveReportCoverage(
+      cartWithoutTotalProductionScope.steps
+    );
+    cartWithoutTotalProductionScope.missingCoverage = summarizeLiveReportMissingCoverage(
+      cartWithoutTotalProductionScope.requested,
+      cartWithoutTotalProductionScope.coverage
+    );
+    expect(cartWithoutTotalProductionScope.coverage.cart).toBe(true);
+    expect(
+      validateLiveReportAcceptance(cartWithoutTotalProductionScope, {
+        expectedVersion: packageJson.version
+      }).accepted
+    ).toBe(true);
+    expect(
+      validateLiveReportAcceptance(cartWithoutTotalProductionScope, {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true,
+        maxAgeMs: 60_000
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_cart_total_missing");
 
     const missingLiveSession = acceptedLiveReport();
     missingLiveSession.coverage = {

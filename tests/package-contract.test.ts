@@ -574,7 +574,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report validator to reject invalid assignment-form max age");
     expect(verifier).toContain("expected installed live report checkout manual-continuation steps to keep sanitized manual evidence");
     expect(verifier).toContain("expected installed live report manual checkout evidence to remain diagnostic only");
-    expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
+    expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("local status readiness");
     expect(verifier).toContain("visible `doctor`/`status` preflight commands when `liveSession` is requested");
@@ -583,7 +583,7 @@ describe("package CLI contract", () => {
       "expected installed live report acceptance helper to reject account workflow without visible preflight"
     );
     expect(verifier).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered"
     );
     expect(verifier).toContain("with checkout wait evidence");
     expect(verifier).toContain(
@@ -747,6 +747,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to reject edited empty cart evidence");
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject empty cart evidence for production scope"
+    );
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject production-scope cart evidence without total evidence"
     );
     expect(verifier).toContain("expected installed live report acceptance helper to reject sensitive-looking report keys or values");
     expect(verifier).toContain("expected installed live report validator sensitive rejection output to omit raw sensitive keys or values");

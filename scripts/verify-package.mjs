@@ -368,7 +368,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Both preflight steps must report current-mode `browserAutomation.ready === true`",
     "doctor must also show a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
-    "then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled",
+    "then requests non-empty cart with total/payable evidence, checkout handoff, and track coverage with checkout wait enabled",
     "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
     "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings",
     "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings",
@@ -390,7 +390,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "sanitized non-future `generatedAt` plus data/report path metadata, optional `--max-age-minutes` freshness",
     "the fixed runner note",
-    "Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence",
+    "Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -412,7 +412,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
     "For every checkout step, `checkoutWaitCompleted` in `summary` or `manualEvidence` must match whether the stored redacted checkout command includes `--wait`",
     "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it",
-    "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence",
+    "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence",
     "stale saved reports or stale order-history tracking cannot be reused as current evidence",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
@@ -2427,7 +2427,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live:report production-scope request guidance"
   );
   assert(
-    reportHelpResult.stdout.includes("non-empty cart"),
+    reportHelpResult.stdout.includes("non-empty cart with total/payable evidence"),
     "expected installed verify:live:report production-scope cart-state guidance"
   );
   assert(
@@ -3835,6 +3835,49 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       maxAgeMs: 60_000
     }).issues.some((issue) => issue.code === "live_report_production_scope_cart_empty"),
     "expected installed live report acceptance helper to reject empty cart evidence for production scope"
+  );
+  const cartWithoutTotalProductionScopeLiveReport = {
+    ...freshProductionScopeLiveReport,
+    steps: freshProductionScopeLiveReport.steps.map((step) =>
+      step.name === "cart"
+        ? {
+            ...step,
+            summary: {
+              cartItemCount: 1,
+              hasTotal: false
+            }
+          }
+        : step
+    )
+  };
+  cartWithoutTotalProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(
+    cartWithoutTotalProductionScopeLiveReport.steps
+  );
+  cartWithoutTotalProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(
+    cartWithoutTotalProductionScopeLiveReport.steps
+  );
+  cartWithoutTotalProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    cartWithoutTotalProductionScopeLiveReport.requested,
+    cartWithoutTotalProductionScopeLiveReport.coverage
+  );
+  assert(
+    cartWithoutTotalProductionScopeLiveReport.coverage.cart === true &&
+      cartWithoutTotalProductionScopeLiveReport.missingCoverage.cart === false,
+    "expected installed live report focused cart coverage to accept readable cart rows without total evidence"
+  );
+  assert(
+    validateLiveReportAcceptance(cartWithoutTotalProductionScopeLiveReport, {
+      expectedVersion: packageJson.version
+    }).accepted === true,
+    "expected installed live report focused acceptance to allow cart rows without total evidence"
+  );
+  assert(
+    validateLiveReportAcceptance(cartWithoutTotalProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true,
+      maxAgeMs: 60_000
+    }).issues.some((issue) => issue.code === "live_report_production_scope_cart_total_missing"),
+    "expected installed live report acceptance helper to reject production-scope cart evidence without total evidence"
   );
   const inconsistentAttemptedLiveReport = {
     ...acceptedLiveReport,

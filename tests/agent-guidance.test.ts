@@ -169,7 +169,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Do not run `npm run verify:cli` in parallel with `npm run verify:package`");
       expect(guidance).toContain("npm publish --dry-run --access public");
       expect(guidance).toContain(
-        "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track must be explicitly requested and covered"
+        "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track must be explicitly requested and covered"
       );
       expect(guidance).toContain("checkout wait evidence must be present");
       expect(guidance).toContain("checkoutWaitCompleted` in `summary` or `manualEvidence`");
@@ -327,7 +327,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`verify:live:report --max-age-minutes` accepts both `--max-age-minutes 1440` and `--max-age-minutes=1440`");
     expect(liveVerifierSkill).toContain("`--max-age-minutes` must be supplied so production-scope evidence is fresh");
     expect(liveVerifierSkill).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track must be explicitly requested and have passing coverage"
     );
     expect(liveVerifierSkill).toContain("checkout wait evidence must be present");
     expect(liveVerifierSkill).toContain("checkoutWaitCompleted` in `summary` or `manualEvidence`");

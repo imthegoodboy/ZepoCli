@@ -266,7 +266,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");
     expect(readme).toContain(
-      "Use `--production-scope` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests non-empty cart, checkout handoff, and track coverage with checkout wait enabled"
+      "Use `--production-scope` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests non-empty cart with total/payable evidence, checkout handoff, and track coverage with checkout wait enabled"
     );
     expect(readme).toContain(
       "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence"
@@ -349,17 +349,19 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("checkout wait evidence from both the sanitized `--wait` command string and `checkoutWaitCompleted: true`");
     expect(readme).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence"
     );
     expect(readme).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
-    expect(readme).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
+    expect(readme).toContain(
+      "Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals"
+    );
     expect(readme).toContain("`verify:live:report --max-age-minutes` also accepts the assignment form");
     expect(readme).toContain("--max-age-minutes=1440");
     expect(readme).toContain("stale saved reports or stale order-history tracking cannot be reused as current evidence");
     expect(readme).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered"
     );
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");

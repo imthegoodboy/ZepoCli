@@ -1134,7 +1134,7 @@ Required:
 
 Options:
   --login               Run visible zepo login if no confirmed session exists
-  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart, checkout handoff, and track with checkout wait enabled
+  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart with total/payable evidence, checkout handoff, and track with checkout wait enabled
   --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
   --browser-locale <locale>
                         Pass a validated browser locale to every child zepo command
@@ -1171,7 +1171,7 @@ Example:
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
-Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
+Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
 Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
