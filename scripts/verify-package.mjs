@@ -3416,6 +3416,43 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !manualCheckoutIssues.includes("live_report_step_contract_mismatch"),
     "expected installed live report manual checkout evidence to remain diagnostic only"
   );
+
+  const staleManualCheckoutStep = {
+    name: "checkout",
+    command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+    exitCode: 1,
+    ok: false,
+    manualEvidence: {
+      status: "checkout_manual_action_required",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+      cartPrecondition: "non_empty_cart_verified",
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track"
+    },
+    error: {
+      code: "live_verification_incomplete",
+      message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+    }
+  };
+  const staleManualCheckoutReport = {
+    ...acceptedLiveReport,
+    ok: false,
+    steps: acceptedLiveReport.steps.map((step) => (step.name === "checkout" ? staleManualCheckoutStep : step))
+  };
+  staleManualCheckoutReport.attempted = summarizeLiveReportAttempts(staleManualCheckoutReport.steps);
+  staleManualCheckoutReport.coverage = summarizeLiveReportCoverage(staleManualCheckoutReport.steps);
+  staleManualCheckoutReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    staleManualCheckoutReport.requested,
+    staleManualCheckoutReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(staleManualCheckoutReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report manual checkout evidence to require fixed handoff markers"
+  );
   assert(
     validateLiveReportAcceptance(freshProductionScopeLiveReport, {
       expectedVersion: packageJson.version,
@@ -5142,6 +5179,29 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     checkoutStep.error?.code === "live_checkout_contract_mismatch",
     "expected installed checkout mismatch code"
+  );
+
+  const { step: checkoutWithoutHandoffMarkersStep } = buildLiveReportStep({
+    name: "checkout",
+    args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+    status: 0,
+    stdout: JSON.stringify({
+      status: "checkout_handoff_returned",
+      payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+      cartPrecondition: "non_empty_cart_verified",
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli",
+      orderStatusCommand: "zepo track"
+    }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  });
+  assert(
+    checkoutWithoutHandoffMarkersStep.ok === false &&
+      checkoutWithoutHandoffMarkersStep.error?.code === "live_checkout_contract_mismatch",
+    "expected installed checkout live report contract to require fixed handoff markers"
   );
 
   const { step: manualCheckoutStep } = buildLiveReportStep({

@@ -3392,6 +3392,75 @@ describe("live verification runner", () => {
     expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_step_contract_mismatch");
   });
 
+  it("rejects checkout JSON that omits fixed handoff markers", () => {
+    const { step } = buildLiveReportStep({
+      name: "checkout",
+      args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--json"],
+      status: 0,
+      stdout: JSON.stringify({
+        status: "checkout_handoff_returned",
+        payment: "handled_by_zepto",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        cartPrecondition: "non_empty_cart_verified",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      }),
+      stderr: "",
+      summarizePayload: () => {
+        throw new Error("checkout payload without handoff markers should not be summarized");
+      }
+    });
+
+    expect(step).toEqual({
+      name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "live_checkout_contract_mismatch",
+        message: "Checkout JSON did not preserve the Zepto cart, payment, and order-placement handoff contract."
+      }
+    });
+  });
+
+  it("rejects stale manual checkout report evidence without fixed handoff markers", () => {
+    const report = acceptedLiveReport({
+      ok: false,
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              name: "checkout",
+              command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+              exitCode: 1,
+              ok: false,
+              manualEvidence: {
+                status: "checkout_manual_action_required",
+                humanActionRequired: true,
+                automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+                cartPrecondition: "non_empty_cart_verified",
+                paymentStatus: "not_observed_by_zepocli",
+                orderPlacement: "not_confirmed_by_zepocli",
+                orderStatusCommand: "zepo track"
+              },
+              error: {
+                code: "live_verification_incomplete",
+                message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+              }
+            }
+          : step
+      )
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
+    expect(result.accepted).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+  });
+
   it("rejects production-scope reports that track after manual checkout without handoff coverage", () => {
     const manualCheckoutStep = {
       name: "checkout",
