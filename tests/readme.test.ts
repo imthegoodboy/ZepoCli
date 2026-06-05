@@ -228,6 +228,8 @@ describe("README package guidance", () => {
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
+    expect(readme).toContain("`humanActionRequired: true`");
+    expect(readme).toContain('automationBoundary: "zepocli_did_not_click_payment_or_order_controls"');
     expect(readme).toContain('status: "checkout_manual_action_required"');
     expect(readme).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
     expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");

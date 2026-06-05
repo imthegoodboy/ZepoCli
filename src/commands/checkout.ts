@@ -39,6 +39,8 @@ export function registerCheckoutCommand(program: Command): void {
 export interface CheckoutHandoffOutput {
   status: "checkout_handoff_returned" | "checkout_manual_action_required";
   payment: "handled_by_zepto";
+  humanActionRequired: true;
+  automationBoundary: "zepocli_did_not_click_payment_or_order_controls";
   cartPrecondition: "non_empty_cart_verified";
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
@@ -51,17 +53,21 @@ export function checkoutHandoffOutput(mode: CheckoutHandoffMode = "checkout_or_p
     return {
       status: "checkout_manual_action_required",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "Click the Zepto payment control in the visible browser, complete only the Zepto-side actions you choose, then run `zepo track` to inspect order status."
+      next: "A human must continue in the visible Zepto browser. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
     };
   }
 
   return {
     status: "checkout_handoff_returned",
     payment: "handled_by_zepto",
+    humanActionRequired: true,
+    automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
     cartPrecondition: "non_empty_cart_verified",
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",

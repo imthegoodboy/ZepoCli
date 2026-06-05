@@ -6802,13 +6802,22 @@ function assertCheckoutManualActionContract(payload) {
   assert(payload.status === "checkout_manual_action_required", "expected installed checkout manual action status");
   assertCommonCheckoutOutputContract(payload);
   assert(
-    String(payload.next).includes("Click the Zepto payment control"),
+    String(payload.next).includes("A human must continue in the visible Zepto browser"),
     "expected installed checkout manual-action next-step guidance"
+  );
+  assert(
+    !/^Click\b/i.test(String(payload.next)),
+    "expected installed checkout manual-action guidance not to start with an agent-clickable instruction"
   );
 }
 
 function assertCommonCheckoutOutputContract(payload) {
   assert(payload.payment === "handled_by_zepto", "expected installed Zepto-handled payment marker");
+  assert(payload.humanActionRequired === true, "expected installed checkout human action marker");
+  assert(
+    payload.automationBoundary === "zepocli_did_not_click_payment_or_order_controls",
+    "expected installed checkout automation boundary marker"
+  );
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected installed non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected installed unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");

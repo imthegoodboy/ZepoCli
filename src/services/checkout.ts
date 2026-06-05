@@ -52,7 +52,7 @@ export class CheckoutService {
 
 function checkoutPromptMessage(handoff: CheckoutHandoffResult): string {
   if (handoff.mode === "manual_payment_control_visible") {
-    return "Click the Zepto payment control in the browser, complete only the Zepto-side actions you choose, then press Enter here";
+    return "Continue manually in the Zepto browser, complete only the Zepto-side actions you choose, then press Enter here";
   }
 
   return "Use Zepto checkout/payment in the browser, then press Enter here when done";

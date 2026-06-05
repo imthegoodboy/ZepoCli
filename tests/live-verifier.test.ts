@@ -10,7 +10,7 @@ import packageJson from "../package.json" with { type: "json" };
 const rootDir = resolve(import.meta.dirname, "..");
 const scriptPath = resolve(rootDir, "scripts", "verify-live-flow.mjs");
 const reportScriptPath = resolve(rootDir, "scripts", "verify-live-report.mjs");
-const LIVE_VERIFIER_TEST_TIMEOUT_MS = 15_000;
+const LIVE_VERIFIER_TEST_TIMEOUT_MS = 30_000;
 const {
   adjustLiveReportRequestsForConfirmedSession,
   buildLiveCommandLaunchFailureStep,

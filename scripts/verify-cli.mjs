@@ -1211,6 +1211,11 @@ function assertBrowserAutomationReadinessModes(readiness, label) {
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected checkout handoff status");
   assert(payload.payment === "handled_by_zepto", "expected Zepto-handled payment marker");
+  assert(payload.humanActionRequired === true, "expected checkout human action marker");
+  assert(
+    payload.automationBoundary === "zepocli_did_not_click_payment_or_order_controls",
+    "expected checkout automation boundary marker"
+  );
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected unconfirmed order placement");

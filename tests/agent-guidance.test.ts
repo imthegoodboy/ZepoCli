@@ -102,6 +102,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("must not promise delivery timing");
       expect(guidance).toContain("must never ask for, store, log, print, or automate");
       expect(guidance).toContain("UPI/ATM PIN");
+      expect(guidance).toContain("humanActionRequired: true");
+      expect(guidance).toContain('automationBoundary: "zepocli_did_not_click_payment_or_order_controls"');
       expect(guidance).toContain('cartPrecondition: "non_empty_cart_verified"');
       expect(guidance).toContain('status: "checkout_manual_action_required"');
       expect(guidance).toContain("`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for a prompt");

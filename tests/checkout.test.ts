@@ -382,6 +382,8 @@ describe("checkout handoff detection", () => {
     expect(checkoutHandoffOutput()).toEqual({
       status: "checkout_handoff_returned",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -394,12 +396,24 @@ describe("checkout handoff detection", () => {
     expect(checkoutHandoffOutput("manual_payment_control_visible")).toEqual({
       status: "checkout_manual_action_required",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "Click the Zepto payment control in the visible browser, complete only the Zepto-side actions you choose, then run `zepo track` to inspect order status."
+      next: "A human must continue in the visible Zepto browser. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
     });
+  });
+
+  it("keeps manual checkout guidance human-controlled instead of agent-clickable", () => {
+    const output = checkoutHandoffOutput("manual_payment_control_visible");
+
+    expect(output.humanActionRequired).toBe(true);
+    expect(output.automationBoundary).toBe("zepocli_did_not_click_payment_or_order_controls");
+    expect(output.next).toContain("A human must continue");
+    expect(output.next).toContain("ZepoCli stops before payment/order controls");
+    expect(output.next).not.toMatch(/^Click\b/i);
   });
 
   it("detects the current checkout handoff mode without clicking controls", async () => {
