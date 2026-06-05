@@ -18,6 +18,7 @@ export const CHECKOUT_HANDOFF_CLICK_LABELS = [
   /^proceed\s+to\s+(?:checkout|payment|pay)$/i
 ] as const;
 const CHECKOUT_HANDOFF_CONTROL_SCAN_LIMIT = 8;
+const CHECKOUT_HANDOFF_CLICK_TIMEOUT_MS = 10_000;
 const CHECKOUT_EMPTY_CART_REREAD_ATTEMPTS = 6;
 const CHECKOUT_EMPTY_CART_REREAD_DELAY_MS = 5_000;
 
@@ -116,7 +117,7 @@ async function clickSafeCheckoutButton(locator: Locator): Promise<boolean> {
     return false;
   }
 
-  await locator.click();
+  await locator.click({ timeout: CHECKOUT_HANDOFF_CLICK_TIMEOUT_MS });
   return true;
 }
 

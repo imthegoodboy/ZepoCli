@@ -156,6 +156,14 @@ describe("checkout handoff detection", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("bounds checkout handoff clicks with an explicit timeout", async () => {
+    const page = createCheckoutClickOptionsPage();
+
+    await expect(clickCheckoutHandoffButton(page as never)).resolves.toBe(true);
+
+    expect(page.clickOptions).toEqual({ timeout: 10_000 });
+  });
+
   it("does not click disabled checkout handoff controls", async () => {
     const page = createDisabledCheckoutPage();
 
@@ -833,6 +841,24 @@ function createAriaCheckoutPage() {
   return page;
 }
 
+function createCheckoutClickOptionsPage() {
+  const page = {
+    clickOptions: undefined as unknown,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (role === "button" && matchesLocatorName(options.name, "Checkout")) {
+        return createVisibleLocator("Checkout", async (clickOptions?: unknown) => {
+          page.clickOptions = clickOptions;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createDisabledCheckoutPage() {
   const page = {
     clicked: false,
@@ -923,7 +949,7 @@ function createCheckoutRerenderOnScrollPage() {
 
 function createVisibleLocator(
   text: string,
-  click: () => Promise<void>,
+  click: (options?: unknown) => Promise<void>,
   ariaLabel?: string,
   attributes: Record<string, string | null> = {}
 ) {

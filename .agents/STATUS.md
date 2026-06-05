@@ -1,9 +1,10 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 17:12 IST.
+Last updated: 2026-06-05 17:33 IST.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-05 at 17:33 IST after bounding checkout handoff clicks with an explicit timeout and refreshing official Zepto Terms/Privacy source-check dates: secret scan, dependency readiness, build, 34 test files, 676 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 17:00 IST after switching visible Playwright browser contexts to the native maximized window layout while keeping background/headless contexts on the fixed automation viewport: secret scan, dependency readiness, build, 34 test files, 675 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 16:29 IST after hardening live reorder against Zepto's no-id order cards, action-row `Order Again` wrappers, preserved order-card line structure, and bounded order/reorder control clicks, while retaining the cart remove/clear hardening for Zepto's large scrollable cart drawer: secret scan, dependency readiness, build, 34 test files, 675 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 15:37 IST after hardening cart remove/clear against Zepto's large scrollable cart drawer, stale readable cart text without mutation controls, price-only quantity wrappers, and remove-control rerenders during scroll: secret scan, dependency readiness, build, 34 test files, 673 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
@@ -49,8 +50,8 @@ Last updated: 2026-06-05 17:12 IST.
 
 ## External Zepto References
 
-- Official Zepto Terms of Use were rechecked on 2026-06-04 at `https://www.zepto.com/s/terms-of-service`: version 1.4, last updated 1 November 2025.
-- Official Zepto Privacy Notice was rechecked on 2026-06-04 at `https://staticweb.zepto.com/privacy-policy/`: version 1.1, last updated 17 June 2025.
+- Official Zepto Terms of Use were rechecked on 2026-06-05 at `https://www.zepto.com/s/terms-of-service`: version 1.4, last updated 1 November 2025.
+- Official Zepto Privacy Notice was rechecked on 2026-06-05 at `https://staticweb.zepto.com/privacy-policy/`: version 1.1, last updated 17 June 2025.
 - Keep the CLI aligned with these boundaries: user-directed access only, no resale/bulk/load-generation flows, no payment handling inside the CLI, no OTP/payment credential capture, and no bypassing Zepto protections.
 
 ## Live Zepto Evidence
