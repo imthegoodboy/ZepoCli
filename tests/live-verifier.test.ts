@@ -3165,6 +3165,52 @@ describe("live verification runner", () => {
     expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_step_contract_mismatch");
   });
 
+  it("rejects production-scope reports that track after manual checkout without handoff coverage", () => {
+    const manualCheckoutStep = {
+      name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      exitCode: 1,
+      ok: false,
+      manualEvidence: {
+        status: "checkout_manual_action_required",
+        cartPrecondition: "non_empty_cart_verified",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      },
+      error: {
+        code: "live_verification_incomplete",
+        message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+      }
+    };
+    const report = productionScopeLiveReport({
+      ok: false,
+      generatedAt: new Date().toISOString(),
+      steps: productionScopeLiveReport().steps.map((step) =>
+        step.name === "checkout" ? manualCheckoutStep : step
+      )
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    expect(report.coverage.track).toBe(true);
+    expect(report.coverage.checkoutHandoff).toBe(false);
+    expect(report.missingCoverage.checkoutHandoff).toBe(true);
+
+    const result = validateLiveReportAcceptance(report, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true,
+      maxAgeMs: 60_000
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_not_ok");
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_requested_coverage_missing");
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_production_scope_missing");
+    expect(JSON.stringify(result.issues)).not.toContain("checkout_manual_action_required");
+  });
+
   it("rejects malformed manual checkout evidence in live reports", () => {
     const report = acceptedLiveReport({
       ok: false,
