@@ -190,6 +190,7 @@ describe("agent guidance", () => {
         "with no live workflow flags, a data directory that already has a confirmed local session should stop after doctor/local status"
       );
       expect(guidance).toContain("local status readiness");
+      expect(guidance).toContain("local status readiness with `liveSessionState`");
       expect(guidance).toContain("runner-known");
       expect(guidance).toContain("when `--login` is supplied but the data directory already has a confirmed session");
       expect(guidance).toContain("must not claim login coverage and must require `liveSession` coverage instead");
@@ -244,7 +245,9 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("They do not prove a real Zepto account can complete login");
     expect(liveVerifierSkill).toContain("Do not mark the project fully complete until a human-controlled Zepto account exercises the required live workflow");
     expect(liveVerifierSkill).toContain("`generatedAt` is a valid non-future ISO timestamp");
-    expect(liveVerifierSkill).toContain("Local `status` shows ready browser automation before live account workflows.");
+    expect(liveVerifierSkill).toContain(
+      "Local `status` shows ready browser automation and an explicit `liveSessionState` summary before live account workflows."
+    );
     expect(liveVerifierSkill).toContain("satisfies any `--max-age-minutes` freshness window");
     expect(liveVerifierSkill).toContain("`note` matches the runner literal");
     expect(liveVerifierSkill).toContain("The report contains only accepted schema fields");

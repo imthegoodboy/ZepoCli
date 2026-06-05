@@ -577,6 +577,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("local status readiness");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject stripped local-status session summary");
     expect(verifier).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"
     );

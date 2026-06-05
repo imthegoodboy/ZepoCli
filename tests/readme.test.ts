@@ -336,6 +336,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("bounded numeric workflow step summaries");
     expect(readme).toContain("all passing workflow step summaries satisfy their known contracts");
     expect(readme).toContain("local status readiness");
+    expect(readme).toContain("local status readiness including `liveSessionState`");
     expect(readme).toContain("login session evidence");
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");

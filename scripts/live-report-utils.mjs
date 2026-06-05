@@ -1300,7 +1300,7 @@ function liveCommandPattern(commandPatternSource) {
 
 const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
-  ["status", new Set(["confirmedSession", "browserAutomationReady"])],
+  ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["login", new Set(["sessionSaved", "confirmedSession"])],
   ["status live", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],
   ["search", new Set(["productCount", "productDetailCount"])],

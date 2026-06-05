@@ -109,7 +109,8 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
       ok: true,
       summary: {
         confirmedSession: true,
-        browserAutomationReady: true
+        browserAutomationReady: true,
+        liveSessionState: "skipped"
       }
     },
     {
@@ -1475,6 +1476,36 @@ describe("live verification runner", () => {
       accepted: true,
       issues: []
     });
+
+    const statusWithoutLiveSessionStateReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "status"
+          ? {
+              ...step,
+              summary: {
+                confirmedSession: true,
+                browserAutomationReady: true
+              }
+            }
+          : step
+      )
+    });
+    statusWithoutLiveSessionStateReport.attempted = summarizeLiveReportAttempts(
+      statusWithoutLiveSessionStateReport.steps
+    );
+    statusWithoutLiveSessionStateReport.coverage = summarizeLiveReportCoverage(
+      statusWithoutLiveSessionStateReport.steps
+    );
+    statusWithoutLiveSessionStateReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      statusWithoutLiveSessionStateReport.requested,
+      statusWithoutLiveSessionStateReport.coverage
+    );
+
+    expect(
+      validateLiveReportAcceptance(statusWithoutLiveSessionStateReport, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_step_contract_mismatch");
 
     const freeformStringSummaryReports = [
       acceptedLiveReport({

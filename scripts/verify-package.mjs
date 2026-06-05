@@ -400,6 +400,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "complete workflow step summaries",
     "typed workflow step summaries",
     "local status readiness",
+    "local status readiness including `liveSessionState`",
     "runner-known string and string-array workflow step summaries",
     "internally consistent workflow step summaries",
     "bounded numeric workflow step summaries",
@@ -3041,7 +3042,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         ok: true,
         summary: {
           confirmedSession: true,
-          browserAutomationReady: true
+          browserAutomationReady: true,
+          liveSessionState: "skipped"
         }
       },
       {
@@ -3085,7 +3087,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       ok: true,
       summary: {
         confirmedSession: true,
-        browserAutomationReady: true
+        browserAutomationReady: true,
+        liveSessionState: "skipped"
       }
     },
     {
@@ -4097,6 +4100,36 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     validateLiveReportAcceptance(statusSkippedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept runner-known string summaries"
+  );
+  const statusWithoutLiveSessionStateReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "status"
+        ? {
+            ...step,
+            summary: {
+              confirmedSession: true,
+              browserAutomationReady: true
+            }
+          }
+        : step
+    )
+  };
+  statusWithoutLiveSessionStateReport.attempted = summarizeLiveReportAttempts(
+    statusWithoutLiveSessionStateReport.steps
+  );
+  statusWithoutLiveSessionStateReport.coverage = summarizeLiveReportCoverage(
+    statusWithoutLiveSessionStateReport.steps
+  );
+  statusWithoutLiveSessionStateReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    statusWithoutLiveSessionStateReport.requested,
+    statusWithoutLiveSessionStateReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(statusWithoutLiveSessionStateReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject stripped local-status session summary"
   );
   const freeformStringSummaryLiveReports = [
     {
