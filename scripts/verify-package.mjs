@@ -3453,6 +3453,42 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
     "expected installed live report manual checkout evidence to require fixed handoff markers"
   );
+
+  const checkoutSummaryWithoutHandoffMarkersReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) =>
+      step.name === "checkout"
+        ? {
+            ...step,
+            summary: {
+              status: "checkout_handoff_returned",
+              humanActionRequired: true,
+              automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+              cartPrecondition: "non_empty_cart_verified",
+              paymentStatus: "not_observed_by_zepocli",
+              orderPlacement: "not_confirmed_by_zepocli",
+              orderStatusCommand: "zepo track"
+            }
+          }
+        : step
+    )
+  };
+  checkoutSummaryWithoutHandoffMarkersReport.attempted = summarizeLiveReportAttempts(
+    checkoutSummaryWithoutHandoffMarkersReport.steps
+  );
+  checkoutSummaryWithoutHandoffMarkersReport.coverage = summarizeLiveReportCoverage(
+    checkoutSummaryWithoutHandoffMarkersReport.steps
+  );
+  checkoutSummaryWithoutHandoffMarkersReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    checkoutSummaryWithoutHandoffMarkersReport.requested,
+    checkoutSummaryWithoutHandoffMarkersReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(checkoutSummaryWithoutHandoffMarkersReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report checkout summaries to require fixed handoff markers"
+  );
   assert(
     validateLiveReportAcceptance(freshProductionScopeLiveReport, {
       expectedVersion: packageJson.version,

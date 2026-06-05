@@ -3461,6 +3461,36 @@ describe("live verification runner", () => {
     expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
   });
 
+  it("rejects passing checkout report summaries without fixed handoff markers", () => {
+    const report = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              ...step,
+              summary: {
+                status: "checkout_handoff_returned",
+                humanActionRequired: true,
+                automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+                cartPrecondition: "non_empty_cart_verified",
+                paymentStatus: "not_observed_by_zepocli",
+                orderPlacement: "not_confirmed_by_zepocli",
+                orderStatusCommand: "zepo track"
+              }
+            }
+          : step
+      )
+    });
+    report.attempted = summarizeLiveReportAttempts(report.steps);
+    report.coverage = summarizeLiveReportCoverage(report.steps);
+    report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+    expect(report.coverage.checkoutHandoff).toBe(true);
+
+    const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
+    expect(result.accepted).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+  });
+
   it("rejects production-scope reports that track after manual checkout without handoff coverage", () => {
     const manualCheckoutStep = {
       name: "checkout",

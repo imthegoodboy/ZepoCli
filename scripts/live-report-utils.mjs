@@ -1254,6 +1254,8 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "status",
       "humanActionRequired",
       "automationBoundary",
+      "handoffUrl",
+      "handoffSurface",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1451,6 +1453,8 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
       step.summary?.status === "checkout_handoff_returned" &&
       step.summary?.humanActionRequired === true &&
       step.summary?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
+      step.summary?.handoffUrl === "https://www.zepto.com/?cart=open" &&
+      step.summary?.handoffSurface === "visible_zepto_browser" &&
       step.summary?.cartPrecondition === "non_empty_cart_verified" &&
       step.summary?.paymentStatus === "not_observed_by_zepocli" &&
       step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
