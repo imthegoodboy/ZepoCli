@@ -1,6 +1,6 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 07:06 IST.
+Last updated: 2026-06-05 07:18 IST.
 
 ## Local Package State
 
@@ -46,6 +46,7 @@ Last updated: 2026-06-05 07:06 IST.
 
 ## Live Zepto Evidence
 
+- A fresh disposable no-account `verify:live` smoke on 2026-06-05 using `./.zepo-clear-boundary-smoke` passed `doctor --json` with Playwright Chromium launch evidence and local `status --json`, then stopped at the manual session precondition with stable `live_verification_incomplete`. The saved sanitized report showed browser preflight and local status coverage only, with no login, live-session, search, cart, clear, checkout, track, history, or reorder workflow attempted. `npm --silent run verify:live:report -- ./.zepo-clear-boundary-smoke/live-verification-report.json` correctly rejected the report with `live_report_not_ok`, so this is current live-runner preflight evidence only and not production-scope acceptance evidence.
 - A safe no-account `verify:live` smoke on 2026-06-04 using `./.zepo-live-smoke-current` passed `doctor` and local `status`, then stopped at the manual session precondition with `live_verification_incomplete`; it did not claim login, live-session, checkout, or order coverage. The ordinary report validator rejected the saved report with `live_report_not_ok`, which is correct because this smoke is incomplete evidence, not an acceptable live pass.
 - A disposable visible-preflight `verify:live` smoke on 2026-06-05 using `./.zepo-visible-preflight-smoke` and a requested search workflow passed `--visible doctor --json` and `--visible status --json`, then stopped at the missing-session precondition with `live_verification_incomplete`. This confirms requested live workflows no longer fail browser preflight solely because background/headless is cooling down; it did not touch search/cart/checkout and is not acceptance evidence.
 - A focused no-mutation `.zepo-live-prod` live-session report on 2026-06-05 using `./.zepo-live-prod/live-session-visible-preflight-report.json` passed `--visible doctor --json`, `--visible status --json`, and visible `status --live --json`; `npm --silent run verify:live:report -- --max-age-minutes 60 ./.zepo-live-prod/live-session-visible-preflight-report.json` accepted the saved report. This proves the new mode-aware preflight works for an existing confirmed session without changing cart or checkout state; it is focused live-session evidence only, not final production-scope proof.
