@@ -110,6 +110,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("checkoutWaitCompleted");
       expect(guidance).toContain('cartPrecondition: "non_empty_cart_verified"');
       expect(guidance).toContain('status: "checkout_manual_action_required"');
+      expect(guidance).toContain("Continue to Payment ₹...");
+      expect(guidance).toContain("Proceed to Payment ₹...");
       expect(guidance).toContain("`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for a prompt");
       expect(guidance).toContain("Explicit wait mode may re-check the visible page after Enter");
       expect(guidance).toContain("production-scope checkout handoff coverage");
@@ -345,6 +347,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(liveVerifierSkill).toContain('orderStatusCommand: "zepo track"');
     expect(liveVerifierSkill).toContain('status: "checkout_manual_action_required"');
+    expect(liveVerifierSkill).toContain("Continue to Payment ₹...");
+    expect(liveVerifierSkill).toContain("Proceed to Payment ₹...");
     expect(liveVerifierSkill).toContain("returns structured handoff evidence immediately instead of waiting for an Enter prompt");
     expect(liveVerifierSkill).toContain("Use `--checkout-remove-limit-items` only for the explicit Zepto item-limit warning removal before that checkout handoff");
     expect(liveVerifierSkill).toContain("Wait mode re-checks the visible page after Enter");

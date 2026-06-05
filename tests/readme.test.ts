@@ -243,6 +243,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("Wait mode re-checks the visible page after the human presses Enter");
     expect(readme).toContain("wait mode observes the visible page again after Enter before returning JSON");
     expect(readme).toContain("manual amount-bearing payment control");
+    expect(readme).toContain("Continue to Payment ₹108");
     expect(readme).toContain("must not be counted as checkout handoff coverage");
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");

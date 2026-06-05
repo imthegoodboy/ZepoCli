@@ -775,6 +775,14 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "expected installed amount-bearing continue-to-pay label to require manual action"
   );
   assert(
+    isManualCheckoutActionText("Continue to Payment ₹509") === true,
+    "expected installed amount-bearing continue-to-payment label to require manual action"
+  );
+  assert(
+    isManualCheckoutActionText("Proceed to Payment ₹509") === true,
+    "expected installed amount-bearing proceed-to-payment label to require manual action"
+  );
+  assert(
     isManualCheckoutActionText("Pay with UPI ₹509") === false,
     "expected installed payment-method pay label not to be treated as cart-side manual action"
   );

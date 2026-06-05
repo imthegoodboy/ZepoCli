@@ -528,6 +528,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed immediate checkout wait marker");
     expect(verifier).toContain("expected installed checkout wait-mode marker");
     expect(verifier).toContain("expected installed manual checkout wait-mode marker");
+    expect(verifier).toContain("expected installed amount-bearing continue-to-payment label to require manual action");
+    expect(verifier).toContain("expected installed amount-bearing proceed-to-payment label to require manual action");
     expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');
     expect(verifier).toContain('status: \\"checkout_manual_action_required\\"');
     expect(verifier).toContain("manual amount-bearing payment control");

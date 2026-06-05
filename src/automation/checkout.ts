@@ -227,7 +227,7 @@ export function isManualCheckoutActionText(text: string): boolean {
   return (
     /^(?:click|tap)\s+to\s+pay\b/i.test(normalized) ||
     /^pay(?:\s+now)?\b/i.test(normalized) ||
-    /^(?:continue|proceed)\s+to\s+pay\b/i.test(normalized) ||
+    /^(?:continue|proceed)\s+to\s+(?:pay|payment)\b/i.test(normalized) ||
     /^checkout\s+(?:and|&)\s+pay\b/i.test(normalized)
   );
 }

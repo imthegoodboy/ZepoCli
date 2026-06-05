@@ -145,6 +145,8 @@ describe("checkout handoff detection", () => {
     expect(isManualCheckoutActionText("Pay Now ₹509")).toBe(true);
     expect(isManualCheckoutActionText("Continue to Pay ₹509")).toBe(true);
     expect(isManualCheckoutActionText("Proceed to Pay ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Continue to Payment ₹509")).toBe(true);
+    expect(isManualCheckoutActionText("Proceed to Payment ₹509")).toBe(true);
     expect(isManualCheckoutActionText("Checkout and Pay ₹509")).toBe(true);
     expect(isManualCheckoutActionText("Pay Now")).toBe(false);
     expect(isManualCheckoutActionText("Pay with UPI ₹509")).toBe(false);
@@ -156,6 +158,7 @@ describe("checkout handoff detection", () => {
     expect(isCheckoutHandoffClickText("Click to Pay ₹509")).toBe(false);
     expect(isCheckoutHandoffClickText("Pay ₹509")).toBe(false);
     expect(isCheckoutHandoffClickText("Continue to Pay ₹509")).toBe(false);
+    expect(isCheckoutHandoffClickText("Continue to Payment ₹509")).toBe(false);
   });
 
 
