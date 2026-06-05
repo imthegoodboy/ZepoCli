@@ -117,6 +117,7 @@ The live report is acceptable only when:
 - The report keys and values do not contain sensitive-looking local paths, phone/order/payment/verification values, or npm-token-shaped values.
 - `missingCoverage` shows requested capabilities that did not pass; all values must be false before treating a requested scope as verified.
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.
+- Reports with `liveSession` requested preserve visible `doctor` and `status` preflight command strings.
 - Local `status` shows ready browser automation and an explicit `liveSessionState` summary before live account workflows.
 - `login` confirms `sessionSaved: true` and `confirmedSession: true` when a login step actually runs.
 - Existing confirmed sessions with `--login` leave `requested.login` false and require `requested.liveSession` to pass instead.

@@ -91,7 +91,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
   const steps = [
     {
       name: "doctor",
-      command: "zepo --data-dir <redacted-data-dir> doctor --json",
+      command: "zepo --data-dir <redacted-data-dir> --visible doctor --json",
       exitCode: 0,
       ok: true,
       summary: {
@@ -104,7 +104,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
     },
     {
       name: "status",
-      command: "zepo --data-dir <redacted-data-dir> status --json",
+      command: "zepo --data-dir <redacted-data-dir> --visible status --json",
       exitCode: 0,
       ok: true,
       summary: {
@@ -840,6 +840,36 @@ describe("live verification runner", () => {
       accepted: true,
       issues: []
     });
+    const nonVisiblePreflightReport = acceptedLiveReport({
+      steps: acceptedLiveReport().steps.map((step) => {
+        if (step.name === "doctor") {
+          return {
+            ...step,
+            command: "zepo --data-dir <redacted-data-dir> doctor --json"
+          };
+        }
+
+        if (step.name === "status") {
+          return {
+            ...step,
+            command: "zepo --data-dir <redacted-data-dir> status --json"
+          };
+        }
+
+        return step;
+      })
+    });
+    nonVisiblePreflightReport.attempted = summarizeLiveReportAttempts(nonVisiblePreflightReport.steps);
+    nonVisiblePreflightReport.coverage = summarizeLiveReportCoverage(nonVisiblePreflightReport.steps);
+    nonVisiblePreflightReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      nonVisiblePreflightReport.requested,
+      nonVisiblePreflightReport.coverage
+    );
+    expect(
+      validateLiveReportAcceptance(nonVisiblePreflightReport, {
+        expectedVersion: packageJson.version
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_preflight_mode_mismatch");
     expect(validateLiveReportAcceptance(acceptedLiveReport()).issues.map((issue) => issue.code)).toContain(
       "live_report_expected_version_missing"
     );

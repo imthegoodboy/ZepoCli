@@ -421,6 +421,7 @@ export function validateLiveReportAcceptance(report, options = {}) {
       message: "Live report must include a steps array."
     });
   } else if (isObject(requested)) {
+    validateLiveReportVisiblePreflightContract(requested, steps, issues);
     if (report.ok === true) {
       validateLiveReportOkStepSetContract(steps, issues);
       validateLiveReportUniqueStepNamesContract(steps, issues);
@@ -625,6 +626,30 @@ function validateLiveReportOkStepSetContract(steps, issues) {
     )
   ) {
     addLiveReportOkStepMismatchIssue(issues);
+  }
+}
+
+function validateLiveReportVisiblePreflightContract(requested, steps, issues) {
+  if (requested?.liveSession !== true) {
+    return;
+  }
+
+  const doctorStep = steps.find((step) => step?.name === "doctor");
+  const statusStep = steps.find((step) => step?.name === "status");
+  if (
+    doctorStep &&
+    statusStep &&
+    LIVE_REPORT_VISIBLE_DOCTOR_COMMAND_PATTERN.test(doctorStep.command) &&
+    LIVE_REPORT_VISIBLE_STATUS_COMMAND_PATTERN.test(statusStep.command)
+  ) {
+    return;
+  }
+
+  if (!issues.some((issue) => issue.code === "live_report_preflight_mode_mismatch")) {
+    issues.push({
+      code: "live_report_preflight_mode_mismatch",
+      message: "Live report account-workflow preflight must use visible doctor and status commands."
+    });
   }
 }
 
@@ -1258,6 +1283,8 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
 const LIVE_REPORT_CHECKOUT_WAIT_COMMAND_PATTERN = liveCommandPattern(
   "--visible checkout(?: --remove-limit-items)? --wait --json"
 );
+const LIVE_REPORT_VISIBLE_DOCTOR_COMMAND_PATTERN = liveCommandPattern("--visible doctor --json");
+const LIVE_REPORT_VISIBLE_STATUS_COMMAND_PATTERN = liveCommandPattern("--visible status --json");
 const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
   ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],

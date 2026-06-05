@@ -182,6 +182,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("then mode-aware local `zepo status --json`");
       expect(guidance).toContain("both preflight steps to report current-mode `browserAutomation.ready === true`");
       expect(guidance).toContain("requested live workflows use `--visible` preflight");
+      expect(guidance).toContain("visible `doctor`/`status` preflight commands when `liveSession` is requested");
       expect(guidance).toContain("passing `Playwright Chromium` check from doctor");
       expect(guidance).toContain("package `version`");
       expect(guidance).toContain("top-level `requested`, `attempted`, `coverage`, and `missingCoverage`");
@@ -247,6 +248,9 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`generatedAt` is a valid non-future ISO timestamp");
     expect(liveVerifierSkill).toContain(
       "Local `status` shows ready browser automation and an explicit `liveSessionState` summary before live account workflows."
+    );
+    expect(liveVerifierSkill).toContain(
+      "Reports with `liveSession` requested preserve visible `doctor` and `status` preflight command strings."
     );
     expect(liveVerifierSkill).toContain("satisfies any `--max-age-minutes` freshness window");
     expect(liveVerifierSkill).toContain("`note` matches the runner literal");

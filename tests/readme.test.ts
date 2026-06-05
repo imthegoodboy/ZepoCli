@@ -363,6 +363,7 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
+    expect(readme).toContain("visible `doctor`/`status` preflight commands when `liveSession` is requested");
     expect(readme).toContain("Use `--choose-add` with `--add` to exercise `zepo add --choose`");
     expect(readme).toContain("Use `--step-timeout <ms>` only when a human-controlled Zepto step legitimately needs more than the default per-command timeout");
     expect(readme).toContain("`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats");

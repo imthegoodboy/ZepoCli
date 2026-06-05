@@ -406,6 +406,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "bounded numeric workflow step summaries",
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
+    "visible `doctor`/`status` preflight commands when `liveSession` is requested",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
@@ -3024,7 +3025,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     summarizeLiveReportCoverage([
       {
         name: "doctor",
-        command: "zepo --data-dir <redacted-data-dir> doctor --json",
+        command: "zepo --data-dir <redacted-data-dir> --visible doctor --json",
         exitCode: 0,
         ok: true,
         summary: {
@@ -3037,7 +3038,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       },
       {
         name: "status",
-        command: "zepo --data-dir <redacted-data-dir> status --json",
+        command: "zepo --data-dir <redacted-data-dir> --visible status --json",
         exitCode: 0,
         ok: true,
         summary: {
@@ -3069,7 +3070,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   const acceptedLiveReportSteps = [
     {
       name: "doctor",
-      command: "zepo --data-dir <redacted-data-dir> doctor --json",
+      command: "zepo --data-dir <redacted-data-dir> --visible doctor --json",
       exitCode: 0,
       ok: true,
       summary: {
@@ -3082,7 +3083,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       name: "status",
-      command: "zepo --data-dir <redacted-data-dir> status --json",
+      command: "zepo --data-dir <redacted-data-dir> --visible status --json",
       exitCode: 0,
       ok: true,
       summary: {
@@ -3232,6 +3233,38 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     validateLiveReportAcceptance(acceptedLiveReport, { expectedVersion: packageJson.version }).accepted === true,
     "expected installed live report acceptance helper to accept complete report evidence"
+  );
+  const nonVisiblePreflightReport = {
+    ...acceptedLiveReport,
+    steps: acceptedLiveReport.steps.map((step) => {
+      if (step.name === "doctor") {
+        return {
+          ...step,
+          command: "zepo --data-dir <redacted-data-dir> doctor --json"
+        };
+      }
+
+      if (step.name === "status") {
+        return {
+          ...step,
+          command: "zepo --data-dir <redacted-data-dir> status --json"
+        };
+      }
+
+      return step;
+    })
+  };
+  nonVisiblePreflightReport.attempted = summarizeLiveReportAttempts(nonVisiblePreflightReport.steps);
+  nonVisiblePreflightReport.coverage = summarizeLiveReportCoverage(nonVisiblePreflightReport.steps);
+  nonVisiblePreflightReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    nonVisiblePreflightReport.requested,
+    nonVisiblePreflightReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(nonVisiblePreflightReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_preflight_mode_mismatch"),
+    "expected installed live report acceptance helper to reject account workflow without visible preflight"
   );
   const notReadyLiveSessionReport = {
     ...acceptedLiveReport,
