@@ -157,6 +157,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>");
       expect(guidance).toContain("optional `--max-age-minutes` freshness");
       expect(guidance).toContain("`--max-age-minutes` must be supplied so production-scope evidence is fresh");
+      expect(guidance).toContain("`verify:live:report --max-age-minutes` accepts both `--max-age-minutes 1440` and `--max-age-minutes=1440`");
       expect(guidance).toContain("Do not run `npm run verify:cli` in parallel with `npm run verify:package`");
       expect(guidance).toContain("npm publish --dry-run --access public");
       expect(guidance).toContain(
@@ -304,6 +305,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("It only checks the saved report contract");
     expect(liveVerifierSkill).toContain("Use `--require-production-scope` for final readiness");
     expect(liveVerifierSkill).toContain("Use `--max-age-minutes 1440` for final readiness");
+    expect(liveVerifierSkill).toContain("`verify:live:report --max-age-minutes` accepts both `--max-age-minutes 1440` and `--max-age-minutes=1440`");
     expect(liveVerifierSkill).toContain("`--max-age-minutes` must be supplied so production-scope evidence is fresh");
     expect(liveVerifierSkill).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage"

@@ -25,7 +25,7 @@ const ADDRESS_UNRELATED_CLICK_SURFACE_PATTERN =
 const NON_ADDRESS_SURFACE_PATTERN =
   `\\b(add|cart|checkout|payment|pay|order summary|bill summary|item total|grand total|to pay|coupon|delivery fee|recommended|sponsored|popular picks|you may also like|out of stock|near me)\\b|₹|\\brs\\.?\\s?\\d|\\binr\\s?\\d|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|${ADDRESS_LOCATION_CONSENT_SURFACE_PATTERN}|${ADDRESS_FINAL_CONFIRMATION_SURFACE_PATTERN}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}`;
 const CURRENT_DELIVERY_ADDRESS_CONTEXT_PATTERN =
-  "\\b(selected|default|current|deliver(?:ing)?\\s+(?:to|here)|delivery\\s+(?:to|at|in))\\b";
+  "\\b(selected|default|current|deliver(?:ing)?\\s+(?:to|here)|delivery\\s+(?:to|at|in)|\\d+\\s*(?:minutes?|mins?))\\b";
 const ADDRESS_CONTAINER_PREFIX_PATTERN = /^(saved|manage|my|select|delivery)\s+addresses?\b/i;
 const CURRENT_DELIVERY_ADDRESS_ATTEMPTS = 5;
 const CURRENT_DELIVERY_ADDRESS_POLL_MS = 400;
@@ -142,6 +142,8 @@ async function isSafeAddressManagerControl(locator: Locator): Promise<boolean> {
 }
 
 export async function listAddresses(page: Page): Promise<Address[]> {
+  await gotoZepto(page);
+  const currentAddress = await readCurrentDeliveryAddress(page);
   await openAddressManager(page);
 
   const addressTexts = await page.evaluate(({ detailPattern, placeholderPattern, nonAddressPattern }) => {
@@ -189,7 +191,8 @@ export async function listAddresses(page: Page): Promise<Address[]> {
     nonAddressPattern: NON_ADDRESS_SURFACE_PATTERN
   });
 
-  return addressRecordsFromTexts(addressTexts).slice(0, 20);
+  const savedAddresses = addressRecordsFromTexts(addressTexts);
+  return markCurrentAddressRecord(savedAddresses, currentAddress).slice(0, 20);
 }
 
 export async function useAddress(page: Page, query: string): Promise<Address> {
@@ -326,7 +329,7 @@ function selectedAddressFromSelectionCandidates(
   return addresses.find((address) => address.selected && addressMatchesQuery(address, query));
 }
 
-async function readCurrentDeliveryAddress(page: Page, query: string): Promise<Address | undefined> {
+async function readCurrentDeliveryAddress(page: Page, query = ""): Promise<Address | undefined> {
   for (let attempt = 1; attempt <= CURRENT_DELIVERY_ADDRESS_ATTEMPTS; attempt += 1) {
     const currentAddress = await readCurrentDeliveryAddressOnce(page, query);
     if (currentAddress || attempt === CURRENT_DELIVERY_ADDRESS_ATTEMPTS) {
@@ -436,15 +439,32 @@ async function readCurrentDeliveryAddressOnce(page: Page, query: string): Promis
   });
 
   const candidates = filterAddressTexts(addressTexts).map((text, index) => ({ index, text }));
-  const matched = chooseAddressSelectionCandidate(candidates, query);
+  const matched = chooseCurrentDeliveryAddressCandidate(candidates, query);
   if (!matched) {
     return undefined;
   }
 
+  const currentText = stripCurrentAddressContextPrefix(matched.text);
   return {
-    ...addressFromText(matched.text),
+    ...addressFromText(currentText),
+    text: currentText,
     selected: true
   };
+}
+
+function chooseCurrentDeliveryAddressCandidate(
+  candidates: AddressSelectionCandidate[],
+  query: string
+): AddressSelectionCandidate | undefined {
+  if (normalizeText(query)) {
+    return chooseAddressSelectionCandidate(candidates, query);
+  }
+
+  const normalizedCandidates = normalizeAddressSelectionCandidates(candidates);
+  return (
+    normalizedCandidates.find((candidate) => addressFromText(candidate.text).selected) ??
+    normalizedCandidates[0]
+  );
 }
 
 export async function clickTaggedAddressSelection(
@@ -593,6 +613,22 @@ export function filterAddressTexts(texts: string[]): string[] {
   return candidates.filter((text) => !isAddressContainerText(text, candidates));
 }
 
+export function markCurrentAddressRecord(addresses: Address[], currentAddress: Address | undefined): Address[] {
+  if (!currentAddress?.text || !isLikelyAddressText(currentAddress.text)) {
+    return addresses;
+  }
+
+  const selectedIndex = addresses.findIndex((address) => addressesReferToSameLocation(address, currentAddress));
+  if (selectedIndex >= 0) {
+    return addresses.map((address, index) => ({
+      ...address,
+      selected: index === selectedIndex
+    }));
+  }
+
+  return [{ ...currentAddress, selected: true }, ...addresses.map((address) => ({ ...address, selected: false }))];
+}
+
 export function addressRecordsFromTexts(texts: string[]): Address[] {
   const rawCandidates = uniqueAddressTexts(texts);
   const filteredTexts = rawCandidates.filter((text) => !isAddressContainerText(text, rawCandidates));
@@ -611,6 +647,10 @@ export function addressRecordsFromTexts(texts: string[]): Address[] {
 
     return address;
   });
+}
+
+function addressesReferToSameLocation(left: Address, right: Address): boolean {
+  return addressMatchesQuery(left, right.text) || addressMatchesQuery(right, left.text);
 }
 
 export function isLikelyAddressText(text: string): boolean {
@@ -808,6 +848,24 @@ function stripAddressLabelPrefix(value: string): string {
   }
 
   return label;
+}
+
+function stripCurrentAddressContextPrefix(value: string): string {
+  let text = normalizeText(value);
+  for (let index = 0; index < 3; index += 1) {
+    const next = text
+      .replace(/^deliver(?:ing)?\s+(?:to|here)\b[\s:,-]*/i, "")
+      .replace(/^delivery\s+(?:to|at|in)\b[\s:,-]*/i, "")
+      .replace(/^(?:\d+\s*(?:minutes?|mins?)\s*)+/i, "")
+      .trim();
+    if (next === text) {
+      return next;
+    }
+
+    text = next;
+  }
+
+  return text;
 }
 
 function addressTextMatchesQuery(text: string, queryText: string): boolean {

@@ -17,6 +17,7 @@ import {
   isUnsafeAddressAutomationClickText,
   isUserLocationConsentText,
   isLikelyAddressText,
+  markCurrentAddressRecord,
   requireSelectedAddress,
   startAddAddress,
   useAddress
@@ -51,6 +52,29 @@ describe("address automation helpers", () => {
         "parents"
       )
     ).toBe(true);
+  });
+
+  it("marks saved rows selected when the current header includes an ETA prefix", () => {
+    const saved = addressRecordsFromTexts([
+      "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+      "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India"
+    ]);
+
+    expect(
+      markCurrentAddressRecord(saved, {
+        text: "5 minutes Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        selected: true
+      })
+    ).toMatchObject([
+      {
+        text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        selected: true
+      },
+      {
+        text: "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India",
+        selected: false
+      }
+    ]);
   });
 
   it("does not treat tiny substrings as address matches", () => {
@@ -125,7 +149,7 @@ describe("address automation helpers", () => {
 
     await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
       selected: true,
-      text: "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     });
 
     expect(page.managerOpened).toBe(false);
@@ -138,7 +162,7 @@ describe("address automation helpers", () => {
 
     await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
       selected: true,
-      text: "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     });
 
     expect(page.managerOpened).toBe(false);
@@ -152,7 +176,7 @@ describe("address automation helpers", () => {
 
     await expect(useAddress(page as never, "Ramakrishna")).resolves.toMatchObject({
       selected: true,
-      text: "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     });
 
     expect(page.managerOpened).toBe(true);
@@ -399,6 +423,50 @@ describe("address automation helpers", () => {
       {
         selected: true,
         text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
+      }
+    ]);
+  });
+
+  it("marks the saved row selected when the current delivery header matches it", () => {
+    const saved = addressRecordsFromTexts([
+      "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+      "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India"
+    ]);
+
+    expect(
+      markCurrentAddressRecord(saved, {
+        text: "Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        selected: true
+      })
+    ).toMatchObject([
+      {
+        text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        selected: true
+      },
+      {
+        text: "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India",
+        selected: false
+      }
+    ]);
+  });
+
+  it("keeps direct current delivery header evidence when it is not in saved rows", () => {
+    expect(
+      markCurrentAddressRecord(
+        addressRecordsFromTexts(["Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India"]),
+        {
+          text: "Delivery to Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+          selected: true
+        }
+      )
+    ).toMatchObject([
+      {
+        text: "Delivery to Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
+        selected: true
+      },
+      {
+        text: "Office Tower B, 2nd Floor, Tech Park, Karnataka 560103 India",
+        selected: false
       }
     ]);
   });

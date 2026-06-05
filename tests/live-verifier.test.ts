@@ -318,11 +318,12 @@ describe("live verification runner", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(
-      "Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>]"
+      "Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>|--max-age-minutes=<minutes>]"
     );
     expect(result.stdout).toContain("Use --require-production-scope for final readiness");
     expect(result.stdout).toContain("requires --max-age-minutes");
     expect(result.stdout).toContain("Use --max-age-minutes so old saved reports cannot be reused as current evidence");
+    expect(result.stdout).toContain("It accepts either --max-age-minutes <minutes> or --max-age-minutes=<minutes>.");
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
     expect(result.stdout).toContain("local status readiness");
     expect(result.stdout).toContain(
@@ -2127,7 +2128,7 @@ describe("live verification runner", () => {
         freshReportPath,
         `${JSON.stringify(acceptedLiveReport({ generatedAt: new Date().toISOString() }), null, 2)}\n`
       );
-      const freshPass = spawnSync(process.execPath, [reportScriptPath, "--max-age-minutes", "60", freshReportPath], {
+      const freshPass = spawnSync(process.execPath, [reportScriptPath, "--max-age-minutes=60", freshReportPath], {
         cwd: rootDir,
         encoding: "utf8"
       });
@@ -2170,7 +2171,7 @@ describe("live verification runner", () => {
 
       const productionPass = spawnSync(
         process.execPath,
-        [reportScriptPath, "--require-production-scope", "--max-age-minutes", "60", productionReportPath],
+        [reportScriptPath, "--require-production-scope", "--max-age-minutes=60", productionReportPath],
         {
           cwd: rootDir,
           encoding: "utf8"
@@ -2189,6 +2190,19 @@ describe("live verification runner", () => {
       expect(badMaxAge.status).toBe(1);
       expect(badMaxAge.stderr).toContain("--max-age-minutes must be an integer from 1 to 10080.");
       expect(`${badMaxAge.stdout}\n${badMaxAge.stderr}`).not.toContain(tempDir);
+
+      const badAssignedMaxAge = spawnSync(
+        process.execPath,
+        [reportScriptPath, "--max-age-minutes=abc", reportPath],
+        {
+          cwd: rootDir,
+          encoding: "utf8"
+        }
+      );
+
+      expect(badAssignedMaxAge.status).toBe(1);
+      expect(badAssignedMaxAge.stderr).toContain("--max-age-minutes must be an integer from 1 to 10080.");
+      expect(`${badAssignedMaxAge.stdout}\n${badAssignedMaxAge.stderr}`).not.toContain(tempDir);
 
       const badReportPath = join(tempDir, "bad-live-verification-report.json");
       writeFileSync(

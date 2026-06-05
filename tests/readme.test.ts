@@ -338,6 +338,8 @@ describe("README package guidance", () => {
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
     expect(readme).toContain("Production-scope acceptance rejects missing freshness windows and no-wait checkout evidence");
+    expect(readme).toContain("`verify:live:report --max-age-minutes` also accepts the assignment form");
+    expect(readme).toContain("--max-age-minutes=1440");
     expect(readme).toContain("stale saved reports or stale order-history tracking cannot be reused as current evidence");
     expect(readme).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered"

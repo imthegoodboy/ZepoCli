@@ -65,16 +65,17 @@ function parseArgs(args) {
       continue;
     }
 
-    if (arg === "--max-age-minutes") {
-      const value = args[++index];
-      if (!value || value.startsWith("-")) {
+    if (matchesMaxAgeOption(arg)) {
+      const parsedValue = readMaxAgeOption(args, index);
+      if (parsedValue.error) {
         return {
           ...parsed,
-          error: "--max-age-minutes requires a value."
+          error: parsedValue.error
         };
       }
+      index = parsedValue.index;
 
-      const maxAgeMinutes = parseMaxAgeMinutes(value);
+      const maxAgeMinutes = parseMaxAgeMinutes(parsedValue.value);
       if (maxAgeMinutes === undefined) {
         return {
           ...parsed,
@@ -113,6 +114,45 @@ function parseArgs(args) {
   return parsed;
 }
 
+function matchesMaxAgeOption(arg) {
+  return arg === "--max-age-minutes" || String(arg ?? "").startsWith("--max-age-minutes=");
+}
+
+function readMaxAgeOption(args, index) {
+  const arg = args[index];
+  if (arg === "--max-age-minutes") {
+    const value = args[index + 1];
+    if (!value || value.startsWith("-")) {
+      return {
+        error: "--max-age-minutes requires a value."
+      };
+    }
+
+    if (value.trim().length === 0) {
+      return {
+        error: "--max-age-minutes requires a non-empty value."
+      };
+    }
+
+    return {
+      value,
+      index: index + 1
+    };
+  }
+
+  const value = String(arg).slice("--max-age-minutes=".length);
+  if (value.trim().length === 0) {
+    return {
+      error: "--max-age-minutes requires a non-empty value."
+    };
+  }
+
+  return {
+    value,
+    index
+  };
+}
+
 function parseMaxAgeMinutes(value) {
   if (!/^\d+$/.test(value)) {
     return undefined;
@@ -131,11 +171,11 @@ function parseMaxAgeMinutes(value) {
 }
 
 function printHelp() {
-  console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>] <live-verification-report.json>
+  console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>|--max-age-minutes=<minutes>] <live-verification-report.json>
 
 Validates that a human-controlled verify:live report is acceptable evidence for the requested scope.
 Use --require-production-scope for final readiness: it also requires --max-age-minutes plus browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track to be requested and covered without focused cleanup/history workflows. The checkout step must include checkout wait evidence.
-Use --max-age-minutes so old saved reports cannot be reused as current evidence.
+Use --max-age-minutes so old saved reports cannot be reused as current evidence. It accepts either --max-age-minutes <minutes> or --max-age-minutes=<minutes>.
 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
 - package version matches

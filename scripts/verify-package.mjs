@@ -2375,12 +2375,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     { cwd: rootDir }
   );
   assert(
-    reportHelpResult.stdout.includes("--max-age-minutes <minutes>"),
+    reportHelpResult.stdout.includes("--max-age-minutes <minutes>|--max-age-minutes=<minutes>"),
     "expected installed verify:live:report max-age option"
   );
   assert(
     reportHelpResult.stdout.includes("requires --max-age-minutes") &&
-      reportHelpResult.stdout.includes("Use --max-age-minutes so old saved reports cannot be reused"),
+      reportHelpResult.stdout.includes("Use --max-age-minutes so old saved reports cannot be reused") &&
+      reportHelpResult.stdout.includes("It accepts either --max-age-minutes <minutes> or --max-age-minutes=<minutes>."),
     "expected installed verify:live:report freshness guidance"
   );
   assert(
@@ -4516,8 +4517,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       packageDir,
       "verify:live:report",
       "--",
-      "--max-age-minutes",
-      "60",
+      "--max-age-minutes=60",
       freshLiveReportPath
     ],
     { cwd: rootDir }
@@ -4575,8 +4575,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "verify:live:report",
       "--",
       "--require-production-scope",
-      "--max-age-minutes",
-      "60",
+      "--max-age-minutes=60",
       productionScopeLiveReportPath
     ],
     { cwd: rootDir }
@@ -4584,6 +4583,24 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   assert(
     productionScopeLiveReportResult.stdout.includes("pass live verification report acceptance"),
     "expected installed live report validator to accept production-scope report evidence"
+  );
+  const assignedBadMaxAgeLiveReportResult = runNpmResult(
+    [
+      "--silent",
+      "run",
+      "--prefix",
+      packageDir,
+      "verify:live:report",
+      "--",
+      "--max-age-minutes=abc",
+      freshLiveReportPath
+    ],
+    { cwd: rootDir }
+  );
+  assert(
+    assignedBadMaxAgeLiveReportResult.status === 1 &&
+      assignedBadMaxAgeLiveReportResult.stderr.includes("--max-age-minutes must be an integer from 1 to 10080."),
+    "expected installed live report validator to reject invalid assignment-form max age"
   );
   const unrequestedProductionScopeLiveReportPath = join(
     tempRoot,
