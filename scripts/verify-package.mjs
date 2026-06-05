@@ -3609,6 +3609,17 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     emptyCartProductionScopeLiveReport.coverage
   );
   assert(
+    emptyCartProductionScopeLiveReport.coverage.cart === false &&
+      emptyCartProductionScopeLiveReport.missingCoverage.cart === true,
+    "expected installed live report coverage to reject edited empty cart evidence"
+  );
+  assert(
+    validateLiveReportAcceptance(emptyCartProductionScopeLiveReport, {
+      expectedVersion: packageJson.version
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject edited empty cart evidence"
+  );
+  assert(
     validateLiveReportAcceptance(emptyCartProductionScopeLiveReport, {
       expectedVersion: packageJson.version,
       requireProductionScope: true,
@@ -4911,6 +4922,21 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       }
     ]).cart === false,
     "expected installed live report coverage to reject malformed summary evidence"
+  );
+  assert(
+    summarizeLiveReportCoverage([
+      {
+        name: "cart",
+        command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+        exitCode: 0,
+        ok: true,
+        summary: {
+          cartItemCount: 0,
+          hasTotal: false
+        }
+      }
+    ]).cart === false,
+    "expected installed live report coverage to reject empty cart evidence"
   );
   const malformedResultOrCommandCoverage = summarizeLiveReportCoverage([
     {

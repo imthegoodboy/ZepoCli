@@ -616,6 +616,7 @@ describe("package CLI contract", () => {
       "expected installed live report coverage to include only accepted successful workflow steps"
     );
     expect(verifier).toContain("expected installed live report coverage to reject malformed summary evidence");
+    expect(verifier).toContain("expected installed live report coverage to reject empty cart evidence");
     expect(verifier).toContain("expected installed live report coverage to reject malformed result or command evidence");
     expect(verifier).toContain("expected installed live report missing coverage to include requested-but-unverified workflow steps only");
     expect(verifier).toContain("expected installed live report acceptance helper to reject attempted summaries that do not match steps");
@@ -700,6 +701,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject focused workflows in production-scope evidence"
     );
+    expect(verifier).toContain("expected installed live report coverage to reject edited empty cart evidence");
+    expect(verifier).toContain("expected installed live report acceptance helper to reject edited empty cart evidence");
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject empty cart evidence for production scope"
     );

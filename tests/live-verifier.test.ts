@@ -1063,6 +1063,18 @@ describe("live verification runner", () => {
       emptyCartProductionScope.requested,
       emptyCartProductionScope.coverage
     );
+    expect(emptyCartProductionScope.coverage.cart).toBe(false);
+    expect(emptyCartProductionScope.missingCoverage.cart).toBe(true);
+    const focusedEmptyCartResult = validateLiveReportAcceptance(emptyCartProductionScope, {
+      expectedVersion: packageJson.version
+    });
+    expect(focusedEmptyCartResult.accepted).toBe(false);
+    expect(focusedEmptyCartResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_step_contract_mismatch"
+    );
+    expect(focusedEmptyCartResult.issues.map((issue) => issue.code)).toContain(
+      "live_report_requested_coverage_missing"
+    );
     expect(
       validateLiveReportAcceptance(emptyCartProductionScope, {
         expectedVersion: packageJson.version,

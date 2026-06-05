@@ -1462,7 +1462,8 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   },
   {
     capability: "cart",
-    step: "cart"
+    step: "cart",
+    accepts: (step) => step.summary?.cartItemCount > 0
   },
   {
     capability: "remove",

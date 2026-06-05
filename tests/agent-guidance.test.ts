@@ -341,9 +341,10 @@ describe("agent guidance", () => {
   });
 
   it("records current local readiness separately from missing live production proof", () => {
-    expect(agentStatus).toContain("Last updated: 2026-06-05");
+    expect(agentStatus).toContain("Last updated: 2026-06-06");
     expect(agentStatus).toContain("`npm run check` passed locally");
-    expect(agentStatus).toContain("34 test files, 641 tests");
+    expect(agentStatus).toContain("34 test files, 682 tests");
+    expect(agentStatus).toContain("edited reports with `cartItemCount: 0` now leave `coverage.cart` false");
     expect(agentStatus).toContain("34 test files, 628 tests");
     expect(agentStatus).toContain("publish dry-run");
     expect(agentStatus).toContain("`zepo completion <bash|zsh|fish|powershell>`");
