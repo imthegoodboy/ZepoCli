@@ -270,9 +270,19 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
   assertNoBlockingCartModal(await readBodyText(page));
 
   let removed = false;
+  let retriedCartOpenForMutation = false;
   for (let attempt = 0; attempt < 12; attempt += 1) {
-    const removeId = await findRemoveButtonId(page, query);
+    const removeId = await findRemoveButtonIdAcrossCartScroll(page, query);
     if (removeId === undefined) {
+      if (
+        !retriedCartOpenForMutation &&
+        await cartTextContainsMatchingItem(page, query) &&
+        await reopenCartForMutation(page)
+      ) {
+        retriedCartOpenForMutation = true;
+        continue;
+      }
+
       break;
     }
 
@@ -304,6 +314,7 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
 
   const readOptions = { removeLimitItems: true };
   let cart = await readVisibleCart(page, readOptions);
+  let retriedCartOpenForMutation = false;
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const target = cart.items[0];
     if (!target) {
@@ -326,6 +337,12 @@ export async function clearCart(page: Page): Promise<CartSnapshot> {
     }
 
     if (removeId === undefined) {
+      if (!retriedCartOpenForMutation && await reopenCartForMutation(page)) {
+        retriedCartOpenForMutation = true;
+        cart = await readVisibleCart(page, readOptions);
+        continue;
+      }
+
       break;
     }
 
@@ -350,6 +367,25 @@ export function cartHasMatchingItem(cart: CartSnapshot, query: string): boolean 
     const itemText = [item.name, item.unit].filter(Boolean).join(" ");
     return textMatchesProductQuery(itemText, query);
   });
+}
+
+async function cartTextContainsMatchingItem(page: Page, query: string): Promise<boolean> {
+  try {
+    return cartHasMatchingItem(requireReadableCartSnapshot(await readBodyText(page)), query);
+  } catch {
+    return false;
+  }
+}
+
+async function reopenCartForMutation(page: Page): Promise<boolean> {
+  if (!(await clickCartOpenButton(page))) {
+    return false;
+  }
+
+  await page.waitForTimeout(1_200);
+  await waitForCartContentSettled(page);
+  await assertNoAccessChallenge(page);
+  return true;
 }
 
 export function isCartPageText(text: string): boolean {
@@ -610,6 +646,34 @@ export function isLikelyRemovableCartItemText(text: string, query?: string): boo
   return textMatchesProductQuery(normalized, query);
 }
 
+async function findRemoveButtonIdAcrossCartScroll(page: Page, query?: string): Promise<number | undefined> {
+  const visibleRemoveId = await findRemoveButtonId(page, query);
+  if (visibleRemoveId !== undefined) {
+    return visibleRemoveId;
+  }
+
+  await resetCartSurfaceScroll(page);
+  const topRemoveId = await findRemoveButtonId(page, query);
+  if (topRemoveId !== undefined) {
+    return topRemoveId;
+  }
+
+  for (let attempt = 0; attempt < CART_SCROLL_MAX_SNAPSHOTS; attempt += 1) {
+    if (!(await scrollCartSurfaceForward(page))) {
+      return undefined;
+    }
+
+    await page.waitForTimeout(CART_SCROLL_SETTLE_MS);
+    await assertNoAccessChallenge(page);
+    const removeId = await findRemoveButtonId(page, query);
+    if (removeId !== undefined) {
+      return removeId;
+    }
+  }
+
+  return undefined;
+}
+
 async function findRemoveButtonId(page: Page, query?: string): Promise<number | undefined> {
   return page.evaluate(({ itemQuery, nonCartProductSurfacePatternSource, removeControlPatternSource, unsafeRemoveControlPatternSource }) => {
     const removeControlPattern = new RegExp(removeControlPatternSource, "i");
@@ -753,16 +817,31 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
       const rect = element.getBoundingClientRect();
       return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
     };
-    const cardFor = (element: Element) => {
+    const cardFor = (element: Element, controlText: string) => {
+      const candidates: Element[] = [];
       let current: Element | null = element;
-      for (let depth = 0; current && depth < 8; depth += 1) {
+      for (let depth = 0; current && depth < 10; depth += 1) {
         const text = current.textContent ?? "";
         if (text.includes("₹") && text.length < 1500) {
-          return current;
+          candidates.push(current);
         }
         current = current.parentElement;
       }
-      return element;
+
+      if (itemQuery) {
+        const matchingCard = candidates.find((candidate) =>
+          isLikelyRemovableItemText(normalize(`${candidate.textContent ?? ""} ${controlText}`))
+        );
+        if (matchingCard) {
+          return matchingCard;
+        }
+      }
+
+      const detailedCard = candidates.find((candidate) => {
+        const text = normalize(`${candidate.textContent ?? ""} ${controlText}`);
+        return /[a-z]{3,}/i.test(text) && isLikelyRemovableItemText(text);
+      });
+      return detailedCard ?? candidates[0] ?? element;
     };
 
     document
@@ -774,7 +853,7 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
     );
     for (const [index, button] of candidates.entries()) {
       const controlText = normalize(controlLabels(button).join(" "));
-      const cardText = normalize(`${cardFor(button).textContent ?? ""} ${controlText}`);
+      const cardText = normalize(`${cardFor(button, controlText).textContent ?? ""} ${controlText}`);
       if (isLikelyRemovableItemText(cardText)) {
         button.setAttribute("data-zepo-remove-id", String(index));
         return index;
@@ -790,10 +869,155 @@ async function findRemoveButtonId(page: Page, query?: string): Promise<number | 
   });
 }
 
+async function resetCartSurfaceScroll(page: Page): Promise<void> {
+  await page
+    .evaluate(() => {
+      const findScrollableCartSurface = () => {
+        const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+        const visibleText = (element: Element) =>
+          element instanceof HTMLElement ? normalize(element.innerText) : normalize(element.textContent ?? "");
+        const isVisible = (element: Element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+        };
+        const activeCartPattern = /deliver(?:ing)? in[\s\S]{0,120}?[1-9]\d*\s+items?/i;
+        const selectors = [
+          '[data-testid*="cart" i]',
+          '[class*="cart" i]',
+          '[id*="cart" i]',
+          '[class*="drawer" i]',
+          '[class*="modal" i]',
+          '[role="dialog"]',
+          "aside",
+          "main",
+          "section"
+        ];
+        const seen = new Set<Element>();
+        const candidateRoots = selectors
+          .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+          .filter((element) => {
+            if (seen.has(element)) {
+              return false;
+            }
+
+            seen.add(element);
+            return true;
+          });
+        const candidates = (candidateRoots as HTMLElement[])
+          .filter(
+            (element) =>
+              element instanceof HTMLElement &&
+              isVisible(element) &&
+              element.scrollHeight > element.clientHeight + 40 &&
+              activeCartPattern.test(visibleText(element))
+          )
+          .sort((left, right) => {
+            const leftTextLength = visibleText(left).length;
+            const rightTextLength = visibleText(right).length;
+            return (
+              leftTextLength - rightTextLength ||
+              (right.scrollHeight - right.clientHeight) - (left.scrollHeight - left.clientHeight)
+            );
+          });
+
+        return candidates[0];
+      };
+      const target = findScrollableCartSurface();
+      if (!target) {
+        return;
+      }
+
+      target.scrollTop = 0;
+      target.dispatchEvent(new Event("scroll", { bubbles: true }));
+    })
+    .catch(() => undefined);
+  await page.waitForTimeout(CART_SCROLL_SETTLE_MS).catch(() => undefined);
+}
+
+async function scrollCartSurfaceForward(page: Page): Promise<boolean> {
+  return page
+    .evaluate(({ minStepPx }) => {
+      const findScrollableCartSurface = () => {
+        const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+        const visibleText = (element: Element) =>
+          element instanceof HTMLElement ? normalize(element.innerText) : normalize(element.textContent ?? "");
+        const isVisible = (element: Element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+        };
+        const activeCartPattern = /deliver(?:ing)? in[\s\S]{0,120}?[1-9]\d*\s+items?/i;
+        const selectors = [
+          '[data-testid*="cart" i]',
+          '[class*="cart" i]',
+          '[id*="cart" i]',
+          '[class*="drawer" i]',
+          '[class*="modal" i]',
+          '[role="dialog"]',
+          "aside",
+          "main",
+          "section"
+        ];
+        const seen = new Set<Element>();
+        const candidateRoots = selectors
+          .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+          .filter((element) => {
+            if (seen.has(element)) {
+              return false;
+            }
+
+            seen.add(element);
+            return true;
+          });
+        const candidates = (candidateRoots as HTMLElement[])
+          .filter(
+            (element) =>
+              element instanceof HTMLElement &&
+              isVisible(element) &&
+              element.scrollHeight > element.clientHeight + 40 &&
+              activeCartPattern.test(visibleText(element))
+          )
+          .sort((left, right) => {
+            const leftTextLength = visibleText(left).length;
+            const rightTextLength = visibleText(right).length;
+            return (
+              leftTextLength - rightTextLength ||
+              (right.scrollHeight - right.clientHeight) - (left.scrollHeight - left.clientHeight)
+            );
+          });
+
+        return candidates[0];
+      };
+      const target = findScrollableCartSurface();
+      if (!target || target.scrollHeight <= target.clientHeight + 40) {
+        return false;
+      }
+
+      const maxTop = Math.max(0, target.scrollHeight - target.clientHeight);
+      const step = Math.max(minStepPx, Math.floor(target.clientHeight * 0.7));
+      const nextTop = Math.min(maxTop, target.scrollTop + step);
+      if (nextTop <= target.scrollTop + 1) {
+        return false;
+      }
+
+      target.scrollTop = nextTop;
+      target.dispatchEvent(new Event("scroll", { bubbles: true }));
+      return true;
+    }, {
+      minStepPx: CART_SCROLL_MIN_STEP_PX
+    })
+    .catch(() => false);
+}
+
 export async function clickTaggedCartRemoveButton(page: Page, removeId: number, query?: string): Promise<void> {
-  const button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
+  let button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
   await assertCartRemoveControlReady(button, query);
   await scrollControlIntoViewIfNeeded(button);
+  const refreshedRemoveId = await findRemoveButtonId(page, query).catch(() => undefined);
+  if (refreshedRemoveId !== undefined) {
+    button = page.locator(`[data-zepo-remove-id="${refreshedRemoveId}"]`).first();
+  }
   await assertCartRemoveControlReady(button, query);
   await button.click();
 }
@@ -813,7 +1037,7 @@ async function assertCartRemoveControlReady(locator: Locator, query?: string): P
     });
   }
 
-  const labels = await readControlLabels(locator);
+  const labels = await readCartRemoveControlLabels(locator);
   if (!labels.some(isCartRemoveControlText) || labels.some(isUnsafeCartRemoveControlText)) {
     throw new UserFacingError("Zepto cart remove control no longer appears to be a safe item remove action.", {
       code: "cart_remove_control_stale",
@@ -821,13 +1045,40 @@ async function assertCartRemoveControlReady(locator: Locator, query?: string): P
     });
   }
 
-  const cardText = String(await locator.evaluate(readClosestCartRemoveCardText).catch(() => ""));
+  const cardText = String(await locator.evaluate(readClosestCartRemoveCardText, query).catch(() => ""));
   if (!isLikelyRemovableCartItemText(cardText, query)) {
     throw new UserFacingError("Zepto cart remove control no longer matches a removable cart item.", {
       code: "cart_remove_control_stale",
       hint: "Rerun `zepo cart` or inspect with `--visible`; Zepto may have re-rendered or reordered the cart."
     });
   }
+}
+
+async function readCartRemoveControlLabels(locator: Locator): Promise<string[]> {
+  const labels = await locator.evaluate(readDirectControlLabels).catch(() => undefined);
+  return Array.isArray(labels) ? labels : readControlLabels(locator);
+}
+
+function readDirectControlLabels(element: Element): string[] {
+  const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+  const referencedLabelText = (target: Element) =>
+    `${target.getAttribute("aria-labelledby") ?? ""} ${target.getAttribute("aria-describedby") ?? ""}`
+      .split(/\s+/)
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .map((id) => target.ownerDocument.getElementById(id)?.textContent ?? "");
+
+  return [
+    element.textContent ?? "",
+    element.getAttribute("aria-label") ?? "",
+    element.getAttribute("title") ?? "",
+    element.getAttribute("placeholder") ?? "",
+    element.getAttribute("value") ?? "",
+    element.getAttribute("aria-description") ?? "",
+    ...referencedLabelText(element)
+  ]
+    .map(normalize)
+    .filter(Boolean);
 }
 
 async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
@@ -837,7 +1088,7 @@ async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
   await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
-function readClosestCartRemoveCardText(element: Element): string {
+function readClosestCartRemoveCardText(element: Element, query?: string): string {
   const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
   const visibleText = (target: Element) =>
     target instanceof HTMLElement ? normalize(target.innerText) : normalize(target.textContent ?? "");
@@ -851,15 +1102,38 @@ function readClosestCartRemoveCardText(element: Element): string {
   const controlText = normalize(
     `${element.textContent ?? ""} ${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""} ${element.getAttribute("placeholder") ?? ""} ${element.getAttribute("value") ?? ""} ${element.getAttribute("aria-description") ?? ""} ${referencedLabelText(element)}`
   );
+  const queryTerms = normalize(query ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9.]+/i)
+    .filter((term) => term.length > 1);
+  const queryMatches = (text: string) => {
+    if (queryTerms.length === 0) {
+      return true;
+    }
+
+    const normalizedText = normalize(text).toLowerCase();
+    return queryTerms.every((term) => normalizedText.includes(term));
+  };
+  const candidates: string[] = [];
 
   let current: Element | null = element;
-  for (let depth = 0; current && depth < 8; depth += 1) {
+  for (let depth = 0; current && depth < 10; depth += 1) {
     const text = visibleText(current);
     if (text.length > 0 && text.length < 1500 && /[₹]|rs\.?\s*\d/i.test(text)) {
-      return normalize(`${text} ${controlText}`);
+      candidates.push(normalize(`${text} ${controlText}`));
     }
 
     current = current.parentElement;
+  }
+
+  const queryMatchedCandidate = candidates.find(queryMatches);
+  if (queryMatchedCandidate) {
+    return queryMatchedCandidate;
+  }
+
+  const detailedCandidate = candidates.find((candidate) => /[a-z]{3,}/i.test(candidate));
+  if (detailedCandidate) {
+    return detailedCandidate;
   }
 
   return normalize(`${visibleText(element)} ${controlText}`);
@@ -992,7 +1266,7 @@ async function waitForCartContentSettled(page: Page): Promise<void> {
 
         const text = normalize(document.body?.innerText ?? "");
         const hasStrongCartShell =
-          /\b(my cart|you have\s+[1-9]\d*\s+items?\s+in your cart|view bill|bill summary|item total|grand total|to pay|payable)\b/i.test(
+          /\b(my cart|view bill|bill summary|item total|grand total|to pay|payable)\b/i.test(
             text
           ) || /\bdeliver(?:ing)? in\b[^.]{0,120}\b[1-9]\d*\s+items?\b/i.test(text);
         const labels = Array.from(document.querySelectorAll("button, [role='button']"))

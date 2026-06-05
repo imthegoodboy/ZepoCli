@@ -682,6 +682,31 @@ describe("cart automation helpers", () => {
     expect(page.limitRemoveClicked).toBe(false);
   });
 
+  it("scrolls the cart surface to find a matching removable item", async () => {
+    const page = createScrolledCartRemovePage();
+
+    await expect(removeCartItem(page as never, "Country Delight Cow Fresh Milk")).resolves.toMatchObject({
+      items: [],
+      total: undefined
+    });
+
+    expect(page.resetScrolls).toBe(2);
+    expect(page.forwardScrolls).toBe(1);
+    expect(page.itemRemoveClicks).toBe(1);
+  });
+
+  it("reopens the cart surface when readable cart text has no mutation controls", async () => {
+    const page = createReadableCartWithoutMutationControlsPage();
+
+    await expect(removeCartItem(page as never, "Country Delight Cow Fresh Milk")).resolves.toMatchObject({
+      items: [],
+      total: undefined
+    });
+
+    expect(page.cartClicks).toBe(1);
+    expect(page.itemRemoveClicks).toBe(1);
+  });
+
   it("rejects partial active-cart rows when Zepto exposes an item count", () => {
     expect(() =>
       requireReadableCartSnapshot(`
@@ -1773,6 +1798,164 @@ function createClearCartLimitWarningPage() {
           page.itemRemoveClicks += 1;
           bodyText = emptyText;
         }, {}, itemCardText);
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
+function createScrolledCartRemovePage() {
+  const topCartText = [
+    "Delivering in 5 mins",
+    "2 items",
+    "Amul Gold Full Cream Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "₹34",
+    "Qty 1",
+    "Bill Summary",
+    "To Pay",
+    "₹82"
+  ].join("\n");
+  const targetCardText = [
+    "Country Delight Cow Fresh Milk | Pouch",
+    "1 pack (450 ml)",
+    "₹48",
+    "Qty 1",
+    "Remove"
+  ].join("\n");
+  const scrolledCartText = [
+    "Delivering in 5 mins",
+    "2 items",
+    targetCardText,
+    "Bill Summary",
+    "To Pay",
+    "₹82"
+  ].join("\n");
+  const emptyText = "My Cart\nYour cart is empty\nAdd items to continue";
+  let scrolled = false;
+  let removed = false;
+  const page = {
+    resetScrolls: 0,
+    forwardScrolls: 0,
+    itemRemoveClicks: 0,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("target.scrollTop = 0")) {
+        page.resetScrolls += 1;
+        scrolled = false;
+        return undefined;
+      }
+
+      if (source.includes("nextTop")) {
+        if (removed) {
+          return false;
+        }
+
+        page.forwardScrolls += 1;
+        scrolled = true;
+        return true;
+      }
+
+      if (source.includes("data-zepo-remove-id")) {
+        return scrolled && !removed ? 0 : undefined;
+      }
+
+      if (source.includes("bodyTexts")) {
+        return { bodyTexts: [removed ? emptyText : scrolled ? scrolledCartText : topCartText], controlRows: [] };
+      }
+
+      return [];
+    },
+    getByRole: () => createHiddenLocator(),
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return createBodyTextLocator(() => (removed ? emptyText : scrolled ? scrolledCartText : topCartText));
+      }
+
+      if (selector === '[data-zepo-remove-id="0"]' && scrolled && !removed) {
+        return createVisibleLocator("Remove", async () => {
+          page.itemRemoveClicks += 1;
+          removed = true;
+        }, {}, targetCardText);
+      }
+
+      return createHiddenLocator();
+    }
+  };
+
+  return page;
+}
+
+function createReadableCartWithoutMutationControlsPage() {
+  const cartText = [
+    "Delivering in 5 mins",
+    "1 item",
+    "Country Delight Cow Fresh Milk | Pouch",
+    "1 pack (450 ml)",
+    "₹48",
+    "Qty 1",
+    "Bill Summary",
+    "To Pay",
+    "₹48"
+  ].join("\n");
+  const emptyText = "My Cart\nYour cart is empty\nAdd items to continue";
+  const targetCardText = "Country Delight Cow Fresh Milk | Pouch 1 pack (450 ml) ₹48 Qty 1 Remove";
+  let cartOpenedForMutation = false;
+  let removed = false;
+  const page = {
+    cartClicks: 0,
+    itemRemoveClicks: 0,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("data-zepo-remove-id")) {
+        return cartOpenedForMutation && !removed ? 0 : undefined;
+      }
+
+      if (source.includes("bodyTexts")) {
+        return { bodyTexts: [removed ? emptyText : cartText], controlRows: [] };
+      }
+
+      if (source.includes("target.scrollTop = 0")) {
+        return undefined;
+      }
+
+      if (source.includes("nextTop")) {
+        return false;
+      }
+
+      return [];
+    },
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Cart 1")) {
+        return createVisibleLocator("Cart 1", async () => {
+          page.cartClicks += 1;
+          cartOpenedForMutation = true;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) => {
+      if (selector === "body") {
+        return createBodyTextLocator(() => (removed ? emptyText : cartText));
+      }
+
+      if (selector === '[data-zepo-remove-id="0"]' && cartOpenedForMutation && !removed) {
+        return createVisibleLocator("Remove", async () => {
+          page.itemRemoveClicks += 1;
+          removed = true;
+        }, {}, targetCardText);
       }
 
       return createHiddenLocator();

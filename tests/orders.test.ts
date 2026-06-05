@@ -529,6 +529,28 @@ describe("order automation helpers", () => {
     expect(page.clicks).toEqual(["latest"]);
   });
 
+  it("walks past action-row wrappers before clicking the latest order-again control", async () => {
+    const page = createActionRowWrappedReorderPage();
+
+    await expect(
+      clickReorderActionButton(page as never, {
+        status: "Delivered",
+        total: "₹128",
+        rawText: "Order delivered Placed at 26th May 2026, 01:04 pm ₹128 Rate order Order Again"
+      })
+    ).resolves.toBe(true);
+
+    expect(page.clicked).toBe(true);
+  });
+
+  it("uses a bounded timeout when clicking reorder action controls", async () => {
+    const page = createReorderClickOptionsPage();
+
+    await expect(clickReorderActionButton(page as never)).resolves.toBe(true);
+
+    expect(page.clickOptions).toEqual({ timeout: 10_000 });
+  });
+
   it("revalidates reorder controls after scrolling before clicking", async () => {
     const page = createScrollRerenderedReorderPage(
       "Order #ZEP1234 Delivered Total ₹249 Reorder",
@@ -935,6 +957,46 @@ function createReorderCollectionPage() {
   return page;
 }
 
+function createActionRowWrappedReorderPage() {
+  const page = {
+    clicked: false,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Order Again")) {
+        return createAncestorAwareReorderLocator("Order Again", [
+          "Order Again",
+          "Rate order Order Again",
+          "Order delivered\nPlaced at 26th May 2026, 01:04 pm\n₹128\nRate order\nOrder Again"
+        ], async () => {
+          page.clicked = true;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createReorderClickOptionsPage() {
+  const page = {
+    clickOptions: undefined as unknown,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Reorder")) {
+        return createVisibleLocator("Reorder", async (clickOptions?: unknown) => {
+          page.clickOptions = clickOptions;
+        }, undefined, "Order #ZEP1234 Delivered Total ₹249 Reorder");
+      }
+
+      return createHiddenLocator();
+    },
+    locator: () => createHiddenLocator()
+  };
+
+  return page;
+}
+
 function createScrollRerenderedReorderPage(cardTextBeforeScroll: string, cardTextAfterScroll: string) {
   let cardText = cardTextBeforeScroll;
   const page = {
@@ -1015,7 +1077,7 @@ function createUnreadableReorderPage() {
 
 function createVisibleLocator(
   text: string | (() => string),
-  click: () => Promise<void>,
+  click: (options?: unknown) => Promise<void>,
   ariaLabel?: string | (() => string),
   cardText: string | (() => string) = text,
   attributes: Record<string, string | null> = {},
@@ -1041,6 +1103,75 @@ function createVisibleLocator(
       return typeof cardText === "function" ? cardText() : cardText;
     },
     scrollIntoViewIfNeeded,
+    click
+  };
+}
+
+function createAncestorAwareReorderLocator(
+  text: string,
+  ancestorTexts: string[],
+  click: () => Promise<void>,
+  attributes: Record<string, string | null> = {}
+) {
+  return {
+    first() {
+      return this;
+    },
+    filter() {
+      return createHiddenLocator();
+    },
+    isVisible: async () => true,
+    innerText: async () => text,
+    getAttribute: async (name: string) => (name === "aria-label" ? null : attributes[name] ?? null),
+    evaluate: async (fn?: unknown) => {
+      const source = String(fn ?? "");
+      if (source.includes("HTMLButtonElement") || source.includes("aria-disabled")) {
+        return false;
+      }
+
+      if (source.includes("getElementById")) {
+        return [];
+      }
+
+      if (typeof fn !== "function") {
+        return "";
+      }
+
+      const previousHTMLElement = (globalThis as typeof globalThis & { HTMLElement?: unknown }).HTMLElement;
+      const hadHTMLElement = Object.prototype.hasOwnProperty.call(globalThis, "HTMLElement");
+
+      class FakeHTMLElement {
+        parentElement: FakeHTMLElement | null = null;
+        textContent: string;
+
+        constructor(public innerText: string) {
+          this.textContent = innerText;
+        }
+
+        getAttribute(name: string) {
+          return attributes[name] ?? null;
+        }
+      }
+
+      let parent: FakeHTMLElement | null = null;
+      for (let index = ancestorTexts.length - 1; index >= 0; index -= 1) {
+        const current = new FakeHTMLElement(ancestorTexts[index] ?? "");
+        current.parentElement = parent;
+        parent = current;
+      }
+
+      try {
+        (globalThis as typeof globalThis & { HTMLElement?: unknown }).HTMLElement = FakeHTMLElement;
+        return (fn as (element: Element) => unknown)(parent as unknown as Element);
+      } finally {
+        if (hadHTMLElement) {
+          (globalThis as typeof globalThis & { HTMLElement?: unknown }).HTMLElement = previousHTMLElement;
+        } else {
+          delete (globalThis as typeof globalThis & { HTMLElement?: unknown }).HTMLElement;
+        }
+      }
+    },
+    scrollIntoViewIfNeeded: async () => undefined,
     click
   };
 }

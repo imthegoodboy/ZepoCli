@@ -15,6 +15,7 @@ export const ACCOUNT_MENU_CLICK_LABELS = [/^account$/i, /^profile$/i] as const;
 export const REORDER_ACTION_CLICK_LABELS = [/^reorder$/i, /^order again$/i, /^repeat order$/i] as const;
 const ORDER_CONTROL_SCAN_LIMIT = 8;
 const ACCOUNT_SURFACE_SETTLE_MS = 500;
+const ORDER_CONTROL_CLICK_TIMEOUT_MS = 10_000;
 
 export async function openOrders(page: Page): Promise<void> {
   let bodyText = await page.locator("body").innerText().catch(() => "");
@@ -129,8 +130,10 @@ async function clickSafeLabeledControl(
     return false;
   }
 
-  await locator.click();
-  return true;
+  return locator.click({ timeout: ORDER_CONTROL_CLICK_TIMEOUT_MS }).then(
+    () => true,
+    () => false
+  );
 }
 
 async function isSafeLabeledControl(
@@ -252,8 +255,10 @@ async function clickSafeReorderControl(locator: Locator, latestOrder: OrderSnaps
     return false;
   }
 
-  await locator.click();
-  return true;
+  return locator.click({ timeout: ORDER_CONTROL_CLICK_TIMEOUT_MS }).then(
+    () => true,
+    () => false
+  );
 }
 
 async function isSafeReorderControl(locator: Locator, latestOrder: OrderSnapshot | undefined): Promise<boolean> {
@@ -377,11 +382,20 @@ export function isUnsafeReorderActionClickText(text: string): boolean {
 }
 
 export function isReorderControlInReadableOrderText(text: string): boolean {
-  return parseOrdersFromText(text).length > 0;
+  return parseOrdersFromScopedReorderText(text).length > 0;
 }
 
 export function isReorderControlInReadableLatestOrderText(text: string, latestOrder: OrderSnapshot): boolean {
-  return parseOrdersFromText(text).some((candidate) => orderSnapshotsMatch(candidate, latestOrder));
+  return parseOrdersFromScopedReorderText(text).some((candidate) => orderSnapshotsMatch(candidate, latestOrder));
+}
+
+function parseOrdersFromScopedReorderText(text: string): OrderSnapshot[] {
+  const orders = parseOrdersFromText(text);
+  if (orders.length > 0) {
+    return orders;
+  }
+
+  return parseOrdersFromText(`Orders\n${text}`);
 }
 
 function orderSnapshotsMatch(candidate: OrderSnapshot, expected: OrderSnapshot): boolean {
@@ -406,12 +420,34 @@ function orderSnapshotsMatch(candidate: OrderSnapshot, expected: OrderSnapshot):
 }
 
 function readClosestOrderCardText(element: Element): string {
+  const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+  const visibleText = (target: Element) =>
+    target instanceof HTMLElement ? target.innerText.trim() : (target.textContent ?? "").trim();
+  const looksLikeReadableOrderCard = (text: string) => {
+    const normalized = normalize(text);
+    if (!normalized || normalized.length >= 2500) {
+      return false;
+    }
+
+    const hasOrderId = /\bOrder\s?#?\s?(?=[A-Z0-9-]*\d)[A-Z0-9-]{4,}\b/i.test(normalized);
+    const hasStatusPhrase =
+      /\border\s+(?:delivered|confirmed|packed|out for delivery|on the way|arriving|preparing|processing|placed|cancelled|refunded)\b/i.test(
+        normalized
+      );
+    const hasOrderDetail =
+      /\bPlaced at\b/i.test(normalized) ||
+      /\bETA[:\s]/i.test(normalized) ||
+      /\b(grand total|order total|amount paid|paid|to pay|payable|bill total|total)\b/i.test(normalized) ||
+      /₹\s?[\d,]+(?:\.\d+)?|(?:rs\.?|inr)\s?[\d,]+(?:\.\d+)?/i.test(normalized);
+
+    return (hasOrderId || hasStatusPhrase) && hasOrderDetail;
+  };
+
   let current: Element | null = element;
   for (let depth = 0; current && depth < 8; depth += 1) {
-    const text = current instanceof HTMLElement ? current.innerText : current.textContent ?? "";
-    const normalized = text.replace(/\s+/g, " ").trim();
-    if (normalized.length > 0 && normalized.length < 2500 && /(?:order|eta|total|₹|rs\.?\s?\d)/i.test(normalized)) {
-      return normalized;
+    const text = visibleText(current);
+    if (looksLikeReadableOrderCard(text)) {
+      return text;
     }
 
     current = current.parentElement;
