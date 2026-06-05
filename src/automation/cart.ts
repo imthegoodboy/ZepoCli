@@ -28,9 +28,9 @@ const CART_RENDER_SIGNAL_TIMEOUT_MS = 12_000;
 const CART_SCROLL_SETTLE_MS = 140;
 const CART_SCROLL_MIN_STEP_PX = 160;
 const CART_SCROLL_MAX_SNAPSHOTS = 24;
-const CART_LIMIT_RESOLUTION_ATTEMPTS = 2;
+const CART_LIMIT_RESOLUTION_ATTEMPTS = 6;
 const CART_LIMIT_REMOVE_CLICK_TIMEOUT_MS = 10_000;
-const CART_LIMIT_REMOVE_SETTLE_TIMEOUT_MS = 10_000;
+const CART_LIMIT_REMOVE_PROGRESS_TIMEOUT_MS = 3_000;
 const CART_REMOVE_CONTROL_PATTERN_SOURCE = "\\b(remove|delete|decrease)\\b|^[-−]$|^(?:qty|quantity)\\s*[-−]$";
 const CART_REMOVE_UNSAFE_CONTROL_PATTERN_SOURCE =
   `\\b(add more|add coupon|apply coupon|coupon|promo|voucher|view bill|bill summary|item total|grand total|to pay|checkout|proceed|continue|payment|pay|place order|confirm order|order summary|track order|reorder|order again|repeat order|address|location|save for later|saved for later|currently unavailable|unavailable|out of stock|sold out|move to cart|move to bag|notify me|clear cart)\\b|${FINAL_PAYMENT_OR_ORDER_ACTION_PATTERN_SOURCE}|${ORDER_ACTION_LABEL_PATTERN_SOURCE}|${PAYMENT_METHOD_LABEL_PATTERN_SOURCE}|^\\+$|^(?:qty|quantity)\\s*\\+$`;
@@ -831,15 +831,15 @@ async function readVisibleCartOnce(
 ): Promise<CartSnapshot> {
   const rawTextBeforeScroll = await page.locator("body").innerText();
   if (isBlockingCartLimitModalText(rawTextBeforeScroll) && options.removeLimitItems) {
-    if (limitResolutionAttempts >= CART_LIMIT_RESOLUTION_ATTEMPTS) {
+    const remainingResolutionAttempts = CART_LIMIT_RESOLUTION_ATTEMPTS - limitResolutionAttempts;
+    if (remainingResolutionAttempts <= 0) {
       assertNoBlockingCartModal(rawTextBeforeScroll);
     }
 
-    await clickCartLimitRemoveItemsButton(page);
-    await waitForCartLimitWarningSettled(page);
+    const resolvedAttempts = await resolveCartLimitWarnings(page, remainingResolutionAttempts);
     await page.waitForTimeout(800);
     await assertNoAccessChallenge(page);
-    return readVisibleCartOnce(page, options, limitResolutionAttempts + 1);
+    return readVisibleCartOnce(page, options, limitResolutionAttempts + resolvedAttempts);
   }
 
   const preScrollSnapshot = tryRequireReadableCartSnapshot(rawTextBeforeScroll);
@@ -1350,6 +1350,22 @@ function isBlockingCartLimitModalText(text: string): boolean {
   return /\byou(?:'|’)?ve exceeded limit for these items for today\b/i.test(normalized);
 }
 
+async function resolveCartLimitWarnings(page: Page, maxAttempts: number): Promise<number> {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const bodyText = await page.locator("body").innerText().catch(() => "");
+    if (!isBlockingCartLimitModalText(bodyText)) {
+      return attempt;
+    }
+
+    await clickCartLimitRemoveItemsButton(page);
+    await waitForCartLimitWarningProgress(page, bodyText);
+    await assertNoAccessChallenge(page);
+  }
+
+  assertNoBlockingCartModal(await page.locator("body").innerText().catch(() => ""));
+  return maxAttempts;
+}
+
 async function clickCartLimitRemoveItemsButton(page: Page): Promise<void> {
   const bodyText = await page.locator("body").innerText().catch(() => "");
   if (!isBlockingCartLimitModalText(bodyText)) {
@@ -1395,21 +1411,45 @@ async function clickCartLimitRemoveControl(locator: Locator): Promise<boolean> {
     return false;
   }
 
+  if (await isDisabledControl(locator)) {
+    return false;
+  }
+
+  const labels = await readControlLabels(locator);
+  if (!labels.some((label) => /^remove items$/i.test(normalizeText(label)))) {
+    return false;
+  }
+
+  if (
+    labels.some(
+      (label) =>
+        isFinalPaymentOrOrderActionText(label) ||
+        isOrderActionLabelText(label) ||
+        isPaymentMethodLabelText(label)
+    )
+  ) {
+    return false;
+  }
+
   return locator.click({ timeout: CART_LIMIT_REMOVE_CLICK_TIMEOUT_MS }).then(
     () => true,
     () => false
   );
 }
 
-async function waitForCartLimitWarningSettled(page: Page): Promise<void> {
+async function waitForCartLimitWarningProgress(page: Page, textBeforeClick: string): Promise<void> {
+  const normalizedBeforeClick = normalizeText(textBeforeClick);
   await page
     .waitForFunction(
-      () => {
+      (previousText) => {
         const text = (document.body?.innerText ?? "").replace(/\s+/g, " ").trim();
-        return !/\byou(?:'|’)?ve exceeded limit for these items for today\b/i.test(text);
+        return (
+          text !== previousText ||
+          !/\byou(?:'|’)?ve exceeded limit for these items for today\b/i.test(text)
+        );
       },
-      undefined,
-      { timeout: CART_LIMIT_REMOVE_SETTLE_TIMEOUT_MS }
+      normalizedBeforeClick,
+      { timeout: CART_LIMIT_REMOVE_PROGRESS_TIMEOUT_MS }
     )
     .catch(() => undefined);
 }

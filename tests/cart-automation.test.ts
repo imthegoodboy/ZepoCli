@@ -622,6 +622,31 @@ describe("cart automation helpers", () => {
     expect(page.limitRemoveClicked).toBe(true);
   });
 
+  it("keeps resolving repeated Zepto limit warnings when removal is explicitly requested", async () => {
+    const page = createRepeatedCartLimitWarningPage();
+
+    await expect(readCart(page as never, { removeLimitItems: true })).resolves.toMatchObject({
+      items: [
+        {
+          name: "Amul Gold Full Cream Fresh Milk | Pouch",
+          price: "₹34",
+          unit: "1 pack (500 ml)"
+        }
+      ],
+      total: "₹34"
+    });
+    expect(page.limitRemoveClicks).toBe(2);
+  });
+
+  it("stops when Zepto keeps reopening limit warnings after the bounded removal budget", async () => {
+    const page = createPersistentCartLimitWarningPage();
+
+    await expect(readCart(page as never, { removeLimitItems: true })).rejects.toMatchObject({
+      code: "cart_limit_exceeded"
+    });
+    expect(page.limitRemoveClicks).toBe(6);
+  });
+
   it("rejects partial active-cart rows when Zepto exposes an item count", () => {
     expect(() =>
       requireReadableCartSnapshot(`
@@ -1470,6 +1495,95 @@ function createCartLimitWarningPage() {
             "To Pay",
             "₹34"
           ].join("\n");
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createRepeatedCartLimitWarningPage() {
+  const readableCartText = [
+    "Delivering in 5 mins",
+    "1 item",
+    "Amul Gold Full Cream Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "₹34",
+    "Bill Summary",
+    "To Pay",
+    "₹34"
+  ].join("\n");
+  const warningTexts = [
+    [
+      "You've exceeded limit for these items for today. Please order tomorrow.",
+      "Fortune Pure & Hygienic Fine Grain Sugar (1)",
+      "Remove Items",
+      readableCartText
+    ].join("\n"),
+    [
+      "You've exceeded limit for these items for today. Please order tomorrow.",
+      "Parrys White Label Sugar (1)",
+      "Remove Items",
+      readableCartText
+    ].join("\n")
+  ];
+  let bodyText = warningTexts[0] ?? readableCartText;
+  const page = {
+    limitRemoveClicks: 0,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if (
+        (role === "button" || role === "link") &&
+        bodyText.includes("Remove Items") &&
+        matchesLocatorName(options.name, "Remove Items")
+      ) {
+        return createVisibleLocator("Remove Items", async () => {
+          page.limitRemoveClicks += 1;
+          bodyText = warningTexts[page.limitRemoveClicks] ?? readableCartText;
+        });
+      }
+
+      return createHiddenLocator();
+    },
+    locator: (selector: string) =>
+      selector === "body" ? createBodyTextLocator(() => bodyText) : createHiddenLocator()
+  };
+
+  return page;
+}
+
+function createPersistentCartLimitWarningPage() {
+  const bodyText = [
+    "You've exceeded limit for these items for today. Please order tomorrow.",
+    "Fortune Pure & Hygienic Fine Grain Sugar (1)",
+    "Remove Items",
+    "Delivering in 5 mins",
+    "1 item",
+    "Amul Gold Full Cream Fresh Milk | Pouch",
+    "1 pack (500 ml)",
+    "₹34",
+    "Bill Summary",
+    "To Pay",
+    "₹34"
+  ].join("\n");
+  const page = {
+    limitRemoveClicks: 0,
+    title: async () => "",
+    waitForFunction: async () => undefined,
+    waitForLoadState: async () => undefined,
+    waitForTimeout: async () => undefined,
+    getByRole: (role: string, options: { name?: RegExp | string } = {}) => {
+      if ((role === "button" || role === "link") && matchesLocatorName(options.name, "Remove Items")) {
+        return createVisibleLocator("Remove Items", async () => {
+          page.limitRemoveClicks += 1;
         });
       }
 

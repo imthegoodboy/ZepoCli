@@ -1,9 +1,11 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 06:22 IST.
+Last updated: 2026-06-05 06:47 IST.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-05 at 06:47 IST after making explicit `zepo cart --remove-limit-items` handle a bounded sequence of repeated Zepto item-limit warning modals before rereading the live cart, while stopping with `cart_limit_exceeded` if Zepto keeps reopening the warning beyond that bounded budget: secret scan, dependency readiness, build, 34 test files, 657 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
+- Focused `npm test -- tests/cart-automation.test.ts` and `npm run build` passed locally on 2026-06-05 at 06:43 IST after making explicit `zepo cart --remove-limit-items` handle repeated item-limit warning modals and stop with `cart_limit_exceeded` when Zepto keeps reopening them. Plain `zepo cart` remains read-only and still returns `cart_limit_exceeded` when the warning is present.
 - `npm run check` passed locally on 2026-06-05 at 06:22 IST after adding explicit `zepo cart --remove-limit-items`, hardening cart-limit modal handling, rejecting partial active-cart parses when Zepto exposes an item count, and documenting the new read-only/default cart boundary: secret scan, dependency readiness, build, 34 test files, 655 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 05:29 IST after adding a regression test that rejects production-scope reports where `track` appears after `checkout_manual_action_required` without checkout handoff coverage: secret scan, dependency readiness, build, 34 test files, 650 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 05:13 IST after making production-scope live verification stop before `track` when checkout remains at `checkout_manual_action_required`: secret scan, dependency readiness, build, 34 test files, 649 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
