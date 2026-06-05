@@ -233,7 +233,11 @@ async function main() {
   }
 
   if (options.cart || options.add || options.reorderLast || options.remove || options.clear) {
-    if (!(await runStep("cart", [...baseCliArgs({ visible: true }), "cart", "--json"])).ok) {
+    const cartArgs = [...baseCliArgs({ visible: true }), "cart", "--json"];
+    if (options.cartRemoveLimitItems) {
+      cartArgs.splice(cartArgs.length - 1, 0, "--remove-limit-items");
+    }
+    if (!(await runStep("cart", cartArgs)).ok) {
       return;
     }
   }
@@ -759,6 +763,7 @@ function parseArgs(args) {
     addressAdd: false,
     addressList: false,
     cart: false,
+    cartRemoveLimitItems: false,
     checkout: false,
     checkoutRemoveLimitItems: false,
     checkoutWait: false,
@@ -810,6 +815,8 @@ function parseArgs(args) {
       parsed.quantity = parseQuantity(requireValue(args, ++index, arg));
     } else if (arg === "--cart") {
       parsed.cart = true;
+    } else if (arg === "--cart-remove-limit-items") {
+      parsed.cartRemoveLimitItems = true;
     } else if (arg === "--remove") {
       parsed.remove = requireValue(args, ++index, arg);
     } else if (arg === "--clear") {
@@ -990,6 +997,14 @@ function validateOptions(parsed) {
     process.exit(1);
   }
 
+  if (
+    parsed.cartRemoveLimitItems &&
+    !(parsed.cart || parsed.add || parsed.reorderLast || parsed.remove || parsed.clear)
+  ) {
+    console.error("--cart-remove-limit-items can only be used when cart evidence is requested.");
+    process.exit(1);
+  }
+
   if (parsed.address && parsed.addressList) {
     console.error("--address cannot be combined with --address-list because address selection already verifies the address flow.");
     process.exit(1);
@@ -1064,6 +1079,8 @@ Options:
   --choose-add          Use zepo add --choose for human product selection during --add
   --quantity <number>   Quantity for --add, 1 to 12
   --cart                Read the cart
+  --cart-remove-limit-items
+                        During cart evidence, explicitly click Zepto's Remove Items action for item-limit warnings before reading cart
   --remove <query>      Remove a matching cart item
   --clear               Remove all detected cart items; cannot be combined with --checkout
   --checkout            Open checkout/payment handoff in a visible Zepto browser
@@ -1079,10 +1096,12 @@ Options:
 Example:
   npm run build
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"
+  npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml" --cart-remove-limit-items --checkout-remove-limit-items
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
 Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
+Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
 If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
 

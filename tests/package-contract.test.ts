@@ -517,6 +517,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live step-timeout option");
     expect(verifier).toContain("expected installed verify:live production-scope option");
     expect(verifier).toContain("expected installed verify:live production-scope preset to enable checkout wait");
+    expect(verifier).toContain("expected installed verify:live to support explicit cart item-limit warning removal");
+    expect(verifier).toContain("expected installed verify:live cart limit-warning removal option");
+    expect(verifier).toContain("expected installed verify:live help to explain explicit cart limit-warning removal");
     expect(verifier).toContain("expected installed verify:live to support explicit checkout item-limit warning removal");
     expect(verifier).toContain("expected installed verify:live checkout limit-warning removal option");
     expect(verifier).toContain("expected installed verify:live production-scope to stop before track when checkout handoff coverage is missing");
@@ -554,6 +557,7 @@ describe("package CLI contract", () => {
     );
     expect(verifier).toContain("expected installed verify:live production-scope missing input guard");
     expect(verifier).toContain("expected installed verify:live production-scope focused-only guard");
+    expect(verifier).toContain("expected installed verify:live cart limit-warning removal guard");
     expect(verifier).toContain("expected installed verify:live checkout limit-warning removal guard");
     expect(verifier).toContain("expected checkout limit-warning removal option");
     expect(verifier).toContain("expected installed verify:live unknown option output to omit npm-token-shaped value");
@@ -661,6 +665,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report acceptance helper to accept production-scope report evidence");
     expect(verifier).toContain(
       "expected installed live report acceptance helper to accept production-scope checkout limit-warning removal evidence"
+    );
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to accept production-scope cart and checkout limit-warning removal evidence"
     );
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
