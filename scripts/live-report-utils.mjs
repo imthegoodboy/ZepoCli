@@ -302,6 +302,8 @@ function buildLiveReportManualEvidence(name, payload, payloadContractError) {
 
   return {
     status: payload.status,
+    humanActionRequired: payload.humanActionRequired,
+    automationBoundary: payload.automationBoundary,
     cartPrecondition: payload.cartPrecondition,
     paymentStatus: payload.paymentStatus,
     orderPlacement: payload.orderPlacement,
@@ -933,6 +935,8 @@ function validateLiveReportManualEvidenceContract(step, issues) {
     step.exitCode === 1 &&
     step.error?.code === "live_verification_incomplete" &&
     step.manualEvidence?.status === "checkout_manual_action_required" &&
+    step.manualEvidence?.humanActionRequired === true &&
+    step.manualEvidence?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
     step.manualEvidence?.cartPrecondition === "non_empty_cart_verified" &&
     step.manualEvidence?.paymentStatus === "not_observed_by_zepocli" &&
     step.manualEvidence?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1152,6 +1156,8 @@ const LIVE_REPORT_STEP_KEYS = new Set(["name", "command", "exitCode", "ok", "sum
 const LIVE_REPORT_ERROR_KEYS = new Set(["code", "message", "hint", "retryAfterMs"]);
 const LIVE_REPORT_MANUAL_EVIDENCE_KEYS = new Set([
   "status",
+  "humanActionRequired",
+  "automationBoundary",
   "cartPrecondition",
   "paymentStatus",
   "orderPlacement",
@@ -1198,7 +1204,18 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
-  ["checkout", new Set(["status", "cartPrecondition", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
+  [
+    "checkout",
+    new Set([
+      "status",
+      "humanActionRequired",
+      "automationBoundary",
+      "cartPrecondition",
+      "paymentStatus",
+      "orderPlacement",
+      "orderStatusCommand"
+    ])
+  ],
   ["track", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["reorder", new Set(["cartItemCount", "hasTotal"])]
@@ -1223,7 +1240,18 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["cart", new Set(["cartItemCount", "hasTotal"])],
   ["remove", new Set(["cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
-  ["checkout", new Set(["status", "cartPrecondition", "paymentStatus", "orderPlacement", "orderStatusCommand"])],
+  [
+    "checkout",
+    new Set([
+      "status",
+      "humanActionRequired",
+      "automationBoundary",
+      "cartPrecondition",
+      "paymentStatus",
+      "orderPlacement",
+      "orderStatusCommand"
+    ])
+  ],
   ["track", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["history", new Set(["orderCount", "latestHasStatus", "latestHasEta"])],
   ["reorder", new Set(["cartItemCount", "hasTotal"])]
@@ -1234,6 +1262,7 @@ const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "hasAddressDetail",
   "hasAddressText",
   "hasTotal",
+  "humanActionRequired",
   "latestHasEta",
   "latestHasStatus",
   "observed",
@@ -1262,6 +1291,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
 ]);
 const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
   "liveSessionState",
+  "automationBoundary",
   "cartPrecondition",
   "orderPlacement",
   "orderStatusCommand",
@@ -1281,6 +1311,7 @@ const LIVE_REPORT_DOCTOR_CHECK_NAMES = new Set([
 ]);
 const LIVE_REPORT_STRING_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
   ["liveSessionState", new Set(["skipped", "logged-in", "login-required", "unknown"])],
+  ["automationBoundary", new Set(["zepocli_did_not_click_payment_or_order_controls"])],
   ["cartPrecondition", new Set(["non_empty_cart_verified"])],
   ["orderPlacement", new Set(["not_confirmed_by_zepocli"])],
   ["orderStatusCommand", new Set(["zepo track"])],
@@ -1406,6 +1437,8 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
     step: "checkout",
     accepts: (step) =>
       step.summary?.status === "checkout_handoff_returned" &&
+      step.summary?.humanActionRequired === true &&
+      step.summary?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
       step.summary?.cartPrecondition === "non_empty_cart_verified" &&
       step.summary?.paymentStatus === "not_observed_by_zepocli" &&
       step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1602,6 +1635,8 @@ function validateCheckoutPayloadContract(payload) {
   if (
     payload?.status === "checkout_handoff_returned" &&
     payload?.payment === "handled_by_zepto" &&
+    payload?.humanActionRequired === true &&
+    payload?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1613,6 +1648,8 @@ function validateCheckoutPayloadContract(payload) {
   if (
     payload?.status === "checkout_manual_action_required" &&
     payload?.payment === "handled_by_zepto" &&
+    payload?.humanActionRequired === true &&
+    payload?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&

@@ -1,9 +1,10 @@
 # ZepoCli Current Status
 
-Last updated: 2026-06-05 18:35 IST.
+Last updated: 2026-06-05 19:03 IST.
 
 ## Local Package State
 
+- `npm run check` passed locally on 2026-06-05 at 19:03 IST after carrying checkout `humanActionRequired: true` and `automationBoundary: "zepocli_did_not_click_payment_or_order_controls"` through live-verification checkout summaries, sanitized manual checkout `manualEvidence`, source report acceptance, installed-package report acceptance, and live-verifier guidance: secret scan, dependency readiness, build, 34 test files, 677 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 18:35 IST after adding explicit checkout JSON `humanActionRequired: true` and `automationBoundary: "zepocli_did_not_click_payment_or_order_controls"` fields, changing manual checkout guidance from agent-clickable payment wording to human continuation wording, and raising the subprocess-heavy live-report validator test timeout to 30s for full-suite stability: secret scan, dependency readiness, build, 34 test files, 677 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 17:33 IST after bounding checkout handoff clicks with an explicit timeout and refreshing official Zepto Terms/Privacy source-check dates: secret scan, dependency readiness, build, 34 test files, 676 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.
 - `npm run check` passed locally on 2026-06-05 at 17:00 IST after switching visible Playwright browser contexts to the native maximized window layout while keeping background/headless contexts on the fixed automation viewport: secret scan, dependency readiness, build, 34 test files, 675 tests, compiled CLI smoke, installed-package smoke, help output, audit, pack dry-run, and publish dry-run.

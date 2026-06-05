@@ -140,6 +140,8 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3253,6 +3255,8 @@ describe("live verification runner", () => {
       stdout: JSON.stringify({
         status: "checkout_handoff_returned",
         payment: "handled_by_zepto",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "paid",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3289,6 +3293,8 @@ describe("live verification runner", () => {
       stdout: JSON.stringify({
         status: "checkout_handoff_returned",
         payment: "handled_by_zepto",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -3319,6 +3325,8 @@ describe("live verification runner", () => {
       stdout: JSON.stringify({
         status: "checkout_manual_action_required",
         payment: "handled_by_zepto",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3337,6 +3345,8 @@ describe("live verification runner", () => {
       ok: false,
       manualEvidence: {
         status: "checkout_manual_action_required",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3377,6 +3387,8 @@ describe("live verification runner", () => {
       ok: false,
       manualEvidence: {
         status: "checkout_manual_action_required",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3519,13 +3531,25 @@ describe("live verification runner", () => {
       stdout: JSON.stringify({
         status: "checkout_handoff_returned",
         payment: "handled_by_zepto",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
       }),
       stderr: "",
-      summarizePayload: (_name: string, value: { cartPrecondition?: string; orderStatusCommand?: string }) => ({
+      summarizePayload: (
+        _name: string,
+        value: {
+          humanActionRequired?: boolean;
+          automationBoundary?: string;
+          cartPrecondition?: string;
+          orderStatusCommand?: string;
+        }
+      ) => ({
+        humanActionRequired: value.humanActionRequired,
+        automationBoundary: value.automationBoundary,
         cartPrecondition: value.cartPrecondition,
         orderStatusCommand: value.orderStatusCommand
       })
@@ -3537,6 +3561,8 @@ describe("live verification runner", () => {
       exitCode: 0,
       ok: true,
       summary: {
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         orderStatusCommand: "zepo track"
       }

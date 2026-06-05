@@ -695,6 +695,8 @@ function summarizePayload(name, payload) {
   if (name === "checkout") {
     return {
       status: payload.status,
+      humanActionRequired: payload.humanActionRequired,
+      automationBoundary: payload.automationBoundary,
       cartPrecondition: payload.cartPrecondition,
       paymentStatus: payload.paymentStatus,
       orderPlacement: payload.orderPlacement,

@@ -3043,6 +3043,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       ok: true,
       summary: {
         status: "checkout_handoff_returned",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3356,6 +3358,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     stdout: JSON.stringify({
       status: "checkout_manual_action_required",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -3370,6 +3374,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     diagnosticManualCheckoutStep.ok === false &&
       diagnosticManualCheckoutStep.error?.code === "live_verification_incomplete" &&
       diagnosticManualCheckoutStep.manualEvidence?.status === "checkout_manual_action_required" &&
+      diagnosticManualCheckoutStep.manualEvidence?.humanActionRequired === true &&
+      diagnosticManualCheckoutStep.manualEvidence?.automationBoundary ===
+        "zepocli_did_not_click_payment_or_order_controls" &&
       diagnosticManualCheckoutStep.manualEvidence?.cartPrecondition === "non_empty_cart_verified",
     "expected installed live report checkout manual-continuation steps to keep sanitized manual evidence"
   );
@@ -3617,6 +3624,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         ok: true,
         summary: {
           status: "checkout_handoff_returned",
+          humanActionRequired: true,
+          automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
           cartPrecondition: "non_empty_cart_verified",
           paymentStatus: "paid",
           orderPlacement: "confirmed",
@@ -5103,6 +5112,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     stdout: JSON.stringify({
       status: "checkout_handoff_returned",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "paid",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5124,6 +5135,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     stdout: JSON.stringify({
       status: "checkout_manual_action_required",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5145,6 +5158,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     stdout: JSON.stringify({
       status: "checkout_handoff_returned",
       payment: "handled_by_zepto",
+      humanActionRequired: true,
+      automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track"
