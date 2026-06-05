@@ -504,6 +504,8 @@ describe("live verification runner", () => {
         { name: "history", ok: false },
         {
           name: "reorder",
+          command: "zepo --data-dir <redacted-data-dir> --visible reorder last --json",
+          exitCode: 0,
           ok: true,
           summary: {
             cartItemCount: 1,
@@ -552,6 +554,8 @@ describe("live verification runner", () => {
       },
       {
         name: "cart",
+        command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+        exitCode: 0,
         ok: true,
         summary: {
           cartItemCount: 1,
@@ -560,6 +564,8 @@ describe("live verification runner", () => {
       },
       {
         name: "remove",
+        command: "zepo --data-dir <redacted-data-dir> --visible remove <redacted-cart-query> --json",
+        exitCode: 0,
         ok: true,
         summary: {
           cartItemCount: "1",
@@ -574,6 +580,58 @@ describe("live verification runner", () => {
     expect(coverage.checkoutHandoff).toBe(false);
     expect(coverage.cart).toBe(true);
     expect(coverage.remove).toBe(false);
+  });
+
+  it("does not count ok steps as coverage when runner result or command metadata is malformed", () => {
+    const acceptedCartStep = {
+      name: "cart",
+      command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        cartItemCount: 1,
+        hasTotal: true
+      }
+    };
+
+    expect(
+      summarizeLiveReportCoverage([
+        acceptedCartStep,
+        {
+          ...acceptedCartStep,
+          name: "remove",
+          command: "zepo --data-dir <redacted-data-dir> --visible remove milk --json"
+        },
+        {
+          ...acceptedCartStep,
+          name: "history",
+          command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+          exitCode: 7,
+          summary: {
+            orderCount: 1,
+            latestHasStatus: true,
+            latestHasEta: false
+          }
+        }
+      ])
+    ).toEqual({
+      browserPreflight: false,
+      localStatus: false,
+      login: false,
+      liveSession: false,
+      search: false,
+      addressAdd: false,
+      addressList: false,
+      addressUse: false,
+      add: false,
+      cart: true,
+      remove: false,
+      clear: false,
+      checkoutHandoff: false,
+      track: false,
+      history: false,
+      reorder: false
+    });
   });
 
   it("summarizes attempted live report steps separately from passing coverage", () => {

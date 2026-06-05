@@ -2989,22 +2989,31 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     summarizeLiveReportCoverage([
       {
         name: "doctor",
+        command: "zepo --data-dir <redacted-data-dir> doctor --json",
+        exitCode: 0,
         ok: true,
         summary: {
           ok: true,
           browserAutomationReady: true,
-          playwrightChromiumPassed: true
+          playwrightChromiumPassed: true,
+          warnings: [],
+          failures: []
         }
       },
       {
         name: "status",
+        command: "zepo --data-dir <redacted-data-dir> status --json",
+        exitCode: 0,
         ok: true,
         summary: {
+          confirmedSession: true,
           browserAutomationReady: true
         }
       },
       {
         name: "status live",
+        command: "zepo --data-dir <redacted-data-dir> --visible status --live --json",
+        exitCode: 0,
         ok: true,
         summary: {
           confirmedSession: true,
@@ -4892,6 +4901,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     summarizeLiveReportCoverage([
       {
         name: "cart",
+        command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+        exitCode: 0,
         ok: true,
         summary: {
           cartItemCount: "1",
@@ -4900,6 +4911,45 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       }
     ]).cart === false,
     "expected installed live report coverage to reject malformed summary evidence"
+  );
+  const malformedResultOrCommandCoverage = summarizeLiveReportCoverage([
+    {
+      name: "cart",
+      command: "zepo --data-dir <redacted-data-dir> --visible cart --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        cartItemCount: 1,
+        hasTotal: true
+      }
+    },
+    {
+      name: "remove",
+      command: "zepo --data-dir <redacted-data-dir> --visible remove milk --json",
+      exitCode: 0,
+      ok: true,
+      summary: {
+        cartItemCount: 1,
+        hasTotal: true
+      }
+    },
+    {
+      name: "history",
+      command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+      exitCode: 7,
+      ok: true,
+      summary: {
+        orderCount: 1,
+        latestHasStatus: true,
+        latestHasEta: false
+      }
+    }
+  ]);
+  assert(
+    malformedResultOrCommandCoverage.cart === true &&
+      malformedResultOrCommandCoverage.remove === false &&
+      malformedResultOrCommandCoverage.history === false,
+    "expected installed live report coverage to reject malformed result or command evidence"
   );
   assertDeepEqual(
     summarizeLiveReportMissingCoverage(

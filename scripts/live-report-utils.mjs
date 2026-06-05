@@ -691,7 +691,7 @@ function liveReportStepHasPassingCoverage(step) {
     return false;
   }
 
-  if (!liveReportStepSummarySatisfiesContract(step)) {
+  if (!liveReportStepSatisfiesCoverageContract(step)) {
     return false;
   }
 
@@ -699,12 +699,14 @@ function liveReportStepHasPassingCoverage(step) {
   return !requirement?.accepts || requirement.accepts(step);
 }
 
-function liveReportStepSummarySatisfiesContract(step) {
+function liveReportStepSatisfiesCoverageContract(step) {
   if (!isObject(step?.summary)) {
     return false;
   }
 
   const issues = [];
+  validateLiveReportStepResultContract(step, issues);
+  validateLiveReportCommandContract(step, issues);
   validateLiveReportStepSummaryContract(step, issues);
   return issues.length === 0;
 }
