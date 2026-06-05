@@ -307,6 +307,7 @@ function buildLiveReportManualEvidence(name, payload, payloadContractError) {
     handoffUrl: payload.handoffUrl,
     handoffSurface: payload.handoffSurface,
     browserOpenAfterReturn: payload.browserOpenAfterReturn,
+    checkoutWaitCompleted: payload.checkoutWaitCompleted,
     cartPrecondition: payload.cartPrecondition,
     paymentStatus: payload.paymentStatus,
     orderPlacement: payload.orderPlacement,
@@ -544,14 +545,18 @@ function validateLiveReportProductionScopeCartState(steps, issues) {
 
 function validateLiveReportProductionScopeCheckoutWait(steps, issues) {
   const checkoutStep = steps.find((step) => step?.name === "checkout" && step?.ok === true);
-  if (!checkoutStep || LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN.test(checkoutStep.command)) {
+  if (
+    !checkoutStep ||
+    (LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN.test(checkoutStep.command) &&
+      checkoutStep.summary?.checkoutWaitCompleted === true)
+  ) {
     return;
   }
 
   issues.push({
     code: "live_report_production_scope_checkout_wait_missing",
     message:
-      "Production-scope checkout evidence must use explicit checkout wait so a human can complete Zepto-side checkout/payment before tracking."
+      "Production-scope checkout evidence must use explicit checkout wait and preserve checkoutWaitCompleted: true so a human can complete Zepto-side checkout/payment before tracking."
   });
 }
 
@@ -970,6 +975,7 @@ function validateLiveReportManualEvidenceContract(step, issues) {
     step.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
     step.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
     step.manualEvidence?.browserOpenAfterReturn === false &&
+    typeof step.manualEvidence?.checkoutWaitCompleted === "boolean" &&
     step.manualEvidence?.cartPrecondition === "non_empty_cart_verified" &&
     step.manualEvidence?.paymentStatus === "not_observed_by_zepocli" &&
     step.manualEvidence?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1194,6 +1200,7 @@ const LIVE_REPORT_MANUAL_EVIDENCE_KEYS = new Set([
   "handoffUrl",
   "handoffSurface",
   "browserOpenAfterReturn",
+  "checkoutWaitCompleted",
   "cartPrecondition",
   "paymentStatus",
   "orderPlacement",
@@ -1249,6 +1256,7 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "handoffUrl",
       "handoffSurface",
       "browserOpenAfterReturn",
+      "checkoutWaitCompleted",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1288,6 +1296,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "handoffUrl",
       "handoffSurface",
       "browserOpenAfterReturn",
+      "checkoutWaitCompleted",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1301,6 +1310,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
 const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "browserAutomationReady",
   "browserOpenAfterReturn",
+  "checkoutWaitCompleted",
   "confirmedSession",
   "hasAddressDetail",
   "hasAddressText",
@@ -1490,6 +1500,7 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
       step.summary?.handoffUrl === "https://www.zepto.com/?cart=open" &&
       step.summary?.handoffSurface === "visible_zepto_browser" &&
       step.summary?.browserOpenAfterReturn === false &&
+      typeof step.summary?.checkoutWaitCompleted === "boolean" &&
       step.summary?.cartPrecondition === "non_empty_cart_verified" &&
       step.summary?.paymentStatus === "not_observed_by_zepocli" &&
       step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1691,6 +1702,7 @@ function validateCheckoutPayloadContract(payload) {
     payload?.handoffUrl === "https://www.zepto.com/?cart=open" &&
     payload?.handoffSurface === "visible_zepto_browser" &&
     payload?.browserOpenAfterReturn === false &&
+    typeof payload?.checkoutWaitCompleted === "boolean" &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1707,6 +1719,7 @@ function validateCheckoutPayloadContract(payload) {
     payload?.handoffUrl === "https://www.zepto.com/?cart=open" &&
     payload?.handoffSurface === "visible_zepto_browser" &&
     payload?.browserOpenAfterReturn === false &&
+    typeof payload?.checkoutWaitCompleted === "boolean" &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&

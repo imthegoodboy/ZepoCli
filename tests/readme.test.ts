@@ -229,6 +229,8 @@ describe("README package guidance", () => {
     expect(readme).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
     expect(readme).toContain('handoffSurface: "visible_zepto_browser"');
     expect(readme).toContain("browserOpenAfterReturn: false");
+    expect(readme).toContain("checkoutWaitCompleted");
+    expect(readme).toContain("checkoutWaitCompleted: true");
     expect(readme).toContain('cartPrecondition: "non_empty_cart_verified"');
     expect(readme).toContain('orderPlacement: "not_confirmed_by_zepocli"');
     expect(readme).toContain("`humanActionRequired: true`");
@@ -337,6 +339,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate");
+    expect(readme).toContain("checkout wait evidence from both the sanitized `--wait` command string and `checkoutWaitCompleted: true`");
     expect(readme).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence"
     );

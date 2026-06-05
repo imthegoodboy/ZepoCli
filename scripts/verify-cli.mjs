@@ -71,6 +71,15 @@ const checks = [
     args: undefined,
     expect: () => {
       assertCheckoutHandoffContract(checkoutHandoffOutput());
+      assert(
+        checkoutHandoffOutput("checkout_or_payment_page", { waitForCompletion: true }).checkoutWaitCompleted === true,
+        "expected checkout wait-mode marker"
+      );
+      assert(
+        checkoutHandoffOutput("manual_payment_control_visible", { waitForCompletion: true }).checkoutWaitCompleted ===
+          true,
+        "expected manual checkout wait-mode marker"
+      );
     }
   },
   {
@@ -1219,6 +1228,7 @@ function assertCheckoutHandoffContract(payload) {
   assert(payload.handoffUrl === "https://www.zepto.com/?cart=open", "expected checkout handoff URL marker");
   assert(payload.handoffSurface === "visible_zepto_browser", "expected checkout handoff surface marker");
   assert(payload.browserOpenAfterReturn === false, "expected checkout browser lifecycle marker");
+  assert(payload.checkoutWaitCompleted === false, "expected immediate checkout JSON wait marker");
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected unconfirmed order placement");

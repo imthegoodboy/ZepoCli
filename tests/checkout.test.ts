@@ -398,6 +398,7 @@ describe("checkout handoff detection", () => {
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -415,6 +416,7 @@ describe("checkout handoff detection", () => {
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -427,11 +429,13 @@ describe("checkout handoff detection", () => {
     expect(checkoutHandoffOutput("checkout_or_payment_page", { waitForCompletion: true })).toMatchObject({
       status: "checkout_handoff_returned",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: true,
       next: "If payment/order was completed in Zepto before this command returned, run `zepo track` to inspect order status."
     });
     expect(checkoutHandoffOutput("manual_payment_control_visible", { waitForCompletion: true })).toMatchObject({
       status: "checkout_manual_action_required",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: true,
       next: "A human continued in Zepto before this command returned. ZepoCli still did not observe payment/order placement; after any Zepto-side order action, run `zepo track` to inspect order status."
     });
   });
@@ -444,6 +448,7 @@ describe("checkout handoff detection", () => {
     expect(output.handoffUrl).toBe("https://www.zepto.com/?cart=open");
     expect(output.handoffSurface).toBe("visible_zepto_browser");
     expect(output.browserOpenAfterReturn).toBe(false);
+    expect(output.checkoutWaitCompleted).toBe(false);
     expect(output.next).toContain("zepo --visible checkout --wait");
     expect(output.next).toContain("ZepoCli stops before payment/order controls");
     expect(output.next).not.toMatch(/^Click\b/i);

@@ -309,6 +309,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "handoffUrl: \"https://www.zepto.com/?cart=open\"",
     "handoffSurface: \"visible_zepto_browser\"",
     "browserOpenAfterReturn: false",
+    "checkoutWaitCompleted",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "status: \"checkout_manual_action_required\"",
     "manual amount-bearing payment control",
@@ -734,6 +735,14 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   } = await import(pathToFileURL(checkoutAutomationModulePath).href);
   assertCheckoutHandoffContract(checkoutHandoffOutput());
   assertCheckoutManualActionContract(checkoutHandoffOutput("manual_payment_control_visible"));
+  assert(
+    checkoutHandoffOutput("checkout_or_payment_page", { waitForCompletion: true }).checkoutWaitCompleted === true,
+    "expected installed checkout wait-mode marker"
+  );
+  assert(
+    checkoutHandoffOutput("manual_payment_control_visible", { waitForCompletion: true }).checkoutWaitCompleted === true,
+    "expected installed manual checkout wait-mode marker"
+  );
   assert(isCheckoutHandoffClickText("Checkout") === true, "expected installed checkout label to be accepted");
   assert(
     isCheckoutHandoffClickText("Checkout 2 items") === true,
@@ -2419,7 +2428,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     reportHelpResult.stdout.includes(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, and browserOpenAfterReturn markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, and checkoutWaitCompleted markers"
     ),
     "expected installed verify:live:report manual checkout boundary guidance"
   );
@@ -3102,6 +3111,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3164,7 +3174,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     },
     {
       ...acceptedLiveReportSteps[4],
-      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json"
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      summary: {
+        ...acceptedLiveReportSteps[4].summary,
+        checkoutWaitCompleted: true
+      }
     },
     {
       name: "track",
@@ -3408,6 +3422,38 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }).issues.some((issue) => issue.code === "live_report_production_scope_checkout_wait_missing"),
     "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
   );
+  const missingWaitMarkerProductionScopeLiveReport = {
+    ...freshProductionScopeLiveReport,
+    steps: freshProductionScopeLiveReport.steps.map((step) =>
+      step.name === "checkout"
+        ? {
+            ...step,
+            summary: {
+              ...step.summary,
+              checkoutWaitCompleted: false
+            }
+          }
+        : step
+    )
+  };
+  missingWaitMarkerProductionScopeLiveReport.attempted = summarizeLiveReportAttempts(
+    missingWaitMarkerProductionScopeLiveReport.steps
+  );
+  missingWaitMarkerProductionScopeLiveReport.coverage = summarizeLiveReportCoverage(
+    missingWaitMarkerProductionScopeLiveReport.steps
+  );
+  missingWaitMarkerProductionScopeLiveReport.missingCoverage = summarizeLiveReportMissingCoverage(
+    missingWaitMarkerProductionScopeLiveReport.requested,
+    missingWaitMarkerProductionScopeLiveReport.coverage
+  );
+  assert(
+    validateLiveReportAcceptance(missingWaitMarkerProductionScopeLiveReport, {
+      expectedVersion: packageJson.version,
+      requireProductionScope: true,
+      maxAgeMs: 60_000
+    }).issues.some((issue) => issue.code === "live_report_production_scope_checkout_wait_missing"),
+    "expected installed live report acceptance helper to reject production-scope evidence without checkout wait marker"
+  );
   const diagnosticManualCheckoutStep = buildLiveReportStep({
     name: "checkout",
     args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--wait", "--json"],
@@ -3420,6 +3466,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: true,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -3440,6 +3487,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       diagnosticManualCheckoutStep.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
       diagnosticManualCheckoutStep.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
       diagnosticManualCheckoutStep.manualEvidence?.browserOpenAfterReturn === false &&
+      diagnosticManualCheckoutStep.manualEvidence?.checkoutWaitCompleted === true &&
       diagnosticManualCheckoutStep.manualEvidence?.cartPrecondition === "non_empty_cart_verified",
     "expected installed live report checkout manual-continuation steps to keep sanitized manual evidence"
   );
@@ -5368,6 +5416,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "paid",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5417,6 +5466,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: false,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5443,6 +5493,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: false,
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track"
@@ -7119,6 +7170,7 @@ function assertCommonCheckoutOutputContract(payload) {
   assert(payload.handoffUrl === "https://www.zepto.com/?cart=open", "expected installed checkout handoff URL marker");
   assert(payload.handoffSurface === "visible_zepto_browser", "expected installed checkout handoff surface marker");
   assert(payload.browserOpenAfterReturn === false, "expected installed checkout browser lifecycle marker");
+  assert(payload.checkoutWaitCompleted === false, "expected installed immediate checkout wait marker");
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected installed non-empty cart precondition marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected installed unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");

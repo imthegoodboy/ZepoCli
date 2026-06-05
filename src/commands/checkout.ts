@@ -45,6 +45,7 @@ export interface CheckoutHandoffOutput {
   handoffUrl: "https://www.zepto.com/?cart=open";
   handoffSurface: "visible_zepto_browser";
   browserOpenAfterReturn: false;
+  checkoutWaitCompleted: boolean;
   cartPrecondition: "non_empty_cart_verified";
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
@@ -67,6 +68,7 @@ export function checkoutHandoffOutput(
       handoffUrl: "https://www.zepto.com/?cart=open",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
+      checkoutWaitCompleted: waitForCompletion,
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -85,6 +87,7 @@ export function checkoutHandoffOutput(
     handoffUrl: "https://www.zepto.com/?cart=open",
     handoffSurface: "visible_zepto_browser",
     browserOpenAfterReturn: false,
+    checkoutWaitCompleted: waitForCompletion,
     cartPrecondition: "non_empty_cart_verified",
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",

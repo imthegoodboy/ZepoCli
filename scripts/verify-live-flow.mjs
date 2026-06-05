@@ -700,6 +700,7 @@ function summarizePayload(name, payload) {
       handoffUrl: payload.handoffUrl,
       handoffSurface: payload.handoffSurface,
       browserOpenAfterReturn: payload.browserOpenAfterReturn,
+      checkoutWaitCompleted: payload.checkoutWaitCompleted,
       cartPrecondition: payload.cartPrecondition,
       paymentStatus: payload.paymentStatus,
       orderPlacement: payload.orderPlacement,

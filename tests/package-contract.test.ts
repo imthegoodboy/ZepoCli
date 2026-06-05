@@ -523,7 +523,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain('handoffUrl: \\"https://www.zepto.com/?cart=open\\"');
     expect(verifier).toContain('handoffSurface: \\"visible_zepto_browser\\"');
     expect(verifier).toContain("browserOpenAfterReturn: false");
+    expect(verifier).toContain("checkoutWaitCompleted");
     expect(verifier).toContain("expected installed checkout browser lifecycle marker");
+    expect(verifier).toContain("expected installed immediate checkout wait marker");
+    expect(verifier).toContain("expected installed checkout wait-mode marker");
+    expect(verifier).toContain("expected installed manual checkout wait-mode marker");
     expect(verifier).toContain('cartPrecondition: \\"non_empty_cart_verified\\"');
     expect(verifier).toContain('status: \\"checkout_manual_action_required\\"');
     expect(verifier).toContain("manual amount-bearing payment control");
@@ -703,6 +707,9 @@ describe("package CLI contract", () => {
     );
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
+    );
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject production-scope evidence without checkout wait marker"
     );
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without freshness"

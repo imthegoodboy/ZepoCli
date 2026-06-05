@@ -145,6 +145,7 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -212,7 +213,11 @@ function productionScopeLiveReport(overrides: Record<string, unknown> = {}) {
     },
     {
       ...acceptedLiveReport().steps[4],
-      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json"
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      summary: {
+        ...acceptedLiveReport().steps[4].summary,
+        checkoutWaitCompleted: true
+      }
     },
     {
       name: "track",
@@ -338,7 +343,7 @@ describe("live verification runner", () => {
       "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, and browserOpenAfterReturn markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, and checkoutWaitCompleted markers"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -982,6 +987,32 @@ describe("live verification runner", () => {
     );
     expect(
       validateLiveReportAcceptance(noWaitProductionScope, {
+        expectedVersion: packageJson.version,
+        requireProductionScope: true,
+        maxAgeMs: 60_000
+      }).issues.map((issue) => issue.code)
+    ).toContain("live_report_production_scope_checkout_wait_missing");
+    const missingWaitMarkerProductionScope = productionScopeLiveReport({
+      generatedAt: new Date().toISOString(),
+      steps: productionScopeLiveReport().steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              ...step,
+              summary: {
+                ...step.summary,
+                checkoutWaitCompleted: false
+              }
+            }
+          : step
+      )
+    });
+    missingWaitMarkerProductionScope.coverage = summarizeLiveReportCoverage(missingWaitMarkerProductionScope.steps);
+    missingWaitMarkerProductionScope.missingCoverage = summarizeLiveReportMissingCoverage(
+      missingWaitMarkerProductionScope.requested,
+      missingWaitMarkerProductionScope.coverage
+    );
+    expect(
+      validateLiveReportAcceptance(missingWaitMarkerProductionScope, {
         expectedVersion: packageJson.version,
         requireProductionScope: true,
         maxAgeMs: 60_000
@@ -3386,6 +3417,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "paid",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3427,6 +3459,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -3462,6 +3495,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3485,6 +3519,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3631,6 +3666,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3778,6 +3814,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3792,6 +3829,7 @@ describe("live verification runner", () => {
           handoffUrl?: string;
           handoffSurface?: string;
           browserOpenAfterReturn?: boolean;
+          checkoutWaitCompleted?: boolean;
           cartPrecondition?: string;
           orderStatusCommand?: string;
         }
@@ -3801,6 +3839,7 @@ describe("live verification runner", () => {
         handoffUrl: value.handoffUrl,
         handoffSurface: value.handoffSurface,
         browserOpenAfterReturn: value.browserOpenAfterReturn,
+        checkoutWaitCompleted: value.checkoutWaitCompleted,
         cartPrecondition: value.cartPrecondition,
         orderStatusCommand: value.orderStatusCommand
       })
@@ -3817,6 +3856,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
+        checkoutWaitCompleted: false,
         cartPrecondition: "non_empty_cart_verified",
         orderStatusCommand: "zepo track"
       }
