@@ -379,7 +379,8 @@ export function buildPersistentContextOptions(
     headless,
     locale: options?.browserLocale ?? DEFAULT_BROWSER_LOCALE,
     timezoneId: options?.browserTimezone ?? DEFAULT_BROWSER_TIMEZONE,
-    viewport: DEFAULT_BROWSER_VIEWPORT
+    viewport: headless ? DEFAULT_BROWSER_VIEWPORT : null,
+    args: headless ? [] : ["--start-maximized"]
   };
 }
 

@@ -228,7 +228,9 @@ describe("browser automation helpers", () => {
     expect(options).toMatchObject({
       headless: false,
       locale: "hi-IN",
-      timezoneId: "UTC"
+      timezoneId: "UTC",
+      viewport: null,
+      args: ["--start-maximized"]
     });
     expect(options).not.toHaveProperty("userAgent");
   });
