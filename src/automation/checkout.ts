@@ -24,8 +24,15 @@ const CHECKOUT_EMPTY_CART_REREAD_DELAY_MS = 5_000;
 
 export type CheckoutHandoffMode = "checkout_or_payment_page" | "manual_payment_control_visible";
 
+export interface CheckoutCartEvidence {
+  itemCount: number;
+  hasPayableTotal: boolean;
+}
+
 export interface CheckoutHandoffResult {
   mode: CheckoutHandoffMode;
+  cartEvidence?: CheckoutCartEvidence;
+  manualPaymentControlVisible?: boolean;
 }
 
 export interface CheckoutOptions {
@@ -34,16 +41,20 @@ export interface CheckoutOptions {
 
 export async function openCheckout(page: Page, options: CheckoutOptions = {}): Promise<CheckoutHandoffResult> {
   const cart = await readCheckoutCartPrecondition(page, options);
+  const cartEvidence = {
+    itemCount: cart.items.length,
+    hasPayableTotal: typeof cart.total === "string"
+  };
   const cartText = cart.rawText ?? "";
   assertReadableCheckoutCart(cartText, cart.items);
   if (isCheckoutHandoffText(cartText)) {
-    return { mode: "checkout_or_payment_page" };
+    return checkoutHandoffResult("checkout_or_payment_page", cartEvidence);
   }
 
   const clicked = await clickCheckoutHandoffButton(page);
   if (!clicked) {
     if (await hasVisibleManualCheckoutAction(page)) {
-      return { mode: "manual_payment_control_visible" };
+      return checkoutHandoffResult("manual_payment_control_visible", cartEvidence);
     }
 
     throw new UserFacingError("Could not find a checkout button in the current cart.", {
@@ -60,7 +71,18 @@ export async function openCheckout(page: Page, options: CheckoutOptions = {}): P
     });
   }
 
-  return postClickHandoff;
+  return checkoutHandoffResult(postClickHandoff.mode, cartEvidence);
+}
+
+export function checkoutHandoffResult(
+  mode: CheckoutHandoffMode,
+  cartEvidence?: CheckoutCartEvidence
+): CheckoutHandoffResult {
+  return {
+    mode,
+    ...(cartEvidence ? { cartEvidence } : {}),
+    manualPaymentControlVisible: mode === "manual_payment_control_visible"
+  };
 }
 
 export async function detectCheckoutHandoffMode(page: Page): Promise<CheckoutHandoffResult | undefined> {

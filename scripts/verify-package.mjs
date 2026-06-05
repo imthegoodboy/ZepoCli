@@ -739,6 +739,11 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   } = await import(pathToFileURL(checkoutAutomationModulePath).href);
   assertCheckoutHandoffContract(checkoutHandoffOutput());
   assertCheckoutManualActionContract(checkoutHandoffOutput("manual_payment_control_visible"));
+  assertCheckoutEvidenceContract(
+    checkoutHandoffOutput("manual_payment_control_visible", {
+      cartEvidence: { itemCount: 2, hasPayableTotal: true }
+    })
+  );
   assert(
     checkoutHandoffOutput("checkout_or_payment_page", { waitForCompletion: true }).checkoutWaitCompleted === true,
     "expected installed checkout wait-mode marker"
@@ -7359,12 +7364,14 @@ function assertBrowserAutomationReadinessModes(readiness, label) {
 
 function assertCheckoutHandoffContract(payload) {
   assert(payload.status === "checkout_handoff_returned", "expected installed checkout handoff status");
+  assert(payload.manualPaymentControlVisible === false, "expected installed checkout manual payment-control marker");
   assertCommonCheckoutOutputContract(payload);
   assert(String(payload.next).includes("zepo --visible checkout --wait"), "expected installed checkout next-step guidance");
 }
 
 function assertCheckoutManualActionContract(payload) {
   assert(payload.status === "checkout_manual_action_required", "expected installed checkout manual action status");
+  assert(payload.manualPaymentControlVisible === true, "expected installed checkout manual-action payment-control marker");
   assertCommonCheckoutOutputContract(payload);
   assert(
     String(payload.next).includes("zepo --visible checkout --wait"),
@@ -7374,6 +7381,13 @@ function assertCheckoutManualActionContract(payload) {
     !/^Click\b/i.test(String(payload.next)),
     "expected installed checkout manual-action guidance not to start with an agent-clickable instruction"
   );
+}
+
+function assertCheckoutEvidenceContract(payload) {
+  assert(payload.status === "checkout_manual_action_required", "expected installed checkout evidence manual-action status");
+  assert(payload.manualPaymentControlVisible === true, "expected installed checkout evidence payment-control marker");
+  assert(payload.cartEvidence?.itemCount === 2, "expected installed checkout evidence item count");
+  assert(payload.cartEvidence?.hasPayableTotal === true, "expected installed checkout evidence payable-total marker");
 }
 
 function assertCommonCheckoutOutputContract(payload) {

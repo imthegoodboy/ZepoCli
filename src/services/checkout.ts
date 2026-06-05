@@ -2,7 +2,11 @@ import { input } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
 import { assertConfirmedSession, BrowserAutomation } from "../automation/browser.js";
-import { detectCheckoutHandoffMode, openCheckout, type CheckoutHandoffResult } from "../automation/checkout.js";
+import {
+  detectCheckoutHandoffMode,
+  openCheckout,
+  type CheckoutHandoffResult
+} from "../automation/checkout.js";
 import { requireInteractiveInput, requireVisibleBrowser } from "../utils/interactive.js";
 import { promptContext } from "../utils/prompts.js";
 
@@ -42,7 +46,14 @@ export class CheckoutService {
             },
             promptContext()
           );
-          handoff = (await detectCheckoutHandoffMode(page).catch(() => undefined)) ?? handoff;
+          const detectedHandoff = await detectCheckoutHandoffMode(page).catch(() => undefined);
+          handoff = detectedHandoff
+            ? {
+                ...handoff,
+                mode: detectedHandoff.mode,
+                manualPaymentControlVisible: detectedHandoff.mode === "manual_payment_control_visible"
+              }
+            : handoff;
         }
         return handoff;
       }

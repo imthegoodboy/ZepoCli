@@ -403,6 +403,7 @@ describe("checkout handoff detection", () => {
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
       cartPrecondition: "non_empty_cart_verified",
+      manualPaymentControlVisible: false,
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
@@ -421,6 +422,7 @@ describe("checkout handoff detection", () => {
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
       cartPrecondition: "non_empty_cart_verified",
+      manualPaymentControlVisible: true,
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
@@ -443,6 +445,24 @@ describe("checkout handoff detection", () => {
     });
   });
 
+  it("reports sanitized checkout cart evidence when the runtime has it", () => {
+    expect(
+      checkoutHandoffOutput("manual_payment_control_visible", {
+        cartEvidence: {
+          itemCount: 2,
+          hasPayableTotal: true
+        }
+      })
+    ).toMatchObject({
+      status: "checkout_manual_action_required",
+      manualPaymentControlVisible: true,
+      cartEvidence: {
+        itemCount: 2,
+        hasPayableTotal: true
+      }
+    });
+  });
+
   it("keeps manual checkout guidance human-controlled instead of agent-clickable", () => {
     const output = checkoutHandoffOutput("manual_payment_control_visible");
 
@@ -452,6 +472,7 @@ describe("checkout handoff detection", () => {
     expect(output.handoffSurface).toBe("visible_zepto_browser");
     expect(output.browserOpenAfterReturn).toBe(false);
     expect(output.checkoutWaitCompleted).toBe(false);
+    expect(output.manualPaymentControlVisible).toBe(true);
     expect(output.next).toContain("zepo --visible checkout --wait");
     expect(output.next).toContain("ZepoCli stops before payment/order controls");
     expect(output.next).not.toMatch(/^Click\b/i);
@@ -503,7 +524,14 @@ describe("checkout handoff detection", () => {
   it("recovers a readable cart precondition before checkout when Zepto first shows a cart shell", async () => {
     const page = createCheckoutCartRecoveryPage();
 
-    await expect(openCheckout(page as never)).resolves.toEqual({ mode: "checkout_or_payment_page" });
+    await expect(openCheckout(page as never)).resolves.toEqual({
+      mode: "checkout_or_payment_page",
+      cartEvidence: {
+        itemCount: 1,
+        hasPayableTotal: true
+      },
+      manualPaymentControlVisible: false
+    });
 
     expect(page.cartClicks).toBe(1);
     expect(page.checkoutClicked).toBe(true);
@@ -514,7 +542,14 @@ describe("checkout handoff detection", () => {
   it("recovers checkout precondition when Zepto first exposes a stale empty cart", async () => {
     const page = createCheckoutEmptyCartRecoveryPage();
 
-    await expect(openCheckout(page as never)).resolves.toEqual({ mode: "checkout_or_payment_page" });
+    await expect(openCheckout(page as never)).resolves.toEqual({
+      mode: "checkout_or_payment_page",
+      cartEvidence: {
+        itemCount: 1,
+        hasPayableTotal: true
+      },
+      manualPaymentControlVisible: false
+    });
 
     expect(page.waits).toEqual([5000]);
     expect(page.cartClicks).toBe(1);
@@ -525,7 +560,14 @@ describe("checkout handoff detection", () => {
   it("lets cart recovery handle unverified checkout cart navigation", async () => {
     const page = createCheckoutCartNavigationRecoveryPage();
 
-    await expect(openCheckout(page as never)).resolves.toEqual({ mode: "checkout_or_payment_page" });
+    await expect(openCheckout(page as never)).resolves.toEqual({
+      mode: "checkout_or_payment_page",
+      cartEvidence: {
+        itemCount: 1,
+        hasPayableTotal: true
+      },
+      manualPaymentControlVisible: false
+    });
 
     expect(page.cartClicks).toBe(4);
     expect(page.checkoutClicked).toBe(true);
@@ -548,7 +590,12 @@ describe("checkout handoff detection", () => {
     const page = createCheckoutRepeatedCartLimitWarningPage();
 
     await expect(openCheckout(page as never, { removeLimitItems: true })).resolves.toEqual({
-      mode: "checkout_or_payment_page"
+      mode: "checkout_or_payment_page",
+      cartEvidence: {
+        itemCount: 1,
+        hasPayableTotal: true
+      },
+      manualPaymentControlVisible: false
     });
 
     expect(page.limitRemoveClicks).toBe(2);

@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 
-import type { CheckoutHandoffMode } from "../automation/checkout.js";
+import type { CheckoutCartEvidence, CheckoutHandoffMode } from "../automation/checkout.js";
 import { printJson } from "../utils/output.js";
 import { wantsJson, withRuntime } from "./shared.js";
 
@@ -22,7 +22,7 @@ export function registerCheckoutCommand(program: Command): void {
           removeLimitItems: options.removeLimitItems === true
         });
         if (json) {
-          printJson(checkoutHandoffOutput(handoff.mode, { waitForCompletion }));
+          printJson(checkoutHandoffOutput(handoff.mode, { waitForCompletion, cartEvidence: handoff.cartEvidence }));
           return;
         }
 
@@ -47,6 +47,8 @@ export interface CheckoutHandoffOutput {
   browserOpenAfterReturn: false;
   checkoutWaitCompleted: boolean;
   cartPrecondition: "non_empty_cart_verified";
+  manualPaymentControlVisible: boolean;
+  cartEvidence?: CheckoutCartEvidence;
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
   orderStatusCommand: "zepo track";
@@ -55,7 +57,7 @@ export interface CheckoutHandoffOutput {
 
 export function checkoutHandoffOutput(
   mode: CheckoutHandoffMode = "checkout_or_payment_page",
-  options: { waitForCompletion?: boolean } = {}
+  options: { waitForCompletion?: boolean; cartEvidence?: CheckoutCartEvidence } = {}
 ): CheckoutHandoffOutput {
   const waitForCompletion = options.waitForCompletion === true;
 
@@ -70,6 +72,8 @@ export function checkoutHandoffOutput(
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: waitForCompletion,
       cartPrecondition: "non_empty_cart_verified",
+      manualPaymentControlVisible: true,
+      ...(options.cartEvidence ? { cartEvidence: options.cartEvidence } : {}),
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
@@ -89,6 +93,8 @@ export function checkoutHandoffOutput(
     browserOpenAfterReturn: false,
     checkoutWaitCompleted: waitForCompletion,
     cartPrecondition: "non_empty_cart_verified",
+    manualPaymentControlVisible: false,
+    ...(options.cartEvidence ? { cartEvidence: options.cartEvidence } : {}),
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",
     orderStatusCommand: "zepo track",

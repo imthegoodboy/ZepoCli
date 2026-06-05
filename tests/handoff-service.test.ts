@@ -158,7 +158,10 @@ describe("human-controlled browser handoff services", () => {
 
     const result = await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout();
 
-    expect(result).toEqual({ mode: "checkout_or_payment_page" });
+    expect(result).toEqual({
+      mode: "checkout_or_payment_page",
+      manualPaymentControlVisible: false
+    });
     expect(mocks.input).toHaveBeenCalledOnce();
     expect(mocks.detectCheckoutHandoffMode).toHaveBeenCalledOnce();
   });

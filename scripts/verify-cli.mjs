@@ -71,6 +71,11 @@ const checks = [
     args: undefined,
     expect: () => {
       assertCheckoutHandoffContract(checkoutHandoffOutput());
+      assertCheckoutEvidenceContract(
+        checkoutHandoffOutput("manual_payment_control_visible", {
+          cartEvidence: { itemCount: 2, hasPayableTotal: true }
+        })
+      );
       assert(
         checkoutHandoffOutput("checkout_or_payment_page", { waitForCompletion: true }).checkoutWaitCompleted === true,
         "expected checkout wait-mode marker"
@@ -1230,6 +1235,7 @@ function assertCheckoutHandoffContract(payload) {
   assert(payload.browserOpenAfterReturn === false, "expected checkout browser lifecycle marker");
   assert(payload.checkoutWaitCompleted === false, "expected immediate checkout JSON wait marker");
   assert(payload.cartPrecondition === "non_empty_cart_verified", "expected non-empty cart precondition marker");
+  assert(payload.manualPaymentControlVisible === false, "expected checkout manual payment-control marker");
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected track next command");
@@ -1279,6 +1285,13 @@ function assertCheckoutHandoffContract(payload) {
     isCheckoutHandoffText("Cart Order Summary Bill Summary Select payment method UPI Cards") === true,
     "expected compiled checkout detector to accept explicit payment selection text"
   );
+}
+
+function assertCheckoutEvidenceContract(payload) {
+  assert(payload.status === "checkout_manual_action_required", "expected checkout evidence manual-action status");
+  assert(payload.manualPaymentControlVisible === true, "expected checkout evidence manual payment-control marker");
+  assert(payload.cartEvidence?.itemCount === 2, "expected checkout evidence item count");
+  assert(payload.cartEvidence?.hasPayableTotal === true, "expected checkout evidence payable-total marker");
 }
 
 function parseJson(text, streamName) {
