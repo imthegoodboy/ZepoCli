@@ -3294,6 +3294,103 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     }).accepted === true,
     "expected installed live report acceptance helper to accept production-scope report evidence"
   );
+  for (const testCase of [
+    {
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      checkoutWaitCompleted: true,
+      message: "expected installed live report acceptance helper to reject checkout wait marker without wait command"
+    },
+    {
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      checkoutWaitCompleted: false,
+      message: "expected installed live report acceptance helper to reject checkout wait command without wait marker"
+    }
+  ]) {
+    const inconsistentCheckoutWaitReport = {
+      ...acceptedLiveReport,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "checkout"
+          ? {
+              ...step,
+              command: testCase.command,
+              summary: {
+                ...step.summary,
+                checkoutWaitCompleted: testCase.checkoutWaitCompleted
+              }
+            }
+          : step
+      )
+    };
+    inconsistentCheckoutWaitReport.attempted = summarizeLiveReportAttempts(inconsistentCheckoutWaitReport.steps);
+    inconsistentCheckoutWaitReport.coverage = summarizeLiveReportCoverage(inconsistentCheckoutWaitReport.steps);
+    inconsistentCheckoutWaitReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      inconsistentCheckoutWaitReport.requested,
+      inconsistentCheckoutWaitReport.coverage
+    );
+    assert(
+      validateLiveReportAcceptance(inconsistentCheckoutWaitReport, {
+        expectedVersion: packageJson.version
+      }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+      testCase.message
+    );
+  }
+  for (const testCase of [
+    {
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+      checkoutWaitCompleted: true,
+      message: "expected installed live report acceptance helper to reject manual checkout wait marker without wait command"
+    },
+    {
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      checkoutWaitCompleted: false,
+      message: "expected installed live report acceptance helper to reject manual checkout wait command without wait marker"
+    }
+  ]) {
+    const inconsistentManualCheckoutStep = {
+      name: "checkout",
+      command: testCase.command,
+      exitCode: 1,
+      ok: false,
+      manualEvidence: {
+        status: "checkout_manual_action_required",
+        humanActionRequired: true,
+        automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+        handoffUrl: "https://www.zepto.com/?cart=open",
+        handoffSurface: "visible_zepto_browser",
+        browserOpenAfterReturn: false,
+        checkoutWaitCompleted: testCase.checkoutWaitCompleted,
+        cartPrecondition: "non_empty_cart_verified",
+        paymentStatus: "not_observed_by_zepocli",
+        orderPlacement: "not_confirmed_by_zepocli",
+        orderStatusCommand: "zepo track"
+      },
+      error: {
+        code: "live_verification_incomplete",
+        message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+      }
+    };
+    const inconsistentManualCheckoutReport = {
+      ...acceptedLiveReport,
+      ok: false,
+      steps: acceptedLiveReport.steps.map((step) =>
+        step.name === "checkout" ? inconsistentManualCheckoutStep : step
+      )
+    };
+    inconsistentManualCheckoutReport.attempted = summarizeLiveReportAttempts(
+      inconsistentManualCheckoutReport.steps
+    );
+    inconsistentManualCheckoutReport.coverage = summarizeLiveReportCoverage(inconsistentManualCheckoutReport.steps);
+    inconsistentManualCheckoutReport.missingCoverage = summarizeLiveReportMissingCoverage(
+      inconsistentManualCheckoutReport.requested,
+      inconsistentManualCheckoutReport.coverage
+    );
+    assert(
+      validateLiveReportAcceptance(inconsistentManualCheckoutReport, {
+        expectedVersion: packageJson.version
+      }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+      testCase.message
+    );
+  }
   const checkoutLimitRemovalProductionScopeLiveReport = {
     ...freshProductionScopeLiveReport,
     steps: freshProductionScopeLiveReport.steps.map((step) =>

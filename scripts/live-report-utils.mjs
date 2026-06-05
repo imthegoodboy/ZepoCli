@@ -50,8 +50,6 @@ const LIVE_REPORT_PRODUCTION_SCOPE_EXCLUDED_CAPABILITIES = [
   "history",
   "reorder"
 ];
-const LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN =
-  /^zepo --data-dir <redacted-data-dir>(?: --browser-locale <redacted-browser-locale>)?(?: --browser-timezone <redacted-browser-timezone>)? --visible checkout(?: --remove-limit-items)? --wait --json$/;
 const LIVE_REPORT_ADDRESS_DETAIL_PATTERN =
   /\b(house|flat|road|street|lane|layout|sector|phase|apartment|building|floor|tower|block|wing|society|colony|landmark|near|opposite|pin|pincode|postal\s+code|india)\b|\b[a-z]\s*[-/]\s*\d{2,}\b|\d{3,}/i;
 const LIVE_REPORT_ADDRESS_PLACEHOLDER_PATTERN =
@@ -547,8 +545,7 @@ function validateLiveReportProductionScopeCheckoutWait(steps, issues) {
   const checkoutStep = steps.find((step) => step?.name === "checkout" && step?.ok === true);
   if (
     !checkoutStep ||
-    (LIVE_REPORT_PRODUCTION_SCOPE_CHECKOUT_WAIT_COMMAND_PATTERN.test(checkoutStep.command) &&
-      checkoutStep.summary?.checkoutWaitCompleted === true)
+    (liveReportCheckoutCommandUsesWait(checkoutStep) && checkoutStep.summary?.checkoutWaitCompleted === true)
   ) {
     return;
   }
@@ -617,6 +614,7 @@ function validateLiveReportAcceptedSchema(report, issues) {
     }
 
     validateLiveReportStepSummaryContract(step, issues);
+    validateLiveReportCheckoutWaitConsistencyContract(step, issues);
   }
 }
 
@@ -714,6 +712,7 @@ function liveReportStepSatisfiesCoverageContract(step) {
   validateLiveReportStepResultContract(step, issues);
   validateLiveReportCommandContract(step, issues);
   validateLiveReportStepSummaryContract(step, issues);
+  validateLiveReportCheckoutWaitConsistencyContract(step, issues);
   return issues.length === 0;
 }
 
@@ -987,6 +986,28 @@ function validateLiveReportManualEvidenceContract(step, issues) {
   addLiveReportStepContractMismatchIssue(issues);
 }
 
+function validateLiveReportCheckoutWaitConsistencyContract(step, issues) {
+  if (step.name !== "checkout" || !hasReadableText(step.command)) {
+    return;
+  }
+
+  const commandUsesWait = liveReportCheckoutCommandUsesWait(step);
+  if (
+    (isObject(step.summary) &&
+      typeof step.summary.checkoutWaitCompleted === "boolean" &&
+      step.summary.checkoutWaitCompleted !== commandUsesWait) ||
+    (isObject(step.manualEvidence) &&
+      typeof step.manualEvidence.checkoutWaitCompleted === "boolean" &&
+      step.manualEvidence.checkoutWaitCompleted !== commandUsesWait)
+  ) {
+    addLiveReportStepContractMismatchIssue(issues);
+  }
+}
+
+function liveReportCheckoutCommandUsesWait(step) {
+  return LIVE_REPORT_CHECKOUT_WAIT_COMMAND_PATTERN.test(step.command);
+}
+
 function addLiveReportStepResultMismatchIssue(issues) {
   if (!issues.some((issue) => issue.code === "live_report_step_result_mismatch")) {
     issues.push({
@@ -1234,6 +1255,9 @@ const LIVE_REPORT_COMMAND_PATTERN_BY_STEP_NAME = new Map([
   ["history", liveCommandPattern("--visible history --json")],
   ["reorder", liveCommandPattern("--visible reorder last --json")]
 ]);
+const LIVE_REPORT_CHECKOUT_WAIT_COMMAND_PATTERN = liveCommandPattern(
+  "--visible checkout(?: --remove-limit-items)? --wait --json"
+);
 const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["doctor", new Set(["ok", "browserAutomationReady", "playwrightChromiumPassed", "warnings", "failures"])],
   ["status", new Set(["confirmedSession", "browserAutomationReady", "liveSessionState"])],

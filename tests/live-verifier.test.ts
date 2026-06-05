@@ -3495,7 +3495,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
-        checkoutWaitCompleted: false,
+        checkoutWaitCompleted: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3519,7 +3519,7 @@ describe("live verification runner", () => {
         handoffUrl: "https://www.zepto.com/?cart=open",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
-        checkoutWaitCompleted: false,
+        checkoutWaitCompleted: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3752,7 +3752,11 @@ describe("live verification runner", () => {
           step.name === "checkout"
             ? {
                 ...step,
-                command
+                command,
+                summary: {
+                  ...step.summary,
+                  checkoutWaitCompleted: true
+                }
               }
             : step
         )
@@ -3762,6 +3766,92 @@ describe("live verification runner", () => {
       report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
 
       expect(validateLiveReportAcceptance(report, { expectedVersion: packageJson.version }).accepted).toBe(true);
+    }
+  });
+
+  it("rejects checkout wait markers that contradict sanitized checkout commands", () => {
+    for (const testCase of [
+      {
+        command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+        checkoutWaitCompleted: true
+      },
+      {
+        command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+        checkoutWaitCompleted: false
+      }
+    ]) {
+      const report = acceptedLiveReport({
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "checkout"
+            ? {
+                ...step,
+                command: testCase.command,
+                summary: {
+                  ...step.summary,
+                  checkoutWaitCompleted: testCase.checkoutWaitCompleted
+                }
+              }
+            : step
+        )
+      });
+      report.attempted = summarizeLiveReportAttempts(report.steps);
+      report.coverage = summarizeLiveReportCoverage(report.steps);
+      report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+      const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
+    }
+  });
+
+  it("rejects manual checkout wait evidence that contradicts sanitized checkout commands", () => {
+    for (const testCase of [
+      {
+        command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+        checkoutWaitCompleted: true
+      },
+      {
+        command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+        checkoutWaitCompleted: false
+      }
+    ]) {
+      const report = acceptedLiveReport({
+        ok: false,
+        steps: acceptedLiveReport().steps.map((step) =>
+          step.name === "checkout"
+            ? {
+                name: "checkout",
+                command: testCase.command,
+                exitCode: 1,
+                ok: false,
+                manualEvidence: {
+                  status: "checkout_manual_action_required",
+                  humanActionRequired: true,
+                  automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+                  handoffUrl: "https://www.zepto.com/?cart=open",
+                  handoffSurface: "visible_zepto_browser",
+                  browserOpenAfterReturn: false,
+                  checkoutWaitCompleted: testCase.checkoutWaitCompleted,
+                  cartPrecondition: "non_empty_cart_verified",
+                  paymentStatus: "not_observed_by_zepocli",
+                  orderPlacement: "not_confirmed_by_zepocli",
+                  orderStatusCommand: "zepo track"
+                },
+                error: {
+                  code: "live_verification_incomplete",
+                  message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
+                }
+              }
+            : step
+        )
+      });
+      report.attempted = summarizeLiveReportAttempts(report.steps);
+      report.coverage = summarizeLiveReportCoverage(report.steps);
+      report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
+
+      const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
+      expect(result.accepted).toBe(false);
+      expect(result.issues.map((issue) => issue.code)).toContain("live_report_step_contract_mismatch");
     }
   });
 

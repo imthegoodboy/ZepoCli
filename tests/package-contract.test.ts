@@ -706,6 +706,18 @@ describe("package CLI contract", () => {
       "expected installed live report acceptance helper to accept production-scope add, cart, and checkout limit-warning removal evidence"
     );
     expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject checkout wait marker without wait command"
+    );
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject checkout wait command without wait marker"
+    );
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject manual checkout wait marker without wait command"
+    );
+    expect(verifier).toContain(
+      "expected installed live report acceptance helper to reject manual checkout wait command without wait marker"
+    );
+    expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
     );
     expect(verifier).toContain(
