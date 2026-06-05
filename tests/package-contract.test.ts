@@ -718,6 +718,12 @@ describe("package CLI contract", () => {
       "expected installed live report acceptance helper to reject manual checkout wait command without wait marker"
     );
     expect(verifier).toContain(
+      "For every checkout step, `checkoutWaitCompleted` in `summary` or `manualEvidence` must match whether the stored redacted checkout command includes `--wait`"
+    );
+    expect(verifier).toContain(
+      "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it"
+    );
+    expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
     );
     expect(verifier).toContain(

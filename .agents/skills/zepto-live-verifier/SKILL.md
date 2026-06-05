@@ -94,6 +94,7 @@ The live report is acceptable only when:
 - `generatedAt` is a valid non-future ISO timestamp, satisfies any `--max-age-minutes` freshness window used for acceptance, `dataDir`/`reportPath` use redacted markers, and `note` matches the runner literal.
 - The report contains only accepted schema fields; extra fields are not acceptable evidence.
 - Stored step command strings match the redacted command contract.
+- For every checkout step, `checkoutWaitCompleted` in `summary` or `manualEvidence` matches whether the stored redacted checkout command includes `--wait`; an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it.
 - Manual/internal command markers are valid only for runner-defined precondition/internal failure steps.
 - Passing steps include `exitCode: 0` and a summary; failing steps include a non-zero `exitCode` and an error.
 - Failing step error objects use stable `code`, readable `message`/`hint`, and valid `retryAfterMs` fields bounded to runner-supported timing.

@@ -170,6 +170,10 @@ describe("agent guidance", () => {
         "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track must be explicitly requested and covered"
       );
       expect(guidance).toContain("checkout wait evidence must be present");
+      expect(guidance).toContain("checkoutWaitCompleted` in `summary` or `manualEvidence`");
+      expect(guidance).toContain("must match whether the stored redacted checkout command includes `--wait`");
+      expect(guidance).toContain("an immediate checkout command cannot claim wait completion");
+      expect(guidance).toContain("a wait-mode command cannot omit it");
       expect(guidance).toContain("focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence");
       expect(guidance).toContain("The report validator does not contact Zepto or prove a fresh run happened");
       expect(guidance).toContain("Playwright Chromium launches");
@@ -317,6 +321,10 @@ describe("agent guidance", () => {
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track must be explicitly requested and have passing coverage"
     );
     expect(liveVerifierSkill).toContain("checkout wait evidence must be present");
+    expect(liveVerifierSkill).toContain("checkoutWaitCompleted` in `summary` or `manualEvidence`");
+    expect(liveVerifierSkill).toContain("matches whether the stored redacted checkout command includes `--wait`");
+    expect(liveVerifierSkill).toContain("an immediate checkout command cannot claim wait completion");
+    expect(liveVerifierSkill).toContain("a wait-mode command cannot omit it");
     expect(liveVerifierSkill).toContain(
       "focused workflows such as address-add, address-list, remove, clear, history, and reorder must not be mixed into final evidence"
     );

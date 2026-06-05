@@ -339,6 +339,12 @@ describe("README package guidance", () => {
     expect(readme).toContain("consistent step `exitCode`/`ok`/`summary`/`error` fields");
     expect(readme).toContain("stable failure error objects");
     expect(readme).toContain("Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate");
+    expect(readme).toContain(
+      "For every checkout step, `checkoutWaitCompleted` in `summary` or `manualEvidence` must match whether the stored redacted checkout command includes `--wait`"
+    );
+    expect(readme).toContain(
+      "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it"
+    );
     expect(readme).toContain("checkout wait evidence from both the sanitized `--wait` command string and `checkoutWaitCompleted: true`");
     expect(readme).toContain(
       "browser preflight, local status, live session, address selection, search, add, a non-empty cart, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence"
