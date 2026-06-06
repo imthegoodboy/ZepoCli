@@ -2396,6 +2396,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live help to explain production-scope stops before track without checkout handoff"
   );
   assert(
+    result.stdout.includes("Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage") &&
+      result.stdout.includes("does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"),
+    "expected installed verify:live help to explain diagnostic manual checkout boundary coverage"
+  );
+  assert(
     result.stdout.includes("Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings"),
     "expected installed verify:live help to explain explicit add limit-warning removal"
   );

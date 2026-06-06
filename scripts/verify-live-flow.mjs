@@ -1203,6 +1203,7 @@ Use --add-remove-limit-items only when the visible Zepto add verification step s
 Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
 If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
+Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage, but it remains manual Zepto continuation evidence and does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart

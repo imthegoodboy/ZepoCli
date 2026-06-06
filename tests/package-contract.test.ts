@@ -557,6 +557,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live checkout limit-warning removal option");
     expect(verifier).toContain("expected installed verify:live production-scope to stop before track when checkout handoff coverage is missing");
     expect(verifier).toContain("expected installed verify:live help to explain production-scope preset");
+    expect(verifier).toContain("expected installed verify:live help to explain diagnostic manual checkout boundary coverage");
     expect(verifier).toContain("expected installed verify:live help to explain explicit checkout limit-warning removal");
     expect(verifier).toContain("expected installed verify:live:report max-age option");
     expect(verifier).toContain("expected installed verify:publish-dry-run package script");

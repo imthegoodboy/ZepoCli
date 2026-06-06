@@ -291,6 +291,12 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain(
       "If checkout remains at checkout_manual_action_required, production-scope verification stops before track"
     );
+    expect(result.stdout).toContain(
+      "Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage"
+    );
+    expect(result.stdout).toContain(
+      "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
+    );
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
     expect(result.stdout).toContain(
