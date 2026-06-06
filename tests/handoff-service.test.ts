@@ -5,7 +5,14 @@ const mocks = vi.hoisted(() => ({
   input: vi.fn(async () => ""),
   confirm: vi.fn(async () => true),
   detectCheckoutHandoffMode: vi.fn(async () => undefined),
-  openCheckout: vi.fn(async () => undefined),
+  openCheckout: vi.fn(async () => ({
+    mode: "checkout_or_payment_page" as const,
+    cartEvidence: {
+      itemCount: 1,
+      hasPayableTotal: true
+    },
+    manualPaymentControlVisible: false
+  })),
   startAddAddress: vi.fn(async () => undefined),
   listAddresses: vi.fn(async () => [{ text: "Home: 221B Baker Street", selected: true }]),
   openLoginFlow: vi.fn(async () => undefined),
@@ -153,13 +160,24 @@ describe("human-controlled browser handoff services", () => {
   });
 
   it("returns a refreshed handoff when manual Zepto continuation reaches a checkout surface", async () => {
-    mocks.openCheckout.mockResolvedValueOnce({ mode: "manual_payment_control_visible" });
+    mocks.openCheckout.mockResolvedValueOnce({
+      mode: "manual_payment_control_visible",
+      cartEvidence: {
+        itemCount: 2,
+        hasPayableTotal: true
+      },
+      manualPaymentControlVisible: true
+    });
     mocks.detectCheckoutHandoffMode.mockResolvedValueOnce({ mode: "checkout_or_payment_page" });
 
     const result = await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout();
 
     expect(result).toEqual({
       mode: "checkout_or_payment_page",
+      cartEvidence: {
+        itemCount: 2,
+        hasPayableTotal: true
+      },
       manualPaymentControlVisible: false
     });
     expect(mocks.input).toHaveBeenCalledOnce();

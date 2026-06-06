@@ -36,9 +36,7 @@ export class CheckoutService {
     return this.browser.withPage(
       { captureFailures: false, requireSession: true, headless: false, saveState: true },
       async (page) => {
-        let handoff = (await openCheckout(page, { removeLimitItems: options.removeLimitItems === true })) ?? {
-          mode: "checkout_or_payment_page" as const
-        };
+        let handoff = await openCheckout(page, { removeLimitItems: options.removeLimitItems === true });
         if (waitForCompletion) {
           await input(
             {
