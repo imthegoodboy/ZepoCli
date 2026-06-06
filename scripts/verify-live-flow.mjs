@@ -685,7 +685,16 @@ function summarizePayload(name, payload) {
     };
   }
 
-  if (name === "cart" || name === "reorder" || name === "remove" || name === "clear") {
+  if (name === "remove") {
+    return {
+      removedItemCount: detailedCartItemCount(payload.removedItems),
+      removedHasDetail: detailedCartItemCount(payload.removedItems) > 0,
+      cartItemCount: readableCartItemCount(payload.cart),
+      hasTotal: typeof payload.cart?.total === "string"
+    };
+  }
+
+  if (name === "cart" || name === "reorder" || name === "clear") {
     return {
       cartItemCount: readableCartItemCount(payload),
       hasTotal: typeof payload.total === "string"
@@ -745,6 +754,12 @@ function readableSelectedAddressCount(payload) {
 
 function readableCartItemCount(payload) {
   return Array.isArray(payload?.items) ? payload.items.filter(hasReadableRecordName).length : 0;
+}
+
+function detailedCartItemCount(payload) {
+  return Array.isArray(payload)
+    ? payload.filter((item) => hasReadableRecordName(item) && (hasReadableText(item?.price) || hasReadableText(item?.unit))).length
+    : 0;
 }
 
 function checkoutCartEvidenceItemCount(payload) {

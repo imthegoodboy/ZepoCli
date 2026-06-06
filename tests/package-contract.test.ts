@@ -630,6 +630,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed add live report contract to require product detail");
     expect(verifier).toContain("expected installed add live report contract to require readable cart items");
     expect(verifier).toContain("expected installed cart live report contract to require readable cart item records");
+    expect(verifier).toContain("expected installed remove live report contract to require detailed removed item evidence");
     expect(verifier).toContain("expected installed history live report contract to require readable order records");
     expect(verifier).toContain("expected installed history live report contract to reject empty order history evidence");
     expect(verifier).toContain("expected installed history live report contract to reject total-only order records");

@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-import type { Address, CartItem, CartSnapshot, OrderSnapshot, Product } from "../types.js";
+import type { Address, CartItem, CartRemoveResult, CartSnapshot, OrderSnapshot, Product } from "../types.js";
 import { redactedStructuredValueForKey, redactSensitiveText } from "./redaction.js";
 
 export { redactSensitiveText } from "./redaction.js";
@@ -56,6 +56,13 @@ export function printProducts(products: Product[], json = false): void {
 export function printAddResult(result: { product: Product; cart: CartSnapshot }): void {
   printJson({
     product: toPublicProduct(result.product),
+    cart: toPublicCartSnapshot(result.cart)
+  });
+}
+
+export function printCartRemoveResult(result: CartRemoveResult): void {
+  printJson({
+    removedItems: result.removedItems.map(toPublicCartItem),
     cart: toPublicCartSnapshot(result.cart)
   });
 }

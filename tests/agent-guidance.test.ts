@@ -267,6 +267,7 @@ describe("agent guidance", () => {
       "Address summaries require structural address detail without storing raw address text"
     );
     expect(liveVerifierSkill).toContain("product summaries require a readable name plus price or unit detail");
+    expect(liveVerifierSkill).toContain("`remove` coverage requires `removedItems` evidence with readable price or unit detail plus the resulting cart");
     expect(liveVerifierSkill).toContain("name-only product rows such as `Amul Milk 500ml`");
     expect(liveVerifierSkill).toContain("String and string-array workflow step summary values stay within runner-known values");
     expect(liveVerifierSkill).toContain("Related workflow step summary fields are internally consistent");
@@ -362,6 +363,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");
     expect(liveVerifierSkill).toContain("not accepted as checkout handoff coverage");
     expect(liveVerifierSkill).toContain('Checkout coverage requires `status: "checkout_handoff_returned"`');
+    expect(builderSkill).toContain("`zepo remove --json` should include `removedItems` evidence");
+    expect(builderSkill).toContain("Remove JSON should expose structured `removedItems` plus the resulting `cart` only");
   });
 
   it("records current local readiness separately from missing live production proof", () => {

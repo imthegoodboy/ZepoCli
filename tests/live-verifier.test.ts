@@ -402,6 +402,9 @@ describe("live verification runner", () => {
     expect(script).toContain("addressCount,");
     expect(script).toContain("selectedCount: readableSelectedAddressCount(addresses)");
     expect(script).toContain("hasAddressDetail: addressCount > 0");
+    expect(script).toContain("removedItemCount: detailedCartItemCount(payload.removedItems)");
+    expect(script).toContain("removedHasDetail: detailedCartItemCount(payload.removedItems) > 0");
+    expect(script).toContain("cartItemCount: readableCartItemCount(payload.cart)");
     expect(script).toContain("cartItemCount: readableCartItemCount(payload)");
     expect(script).toContain("orderCount: readableOrderCount(orders)");
     expect(script).toContain("latestHasStatus: hasReadableText(orders[0]?.status)");
@@ -4459,37 +4462,57 @@ describe("live verification runner", () => {
     });
   });
 
-  it("fails cart and remove live report steps without readable cart-shaped JSON", () => {
-    for (const name of ["cart", "remove"]) {
-      for (const stdout of ["{}", JSON.stringify({ items: [{}] })]) {
-        const { step } = buildLiveReportStep({
-          name,
-          args:
-            name === "cart"
-              ? ["--data-dir", ".zepo-live", "--visible", "cart", "--json"]
-              : ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
-          status: 0,
-          stdout,
-          stderr: "",
-          summarizePayload: () => {
-            throw new Error("non-cart payload should not be summarized");
-          }
-        });
+  it("fails cart live report steps without readable cart-shaped JSON", () => {
+    for (const stdout of ["{}", JSON.stringify({ items: [{}] })]) {
+      const { step } = buildLiveReportStep({
+        name: "cart",
+        args: ["--data-dir", ".zepo-live", "--visible", "cart", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("non-cart payload should not be summarized");
+        }
+      });
 
-        expect(step.exitCode).toBe(1);
-        expect(step.ok).toBe(false);
-        expect(step.error).toEqual({
-          code: "live_cart_contract_mismatch",
-          message:
-            name === "cart"
-              ? "Cart JSON did not include readable non-empty cart items."
-              : "Cart JSON did not include a readable cart item array."
-        });
-      }
+      expect(step.exitCode).toBe(1);
+      expect(step.ok).toBe(false);
+      expect(step.error).toEqual({
+        code: "live_cart_contract_mismatch",
+        message: "Cart JSON did not include readable non-empty cart items."
+      });
     }
   });
 
-  it("requires non-empty cart live report steps but allows remove to empty the cart", () => {
+  it("fails remove live report steps without removed item evidence and resulting cart JSON", () => {
+    for (const stdout of [
+      "{}",
+      JSON.stringify({ items: [] }),
+      JSON.stringify({ removedItems: [], cart: { items: [] } }),
+      JSON.stringify({ removedItems: [{ name: "Milk" }], cart: { items: [] } }),
+      JSON.stringify({ removedItems: [{ name: "Milk", unit: "500 ml" }], cart: { items: [{}] } })
+    ]) {
+      const { step } = buildLiveReportStep({
+        name: "remove",
+        args: ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
+        status: 0,
+        stdout,
+        stderr: "",
+        summarizePayload: () => {
+          throw new Error("incomplete remove payload should not be summarized");
+        }
+      });
+
+      expect(step.exitCode).toBe(1);
+      expect(step.ok).toBe(false);
+      expect(step.error).toEqual({
+        code: "live_cart_contract_mismatch",
+        message: "Remove JSON did not include readable removed-item evidence and a resulting cart snapshot."
+      });
+    }
+  });
+
+  it("requires non-empty cart live report steps", () => {
     const emptyCartStep = buildLiveReportStep({
       name: "cart",
       args: ["--data-dir", ".zepo-live", "--visible", "cart", "--json"],
@@ -4510,27 +4533,52 @@ describe("live verification runner", () => {
       }
     });
 
-    for (const name of ["cart", "remove"]) {
-      const { step } = buildLiveReportStep({
-        name,
-        args:
-          name === "cart"
-            ? ["--data-dir", ".zepo-live", "--visible", "cart", "--json"]
-            : ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
-        status: 0,
-        stdout: JSON.stringify(name === "cart" ? { items: [{ name: "Milk" }] } : { items: [] }),
-        stderr: "",
-        summarizePayload: () => ({ cartItemCount: name === "cart" ? 1 : 0 })
-      });
+    const { step } = buildLiveReportStep({
+      name: "cart",
+      args: ["--data-dir", ".zepo-live", "--visible", "cart", "--json"],
+      status: 0,
+      stdout: JSON.stringify({ items: [{ name: "Milk" }] }),
+      stderr: "",
+      summarizePayload: () => ({ cartItemCount: 1 })
+    });
 
-      expect(step).toMatchObject({
-        exitCode: 0,
-        ok: true,
-        summary: {
-          cartItemCount: name === "cart" ? 1 : 0
-        }
-      });
-    }
+    expect(step).toMatchObject({
+      exitCode: 0,
+      ok: true,
+      summary: {
+        cartItemCount: 1
+      }
+    });
+  });
+
+  it("accepts remove live report steps with removed item evidence and an empty resulting cart", () => {
+    const { step } = buildLiveReportStep({
+      name: "remove",
+      args: ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
+      status: 0,
+      stdout: JSON.stringify({
+        removedItems: [{ name: "Milk", unit: "500 ml" }],
+        cart: { items: [] }
+      }),
+      stderr: "",
+      summarizePayload: () => ({
+        removedItemCount: 1,
+        removedHasDetail: true,
+        cartItemCount: 0,
+        hasTotal: false
+      })
+    });
+
+    expect(step).toMatchObject({
+      exitCode: 0,
+      ok: true,
+      summary: {
+        removedItemCount: 1,
+        removedHasDetail: true,
+        cartItemCount: 0,
+        hasTotal: false
+      }
+    });
   });
 
   it("fails clear live report steps that do not show an empty cart", () => {

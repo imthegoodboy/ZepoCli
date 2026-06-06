@@ -898,6 +898,16 @@ function validateLiveReportSummaryConsistencyContract(name, summary, issues) {
     return;
   }
 
+  if (name === "remove") {
+    if (
+      (summary.removedItemCount === 0 && summary.removedHasDetail === true) ||
+      (summary.removedItemCount > 0 && summary.removedHasDetail !== true)
+    ) {
+      addLiveReportStepContractMismatchIssue(issues);
+    }
+    return;
+  }
+
   if (name === "status") {
     if (summary.liveSessionState !== undefined && summary.liveSessionState !== "skipped") {
       addLiveReportStepContractMismatchIssue(issues);
@@ -1316,7 +1326,7 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["address use", new Set(["selected", "hasAddressText", "hasAddressDetail"])],
   ["add", new Set(["productAdded", "productHasDetail", "cartItemCount"])],
   ["cart", new Set(["cartItemCount", "hasTotal"])],
-  ["remove", new Set(["cartItemCount", "hasTotal"])],
+  ["remove", new Set(["removedItemCount", "removedHasDetail", "cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
   [
     "checkout",
@@ -1359,7 +1369,7 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
   ["address use", new Set(["selected", "hasAddressText", "hasAddressDetail"])],
   ["add", new Set(["productAdded", "productHasDetail", "cartItemCount"])],
   ["cart", new Set(["cartItemCount", "hasTotal"])],
-  ["remove", new Set(["cartItemCount", "hasTotal"])],
+  ["remove", new Set(["removedItemCount", "removedHasDetail", "cartItemCount", "hasTotal"])],
   ["clear", new Set(["cartItemCount", "hasTotal"])],
   [
     "checkout",
@@ -1401,6 +1411,7 @@ const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "playwrightChromiumPassed",
   "productAdded",
   "productHasDetail",
+  "removedHasDetail",
   "selected",
   "sessionSaved",
   "checkoutHasPayableTotal"
@@ -1412,6 +1423,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS = new Set([
   "orderCount",
   "productCount",
   "productDetailCount",
+  "removedItemCount",
   "selectedCount"
 ]);
 const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
@@ -1421,6 +1433,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
   ["orderCount", 200],
   ["productCount", 50],
   ["productDetailCount", 50],
+  ["removedItemCount", 50],
   ["selectedCount", 200]
 ]);
 const LIVE_REPORT_STRING_SUMMARY_KEYS = new Set([
@@ -1564,7 +1577,8 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   },
   {
     capability: "remove",
-    step: "remove"
+    step: "remove",
+    accepts: (step) => step.summary?.removedItemCount > 0 && step.summary?.removedHasDetail === true
   },
   {
     capability: "clear",
@@ -1698,7 +1712,7 @@ function validateLiveReportPayloadContract(name, payload) {
   }
 
   if (name === "remove") {
-    return validateCartSnapshotPayloadContract(payload);
+    return validateRemovePayloadContract(payload);
   }
 
   if (name === "clear") {
@@ -1910,6 +1924,23 @@ function validateCartSnapshotPayloadContract(payload) {
   };
 }
 
+function validateRemovePayloadContract(payload) {
+  if (
+    isObject(payload) &&
+    Array.isArray(payload.removedItems) &&
+    payload.removedItems.length > 0 &&
+    payload.removedItems.every(hasReadableCartItemDetailPayload) &&
+    isReadableCartSnapshotPayload(payload.cart)
+  ) {
+    return undefined;
+  }
+
+  return {
+    code: "live_cart_contract_mismatch",
+    message: "Remove JSON did not include readable removed-item evidence and a resulting cart snapshot."
+  };
+}
+
 function validateNonEmptyCartSnapshotPayloadContract(payload) {
   if (isReadableCartSnapshotPayload(payload) && payload.items.length > 0) {
     return undefined;
@@ -1972,6 +2003,10 @@ function isReadableCartSnapshotPayload(payload) {
 
 function hasReadableCartItemPayload(value) {
   return isObject(value) && hasReadableText(value.name);
+}
+
+function hasReadableCartItemDetailPayload(value) {
+  return hasReadableCartItemPayload(value) && (hasReadableText(value.price) || hasReadableText(value.unit));
 }
 
 function hasReadableAddressPayload(value) {

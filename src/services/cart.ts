@@ -2,7 +2,7 @@ import Fuse from "fuse.js";
 import { select } from "@inquirer/prompts";
 
 import type { AppRuntime } from "../config/runtime.js";
-import type { CartItem, CartSnapshot, Product } from "../types.js";
+import type { CartItem, CartRemoveResult, CartSnapshot, Product } from "../types.js";
 import { BrowserAutomation, gotoZepto } from "../automation/browser.js";
 import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
 import { clickProductAdd, increaseProductQuantity, searchProducts, waitForProductAddSettled } from "../automation/search.js";
@@ -136,13 +136,13 @@ export class CartService {
     return snapshot;
   }
 
-  async remove(query: string): Promise<CartSnapshot> {
+  async remove(query: string): Promise<CartRemoveResult> {
     const cleanQuery = requireNonEmpty(query, "Cart item query");
-    const snapshot = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
+    const result = await this.browser.withPage({ captureFailures: false, requireSession: true }, (page) =>
       removeCartItem(page, cleanQuery)
     );
-    this.runtime.sqlite.saveCartSnapshot(snapshot);
-    return snapshot;
+    this.runtime.sqlite.saveCartSnapshot(result.cart);
+    return result;
   }
 
   async clear(): Promise<CartSnapshot> {

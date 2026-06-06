@@ -80,6 +80,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("PowerShell completion also accepts `pwsh` and `ps1` as aliases for `powershell`");
     expect(readme).toContain("raw Zepto page text");
     expect(readme).toContain("internal automation IDs");
+    expect(readme).toContain("`zepo remove --json` returns `removedItems` with the readable cart rows actually clicked plus the resulting `cart`");
     expect(readme).toContain("Human spinner/status text, human error text, JSON error text, and JSON error object keys are redacted for sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
     expect(readme).toContain("auth/session/token/password/secret URL parameters, and local-path values");
     expect(readme).toContain("auth/session/token/password/secret URL parameters");
@@ -156,6 +157,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("promotional/merchandising/payment/membership rows");
     expect(readme).toContain("Product listing `Add to Cart` copy is not cart-surface evidence");
     expect(readme).toContain("revalidated against the current cart row before click, including after any scroll into view");
+    expect(readme).toContain("`zepo remove --json` includes detailed `removedItems` evidence from the revalidated rows before returning the resulting cart");
     expect(readme).toContain("order actions such as order summary, tracking, reorder, cancellation, refund, support, invoice, receipt, or rating");
     expect(readme).toContain("Cart parsing skips delivery-address blocks with custom saved-address labels");
     expect(readme).toContain("Plain `zepo add`, plain `zepo cart`, and plain `zepo --visible checkout` do not resolve Zepto item-limit warnings");
@@ -261,7 +263,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("requested live account workflows pass `--visible`");
     expect(readme).toContain("doctor must also show a passing `Playwright Chromium` check");
     expect(readme).toContain(
-      "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records"
+      "counts of structural address-detail records, product records with readable name plus price or unit detail, readable removed cart items, readable cart records, and status/ETA-bearing order records"
     );
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");
@@ -283,7 +285,7 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
     );
-    expect(readme).toContain("run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
+    expect(readme).toContain("Run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
       "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command"
     );
@@ -354,6 +356,7 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
+    expect(readme).toContain("focused remove coverage requires `removedItems` evidence with readable price or unit detail plus the resulting cart");
     expect(readme).toContain(
       "Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals"
     );

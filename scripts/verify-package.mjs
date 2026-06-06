@@ -383,7 +383,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "browser locale/timezone values",
     "With no live workflow flags, a data directory that already has a confirmed local session stops after those local preflight checks instead of opening a visible `status --live`",
     "`--login` is conditional: if the dedicated data directory already has a confirmed session",
-    "counts of structural address-detail records, product records with readable name plus price or unit detail, readable cart records, and status/ETA-bearing order records",
+    "counts of structural address-detail records, product records with readable name plus price or unit detail, readable removed cart items, readable cart records, and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
     "`--choose-add` with `--add`",
@@ -2269,6 +2269,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("addressCount,") &&
       liveVerifierSource.includes("selectedCount: readableSelectedAddressCount(addresses)") &&
       liveVerifierSource.includes("hasAddressDetail: addressCount > 0") &&
+      liveVerifierSource.includes("removedItemCount: detailedCartItemCount(payload.removedItems)") &&
+      liveVerifierSource.includes("removedHasDetail: detailedCartItemCount(payload.removedItems) > 0") &&
+      liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload.cart)") &&
       liveVerifierSource.includes("cartItemCount: readableCartItemCount(payload)") &&
       liveVerifierSource.includes("orderCount: readableOrderCount(orders)") &&
       liveVerifierSource.includes("latestHasStatus: hasReadableText(orders[0]?.status)") &&
@@ -5839,6 +5842,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     unreadableCartStep.ok === false &&
       unreadableCartStep.error?.code === "live_cart_contract_mismatch",
     "expected installed cart live report contract to require readable cart item records"
+  );
+  const unreadableRemoveStep = buildLiveReportStep({
+    name: "remove",
+    args: ["--data-dir", ".zepo-live", "--visible", "remove", "milk", "--json"],
+    status: 0,
+    stdout: JSON.stringify({ removedItems: [{ name: "Milk" }], cart: { items: [] } }),
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    unreadableRemoveStep.ok === false &&
+      unreadableRemoveStep.error?.code === "live_cart_contract_mismatch",
+    "expected installed remove live report contract to require detailed removed item evidence"
   );
 
   const unreadableHistoryStep = buildLiveReportStep({

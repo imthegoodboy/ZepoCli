@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 
-import { printCart } from "../utils/output.js";
+import { printCart, printCartRemoveResult } from "../utils/output.js";
 import { joinQuery, wantsJson, withCommandSpinner, withRuntime } from "./shared.js";
 
 export function registerCartCommands(program: Command): void {
@@ -37,12 +37,17 @@ export function registerCartCommands(program: Command): void {
         const json = wantsJson(command, options);
         const query = joinQuery(queryParts);
         const service = new ZeptoService(runtime).cart;
-        const cart = json
+        const result = json
           ? await service.remove(query)
           : await withCommandSpinner(`Removing "${query}"`, `Removed matching item for "${query}".`, () =>
               service.remove(query)
             );
-        printCart(cart, json);
+        if (json) {
+          printCartRemoveResult(result);
+          return;
+        }
+
+        printCart(result.cart);
       })
     );
 

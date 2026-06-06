@@ -1,6 +1,6 @@
 import type { Locator, Page } from "playwright";
 
-import type { CartItem, CartSnapshot } from "../types.js";
+import type { CartItem, CartRemoveResult, CartSnapshot } from "../types.js";
 import { UserFacingError } from "../utils/errors.js";
 import { extractPrices, normalizeText } from "../utils/format.js";
 import { textMatchesProductQuery } from "../utils/product-matching.js";
@@ -265,11 +265,11 @@ async function recoverCartOpenForRead(page: Page): Promise<void> {
   await openCart(page);
 }
 
-export async function removeCartItem(page: Page, query: string): Promise<CartSnapshot> {
+export async function removeCartItem(page: Page, query: string): Promise<CartRemoveResult> {
   await openCart(page);
   assertNoBlockingCartModal(await readBodyText(page));
 
-  let removed = false;
+  const removedItems: CartItem[] = [];
   let retriedCartOpenForMutation = false;
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const removeId = await findRemoveButtonIdAcrossCartScroll(page, query);
@@ -286,13 +286,12 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
       break;
     }
 
-    await clickTaggedCartRemoveButton(page, removeId, query);
-    removed = true;
+    removedItems.push(await clickTaggedCartRemoveButton(page, removeId, query));
     await page.waitForTimeout(700);
     await assertNoAccessChallenge(page);
   }
 
-  if (!removed) {
+  if (removedItems.length === 0) {
     throw new UserFacingError(`Could not find a removable cart item matching "${query}".`, {
       code: "cart_item_not_found"
     });
@@ -306,7 +305,10 @@ export async function removeCartItem(page: Page, query: string): Promise<CartSna
     });
   }
 
-  return cart;
+  return {
+    removedItems,
+    cart
+  };
 }
 
 export async function clearCart(page: Page): Promise<CartSnapshot> {
@@ -1010,7 +1012,7 @@ async function scrollCartSurfaceForward(page: Page): Promise<boolean> {
     .catch(() => false);
 }
 
-export async function clickTaggedCartRemoveButton(page: Page, removeId: number, query?: string): Promise<void> {
+export async function clickTaggedCartRemoveButton(page: Page, removeId: number, query?: string): Promise<CartItem> {
   let button = page.locator(`[data-zepo-remove-id="${removeId}"]`).first();
   await assertCartRemoveControlReady(button, query);
   await scrollControlIntoViewIfNeeded(button);
@@ -1018,11 +1020,12 @@ export async function clickTaggedCartRemoveButton(page: Page, removeId: number, 
   if (refreshedRemoveId !== undefined) {
     button = page.locator(`[data-zepo-remove-id="${refreshedRemoveId}"]`).first();
   }
-  await assertCartRemoveControlReady(button, query);
+  const removedItem = await assertCartRemoveControlReady(button, query);
   await button.click();
+  return removedItem;
 }
 
-async function assertCartRemoveControlReady(locator: Locator, query?: string): Promise<void> {
+async function assertCartRemoveControlReady(locator: Locator, query?: string): Promise<CartItem> {
   if (!(await locator.isVisible().catch(() => false))) {
     throw new UserFacingError("Zepto cart remove control changed before it could be clicked.", {
       code: "cart_remove_control_unavailable",
@@ -1052,6 +1055,71 @@ async function assertCartRemoveControlReady(locator: Locator, query?: string): P
       hint: "Rerun `zepo cart` or inspect with `--visible`; Zepto may have re-rendered or reordered the cart."
     });
   }
+
+  const removedItem = cartItemFromRemovableRowText(cardText, query);
+  if (!removedItem) {
+    throw new UserFacingError("Zepto cart remove control did not expose readable item detail.", {
+      code: "cart_remove_control_stale",
+      hint: "Rerun `zepo cart` or inspect with `--visible`; Zepto may have changed the cart row layout."
+    });
+  }
+
+  return removedItem;
+}
+
+function cartItemFromRemovableRowText(text: string, query?: string): CartItem | undefined {
+  const parsed = parseCartItemsFromText(text);
+  const matchingParsed = query ? parsed.find((item) => cartItemMatchesQuery(item, query)) : parsed[0];
+  if (matchingParsed && hasCartItemDetail(matchingParsed)) {
+    return matchingParsed;
+  }
+
+  const normalized = normalizeText(text)
+    .replace(/\b(remove|delete|decrease(?:\s+quantity)?|qty|quantity)\b/gi, " ")
+    .replace(/\s+[-−]\s*$/g, " ")
+    .trim();
+  const price = extractPrices(normalized)[0];
+  const unit = extractCartRowUnit(normalized);
+  const detailIndex = firstDefinedIndex(
+    price ? normalized.indexOf(price) : -1,
+    unit ? normalized.toLowerCase().indexOf(unit.toLowerCase()) : -1
+  );
+  const name = normalizeText((detailIndex >= 0 ? normalized.slice(0, detailIndex) : normalized).replace(/[|,;:-]+\s*$/g, ""));
+
+  if (!name || !/[a-z]{3,}/i.test(name) || (!price && !unit)) {
+    return undefined;
+  }
+
+  const item: CartItem = {
+    name,
+    ...(price ? { price } : {}),
+    ...(unit ? { unit } : {})
+  };
+
+  if (query && !cartItemMatchesQuery(item, query)) {
+    return undefined;
+  }
+
+  return item;
+}
+
+function cartItemMatchesQuery(item: CartItem, query: string): boolean {
+  return textMatchesProductQuery([item.name, item.unit].filter(Boolean).join(" "), query);
+}
+
+function hasCartItemDetail(item: CartItem): boolean {
+  return Boolean(item.price || item.unit);
+}
+
+function extractCartRowUnit(text: string): string | undefined {
+  return text.match(
+    /\b\d+(?:\.\d+)?\s?(?:ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules)(?:\s*\(\s*\d+(?:\.\d+)?\s?(?:ml|l|ltr|litre|litres|liter|liters|g|gm|gms|gram|grams|kg|kgs|pc|pcs|piece|pieces|pack|packs|packet|packets|bottle|bottles|box|boxes|can|cans|jar|jars|pouch|pouches|sachet|sachets|dozen|tablet|tablets|tabs|capsule|capsules)\s*\))?/i
+  )?.[0];
+}
+
+function firstDefinedIndex(...indexes: number[]): number {
+  const validIndexes = indexes.filter((index) => index >= 0);
+  return validIndexes.length > 0 ? Math.min(...validIndexes) : -1;
 }
 
 async function readCartRemoveControlLabels(locator: Locator): Promise<string[]> {

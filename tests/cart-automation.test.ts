@@ -741,8 +741,17 @@ describe("cart automation helpers", () => {
     const page = createScrolledCartRemovePage();
 
     await expect(removeCartItem(page as never, "Country Delight Cow Fresh Milk")).resolves.toMatchObject({
-      items: [],
-      total: undefined
+      removedItems: [
+        {
+          name: "Country Delight Cow Fresh Milk | Pouch",
+          unit: "1 pack (450 ml)",
+          price: "₹48"
+        }
+      ],
+      cart: {
+        items: [],
+        total: undefined
+      }
     });
 
     expect(page.resetScrolls).toBe(2);
@@ -754,8 +763,17 @@ describe("cart automation helpers", () => {
     const page = createReadableCartWithoutMutationControlsPage();
 
     await expect(removeCartItem(page as never, "Country Delight Cow Fresh Milk")).resolves.toMatchObject({
-      items: [],
-      total: undefined
+      removedItems: [
+        {
+          name: "Country Delight Cow Fresh Milk | Pouch",
+          unit: "1 pack (450 ml)",
+          price: "₹48"
+        }
+      ],
+      cart: {
+        items: [],
+        total: undefined
+      }
     });
 
     expect(page.cartClicks).toBe(1);
@@ -1107,9 +1125,23 @@ describe("cart automation helpers", () => {
   it("clicks tagged cart remove controls only when the row still matches the requested item", async () => {
     const page = createTaggedCartRemovePage({}, "Amul Taaza Toned Milk 1 pack (500 ml) ₹32 Qty 1 Remove");
 
-    await expect(clickTaggedCartRemoveButton(page as never, 3, "milk 500ml")).resolves.toBeUndefined();
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "milk 500ml")).resolves.toMatchObject({
+      name: "Amul Taaza Toned Milk",
+      unit: "1 pack (500 ml)",
+      price: "₹32"
+    });
 
     expect(page.clicked).toBe(true);
+  });
+
+  it("does not click tagged cart remove controls when the row lacks item detail", async () => {
+    const page = createTaggedCartRemovePage({}, "Amul Taaza Toned Milk Qty 1 Remove");
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "milk")).rejects.toThrow(
+      "Zepto cart remove control no longer matches a removable cart item."
+    );
+
+    expect(page.clicked).toBe(false);
   });
 
   it("revalidates tagged cart remove controls after scrolling before clicking", async () => {

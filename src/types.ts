@@ -152,6 +152,11 @@ export interface CartSnapshot {
   rawText?: string;
 }
 
+export interface CartRemoveResult {
+  removedItems: CartItem[];
+  cart: CartSnapshot;
+}
+
 export interface Address {
   label?: string;
   text: string;

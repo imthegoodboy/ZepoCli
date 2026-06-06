@@ -5,6 +5,7 @@ import {
   printAddress,
   printAddresses,
   printCart,
+  printCartRemoveResult,
   printJson,
   printJsonError,
   printOrders,
@@ -82,6 +83,43 @@ describe("command JSON output", () => {
     expect(payload.items[0]).not.toHaveProperty("rawText");
     expect(payload.items[0]).not.toHaveProperty("automationId");
     expect(JSON.stringify(payload)).not.toContain("internal page text");
+  });
+
+  it("prints removed item evidence and resulting cart for remove JSON output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printCartRemoveResult({
+      removedItems: [
+        {
+          name: "Amul Milk",
+          unit: "500 ml",
+          price: "₹32",
+          rawText: "internal removed row text",
+          automationId: 7
+        } as unknown as CartItem
+      ],
+      cart: {
+        items: [],
+        rawText: "Cart address 221B Test Street"
+      }
+    });
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload).toEqual({
+      removedItems: [
+        {
+          name: "Amul Milk",
+          unit: "500 ml",
+          price: "₹32"
+        }
+      ],
+      cart: {
+        items: []
+      }
+    });
+    expect(JSON.stringify(payload)).not.toContain("internal removed row text");
+    expect(JSON.stringify(payload)).not.toContain("221B Test Street");
+    expect(JSON.stringify(payload)).not.toContain("automationId");
   });
 
   it("prints code-bearing JSON errors on stderr for agents", () => {
