@@ -576,6 +576,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live:report production-scope cart-state guidance");
     expect(verifier).toContain("expected installed verify:live:report production-scope focused-workflow exclusion guidance");
     expect(verifier).toContain("expected installed verify:live:report manual/internal command marker guidance");
+    expect(verifier).toContain("expected installed verify:live:report manual checkout diagnostic coverage guidance");
     expect(verifier).toContain("--max-age-minutes=60");
     expect(verifier).toContain("expected installed live report validator to reject invalid assignment-form max age");
     expect(verifier).toContain("expected installed live report checkout manual-continuation steps to keep sanitized manual evidence");

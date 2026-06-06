@@ -2460,6 +2460,15 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live:report manual checkout boundary guidance"
   );
   assert(
+    reportHelpResult.stdout.includes(
+      "coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence"
+    ) &&
+      reportHelpResult.stdout.includes(
+        "does not satisfy coverage.checkoutHandoff, payment proof, order-placement proof, or production-scope readiness"
+      ),
+    "expected installed verify:live:report manual checkout diagnostic coverage guidance"
+  );
+  assert(
     reportHelpResult.stdout.includes("manual/internal command markers are accepted only for runner-defined precondition/internal failure steps"),
     "expected installed verify:live:report manual/internal command marker guidance"
   );

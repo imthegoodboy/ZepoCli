@@ -350,6 +350,12 @@ describe("live verification runner", () => {
       "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
     );
     expect(result.stdout).toContain(
+      "coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence"
+    );
+    expect(result.stdout).toContain(
+      "does not satisfy coverage.checkoutHandoff, payment proof, order-placement proof, or production-scope readiness"
+    );
+    expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
     );
     expect(result.stdout).toContain("--max-age-minutes is also used so the report is fresh evidence");
