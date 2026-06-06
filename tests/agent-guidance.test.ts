@@ -161,6 +161,12 @@ describe("agent guidance", () => {
       expect(guidance).toContain(
         "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
       );
+      expect(guidance).toContain(
+        "Valid `checkout_manual_action_required` evidence may set diagnostic `checkoutManualBoundary` coverage"
+      );
+      expect(guidance).toContain(
+        "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
+      );
       expect(guidance).toContain("`verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats");
       expect(guidance).toContain("npm --silent run verify:live:report -- <report-path>");
       expect(guidance).toContain("npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 <report-path>");
@@ -321,6 +327,12 @@ describe("agent guidance", () => {
     );
     expect(liveVerifierSkill).toContain(
       "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
+    );
+    expect(liveVerifierSkill).toContain(
+      "Valid `checkout_manual_action_required` evidence may set diagnostic `checkoutManualBoundary` coverage"
+    );
+    expect(liveVerifierSkill).toContain(
+      "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
     );
     expect(liveVerifierSkill).toContain("coverage.checkoutManualBoundary: true");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
