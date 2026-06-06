@@ -740,6 +740,19 @@ function liveReportStepHasPassingCoverage(step) {
   return !requirement?.accepts || requirement.accepts(step);
 }
 
+function liveReportStepHasManualCheckoutBoundaryCoverage(step) {
+  if (step?.name !== "checkout" || step?.ok !== false) {
+    return false;
+  }
+
+  const issues = [];
+  validateLiveReportStepResultContract(step, issues);
+  validateLiveReportCommandContract(step, issues);
+  validateLiveReportManualEvidenceContract(step, issues);
+  validateLiveReportCheckoutWaitConsistencyContract(step, issues);
+  return issues.length === 0;
+}
+
 function liveReportStepSatisfiesCoverageContract(step) {
   if (!isObject(step?.summary)) {
     return false;
@@ -1216,13 +1229,19 @@ function summarizeLiveReportStepBooleans(steps, includeStep) {
   const summary = createLiveReportCapabilitySummary();
 
   for (const step of steps) {
-    if (!isObject(step) || !includeStep(step)) {
+    if (!isObject(step)) {
       continue;
     }
 
-    const key = LIVE_REPORT_CAPABILITY_BY_STEP_NAME.get(step.name);
-    if (key) {
-      summary[key] = true;
+    if (liveReportStepHasManualCheckoutBoundaryCoverage(step)) {
+      summary.checkoutManualBoundary = true;
+    }
+
+    if (includeStep(step)) {
+      const key = LIVE_REPORT_CAPABILITY_BY_STEP_NAME.get(step.name);
+      if (key) {
+        summary[key] = true;
+      }
     }
   }
 
@@ -1244,6 +1263,7 @@ function createLiveReportCapabilitySummary() {
     remove: false,
     clear: false,
     checkoutHandoff: false,
+    checkoutManualBoundary: false,
     track: false,
     history: false,
     reorder: false

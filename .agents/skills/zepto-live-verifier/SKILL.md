@@ -114,6 +114,7 @@ The live report is acceptable only when:
 - `requested`, `attempted`, `coverage`, and `missingCoverage` contain every supported capability as booleans.
 - `attempted` and `coverage` match the saved `steps` array; agents must reject edited summaries that do not match step evidence.
 - Manual precondition failures such as a missing confirmed session are incomplete manual steps, not workflow attempts; do not treat them as login, live-session, checkout, or order evidence.
+- `coverage.checkoutManualBoundary: true` can come only from valid sanitized manual checkout evidence showing Zepto's human-only payment-control boundary. It is diagnostic and does not satisfy `coverage.checkoutHandoff`, payment proof, or order-placement proof.
 - The report keys and values do not contain sensitive-looking local paths, phone/order/payment/verification values, or npm-token-shaped values.
 - `missingCoverage` shows requested capabilities that did not pass; all values must be false before treating a requested scope as verified.
 - `doctor` shows ready browser automation and a passing `Playwright Chromium` check.

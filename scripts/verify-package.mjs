@@ -377,6 +377,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings",
     "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings",
     "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking",
+    "valid manual checkout evidence still sets diagnostic `checkoutManualBoundary` coverage",
     "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
     "<redacted-browser-locale>",
     "<redacted-browser-timezone>",
@@ -386,6 +387,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "counts of structural address-detail records, product records with readable name plus price or unit detail, readable removed cart items, readable cart records, and status/ETA-bearing order records",
     "top-level `requested`, `attempted`, `coverage`, and `missingCoverage` objects showing which workflow capabilities were requested, ran, actually passed, and remain requested-but-unverified",
     "`checkoutHandoff`",
+    "`checkoutManualBoundary`",
     "`--choose-add` with `--add`",
     "`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats",
     "npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json",
@@ -410,11 +412,13 @@ function verifyInstalledReadmeContract(prefixDir) {
     "all passing workflow step summaries satisfy their known contracts",
     "login session evidence",
     "visible `doctor`/`status` preflight commands when `liveSession` is requested",
+    "checkout manual-boundary diagnostics",
     "consistent step `exitCode`/`ok`/`summary`/`error` fields",
     "stable failure error objects",
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
     "For every checkout step, `checkoutWaitCompleted` in `summary` or `manualEvidence` must match whether the stored redacted checkout command includes `--wait`",
     "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it",
+    "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic; it does not satisfy `coverage.checkoutHandoff`",
     "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence",
     "stale saved reports or stale order-history tracking cannot be reused as current evidence",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
@@ -3010,6 +3014,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       remove: true,
       clear: false,
       checkoutHandoff: true,
+      checkoutManualBoundary: false,
       track: false,
       history: true,
       reorder: true
@@ -3669,6 +3674,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   manualCheckoutReport.missingCoverage = summarizeLiveReportMissingCoverage(
     manualCheckoutReport.requested,
     manualCheckoutReport.coverage
+  );
+  assert(
+    manualCheckoutReport.attempted.checkoutManualBoundary === true &&
+      manualCheckoutReport.coverage.checkoutManualBoundary === true &&
+      manualCheckoutReport.coverage.checkoutHandoff === false &&
+      manualCheckoutReport.missingCoverage.checkoutManualBoundary === false,
+    "expected installed live report manual checkout boundary to stay diagnostic"
   );
   const manualCheckoutIssues = validateLiveReportAcceptance(manualCheckoutReport, {
     expectedVersion: packageJson.version
@@ -5181,6 +5193,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       remove: false,
       clear: false,
       checkoutHandoff: true,
+      checkoutManualBoundary: false,
       track: false,
       history: true,
       reorder: false
@@ -5209,6 +5222,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       remove: false,
       clear: false,
       checkoutHandoff: true,
+      checkoutManualBoundary: false,
       track: false,
       history: false,
       reorder: false
@@ -5314,6 +5328,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       remove: false,
       clear: false,
       checkoutHandoff: false,
+      checkoutManualBoundary: false,
       track: false,
       history: true,
       reorder: false

@@ -285,6 +285,9 @@ describe("README package guidance", () => {
     expect(readme).toContain(
       "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
     );
+    expect(readme).toContain(
+      "valid manual checkout evidence still sets diagnostic `checkoutManualBoundary` coverage"
+    );
     expect(readme).toContain("Run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
       "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command"
@@ -304,6 +307,7 @@ describe("README package guidance", () => {
       "Manual precondition failures, such as a missing confirmed session, are reported as incomplete manual steps and are not counted as workflow attempts"
     );
     expect(readme).toContain("`checkoutHandoff`");
+    expect(readme).toContain("`checkoutManualBoundary`");
     expect(readme).toContain(
       "omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, unredacted workflow query arguments, and standalone percent-encoded sensitive fragments"
     );
@@ -328,6 +332,7 @@ describe("README package guidance", () => {
     expect(readme).toContain("redacted step command contract");
     expect(readme).toContain("runner-defined manual/internal command markers only");
     expect(readme).toContain("checkout cart precondition");
+    expect(readme).toContain("checkout manual-boundary diagnostics");
     expect(readme).toContain("`ok` reports containing only passing known workflow steps");
     expect(readme).toContain("unique workflow step names");
     expect(readme).toContain("runner workflow order");
@@ -348,6 +353,9 @@ describe("README package guidance", () => {
     );
     expect(readme).toContain(
       "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it"
+    );
+    expect(readme).toContain(
+      "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic; it does not satisfy `coverage.checkoutHandoff`"
     );
     expect(readme).toContain("checkout wait evidence from both the sanitized `--wait` command string and `checkoutWaitCompleted: true`");
     expect(readme).toContain(

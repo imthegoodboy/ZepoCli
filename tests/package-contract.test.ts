@@ -580,6 +580,11 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live report validator to reject invalid assignment-form max age");
     expect(verifier).toContain("expected installed live report checkout manual-continuation steps to keep sanitized manual evidence");
     expect(verifier).toContain("expected installed live report manual checkout evidence to remain diagnostic only");
+    expect(verifier).toContain("expected installed live report manual checkout boundary to stay diagnostic");
+    expect(verifier).toContain("checkoutManualBoundary");
+    expect(verifier).toContain(
+      "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic; it does not satisfy `coverage.checkoutHandoff`"
+    );
     expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("local status readiness");

@@ -112,6 +112,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain('status: "checkout_manual_action_required"');
       expect(guidance).toContain("Continue to Payment ₹...");
       expect(guidance).toContain("Proceed to Payment ₹...");
+      expect(guidance).toContain("checkoutManualBoundary");
       expect(guidance).toContain("`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for a prompt");
       expect(guidance).toContain("Explicit wait mode may re-check the visible page after Enter");
       expect(guidance).toContain("production-scope checkout handoff coverage");
@@ -235,6 +236,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("status, ETA, totals, placed-at text");
       expect(guidance).toContain("raw Zepto order IDs");
     }
+
+    expect(agentReadme).toContain("may set diagnostic `coverage.checkoutManualBoundary: true`");
+    expect(builderSkill).toContain("coverage.checkoutManualBoundary` may be true");
   });
 
   it("keeps live verification guidance separate from local package smoke proof", () => {
@@ -318,6 +322,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain(
       "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
     );
+    expect(liveVerifierSkill).toContain("coverage.checkoutManualBoundary: true");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
     expect(liveVerifierSkill).toContain(
       "npm --silent run verify:live:report -- --require-production-scope --max-age-minutes 1440 ./.zepo-live/live-verification-report.json"
@@ -362,6 +367,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Wait mode re-checks the visible page after Enter");
     expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");
     expect(liveVerifierSkill).toContain("not accepted as checkout handoff coverage");
+    expect(liveVerifierSkill).toContain("does not satisfy `coverage.checkoutHandoff`");
     expect(liveVerifierSkill).toContain('Checkout coverage requires `status: "checkout_handoff_returned"`');
     expect(builderSkill).toContain("`zepo remove --json` should include `removedItems` evidence");
     expect(builderSkill).toContain("Remove JSON should expose structured `removedItems` plus the resulting `cart` only");

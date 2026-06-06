@@ -541,6 +541,7 @@ describe("live verification runner", () => {
       remove: false,
       clear: false,
       checkoutHandoff: true,
+      checkoutManualBoundary: false,
       track: true,
       history: false,
       reorder: true
@@ -653,6 +654,7 @@ describe("live verification runner", () => {
       remove: false,
       clear: false,
       checkoutHandoff: false,
+      checkoutManualBoundary: false,
       track: false,
       history: false,
       reorder: false
@@ -695,6 +697,7 @@ describe("live verification runner", () => {
       remove: true,
       clear: true,
       checkoutHandoff: true,
+      checkoutManualBoundary: false,
       track: true,
       history: true,
       reorder: true
@@ -729,6 +732,7 @@ describe("live verification runner", () => {
       remove: false,
       clear: false,
       checkoutHandoff: false,
+      checkoutManualBoundary: false,
       track: false,
       history: false,
       reorder: false
@@ -766,6 +770,7 @@ describe("live verification runner", () => {
       remove: true,
       clear: false,
       checkoutHandoff: true,
+      checkoutManualBoundary: false,
       track: true,
       history: true,
       reorder: true
@@ -790,6 +795,7 @@ describe("live verification runner", () => {
       remove: false,
       clear: false,
       checkoutHandoff: false,
+      checkoutManualBoundary: false,
       track: false,
       history: false,
       reorder: false
@@ -819,6 +825,7 @@ describe("live verification runner", () => {
       remove: false,
       clear: false,
       checkoutHandoff: false,
+      checkoutManualBoundary: false,
       track: false,
       history: false,
       reorder: false
@@ -2563,6 +2570,7 @@ describe("live verification runner", () => {
       remove: false,
       clear: false,
       checkoutHandoff: false,
+      checkoutManualBoundary: false,
       track: false,
       history: true,
       reorder: false
@@ -3673,6 +3681,11 @@ describe("live verification runner", () => {
     report.coverage = summarizeLiveReportCoverage(report.steps);
     report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
 
+    expect(report.attempted.checkoutManualBoundary).toBe(true);
+    expect(report.coverage.checkoutManualBoundary).toBe(true);
+    expect(report.coverage.checkoutHandoff).toBe(false);
+    expect(report.missingCoverage.checkoutManualBoundary).toBe(false);
+
     const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
     expect(result.accepted).toBe(false);
     expect(result.issues.map((issue) => issue.code)).toContain("live_report_not_ok");
@@ -3823,6 +3836,7 @@ describe("live verification runner", () => {
 
     expect(report.coverage.track).toBe(true);
     expect(report.coverage.checkoutHandoff).toBe(false);
+    expect(report.coverage.checkoutManualBoundary).toBe(true);
     expect(report.missingCoverage.checkoutHandoff).toBe(true);
 
     const result = validateLiveReportAcceptance(report, {
