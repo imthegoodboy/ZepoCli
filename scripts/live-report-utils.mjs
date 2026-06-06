@@ -306,6 +306,9 @@ function buildLiveReportManualEvidence(name, payload, payloadContractError) {
     handoffSurface: payload.handoffSurface,
     browserOpenAfterReturn: payload.browserOpenAfterReturn,
     checkoutWaitCompleted: payload.checkoutWaitCompleted,
+    manualPaymentControlVisible: payload.manualPaymentControlVisible,
+    checkoutCartItemCount: payload.cartEvidence?.itemCount,
+    checkoutHasPayableTotal: payload.cartEvidence?.hasPayableTotal,
     cartPrecondition: payload.cartPrecondition,
     paymentStatus: payload.paymentStatus,
     orderPlacement: payload.orderPlacement,
@@ -1009,6 +1012,11 @@ function validateLiveReportManualEvidenceContract(step, issues) {
     step.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
     step.manualEvidence?.browserOpenAfterReturn === false &&
     typeof step.manualEvidence?.checkoutWaitCompleted === "boolean" &&
+    step.manualEvidence?.manualPaymentControlVisible === true &&
+    Number.isInteger(step.manualEvidence?.checkoutCartItemCount) &&
+    step.manualEvidence.checkoutCartItemCount > 0 &&
+    step.manualEvidence.checkoutCartItemCount <= 200 &&
+    step.manualEvidence?.checkoutHasPayableTotal === true &&
     step.manualEvidence?.cartPrecondition === "non_empty_cart_verified" &&
     step.manualEvidence?.paymentStatus === "not_observed_by_zepocli" &&
     step.manualEvidence?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1256,6 +1264,9 @@ const LIVE_REPORT_MANUAL_EVIDENCE_KEYS = new Set([
   "handoffSurface",
   "browserOpenAfterReturn",
   "checkoutWaitCompleted",
+  "manualPaymentControlVisible",
+  "checkoutCartItemCount",
+  "checkoutHasPayableTotal",
   "cartPrecondition",
   "paymentStatus",
   "orderPlacement",
@@ -1317,6 +1328,9 @@ const LIVE_REPORT_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "handoffSurface",
       "browserOpenAfterReturn",
       "checkoutWaitCompleted",
+      "manualPaymentControlVisible",
+      "checkoutCartItemCount",
+      "checkoutHasPayableTotal",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1357,6 +1371,9 @@ const LIVE_REPORT_REQUIRED_SUMMARY_KEYS_BY_STEP_NAME = new Map([
       "handoffSurface",
       "browserOpenAfterReturn",
       "checkoutWaitCompleted",
+      "manualPaymentControlVisible",
+      "checkoutCartItemCount",
+      "checkoutHasPayableTotal",
       "cartPrecondition",
       "paymentStatus",
       "orderPlacement",
@@ -1378,17 +1395,20 @@ const LIVE_REPORT_BOOLEAN_SUMMARY_KEYS = new Set([
   "humanActionRequired",
   "latestHasEta",
   "latestHasStatus",
+  "manualPaymentControlVisible",
   "observed",
   "ok",
   "playwrightChromiumPassed",
   "productAdded",
   "productHasDetail",
   "selected",
-  "sessionSaved"
+  "sessionSaved",
+  "checkoutHasPayableTotal"
 ]);
 const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS = new Set([
   "addressCount",
   "cartItemCount",
+  "checkoutCartItemCount",
   "orderCount",
   "productCount",
   "productDetailCount",
@@ -1397,6 +1417,7 @@ const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_KEYS = new Set([
 const LIVE_REPORT_NON_NEGATIVE_INTEGER_SUMMARY_MAX_BY_KEY = new Map([
   ["addressCount", 200],
   ["cartItemCount", 200],
+  ["checkoutCartItemCount", 200],
   ["orderCount", 200],
   ["productCount", 50],
   ["productDetailCount", 50],
@@ -1561,6 +1582,9 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
       step.summary?.handoffSurface === "visible_zepto_browser" &&
       step.summary?.browserOpenAfterReturn === false &&
       typeof step.summary?.checkoutWaitCompleted === "boolean" &&
+      step.summary?.manualPaymentControlVisible === false &&
+      step.summary?.checkoutCartItemCount > 0 &&
+      step.summary?.checkoutHasPayableTotal === true &&
       step.summary?.cartPrecondition === "non_empty_cart_verified" &&
       step.summary?.paymentStatus === "not_observed_by_zepocli" &&
       step.summary?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1763,6 +1787,8 @@ function validateCheckoutPayloadContract(payload) {
     payload?.handoffSurface === "visible_zepto_browser" &&
     payload?.browserOpenAfterReturn === false &&
     typeof payload?.checkoutWaitCompleted === "boolean" &&
+    payload?.manualPaymentControlVisible === false &&
+    hasCheckoutCartEvidencePayload(payload?.cartEvidence) &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1780,6 +1806,8 @@ function validateCheckoutPayloadContract(payload) {
     payload?.handoffSurface === "visible_zepto_browser" &&
     payload?.browserOpenAfterReturn === false &&
     typeof payload?.checkoutWaitCompleted === "boolean" &&
+    payload?.manualPaymentControlVisible === true &&
+    hasCheckoutCartEvidencePayload(payload?.cartEvidence) &&
     payload?.cartPrecondition === "non_empty_cart_verified" &&
     payload?.paymentStatus === "not_observed_by_zepocli" &&
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
@@ -1795,6 +1823,16 @@ function validateCheckoutPayloadContract(payload) {
     code: "live_checkout_contract_mismatch",
     message: "Checkout JSON did not preserve the Zepto cart, payment, and order-placement handoff contract."
   };
+}
+
+function hasCheckoutCartEvidencePayload(value) {
+  return (
+    isObject(value) &&
+    Number.isInteger(value.itemCount) &&
+    value.itemCount > 0 &&
+    value.itemCount <= 200 &&
+    value.hasPayableTotal === true
+  );
 }
 
 function validateTrackPayloadContract(payload) {

@@ -147,6 +147,9 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
+        manualPaymentControlVisible: false,
+        checkoutCartItemCount: 1,
+        checkoutHasPayableTotal: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -344,7 +347,7 @@ describe("live verification runner", () => {
       "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, and checkoutWaitCompleted markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -3517,6 +3520,11 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
+        manualPaymentControlVisible: false,
+        cartEvidence: {
+          itemCount: 1,
+          hasPayableTotal: true
+        },
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "paid",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3559,6 +3567,11 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
+        manualPaymentControlVisible: false,
+        cartEvidence: {
+          itemCount: 1,
+          hasPayableTotal: true
+        },
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
@@ -3595,6 +3608,11 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: true,
+        manualPaymentControlVisible: true,
+        cartEvidence: {
+          itemCount: 2,
+          hasPayableTotal: true
+        },
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3619,6 +3637,9 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: true,
+        manualPaymentControlVisible: true,
+        checkoutCartItemCount: 2,
+        checkoutHasPayableTotal: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3766,6 +3787,9 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: true,
+        manualPaymentControlVisible: true,
+        checkoutCartItemCount: 2,
+        checkoutHasPayableTotal: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3931,6 +3955,9 @@ describe("live verification runner", () => {
                   handoffSurface: "visible_zepto_browser",
                   browserOpenAfterReturn: false,
                   checkoutWaitCompleted: testCase.checkoutWaitCompleted,
+                  manualPaymentControlVisible: true,
+                  checkoutCartItemCount: 2,
+                  checkoutHasPayableTotal: true,
                   cartPrecondition: "non_empty_cart_verified",
                   paymentStatus: "not_observed_by_zepocli",
                   orderPlacement: "not_confirmed_by_zepocli",
@@ -4004,6 +4031,11 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
+        manualPaymentControlVisible: false,
+        cartEvidence: {
+          itemCount: 1,
+          hasPayableTotal: true
+        },
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -4019,6 +4051,11 @@ describe("live verification runner", () => {
           handoffSurface?: string;
           browserOpenAfterReturn?: boolean;
           checkoutWaitCompleted?: boolean;
+          manualPaymentControlVisible?: boolean;
+          cartEvidence?: {
+            itemCount?: number;
+            hasPayableTotal?: boolean;
+          };
           cartPrecondition?: string;
           orderStatusCommand?: string;
         }
@@ -4029,6 +4066,9 @@ describe("live verification runner", () => {
         handoffSurface: value.handoffSurface,
         browserOpenAfterReturn: value.browserOpenAfterReturn,
         checkoutWaitCompleted: value.checkoutWaitCompleted,
+        manualPaymentControlVisible: value.manualPaymentControlVisible,
+        checkoutCartItemCount: value.cartEvidence?.itemCount,
+        checkoutHasPayableTotal: value.cartEvidence?.hasPayableTotal,
         cartPrecondition: value.cartPrecondition,
         orderStatusCommand: value.orderStatusCommand
       })
@@ -4046,6 +4086,9 @@ describe("live verification runner", () => {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
+        manualPaymentControlVisible: false,
+        checkoutCartItemCount: 1,
+        checkoutHasPayableTotal: true,
         cartPrecondition: "non_empty_cart_verified",
         orderStatusCommand: "zepo track"
       }

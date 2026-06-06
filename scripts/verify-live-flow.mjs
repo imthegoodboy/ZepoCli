@@ -701,6 +701,9 @@ function summarizePayload(name, payload) {
       handoffSurface: payload.handoffSurface,
       browserOpenAfterReturn: payload.browserOpenAfterReturn,
       checkoutWaitCompleted: payload.checkoutWaitCompleted,
+      manualPaymentControlVisible: payload.manualPaymentControlVisible,
+      checkoutCartItemCount: checkoutCartEvidenceItemCount(payload),
+      checkoutHasPayableTotal: checkoutCartEvidenceHasPayableTotal(payload),
       cartPrecondition: payload.cartPrecondition,
       paymentStatus: payload.paymentStatus,
       orderPlacement: payload.orderPlacement,
@@ -742,6 +745,15 @@ function readableSelectedAddressCount(payload) {
 
 function readableCartItemCount(payload) {
   return Array.isArray(payload?.items) ? payload.items.filter(hasReadableRecordName).length : 0;
+}
+
+function checkoutCartEvidenceItemCount(payload) {
+  const count = payload?.cartEvidence?.itemCount;
+  return Number.isInteger(count) && count >= 0 && count <= 200 ? count : 0;
+}
+
+function checkoutCartEvidenceHasPayableTotal(payload) {
+  return payload?.cartEvidence?.hasPayableTotal === true;
 }
 
 function readableOrderCount(orders) {

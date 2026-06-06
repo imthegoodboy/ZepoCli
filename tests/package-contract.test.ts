@@ -524,6 +524,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain('handoffSurface: \\"visible_zepto_browser\\"');
     expect(verifier).toContain("browserOpenAfterReturn: false");
     expect(verifier).toContain("checkoutWaitCompleted");
+    expect(verifier).toContain("manualPaymentControlVisible");
+    expect(verifier).toContain("checkoutCartItemCount");
+    expect(verifier).toContain("checkoutHasPayableTotal");
     expect(verifier).toContain("expected installed checkout browser lifecycle marker");
     expect(verifier).toContain("expected installed immediate checkout wait marker");
     expect(verifier).toContain("expected installed checkout wait-mode marker");

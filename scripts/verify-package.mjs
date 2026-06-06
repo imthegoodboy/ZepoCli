@@ -310,6 +310,9 @@ function verifyInstalledReadmeContract(prefixDir) {
     "handoffSurface: \"visible_zepto_browser\"",
     "browserOpenAfterReturn: false",
     "checkoutWaitCompleted",
+    "manualPaymentControlVisible",
+    "checkoutCartItemCount",
+    "checkoutHasPayableTotal",
     "cartPrecondition: \"non_empty_cart_verified\"",
     "status: \"checkout_manual_action_required\"",
     "manual amount-bearing payment control",
@@ -2445,7 +2448,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     reportHelpResult.stdout.includes(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, and checkoutWaitCompleted markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
     ),
     "expected installed verify:live:report manual checkout boundary guidance"
   );
@@ -3131,6 +3134,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
+        manualPaymentControlVisible: false,
+        checkoutCartItemCount: 1,
+        checkoutHasPayableTotal: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3410,6 +3416,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: testCase.checkoutWaitCompleted,
+        manualPaymentControlVisible: true,
+        checkoutCartItemCount: 2,
+        checkoutHasPayableTotal: true,
         cartPrecondition: "non_empty_cart_verified",
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
@@ -3615,6 +3624,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: true,
+      manualPaymentControlVisible: true,
+      cartEvidence: {
+        itemCount: 2,
+        hasPayableTotal: true
+      },
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -3636,6 +3650,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       diagnosticManualCheckoutStep.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
       diagnosticManualCheckoutStep.manualEvidence?.browserOpenAfterReturn === false &&
       diagnosticManualCheckoutStep.manualEvidence?.checkoutWaitCompleted === true &&
+      diagnosticManualCheckoutStep.manualEvidence?.manualPaymentControlVisible === true &&
+      diagnosticManualCheckoutStep.manualEvidence?.checkoutCartItemCount === 2 &&
+      diagnosticManualCheckoutStep.manualEvidence?.checkoutHasPayableTotal === true &&
       diagnosticManualCheckoutStep.manualEvidence?.cartPrecondition === "non_empty_cart_verified",
     "expected installed live report checkout manual-continuation steps to keep sanitized manual evidence"
   );
@@ -5638,6 +5655,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
+      manualPaymentControlVisible: false,
+      cartEvidence: {
+        itemCount: 1,
+        hasPayableTotal: true
+      },
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "paid",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5688,6 +5710,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
+      manualPaymentControlVisible: true,
+      cartEvidence: {
+        itemCount: 2,
+        hasPayableTotal: true
+      },
       cartPrecondition: "non_empty_cart_verified",
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
@@ -5715,6 +5742,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
+      manualPaymentControlVisible: false,
+      cartEvidence: {
+        itemCount: 1,
+        hasPayableTotal: true
+      },
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track"
