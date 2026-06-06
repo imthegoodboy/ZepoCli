@@ -581,6 +581,17 @@ describe("live verification runner", () => {
           cartItemCount: "1",
           hasTotal: true
         }
+      },
+      {
+        name: "history",
+        command: "zepo --data-dir <redacted-data-dir> --visible history --json",
+        exitCode: 0,
+        ok: true,
+        summary: {
+          orderCount: 0,
+          latestHasStatus: false,
+          latestHasEta: false
+        }
       }
     ]);
 
@@ -590,6 +601,7 @@ describe("live verification runner", () => {
     expect(coverage.checkoutHandoff).toBe(false);
     expect(coverage.cart).toBe(true);
     expect(coverage.remove).toBe(false);
+    expect(coverage.history).toBe(false);
   });
 
   it("does not count ok steps as coverage when runner result or command metadata is malformed", () => {
@@ -3431,7 +3443,7 @@ describe("live verification runner", () => {
         stdout: "{}",
         error: {
           code: "live_history_contract_mismatch",
-          message: "History JSON did not include a readable order-history array."
+          message: "History JSON did not include readable order-history records."
         }
       }
     ]) {
@@ -3482,11 +3494,6 @@ describe("live verification runner", () => {
           ...statusDiagnosticsPayload(),
           liveSession: { checked: true, state: "logged-in" }
         })
-      },
-      {
-        name: "history",
-        args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
-        stdout: "[]"
       }
     ]) {
       const { step } = buildLiveReportStep({
@@ -4142,8 +4149,9 @@ describe("live verification runner", () => {
     }
   });
 
-  it("fails history live report steps with unreadable order entries", () => {
+  it("fails history live report steps without readable order entries", () => {
     for (const stdout of [
+      "[]",
       JSON.stringify([{}]),
       JSON.stringify([{ id: "ZEP1234" }]),
       JSON.stringify([{ total: "₹249" }]),
@@ -4167,15 +4175,14 @@ describe("live verification runner", () => {
         ok: false,
         error: {
           code: "live_history_contract_mismatch",
-          message: "History JSON did not include a readable order-history array."
+          message: "History JSON did not include readable order-history records."
         }
       });
     }
   });
 
-  it("accepts history live report steps with empty or readable order history", () => {
+  it("accepts history live report steps with readable order history", () => {
     for (const stdout of [
-      "[]",
       JSON.stringify([{ status: "Delivered", total: "₹249" }]),
       JSON.stringify([{ eta: "8 mins" }])
     ]) {

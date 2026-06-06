@@ -5854,6 +5854,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       unreadableHistoryStep.error?.code === "live_history_contract_mismatch",
     "expected installed history live report contract to require readable order records"
   );
+  const emptyHistoryStep = buildLiveReportStep({
+    name: "history",
+    args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],
+    status: 0,
+    stdout: "[]",
+    stderr: "",
+    summarizePayload: () => ({ unsafe: true })
+  }).step;
+  assert(
+    emptyHistoryStep.ok === false &&
+      emptyHistoryStep.error?.code === "live_history_contract_mismatch",
+    "expected installed history live report contract to reject empty order history evidence"
+  );
   const totalOnlyHistoryStep = buildLiveReportStep({
     name: "history",
     args: ["--data-dir", ".zepo-live", "--visible", "history", "--json"],

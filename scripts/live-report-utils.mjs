@@ -1597,7 +1597,10 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
   },
   {
     capability: "history",
-    step: "history"
+    step: "history",
+    accepts: (step) =>
+      step.summary?.orderCount > 0 &&
+      (step.summary?.latestHasStatus === true || step.summary?.latestHasEta === true)
   },
   {
     capability: "reorder",
@@ -1930,13 +1933,13 @@ function validateClearPayloadContract(payload) {
 }
 
 function validateHistoryPayloadContract(payload) {
-  if (Array.isArray(payload) && payload.every(isReadableHistoryOrderPayload)) {
+  if (Array.isArray(payload) && payload.length > 0 && payload.every(isReadableHistoryOrderPayload)) {
     return undefined;
   }
 
   return {
     code: "live_history_contract_mismatch",
-    message: "History JSON did not include a readable order-history array."
+    message: "History JSON did not include readable order-history records."
   };
 }
 

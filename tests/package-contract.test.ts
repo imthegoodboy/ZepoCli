@@ -631,6 +631,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed add live report contract to require readable cart items");
     expect(verifier).toContain("expected installed cart live report contract to require readable cart item records");
     expect(verifier).toContain("expected installed history live report contract to require readable order records");
+    expect(verifier).toContain("expected installed history live report contract to reject empty order history evidence");
     expect(verifier).toContain("expected installed history live report contract to reject total-only order records");
     expect(verifier).toContain("expected installed verify:live no-session report to show browser automation readiness");
     expect(verifier).toContain("expected installed verify:live no-session report to show passing Playwright Chromium evidence");
