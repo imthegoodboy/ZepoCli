@@ -471,8 +471,9 @@ describe("agent guidance", () => {
     expect(agentStatus).toContain("retryAfterMs: 900000");
     expect(agentStatus).toContain("Do not loop headless Zepto commands");
     expect(agentStatus).toContain("not a product-search failure to work around with stealth");
-    expect(agentStatus).toContain("A fresh human-controlled production-scope live report is still missing");
+    expect(agentStatus).toContain("A fresh accepted production-scope live report is still missing");
     expect(agentStatus).toContain("verify:live:report -- --require-production-scope --max-age-minutes 1440");
+    expect(agentStatus).toContain("Checkout handoff can be the safe `checkout_manual_action_required` JSON handoff");
     expect(agentStatus).toContain("Checkout handoff is not payment proof");
   });
 
