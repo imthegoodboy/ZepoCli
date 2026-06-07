@@ -251,6 +251,9 @@ async function main() {
     console.error(
       "\nCheckout verification opens Zepto checkout/payment in a visible browser. Complete only the Zepto-side actions you choose; ZepoCli will not click final payment or order-placement controls."
     );
+    if (options.checkoutWait) {
+      printCheckoutWaitHandoffGuidance();
+    }
     const checkoutArgs = [...baseCliArgs({ visible: true }), "checkout", "--json"];
     if (options.checkoutRemoveLimitItems) {
       checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items");
@@ -394,6 +397,14 @@ function shouldContinueAfterManualCheckout(result) {
     !options.productionScope &&
     isManualCheckoutContinuation(result)
   );
+}
+
+function printCheckoutWaitHandoffGuidance() {
+  console.error("Checkout wait handoff guidance:");
+  console.error(`Payment link: ${ZEPTO_CHECKOUT_PAYMENT_LINK}`);
+  console.error(`Payment link session: ${ZEPTO_CHECKOUT_PAYMENT_LINK_SESSION}`);
+  console.error("Open in the user's Zepto session; Zepto handles payment.");
+  console.error("Press Enter only after the Zepto-side checkout/payment action you choose is complete.");
 }
 
 function printManualCheckoutContinuationGuidance() {
@@ -1220,6 +1231,7 @@ Use --cart-remove-limit-items only when the visible Zepto cart evidence step sho
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
 If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
 Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage, but it remains manual Zepto continuation evidence and does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness.
+When --checkout-wait is used, the runner prints Payment link: https://www.zepto.com/?cart=open and Payment link session: user_zepto_session_required before launching the waiting checkout command, so a later prompt timeout still leaves the Zepto-owned session link in the console.
 When checkout reaches checkout_manual_action_required, the runner prints Payment link: https://www.zepto.com/?cart=open and Payment link session: user_zepto_session_required for the user's Zepto session. This is handoff guidance only, not payment proof or order proof.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:

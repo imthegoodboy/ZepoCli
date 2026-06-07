@@ -307,6 +307,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed address add service to require explicit --visible before checking session state");
     expect(verifier).toContain("expected installed checkout service to require session and explicit --visible before opening a browser");
     expect(verifier).toContain("expected installed checkout service to require explicit --visible before checking session state");
+    expect(verifier).toContain("expected installed checkout wait prompt to print payment-link handoff guidance");
     expect(verifier).toContain("pass installed background automation mode contract");
     expect(verifier).toContain("assertInstalledNoBrowserWork");
     expect(verifier).toContain("expected installed guarded command not to create a browser lock");
@@ -317,6 +318,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
     expect(verifier).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
+    expect(verifier).toContain("wait mode prints `Payment link: https://www.zepto.com/?cart=open`");
+    expect(verifier).toContain("before the prompt so agents can hand off the Zepto-owned session link");
+    expect(verifier).toContain("Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt");
     expect(verifier).toContain("Wait mode re-checks the visible page after the human presses Enter");
     expect(verifier).toContain("Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`");
     expect(verifier).toContain("`Payment link: https://www.zepto.com/?cart=open`");
@@ -861,6 +865,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("spawnSync(process.execPath, commandArgs");
     expect(verifier).toContain("buildLiveCommandTimeoutStep");
     expect(verifier).toContain("expected installed live command timeout redaction");
+    expect(verifier).toContain("expected installed checkout-wait timeout to keep fixed handoff guidance");
     expect(verifier).toContain("expected installed checkout live report contract to require non-empty cart precondition");
     expect(verifier).toContain("expected installed manual checkout live report to use incomplete coverage code");
     expect(verifier).toContain("checkout_manual_action_required is manual continuation evidence only");

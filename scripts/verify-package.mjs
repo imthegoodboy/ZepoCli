@@ -306,6 +306,9 @@ function verifyInstalledReadmeContract(prefixDir) {
     "zepo --visible checkout",
     "JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt",
     "explicit JSON wait mode (`zepo --visible checkout --json --wait`)",
+    "wait mode prints `Payment link: https://www.zepto.com/?cart=open`",
+    "before the prompt so agents can hand off the Zepto-owned session link",
+    "Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt",
     "Wait mode re-checks the visible page after the human presses Enter",
     "Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`",
     "`Payment link: https://www.zepto.com/?cart=open`",
@@ -632,6 +635,13 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
     checkoutServiceSource.indexOf("requireVisibleBrowser(this.runtime") <
       checkoutServiceSource.indexOf("assertConfirmedSession(this.runtime"),
     "expected installed checkout service to require explicit --visible before checking session state"
+  );
+  assert(
+    checkoutServiceSource.includes("Payment link: ${ZEPTO_CHECKOUT_HANDOFF_URL}") &&
+      checkoutServiceSource.includes("Payment link session: ${CHECKOUT_PAYMENT_LINK_SESSION}") &&
+      checkoutServiceSource.includes("Open in the user's Zepto session; Zepto handles payment.") &&
+      checkoutServiceSource.includes("After any Zepto-side order action, run `zepo track`."),
+    "expected installed checkout wait prompt to print payment-link handoff guidance"
   );
   console.log("pass installed background automation mode contract");
 }
@@ -2382,6 +2392,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("ZepoCli did not observe payment or order placement"),
     "expected installed verify:live manual checkout console handoff guidance"
   );
+  assert(
+    liveVerifierSource.includes("printCheckoutWaitHandoffGuidance()") &&
+      liveVerifierSource.includes("function printCheckoutWaitHandoffGuidance()") &&
+      liveVerifierSource.includes("Checkout wait handoff guidance:") &&
+      liveVerifierSource.includes("Press Enter only after the Zepto-side checkout/payment action you choose is complete."),
+    "expected installed verify:live checkout-wait preflight handoff guidance"
+  );
 
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
@@ -2434,6 +2451,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     result.stdout.includes("Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage") &&
       result.stdout.includes("does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"),
     "expected installed verify:live help to explain diagnostic manual checkout boundary coverage"
+  );
+  assert(
+    result.stdout.includes("When --checkout-wait is used") &&
+      result.stdout.includes("before launching the waiting checkout command") &&
+      result.stdout.includes("a later prompt timeout still leaves the Zepto-owned session link in the console"),
+    "expected installed verify:live help to explain checkout-wait preflight payment-link handoff"
   );
   assert(
     result.stdout.includes("When checkout reaches checkout_manual_action_required") &&
@@ -6139,6 +6162,26 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       String(commandTimeoutFailure.error?.message).includes("1000 ms") &&
       !JSON.stringify(commandTimeoutFailure).includes("parth"),
     "expected installed live command timeout redaction"
+  );
+  const checkoutWaitTimeoutFailure = buildLiveCommandTimeoutStep(
+    "checkout",
+    ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "checkout", "--wait", "--json"],
+    1_000
+  );
+  assert(
+    checkoutWaitTimeoutFailure.command ===
+      "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+    "expected installed checkout-wait timeout command to preserve wait marker"
+  );
+  assert(
+    checkoutWaitTimeoutFailure.error?.code === "live_command_timeout" &&
+      String(checkoutWaitTimeoutFailure.error?.hint).includes(
+        "Checkout wait timed out after the fixed Zepto payment link was printed"
+      ) &&
+      String(checkoutWaitTimeoutFailure.error?.hint).includes("Payment link: https://www.zepto.com/?cart=open") &&
+      String(checkoutWaitTimeoutFailure.error?.hint).includes("Payment link session: user_zepto_session_required") &&
+      !JSON.stringify(checkoutWaitTimeoutFailure).includes("parth"),
+    "expected installed checkout-wait timeout to keep fixed handoff guidance"
   );
   const malformedCodeFailure = summarizeCommandError(
     {

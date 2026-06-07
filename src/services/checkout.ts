@@ -3,6 +3,10 @@ import { input } from "@inquirer/prompts";
 import type { AppRuntime } from "../config/runtime.js";
 import { assertConfirmedSession, BrowserAutomation } from "../automation/browser.js";
 import {
+  CHECKOUT_PAYMENT_LINK_SESSION,
+  ZEPTO_CHECKOUT_HANDOFF_URL
+} from "../config/constants.js";
+import {
   detectCheckoutHandoffMode,
   openCheckout,
   type CheckoutHandoffResult
@@ -38,6 +42,7 @@ export class CheckoutService {
       async (page) => {
         let handoff = await openCheckout(page, { removeLimitItems: options.removeLimitItems === true });
         if (waitForCompletion) {
+          printCheckoutWaitHandoffGuidance(handoff);
           await input(
             {
               message: checkoutPromptMessage(handoff)
@@ -57,6 +62,19 @@ export class CheckoutService {
       }
     );
   }
+}
+
+function printCheckoutWaitHandoffGuidance(handoff: CheckoutHandoffResult): void {
+  const boundary =
+    handoff.mode === "manual_payment_control_visible"
+      ? "Zepto shows a human-only cart payment control. ZepoCli will not click it."
+      : "Zepto checkout is open in the visible browser. ZepoCli will not click payment/order controls.";
+
+  console.error(boundary);
+  console.error(`Payment link: ${ZEPTO_CHECKOUT_HANDOFF_URL}`);
+  console.error(`Payment link session: ${CHECKOUT_PAYMENT_LINK_SESSION}`);
+  console.error("Open in the user's Zepto session; Zepto handles payment.");
+  console.error("After any Zepto-side order action, run `zepo track`.");
 }
 
 function checkoutPromptMessage(handoff: CheckoutHandoffResult): string {

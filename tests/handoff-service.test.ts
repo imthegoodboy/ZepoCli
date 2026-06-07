@@ -159,6 +159,20 @@ describe("human-controlled browser handoff services", () => {
     );
   });
 
+  it("prints checkout payment-link guidance before waiting for human continuation", async () => {
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      await new CheckoutService(createRuntime({ confirmedSession: true, headless: false })).checkout();
+      expect(stderr).toHaveBeenCalledWith("Zepto checkout is open in the visible browser. ZepoCli will not click payment/order controls.");
+      expect(stderr).toHaveBeenCalledWith("Payment link: https://www.zepto.com/?cart=open");
+      expect(stderr).toHaveBeenCalledWith("Payment link session: user_zepto_session_required");
+      expect(stderr).toHaveBeenCalledWith("Open in the user's Zepto session; Zepto handles payment.");
+    } finally {
+      stderr.mockRestore();
+    }
+  });
+
   it("returns a refreshed handoff when manual Zepto continuation reaches a checkout surface", async () => {
     mocks.openCheckout.mockResolvedValueOnce({
       mode: "manual_payment_control_visible",

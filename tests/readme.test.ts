@@ -256,6 +256,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("Use `zepo --visible checkout --wait` or human text mode");
     expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
     expect(readme).toContain("unless the caller explicitly passes `--wait`");
+    expect(readme).toContain("wait mode prints `Payment link: https://www.zepto.com/?cart=open`");
+    expect(readme).toContain("before the prompt so agents can hand off the Zepto-owned session link");
+    expect(readme).toContain("Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt");
     expect(readme).toContain("Wait mode re-checks the visible page after the human presses Enter");
     expect(readme).toContain("wait mode observes the visible page again after Enter before returning JSON");
     expect(readme).toContain("manual amount-bearing payment control");
@@ -266,6 +269,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("runner console prints the fixed `Payment link: https://www.zepto.com/?cart=open`");
     expect(readme).toContain("`Payment link session: user_zepto_session_required`");
     expect(readme).toContain("That console guidance is not payment proof or order proof");
+    expect(readme).toContain(
+      "When checkout wait is requested, the runner prints the fixed `Payment link: https://www.zepto.com/?cart=open`"
+    );
+    expect(readme).toContain("before launching the waiting checkout command");
+    expect(readme).toContain("a later prompt timeout still leaves the Zepto-owned session link in the console");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
@@ -399,6 +407,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("Use `--step-timeout <ms>` only when a human-controlled Zepto step legitimately needs more than the default per-command timeout");
     expect(readme).toContain("`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats");
     expect(readme).toContain("normalizes the value before invoking the CLI");
+    expect(readme).toContain(
+      "A checkout `--wait` timeout report keeps the fixed `Payment link: https://www.zepto.com/?cart=open`"
+    );
+    expect(readme).toContain("`Payment link session: user_zepto_session_required` in `error.hint`");
+    expect(readme).toContain("still leaves checkout and track coverage missing");
     for (const code of [
       "live_doctor_contract_mismatch",
       "live_login_contract_mismatch",
