@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+﻿import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -144,6 +144,9 @@ function acceptedLiveReport(overrides: Record<string, unknown> = {}) {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
@@ -297,6 +300,10 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain(
       "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
     );
+    expect(result.stdout).toContain("When checkout reaches checkout_manual_action_required");
+    expect(result.stdout).toContain("Payment link: https://www.zepto.com/?cart=open");
+    expect(result.stdout).toContain("Payment link session: user_zepto_session_required");
+    expect(result.stdout).toContain("handoff guidance only, not payment proof or order proof");
     expect(result.stdout).toContain("requested, attempted, coverage, and missingCoverage booleans");
     expect(result.stdout).toContain("partial runs cannot be mistaken for full verification");
     expect(result.stdout).toContain(
@@ -353,7 +360,7 @@ describe("live verification runner", () => {
       "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
     );
     expect(result.stdout).toContain(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, paymentHandoffUrl, paymentLink, paymentLinkSession, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
     );
     expect(result.stdout).toContain(
       "coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence"
@@ -455,6 +462,11 @@ describe("live verification runner", () => {
     expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items")');
     expect(script).toContain("shouldContinueAfterManualCheckout(checkoutResult)");
     expect(script).toContain("function shouldContinueAfterManualCheckout(result)");
+    expect(script).toContain("printManualCheckoutContinuationGuidance()");
+    expect(script).toContain("function printManualCheckoutContinuationGuidance()");
+    expect(script).toContain("Payment link: ${ZEPTO_CHECKOUT_PAYMENT_LINK}");
+    expect(script).toContain("Payment link session: ${ZEPTO_CHECKOUT_PAYMENT_LINK_SESSION}");
+    expect(script).toContain("ZepoCli did not observe payment or order placement");
     expect(script).toContain("!options.productionScope");
     expect(script).toContain("Checkout stopped at Zepto's manual payment-control boundary; continuing to track because --checkout-wait was requested.");
     expect(script).toContain('result?.payload?.status === "checkout_manual_action_required"');
@@ -3547,6 +3559,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
@@ -3594,6 +3609,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
@@ -3635,6 +3653,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: true,
@@ -3664,6 +3685,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: true,
@@ -3819,6 +3843,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: true,
@@ -3988,6 +4015,9 @@ describe("live verification runner", () => {
                   humanActionRequired: true,
                   automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
                   handoffUrl: "https://www.zepto.com/?cart=open",
+                  paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+                  paymentLink: "https://www.zepto.com/?cart=open",
+                  paymentLinkSession: "user_zepto_session_required",
                   handoffSurface: "visible_zepto_browser",
                   browserOpenAfterReturn: false,
                   checkoutWaitCompleted: testCase.checkoutWaitCompleted,
@@ -4064,6 +4094,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
@@ -4084,6 +4117,9 @@ describe("live verification runner", () => {
           humanActionRequired?: boolean;
           automationBoundary?: string;
           handoffUrl?: string;
+          paymentHandoffUrl?: string;
+          paymentLink?: string;
+          paymentLinkSession?: string;
           handoffSurface?: string;
           browserOpenAfterReturn?: boolean;
           checkoutWaitCompleted?: boolean;
@@ -4099,6 +4135,9 @@ describe("live verification runner", () => {
         humanActionRequired: value.humanActionRequired,
         automationBoundary: value.automationBoundary,
         handoffUrl: value.handoffUrl,
+        paymentHandoffUrl: value.paymentHandoffUrl,
+        paymentLink: value.paymentLink,
+        paymentLinkSession: value.paymentLinkSession,
         handoffSurface: value.handoffSurface,
         browserOpenAfterReturn: value.browserOpenAfterReturn,
         checkoutWaitCompleted: value.checkoutWaitCompleted,
@@ -4119,6 +4158,9 @@ describe("live verification runner", () => {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,

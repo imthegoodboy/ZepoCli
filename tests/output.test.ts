@@ -47,10 +47,77 @@ describe("command JSON output", () => {
           price: "₹32"
         }
       ],
-      total: "₹32"
+      total: "₹32",
+      checkout: expectedCartCheckoutHandoff()
     });
     expect(JSON.stringify(payload)).not.toContain("221B Test Street");
     expect(payload).not.toHaveProperty("rawText");
+  });
+
+  it("adds Zepto-owned payment handoff guidance for non-empty cart JSON output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printCart(
+      {
+        items: [
+          {
+            name: "Amul Milk",
+            unit: "500 ml",
+            quantity: "1",
+            price: "₹32"
+          }
+        ]
+      },
+      true
+    );
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.checkout).toEqual(expectedCartCheckoutHandoff());
+  });
+
+  it("does not add checkout handoff guidance to empty cart JSON output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printCart({ items: [] }, true);
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload).toEqual({ items: [] });
+    expect(payload).not.toHaveProperty("checkout");
+  });
+
+  it("prints Zepto-owned payment handoff guidance for non-empty human cart output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printCart({
+      items: [
+        {
+          name: "Amul Milk",
+          unit: "500 ml",
+          quantity: "1",
+          price: "₹32"
+        }
+      ],
+      total: "₹32"
+    });
+
+    const output = log.mock.calls.map(([line]) => String(line)).join("\n");
+    expect(output).toContain("1. Amul Milk");
+    expect(output).toContain("Total: ₹32");
+    expect(output).toContain("Checkout: zepo --visible checkout");
+    expect(output).toContain("Payment link: https://www.zepto.com/?cart=open");
+    expect(output).toContain("Open in the user's Zepto session; Zepto handles payment.");
+  });
+
+  it("does not print payment handoff guidance for empty human cart output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printCart({ items: [] });
+
+    const output = log.mock.calls.map(([line]) => String(line)).join("\n");
+    expect(output).toContain("Cart is empty.");
+    expect(output).not.toContain("Checkout: zepo --visible checkout");
+    expect(output).not.toContain("Payment link:");
+    expect(output).not.toContain("Zepto session");
   });
 
   it("omits internal fields from cart item JSON output", () => {
@@ -561,3 +628,19 @@ describe("command JSON output", () => {
     expect(payload).not.toHaveProperty("automationId");
   });
 });
+
+function expectedCartCheckoutHandoff(): Record<string, unknown> {
+  return {
+    command: "zepo --visible checkout",
+    waitCommand: "zepo --visible checkout --wait",
+    payment: "handled_by_zepto",
+    paymentLink: "https://www.zepto.com/?cart=open",
+    paymentLinkSession: "user_zepto_session_required",
+    handoffSurface: "visible_zepto_browser",
+    humanActionRequired: true,
+    automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
+    paymentStatus: "not_observed_by_zepocli",
+    orderPlacement: "not_confirmed_by_zepocli",
+    orderStatusCommand: "zepo track"
+  };
+}

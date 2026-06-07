@@ -202,7 +202,7 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - missingCoverage has no true values
 - required step summaries are present for browser preflight, local status readiness, live session, checkout handoff, checkout cart precondition, and requested workflows
 - checkout_manual_action_required is manual continuation evidence only and is not accepted as checkout handoff coverage
-- sanitized checkout manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers, and is not accepted as checkout handoff coverage
+- sanitized checkout manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, paymentHandoffUrl, paymentLink, paymentLinkSession, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers, and is not accepted as checkout handoff coverage
 - coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence; it is diagnostic and does not satisfy coverage.checkoutHandoff, payment proof, order-placement proof, or production-scope readiness
 - when --require-production-scope is used, the core login/session, search, address, non-empty cart with total/payable evidence, checkout handoff, and track workflow was requested and has passing coverage
 - when --require-production-scope is used, --max-age-minutes is also used so the report is fresh evidence

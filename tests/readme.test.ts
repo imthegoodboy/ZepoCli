@@ -229,6 +229,20 @@ describe("README package guidance", () => {
     expect(readme).toContain('error.code: "unexpected_error"');
     expect(readme).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(readme).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
+    expect(readme).toContain('paymentHandoffUrl: "https://www.zepto.com/?cart=open"');
+    expect(readme).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
+    expect(readme).toContain('paymentLinkSession: "user_zepto_session_required"');
+    expect(readme).toContain("Zepto-owned payment/checkout link");
+    expect(readme).toContain("Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`");
+    expect(readme).toContain("`Payment link: https://www.zepto.com/?cart=open`");
+    expect(readme).toContain("Open in the user's Zepto session; Zepto handles payment.");
+    expect(readme).toContain("empty cart output does not show payment handoff guidance");
+    expect(readme).toContain('checkout.command: "zepo --visible checkout"');
+    expect(readme).toContain('checkout.waitCommand: "zepo --visible checkout --wait"');
+    expect(readme).toContain('checkout.paymentLink: "https://www.zepto.com/?cart=open"');
+    expect(readme).toContain('checkout.paymentLinkSession: "user_zepto_session_required"');
+    expect(readme).toContain("without guessing a `/cart` route");
+    expect(readme).toContain("not payment-provider URLs, payment proof, or order proof");
     expect(readme).toContain('handoffSurface: "visible_zepto_browser"');
     expect(readme).toContain("browserOpenAfterReturn: false");
     expect(readme).toContain("checkoutWaitCompleted");
@@ -248,6 +262,10 @@ describe("README package guidance", () => {
     expect(readme).toContain("Continue to Payment ₹108");
     expect(readme).toContain("must not be counted as checkout handoff coverage");
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");
+    expect(readme).toContain("When `verify:live` reaches `checkout_manual_action_required`");
+    expect(readme).toContain("runner console prints the fixed `Payment link: https://www.zepto.com/?cart=open`");
+    expect(readme).toContain("`Payment link session: user_zepto_session_required`");
+    expect(readme).toContain("That console guidance is not payment proof or order proof");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'

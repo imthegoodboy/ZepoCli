@@ -105,6 +105,20 @@ describe("agent guidance", () => {
       expect(guidance).toContain("humanActionRequired: true");
       expect(guidance).toContain('automationBoundary: "zepocli_did_not_click_payment_or_order_controls"');
       expect(guidance).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
+      expect(guidance).toContain('paymentHandoffUrl: "https://www.zepto.com/?cart=open"');
+      expect(guidance).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
+      expect(guidance).toContain('paymentLinkSession: "user_zepto_session_required"');
+      expect(guidance).toContain("Zepto-owned payment/checkout link");
+      expect(guidance).toContain("Non-empty human `zepo cart` output should print `Checkout: zepo --visible checkout`");
+      expect(guidance).toContain("`Payment link: https://www.zepto.com/?cart=open`");
+      expect(guidance).toContain("Open in the user's Zepto session; Zepto handles payment.");
+      expect(guidance).toContain("empty cart output should not show payment handoff guidance");
+      expect(guidance).toContain('checkout.command: "zepo --visible checkout"');
+      expect(guidance).toContain('checkout.waitCommand: "zepo --visible checkout --wait"');
+      expect(guidance).toContain('checkout.paymentLink: "https://www.zepto.com/?cart=open"');
+      expect(guidance).toContain('checkout.paymentLinkSession: "user_zepto_session_required"');
+      expect(guidance).toContain("without guessing routes");
+      expect(guidance).toContain("not a payment-provider URL, payment proof, or order proof");
       expect(guidance).toContain('handoffSurface: "visible_zepto_browser"');
       expect(guidance).toContain("browserOpenAfterReturn: false");
       expect(guidance).toContain("checkoutWaitCompleted");
@@ -364,6 +378,10 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain('liveSession.state: "logged-in"');
     expect(liveVerifierSkill).toContain('paymentStatus: "not_observed_by_zepocli"');
     expect(liveVerifierSkill).toContain('handoffUrl: "https://www.zepto.com/?cart=open"');
+    expect(liveVerifierSkill).toContain('paymentHandoffUrl: "https://www.zepto.com/?cart=open"');
+    expect(liveVerifierSkill).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
+    expect(liveVerifierSkill).toContain('paymentLinkSession: "user_zepto_session_required"');
+    expect(liveVerifierSkill).toContain("Zepto-owned payment/checkout link");
     expect(liveVerifierSkill).toContain('handoffSurface: "visible_zepto_browser"');
     expect(liveVerifierSkill).toContain("browserOpenAfterReturn: false");
     expect(liveVerifierSkill).toContain("checkoutWaitCompleted");
@@ -380,13 +398,18 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");
     expect(liveVerifierSkill).toContain("not accepted as checkout handoff coverage");
     expect(liveVerifierSkill).toContain("does not satisfy `coverage.checkoutHandoff`");
+    expect(liveVerifierSkill).toContain("When `verify:live` reaches `checkout_manual_action_required`");
+    expect(liveVerifierSkill).toContain("runner console should print the fixed `Payment link: https://www.zepto.com/?cart=open`");
+    expect(liveVerifierSkill).toContain("`Payment link session: user_zepto_session_required`");
+    expect(liveVerifierSkill).toContain("handoff guidance only, not payment proof or order proof");
     expect(liveVerifierSkill).toContain('Checkout coverage requires `status: "checkout_handoff_returned"`');
     expect(builderSkill).toContain("`zepo remove --json` should include `removedItems` evidence");
     expect(builderSkill).toContain("Remove JSON should expose structured `removedItems` plus the resulting `cart` only");
   });
 
   it("records current local readiness separately from missing live production proof", () => {
-    expect(agentStatus).toContain("Last updated: 2026-06-06");
+    expect(agentStatus).toContain("Last updated: 2026-06-07");
+    expect(agentStatus).toContain("safe `verify:live` console guidance");
     expect(agentStatus).toContain("`npm run check` passed locally");
     expect(agentStatus).toContain("34 test files, 682 tests");
     expect(agentStatus).toContain("edited reports with `cartItemCount: 0` now leave `coverage.cart` false");

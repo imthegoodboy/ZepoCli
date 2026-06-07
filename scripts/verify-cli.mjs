@@ -12,6 +12,7 @@ const packageJson = JSON.parse(readFileSync(resolve(rootDir, "package.json"), "u
 const CLI_COMMAND_TIMEOUT_MS = 120_000;
 const FAKE_NPM_TOKEN = `npm_${"A".repeat(24)}`;
 const { checkoutHandoffOutput } = await import(pathToFileURL(resolve(rootDir, "dist", "commands", "checkout.js")).href);
+const { printCart } = await import(pathToFileURL(resolve(rootDir, "dist", "utils", "output.js")).href);
 const { isCheckoutHandoffClickText, isCheckoutHandoffText, isUnsafeCheckoutAutomationClickText } = await import(
   pathToFileURL(resolve(rootDir, "dist", "automation", "checkout.js")).href
 );
@@ -85,6 +86,13 @@ const checks = [
           true,
         "expected manual checkout wait-mode marker"
       );
+    }
+  },
+  {
+    name: "cart public checkout metadata contract",
+    args: undefined,
+    expect: () => {
+      assertCartPublicCheckoutMetadataContract(printCart, "");
     }
   },
   {
@@ -1231,6 +1239,18 @@ function assertCheckoutHandoffContract(payload) {
     "expected checkout automation boundary marker"
   );
   assert(payload.handoffUrl === "https://www.zepto.com/?cart=open", "expected checkout handoff URL marker");
+  assert(
+    payload.paymentHandoffUrl === payload.handoffUrl,
+    "expected checkout payment handoff URL to match the Zepto handoff URL marker"
+  );
+  assert(
+    payload.paymentLink === payload.handoffUrl,
+    "expected checkout payment link to match the Zepto handoff URL marker"
+  );
+  assert(
+    payload.paymentLinkSession === "user_zepto_session_required",
+    "expected checkout payment link to require the user's Zepto session"
+  );
   assert(payload.handoffSurface === "visible_zepto_browser", "expected checkout handoff surface marker");
   assert(payload.browserOpenAfterReturn === false, "expected checkout browser lifecycle marker");
   assert(payload.checkoutWaitCompleted === false, "expected immediate checkout JSON wait marker");
@@ -1292,6 +1312,122 @@ function assertCheckoutEvidenceContract(payload) {
   assert(payload.manualPaymentControlVisible === true, "expected checkout evidence manual payment-control marker");
   assert(payload.cartEvidence?.itemCount === 2, "expected checkout evidence item count");
   assert(payload.cartEvidence?.hasPayableTotal === true, "expected checkout evidence payable-total marker");
+}
+
+function assertCartPublicCheckoutMetadataContract(printCartFn, labelPrefix) {
+  const prefix = labelPrefix ? `${labelPrefix} ` : "";
+  const payload = capturePrintedJson(() =>
+    printCartFn(
+      {
+        items: [
+          {
+            name: "Amul Milk",
+            unit: "500 ml",
+            quantity: "1",
+            price: "₹32"
+          }
+        ],
+        total: "₹32",
+        rawText: "Cart Amul Milk 500 ml ₹32 Delivery address 221B Test Street"
+      },
+      true
+    )
+  );
+
+  assert(payload.items?.length === 1, `expected ${prefix}cart JSON item output`);
+  assert(payload.total === "₹32", `expected ${prefix}cart JSON total output`);
+  assert(payload.checkout?.command === "zepo --visible checkout", `expected ${prefix}cart JSON checkout command`);
+  assert(
+    payload.checkout?.waitCommand === "zepo --visible checkout --wait",
+    `expected ${prefix}cart JSON checkout wait command`
+  );
+  assert(payload.checkout?.payment === "handled_by_zepto", `expected ${prefix}cart JSON Zepto payment marker`);
+  assert(
+    payload.checkout?.paymentLink === "https://www.zepto.com/?cart=open",
+    `expected ${prefix}cart JSON payment link metadata`
+  );
+  assert(
+    payload.checkout?.paymentLinkSession === "user_zepto_session_required",
+    `expected ${prefix}cart JSON payment link session marker`
+  );
+  assert(
+    payload.checkout?.handoffSurface === "visible_zepto_browser",
+    `expected ${prefix}cart JSON handoff surface`
+  );
+  assert(payload.checkout?.humanActionRequired === true, `expected ${prefix}cart JSON human action marker`);
+  assert(
+    payload.checkout?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls",
+    `expected ${prefix}cart JSON automation boundary`
+  );
+  assert(
+    payload.checkout?.paymentStatus === "not_observed_by_zepocli",
+    `expected ${prefix}cart JSON unobserved payment marker`
+  );
+  assert(
+    payload.checkout?.orderPlacement === "not_confirmed_by_zepocli",
+    `expected ${prefix}cart JSON unconfirmed order marker`
+  );
+  assert(payload.checkout?.orderStatusCommand === "zepo track", `expected ${prefix}cart JSON track command`);
+  const serialized = JSON.stringify(payload);
+  assert(!serialized.includes("221B Test Street"), `expected ${prefix}cart JSON to omit raw cart text`);
+  assert(payload.rawText === undefined, `expected ${prefix}cart JSON to omit rawText`);
+
+  const emptyPayload = capturePrintedJson(() => printCartFn({ items: [] }, true));
+  assert(Array.isArray(emptyPayload.items), `expected ${prefix}empty cart JSON items`);
+  assert(emptyPayload.items.length === 0, `expected ${prefix}empty cart JSON to stay empty`);
+  assert(emptyPayload.checkout === undefined, `expected ${prefix}empty cart JSON to omit checkout metadata`);
+
+  const humanOutput = capturePrintedLines(() =>
+    printCartFn(
+      {
+        items: [
+          {
+            name: "Amul Milk",
+            unit: "500 ml",
+            quantity: "1",
+            price: "₹32"
+          }
+        ],
+        total: "₹32"
+      },
+      false
+    )
+  ).join("\n");
+  assert(humanOutput.includes("Checkout: zepo --visible checkout"), `expected ${prefix}human cart checkout command`);
+  assert(
+    humanOutput.includes("Payment link: https://www.zepto.com/?cart=open"),
+    `expected ${prefix}human cart payment link`
+  );
+  assert(
+    humanOutput.includes("Open in the user's Zepto session; Zepto handles payment."),
+    `expected ${prefix}human cart payment session guidance`
+  );
+
+  const emptyHumanOutput = capturePrintedLines(() => printCartFn({ items: [] }, false)).join("\n");
+  assert(emptyHumanOutput.includes("Cart is empty."), `expected ${prefix}empty human cart message`);
+  assert(!emptyHumanOutput.includes("Checkout:"), `expected ${prefix}empty human cart to omit checkout command`);
+  assert(!emptyHumanOutput.includes("Payment link:"), `expected ${prefix}empty human cart to omit payment link`);
+  assert(!emptyHumanOutput.includes("Zepto session"), `expected ${prefix}empty human cart to omit payment session guidance`);
+}
+
+function capturePrintedJson(callback) {
+  return JSON.parse(capturePrintedLines(callback).join("\n"));
+}
+
+function capturePrintedLines(callback) {
+  const originalLog = console.log;
+  const chunks = [];
+  console.log = (value = "") => {
+    chunks.push(String(value));
+  };
+
+  try {
+    callback();
+  } finally {
+    console.log = originalLog;
+  }
+
+  return chunks;
 }
 
 function parseJson(text, streamName) {

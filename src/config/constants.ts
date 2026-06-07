@@ -1,5 +1,10 @@
 export const APP_NAME = "zepo";
 export const BASE_URL = "https://www.zepto.com";
+export const ZEPTO_CHECKOUT_HANDOFF_URL = `${BASE_URL}/?cart=open` as const;
+export const CHECKOUT_PAYMENT_LINK_SESSION = "user_zepto_session_required" as const;
+export const CHECKOUT_AUTOMATION_BOUNDARY = "zepocli_did_not_click_payment_or_order_controls" as const;
+export const CHECKOUT_COMMAND = "zepo --visible checkout" as const;
+export const CHECKOUT_WAIT_COMMAND = "zepo --visible checkout --wait" as const;
 export const DEFAULT_TIMEOUT_MS = 60_000;
 export const DEFAULT_PRODUCT_LIMIT = 10;
 export const DEFAULT_BROWSER_LOCALE = "en-IN";

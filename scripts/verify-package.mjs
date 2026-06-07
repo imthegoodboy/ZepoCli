@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+﻿import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
@@ -135,6 +135,7 @@ try {
   verifyInstalledReadmeContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledBrowserDiagnosticsContract(installDir);
+  await verifyInstalledPublicOutputContract(installDir);
   verifyInstalledBackgroundAutomationModeContract(installDir);
   await verifyInstalledPaymentLabelContract(installDir);
   await verifyInstalledFinalActionLabelContract(installDir);
@@ -306,7 +307,24 @@ function verifyInstalledReadmeContract(prefixDir) {
     "JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt",
     "explicit JSON wait mode (`zepo --visible checkout --json --wait`)",
     "Wait mode re-checks the visible page after the human presses Enter",
+    "Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`",
+    "`Payment link: https://www.zepto.com/?cart=open`",
+    "Open in the user's Zepto session; Zepto handles payment.",
+    "empty cart output does not show payment handoff guidance",
+    "checkout.command: \"zepo --visible checkout\"",
+    "checkout.waitCommand: \"zepo --visible checkout --wait\"",
+    "checkout.paymentLink: \"https://www.zepto.com/?cart=open\"",
+    "checkout.paymentLinkSession: \"user_zepto_session_required\"",
+    "When `verify:live` reaches `checkout_manual_action_required`",
+    "runner console prints the fixed `Payment link: https://www.zepto.com/?cart=open`",
+    "`Payment link session: user_zepto_session_required`",
+    "That console guidance is not payment proof or order proof",
+    "without guessing a `/cart` route",
     "handoffUrl: \"https://www.zepto.com/?cart=open\"",
+    "paymentHandoffUrl: \"https://www.zepto.com/?cart=open\"",
+    "paymentLink: \"https://www.zepto.com/?cart=open\"",
+    "paymentLinkSession: \"user_zepto_session_required\"",
+    "Zepto-owned payment/checkout link",
     "handoffSurface: \"visible_zepto_browser\"",
     "browserOpenAfterReturn: false",
     "checkoutWaitCompleted",
@@ -511,6 +529,15 @@ async function verifyInstalledBrowserDiagnosticsContract(prefixDir) {
   );
 
   console.log("pass installed browser diagnostics contract");
+}
+
+async function verifyInstalledPublicOutputContract(prefixDir) {
+  const packageDir = join(prefixDir, "node_modules", packageJson.name);
+  const { printCart } = await import(pathToFileURL(join(packageDir, "dist", "utils", "output.js")).href);
+
+  assertCartPublicCheckoutMetadataContract(printCart, "installed");
+
+  console.log("pass installed public output contract");
 }
 
 function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
@@ -2347,6 +2374,14 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("Production-scope verification stops before tracking because checkout handoff coverage is missing."),
     "expected installed verify:live production-scope to stop before track when checkout handoff coverage is missing"
   );
+  assert(
+    liveVerifierSource.includes("printManualCheckoutContinuationGuidance()") &&
+      liveVerifierSource.includes("function printManualCheckoutContinuationGuidance()") &&
+      liveVerifierSource.includes("Payment link: ${ZEPTO_CHECKOUT_PAYMENT_LINK}") &&
+      liveVerifierSource.includes("Payment link session: ${ZEPTO_CHECKOUT_PAYMENT_LINK_SESSION}") &&
+      liveVerifierSource.includes("ZepoCli did not observe payment or order placement"),
+    "expected installed verify:live manual checkout console handoff guidance"
+  );
 
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
@@ -2399,6 +2434,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     result.stdout.includes("Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage") &&
       result.stdout.includes("does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"),
     "expected installed verify:live help to explain diagnostic manual checkout boundary coverage"
+  );
+  assert(
+    result.stdout.includes("When checkout reaches checkout_manual_action_required") &&
+      result.stdout.includes("Payment link: https://www.zepto.com/?cart=open") &&
+      result.stdout.includes("Payment link session: user_zepto_session_required") &&
+      result.stdout.includes("handoff guidance only, not payment proof or order proof"),
+    "expected installed verify:live help to explain manual checkout payment-link handoff"
   );
   assert(
     result.stdout.includes("Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings"),
@@ -2460,7 +2502,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
   );
   assert(
     reportHelpResult.stdout.includes(
-      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
+      "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, paymentHandoffUrl, paymentLink, paymentLinkSession, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
     ),
     "expected installed verify:live:report manual checkout boundary guidance"
   );
@@ -3153,6 +3195,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: false,
@@ -3435,6 +3480,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
         handoffUrl: "https://www.zepto.com/?cart=open",
+        paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+        paymentLink: "https://www.zepto.com/?cart=open",
+        paymentLinkSession: "user_zepto_session_required",
         handoffSurface: "visible_zepto_browser",
         browserOpenAfterReturn: false,
         checkoutWaitCompleted: testCase.checkoutWaitCompleted,
@@ -3643,6 +3691,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
+      paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+      paymentLink: "https://www.zepto.com/?cart=open",
+      paymentLinkSession: "user_zepto_session_required",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: true,
@@ -3669,6 +3720,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       diagnosticManualCheckoutStep.manualEvidence?.automationBoundary ===
         "zepocli_did_not_click_payment_or_order_controls" &&
       diagnosticManualCheckoutStep.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
+      diagnosticManualCheckoutStep.manualEvidence?.paymentHandoffUrl === "https://www.zepto.com/?cart=open" &&
+      diagnosticManualCheckoutStep.manualEvidence?.paymentLink === "https://www.zepto.com/?cart=open" &&
+      diagnosticManualCheckoutStep.manualEvidence?.paymentLinkSession === "user_zepto_session_required" &&
       diagnosticManualCheckoutStep.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
       diagnosticManualCheckoutStep.manualEvidence?.browserOpenAfterReturn === false &&
       diagnosticManualCheckoutStep.manualEvidence?.checkoutWaitCompleted === true &&
@@ -5684,6 +5738,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
+      paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+      paymentLink: "https://www.zepto.com/?cart=open",
+      paymentLinkSession: "user_zepto_session_required",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
@@ -5739,6 +5796,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
+      paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+      paymentLink: "https://www.zepto.com/?cart=open",
+      paymentLinkSession: "user_zepto_session_required",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
@@ -5771,6 +5831,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
+      paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+      paymentLink: "https://www.zepto.com/?cart=open",
+      paymentLinkSession: "user_zepto_session_required",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
@@ -7488,6 +7551,18 @@ function assertCommonCheckoutOutputContract(payload) {
     "expected installed checkout automation boundary marker"
   );
   assert(payload.handoffUrl === "https://www.zepto.com/?cart=open", "expected installed checkout handoff URL marker");
+  assert(
+    payload.paymentHandoffUrl === payload.handoffUrl,
+    "expected installed checkout payment handoff URL to match the Zepto handoff URL marker"
+  );
+  assert(
+    payload.paymentLink === payload.handoffUrl,
+    "expected installed checkout payment link to match the Zepto handoff URL marker"
+  );
+  assert(
+    payload.paymentLinkSession === "user_zepto_session_required",
+    "expected installed checkout payment link to require the user's Zepto session"
+  );
   assert(payload.handoffSurface === "visible_zepto_browser", "expected installed checkout handoff surface marker");
   assert(payload.browserOpenAfterReturn === false, "expected installed checkout browser lifecycle marker");
   assert(payload.checkoutWaitCompleted === false, "expected installed immediate checkout wait marker");
@@ -7495,6 +7570,122 @@ function assertCommonCheckoutOutputContract(payload) {
   assert(payload.paymentStatus === "not_observed_by_zepocli", "expected installed unobserved payment status");
   assert(payload.orderPlacement === "not_confirmed_by_zepocli", "expected installed unconfirmed order placement");
   assert(payload.orderStatusCommand === "zepo track", "expected installed track next command");
+}
+
+function assertCartPublicCheckoutMetadataContract(printCartFn, labelPrefix) {
+  const prefix = labelPrefix ? `${labelPrefix} ` : "";
+  const payload = capturePrintedJson(() =>
+    printCartFn(
+      {
+        items: [
+          {
+            name: "Amul Milk",
+            unit: "500 ml",
+            quantity: "1",
+            price: "₹32"
+          }
+        ],
+        total: "₹32",
+        rawText: "Cart Amul Milk 500 ml ₹32 Delivery address 221B Test Street"
+      },
+      true
+    )
+  );
+
+  assert(payload.items?.length === 1, `expected ${prefix}cart JSON item output`);
+  assert(payload.total === "₹32", `expected ${prefix}cart JSON total output`);
+  assert(payload.checkout?.command === "zepo --visible checkout", `expected ${prefix}cart JSON checkout command`);
+  assert(
+    payload.checkout?.waitCommand === "zepo --visible checkout --wait",
+    `expected ${prefix}cart JSON checkout wait command`
+  );
+  assert(payload.checkout?.payment === "handled_by_zepto", `expected ${prefix}cart JSON Zepto payment marker`);
+  assert(
+    payload.checkout?.paymentLink === "https://www.zepto.com/?cart=open",
+    `expected ${prefix}cart JSON payment link metadata`
+  );
+  assert(
+    payload.checkout?.paymentLinkSession === "user_zepto_session_required",
+    `expected ${prefix}cart JSON payment link session marker`
+  );
+  assert(
+    payload.checkout?.handoffSurface === "visible_zepto_browser",
+    `expected ${prefix}cart JSON handoff surface`
+  );
+  assert(payload.checkout?.humanActionRequired === true, `expected ${prefix}cart JSON human action marker`);
+  assert(
+    payload.checkout?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls",
+    `expected ${prefix}cart JSON automation boundary`
+  );
+  assert(
+    payload.checkout?.paymentStatus === "not_observed_by_zepocli",
+    `expected ${prefix}cart JSON unobserved payment marker`
+  );
+  assert(
+    payload.checkout?.orderPlacement === "not_confirmed_by_zepocli",
+    `expected ${prefix}cart JSON unconfirmed order marker`
+  );
+  assert(payload.checkout?.orderStatusCommand === "zepo track", `expected ${prefix}cart JSON track command`);
+  const serialized = JSON.stringify(payload);
+  assert(!serialized.includes("221B Test Street"), `expected ${prefix}cart JSON to omit raw cart text`);
+  assert(payload.rawText === undefined, `expected ${prefix}cart JSON to omit rawText`);
+
+  const emptyPayload = capturePrintedJson(() => printCartFn({ items: [] }, true));
+  assert(Array.isArray(emptyPayload.items), `expected ${prefix}empty cart JSON items`);
+  assert(emptyPayload.items.length === 0, `expected ${prefix}empty cart JSON to stay empty`);
+  assert(emptyPayload.checkout === undefined, `expected ${prefix}empty cart JSON to omit checkout metadata`);
+
+  const humanOutput = capturePrintedLines(() =>
+    printCartFn(
+      {
+        items: [
+          {
+            name: "Amul Milk",
+            unit: "500 ml",
+            quantity: "1",
+            price: "₹32"
+          }
+        ],
+        total: "₹32"
+      },
+      false
+    )
+  ).join("\n");
+  assert(humanOutput.includes("Checkout: zepo --visible checkout"), `expected ${prefix}human cart checkout command`);
+  assert(
+    humanOutput.includes("Payment link: https://www.zepto.com/?cart=open"),
+    `expected ${prefix}human cart payment link`
+  );
+  assert(
+    humanOutput.includes("Open in the user's Zepto session; Zepto handles payment."),
+    `expected ${prefix}human cart payment session guidance`
+  );
+
+  const emptyHumanOutput = capturePrintedLines(() => printCartFn({ items: [] }, false)).join("\n");
+  assert(emptyHumanOutput.includes("Cart is empty."), `expected ${prefix}empty human cart message`);
+  assert(!emptyHumanOutput.includes("Checkout:"), `expected ${prefix}empty human cart to omit checkout command`);
+  assert(!emptyHumanOutput.includes("Payment link:"), `expected ${prefix}empty human cart to omit payment link`);
+  assert(!emptyHumanOutput.includes("Zepto session"), `expected ${prefix}empty human cart to omit payment session guidance`);
+}
+
+function capturePrintedJson(callback) {
+  return JSON.parse(capturePrintedLines(callback).join("\n"));
+}
+
+function capturePrintedLines(callback) {
+  const originalLog = console.log;
+  const chunks = [];
+  console.log = (value = "") => {
+    chunks.push(String(value));
+  };
+
+  try {
+    callback();
+  } finally {
+    console.log = originalLog;
+  }
+
+  return chunks;
 }
 
 function installedLiveStatusDiagnosticsPayload() {

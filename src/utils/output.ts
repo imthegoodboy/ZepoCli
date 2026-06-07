@@ -1,5 +1,12 @@
 import chalk from "chalk";
 
+import {
+  CHECKOUT_AUTOMATION_BOUNDARY,
+  CHECKOUT_COMMAND,
+  CHECKOUT_PAYMENT_LINK_SESSION,
+  CHECKOUT_WAIT_COMMAND,
+  ZEPTO_CHECKOUT_HANDOFF_URL
+} from "../config/constants.js";
 import type { Address, CartItem, CartRemoveResult, CartSnapshot, OrderSnapshot, Product } from "../types.js";
 import { redactedStructuredValueForKey, redactSensitiveText } from "./redaction.js";
 
@@ -88,6 +95,10 @@ export function printCart(cart: CartSnapshot, json = false): void {
   if (cart.total) {
     console.log(chalk.bold(`Total: ${cart.total}`));
   }
+
+  console.log(chalk.dim(`Checkout: ${CHECKOUT_COMMAND}`));
+  console.log(chalk.dim(`Payment link: ${ZEPTO_CHECKOUT_HANDOFF_URL}`));
+  console.log(chalk.dim("Open in the user's Zepto session; Zepto handles payment."));
 }
 
 export function printAddresses(addresses: Address[], json = false): void {
@@ -144,10 +155,45 @@ function toPublicProduct(product: Product): Omit<Product, "automationId"> {
   };
 }
 
-function toPublicCartSnapshot(cart: CartSnapshot): Omit<CartSnapshot, "rawText"> {
+interface PublicCartCheckoutHandoff {
+  command: typeof CHECKOUT_COMMAND;
+  waitCommand: typeof CHECKOUT_WAIT_COMMAND;
+  payment: "handled_by_zepto";
+  paymentLink: typeof ZEPTO_CHECKOUT_HANDOFF_URL;
+  paymentLinkSession: typeof CHECKOUT_PAYMENT_LINK_SESSION;
+  handoffSurface: "visible_zepto_browser";
+  humanActionRequired: true;
+  automationBoundary: typeof CHECKOUT_AUTOMATION_BOUNDARY;
+  paymentStatus: "not_observed_by_zepocli";
+  orderPlacement: "not_confirmed_by_zepocli";
+  orderStatusCommand: "zepo track";
+}
+
+type PublicCartSnapshot = Omit<CartSnapshot, "rawText"> & {
+  checkout?: PublicCartCheckoutHandoff;
+};
+
+function toPublicCartSnapshot(cart: CartSnapshot): PublicCartSnapshot {
   return {
     items: cart.items.map(toPublicCartItem),
-    ...(cart.total ? { total: cart.total } : {})
+    ...(cart.total ? { total: cart.total } : {}),
+    ...(cart.items.length > 0 ? { checkout: publicCartCheckoutHandoff() } : {})
+  };
+}
+
+function publicCartCheckoutHandoff(): PublicCartCheckoutHandoff {
+  return {
+    command: CHECKOUT_COMMAND,
+    waitCommand: CHECKOUT_WAIT_COMMAND,
+    payment: "handled_by_zepto",
+    paymentLink: ZEPTO_CHECKOUT_HANDOFF_URL,
+    paymentLinkSession: CHECKOUT_PAYMENT_LINK_SESSION,
+    handoffSurface: "visible_zepto_browser",
+    humanActionRequired: true,
+    automationBoundary: CHECKOUT_AUTOMATION_BOUNDARY,
+    paymentStatus: "not_observed_by_zepocli",
+    orderPlacement: "not_confirmed_by_zepocli",
+    orderStatusCommand: "zepo track"
   };
 }
 

@@ -399,6 +399,9 @@ describe("checkout handoff detection", () => {
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
+      paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+      paymentLink: "https://www.zepto.com/?cart=open",
+      paymentLinkSession: "user_zepto_session_required",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
@@ -407,7 +410,7 @@ describe("checkout handoff detection", () => {
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "Run `zepo --visible checkout --wait` or human text checkout when the browser must stay open for Zepto-side payment; after any Zepto-side order action, run `zepo track` to inspect order status."
+      next: "Open `paymentLink` in the user's Zepto browser/session or run `zepo --visible checkout --wait` when the browser must stay open for Zepto-side payment; after any Zepto-side order action, run `zepo track` to inspect order status."
     });
   });
 
@@ -418,6 +421,9 @@ describe("checkout handoff detection", () => {
       humanActionRequired: true,
       automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
       handoffUrl: "https://www.zepto.com/?cart=open",
+      paymentHandoffUrl: "https://www.zepto.com/?cart=open",
+      paymentLink: "https://www.zepto.com/?cart=open",
+      paymentLinkSession: "user_zepto_session_required",
       handoffSurface: "visible_zepto_browser",
       browserOpenAfterReturn: false,
       checkoutWaitCompleted: false,
@@ -426,7 +432,7 @@ describe("checkout handoff detection", () => {
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
-      next: "Run `zepo --visible checkout --wait` or human text checkout when a human must continue in Zepto. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
+      next: "Open `paymentLink` in the user's Zepto browser/session or run `zepo --visible checkout --wait` when a human must continue in Zepto. ZepoCli stops before payment/order controls; after any Zepto-side order action, run `zepo track` to inspect order status."
     });
   });
 
@@ -469,6 +475,9 @@ describe("checkout handoff detection", () => {
     expect(output.humanActionRequired).toBe(true);
     expect(output.automationBoundary).toBe("zepocli_did_not_click_payment_or_order_controls");
     expect(output.handoffUrl).toBe("https://www.zepto.com/?cart=open");
+    expect(output.paymentHandoffUrl).toBe("https://www.zepto.com/?cart=open");
+    expect(output.paymentLink).toBe("https://www.zepto.com/?cart=open");
+    expect(output.paymentLinkSession).toBe("user_zepto_session_required");
     expect(output.handoffSurface).toBe("visible_zepto_browser");
     expect(output.browserOpenAfterReturn).toBe(false);
     expect(output.checkoutWaitCompleted).toBe(false);

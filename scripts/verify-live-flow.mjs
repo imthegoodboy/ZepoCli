@@ -31,6 +31,8 @@ const MAX_STEP_TIMEOUT_MS = 60 * 60 * 1_000;
 const COMMAND_TIMEOUT_FORCE_KILL_GRACE_MS = 30_000;
 const LIVE_STATUS_MAX_ATTEMPTS = 3;
 const LIVE_STATUS_RETRY_DELAY_MS = 5_000;
+const ZEPTO_CHECKOUT_PAYMENT_LINK = "https://www.zepto.com/?cart=open";
+const ZEPTO_CHECKOUT_PAYMENT_LINK_SESSION = "user_zepto_session_required";
 const INTERRUPT_EXIT_CODES = {
   SIGINT: 130,
   SIGTERM: 143
@@ -257,6 +259,9 @@ async function main() {
       checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait");
     }
     const checkoutResult = await runStep("checkout", checkoutArgs);
+    if (isManualCheckoutContinuation(checkoutResult)) {
+      printManualCheckoutContinuationGuidance();
+    }
     if (!checkoutResult.ok && !shouldContinueAfterManualCheckout(checkoutResult)) {
       if (options.productionScope && isManualCheckoutContinuation(checkoutResult)) {
         console.error(
@@ -389,6 +394,14 @@ function shouldContinueAfterManualCheckout(result) {
     !options.productionScope &&
     isManualCheckoutContinuation(result)
   );
+}
+
+function printManualCheckoutContinuationGuidance() {
+  console.error("\nCheckout reached Zepto's human-only payment-control boundary.");
+  console.error(`Payment link: ${ZEPTO_CHECKOUT_PAYMENT_LINK}`);
+  console.error(`Payment link session: ${ZEPTO_CHECKOUT_PAYMENT_LINK_SESSION}`);
+  console.error("Open the link in the user's Zepto session and complete only Zepto-side actions the user chooses.");
+  console.error("ZepoCli did not observe payment or order placement; run `zepo track` after any Zepto-side order action.");
 }
 
 function removeLastReportStep(name) {
@@ -707,6 +720,9 @@ function summarizePayload(name, payload) {
       humanActionRequired: payload.humanActionRequired,
       automationBoundary: payload.automationBoundary,
       handoffUrl: payload.handoffUrl,
+      paymentHandoffUrl: payload.paymentHandoffUrl,
+      paymentLink: payload.paymentLink,
+      paymentLinkSession: payload.paymentLinkSession,
       handoffSurface: payload.handoffSurface,
       browserOpenAfterReturn: payload.browserOpenAfterReturn,
       checkoutWaitCompleted: payload.checkoutWaitCompleted,
@@ -1204,6 +1220,7 @@ Use --cart-remove-limit-items only when the visible Zepto cart evidence step sho
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
 If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
 Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage, but it remains manual Zepto continuation evidence and does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness.
+When checkout reaches checkout_manual_action_required, the runner prints Payment link: https://www.zepto.com/?cart=open and Payment link session: user_zepto_session_required for the user's Zepto session. This is handoff guidance only, not payment proof or order proof.
 
 For cart cleanup verification, run remove before checkout only when other test cart items remain. Run clear as a separate cleanup pass:
   npm --silent run verify:live -- --data-dir ./.zepo-live --login --add "Amul Milk 500ml" --remove "Amul Milk" --cart
