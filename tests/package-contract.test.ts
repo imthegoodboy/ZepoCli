@@ -575,7 +575,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live usage to use silent npm");
     expect(verifier).toContain("expected installed verify:live step-timeout option");
     expect(verifier).toContain("expected installed verify:live production-scope option");
-    expect(verifier).toContain("expected installed verify:live production-scope preset to enable checkout wait");
+    expect(verifier).toContain("expected installed verify:live production-scope preset to use immediate checkout handoff unless --checkout-wait is explicit");
     expect(verifier).toContain("expected installed verify:live to support explicit add item-limit warning removal");
     expect(verifier).toContain("expected installed verify:live add limit-warning removal option");
     expect(verifier).toContain("expected installed verify:live help to explain explicit add limit-warning removal");
@@ -584,11 +584,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live help to explain explicit cart limit-warning removal");
     expect(verifier).toContain("expected installed verify:live to support explicit checkout item-limit warning removal");
     expect(verifier).toContain("expected installed verify:live checkout limit-warning removal option");
-    expect(verifier).toContain("expected installed verify:live production-scope to stop before track when checkout handoff coverage is missing");
+    expect(verifier).toContain("expected installed verify:live to distinguish failed manual continuation from successful payment-link handoff");
     expect(verifier).toContain("expected installed verify:live manual checkout console handoff guidance");
     expect(verifier).toContain("expected installed verify:live help to explain manual checkout payment-link handoff");
     expect(verifier).toContain("expected installed verify:live help to explain production-scope preset");
-    expect(verifier).toContain("expected installed verify:live help to explain diagnostic manual checkout boundary coverage");
     expect(verifier).toContain("expected installed verify:live help to explain explicit checkout limit-warning removal");
     expect(verifier).toContain("expected installed verify:live:report max-age option");
     expect(verifier).toContain("expected installed verify:publish-dry-run package script");
@@ -611,14 +610,14 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:live:report manual checkout diagnostic coverage guidance");
     expect(verifier).toContain("--max-age-minutes=60");
     expect(verifier).toContain("expected installed live report validator to reject invalid assignment-form max age");
-    expect(verifier).toContain("expected installed live report checkout manual-continuation steps to keep sanitized manual evidence");
-    expect(verifier).toContain("expected installed live report manual checkout evidence to remain diagnostic only");
-    expect(verifier).toContain("expected installed live report manual checkout boundary to stay diagnostic");
+    expect(verifier).toContain("expected installed live report checkout manual-continuation steps to keep sanitized payment-link handoff summary");
+    expect(verifier).toContain("expected installed live report manual checkout evidence to pass as payment-link handoff coverage");
+    expect(verifier).toContain("expected installed live report manual checkout payment-link handoff to count as checkout coverage");
     expect(verifier).toContain("checkoutManualBoundary");
     expect(verifier).toContain(
-      "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic; it does not satisfy `coverage.checkoutHandoff`"
+      "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic on incomplete reports"
     );
-    expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals");
+    expect(verifier).toContain("Production-scope acceptance rejects missing freshness windows and cart evidence without totals");
     expect(verifier).toContain("optional `--max-age-minutes` freshness");
     expect(verifier).toContain("local status readiness");
     expect(verifier).toContain("visible `doctor`/`status` preflight commands when `liveSession` is requested");
@@ -627,9 +626,8 @@ describe("package CLI contract", () => {
       "expected installed live report acceptance helper to reject account workflow without visible preflight"
     );
     expect(verifier).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout/payment-link handoff, and track to be explicitly requested and covered"
     );
-    expect(verifier).toContain("with checkout wait evidence");
     expect(verifier).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
@@ -777,10 +775,10 @@ describe("package CLI contract", () => {
       "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it"
     );
     expect(verifier).toContain(
-      "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
+      "expected installed live report acceptance helper to accept production-scope immediate payment-link handoff evidence"
     );
     expect(verifier).toContain(
-      "expected installed live report acceptance helper to reject production-scope evidence without checkout wait marker"
+      "expected installed live report acceptance helper to reject checkout wait command with false wait marker"
     );
     expect(verifier).toContain(
       "expected installed live report acceptance helper to reject production-scope evidence without freshness"
@@ -867,8 +865,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed live command timeout redaction");
     expect(verifier).toContain("expected installed checkout-wait timeout to keep fixed handoff guidance");
     expect(verifier).toContain("expected installed checkout live report contract to require non-empty cart precondition");
-    expect(verifier).toContain("expected installed manual checkout live report to use incomplete coverage code");
-    expect(verifier).toContain("checkout_manual_action_required is manual continuation evidence only");
+    expect(verifier).toContain("expected installed manual checkout live report to accept payment-link handoff summary");
+    expect(verifier).toContain("checkout_manual_action_required can be accepted as checkout handoff coverage only");
     expect(verifier).toContain("createLiveConsoleTextRedactor");
     expect(verifier).toContain("redactArgsForLiveConsole");
     expect(verifier).toContain("redactLiveConsoleText");

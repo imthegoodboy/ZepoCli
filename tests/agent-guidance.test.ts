@@ -132,7 +132,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("`Payment link session: user_zepto_session_required` to stderr before prompting");
       expect(guidance).toContain("so a later prompt timeout still leaves the Zepto-owned session link in the console");
       expect(guidance).toContain("Explicit wait mode may re-check the visible page after Enter");
-      expect(guidance).toContain("production-scope checkout handoff coverage");
+      expect(guidance).toContain("checkout/payment-link handoff coverage");
       expect(guidance).toContain("manual checkout continuation use `live_verification_incomplete`");
       expect(guidance).toContain("Human spinner/status text");
       expect(guidance).toContain("redact sensitive-looking order-id, phone, OTP/PIN/CVV, payment-number, payment-handle");
@@ -179,13 +179,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("interrupted with Ctrl+C/SIGTERM");
       expect(guidance).toContain("write the same sanitized partial report when possible");
       expect(guidance).toContain(
-        "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
-      );
-      expect(guidance).toContain(
-        "Valid `checkout_manual_action_required` evidence may set diagnostic `checkoutManualBoundary` coverage"
-      );
-      expect(guidance).toContain(
-        "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
+        "Successful `checkout_manual_action_required` evidence can satisfy checkout handoff coverage only when it preserves the fixed payment link/session markers, human-action boundary markers, non-empty cart evidence, and payable-total evidence"
       );
       expect(guidance).toContain("`verify:live --phone` should accept the same 10-digit, `+91`, or leading-0 Indian mobile formats");
       expect(guidance).toContain("npm --silent run verify:live:report -- <report-path>");
@@ -196,9 +190,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("Do not run `npm run verify:cli` in parallel with `npm run verify:package`");
       expect(guidance).toContain("npm publish --dry-run --access public");
       expect(guidance).toContain(
-        "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track must be explicitly requested and covered"
+        "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout/payment-link handoff, and track must be explicitly requested and covered"
       );
-      expect(guidance).toContain("checkout wait evidence must be present");
       expect(guidance).toContain("checkoutWaitCompleted` in `summary` or `manualEvidence`");
       expect(guidance).toContain("must match whether the stored redacted checkout command includes `--wait`");
       expect(guidance).toContain("an immediate checkout command cannot claim wait completion");
@@ -263,8 +256,8 @@ describe("agent guidance", () => {
       expect(guidance).toContain("raw Zepto order IDs");
     }
 
-    expect(agentReadme).toContain("may set diagnostic `coverage.checkoutManualBoundary: true`");
-    expect(builderSkill).toContain("coverage.checkoutManualBoundary` may be true");
+    expect(agentReadme).toContain("Older incomplete reports may still include diagnostic `manualEvidence` and `coverage.checkoutManualBoundary`");
+    expect(builderSkill).toContain("Older or incomplete live reports may still expose diagnostic `manualEvidence` and `coverage.checkoutManualBoundary`");
   });
 
   it("keeps live verification guidance separate from local package smoke proof", () => {
@@ -346,13 +339,7 @@ describe("agent guidance", () => {
       "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before checkout"
     );
     expect(liveVerifierSkill).toContain(
-      "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
-    );
-    expect(liveVerifierSkill).toContain(
-      "Valid `checkout_manual_action_required` evidence may set diagnostic `checkoutManualBoundary` coverage"
-    );
-    expect(liveVerifierSkill).toContain(
-      "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
+      "A successful `checkout_manual_action_required` checkout step can satisfy checkout handoff coverage when it preserves the fixed `paymentLink`, `paymentLinkSession`, human-action boundary markers, non-empty cart evidence, and payable-total evidence"
     );
     expect(liveVerifierSkill).toContain("coverage.checkoutManualBoundary: true");
     expect(liveVerifierSkill).toContain("npm --silent run verify:live:report -- ./.zepo-live/live-verification-report.json");
@@ -365,9 +352,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("`verify:live:report --max-age-minutes` accepts both `--max-age-minutes 1440` and `--max-age-minutes=1440`");
     expect(liveVerifierSkill).toContain("`--max-age-minutes` must be supplied so production-scope evidence is fresh");
     expect(liveVerifierSkill).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track must be explicitly requested and have passing coverage"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout/payment-link handoff, and track must be explicitly requested and have passing coverage"
     );
-    expect(liveVerifierSkill).toContain("checkout wait evidence must be present");
     expect(liveVerifierSkill).toContain("checkoutWaitCompleted` in `summary` or `manualEvidence`");
     expect(liveVerifierSkill).toContain("matches whether the stored redacted checkout command includes `--wait`");
     expect(liveVerifierSkill).toContain("an immediate checkout command cannot claim wait completion");
@@ -405,9 +391,8 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("JSON wait mode also prints the same link/session marker to stderr before the prompt");
     expect(liveVerifierSkill).toContain("Use `--checkout-remove-limit-items` only for the explicit Zepto item-limit warning removal before that checkout handoff");
     expect(liveVerifierSkill).toContain("Wait mode re-checks the visible page after Enter");
-    expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");
-    expect(liveVerifierSkill).toContain("not accepted as checkout handoff coverage");
-    expect(liveVerifierSkill).toContain("does not satisfy `coverage.checkoutHandoff`");
+    expect(liveVerifierSkill).toContain("can be accepted as checkout handoff coverage only when emitted as a successful JSON checkout step");
+    expect(liveVerifierSkill).toContain("does not prove payment or order placement");
     expect(liveVerifierSkill).toContain("When `verify:live` reaches `checkout_manual_action_required`");
     expect(liveVerifierSkill).toContain("runner console should print the fixed `Payment link: https://www.zepto.com/?cart=open`");
     expect(liveVerifierSkill).toContain("`Payment link session: user_zepto_session_required`");
@@ -415,7 +400,7 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("A checkout `--wait` timeout report may include the fixed `Payment link: https://www.zepto.com/?cart=open`");
     expect(liveVerifierSkill).toContain("`Payment link session: user_zepto_session_required` in `error.hint`");
     expect(liveVerifierSkill).toContain("must still leave checkout and track coverage missing");
-    expect(liveVerifierSkill).toContain('Checkout coverage requires `status: "checkout_handoff_returned"`');
+    expect(liveVerifierSkill).toContain('Checkout coverage requires either `status: "checkout_handoff_returned"` or successful `status: "checkout_manual_action_required"`');
     expect(builderSkill).toContain("`zepo remove --json` should include `removedItems` evidence");
     expect(builderSkill).toContain("Remove JSON should expose structured `removedItems` plus the resulting `cart` only");
   });

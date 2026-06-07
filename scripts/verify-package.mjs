@@ -392,13 +392,12 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Both preflight steps must report current-mode `browserAutomation.ready === true`",
     "doctor must also show a passing `Playwright Chromium` check",
     "Use `--production-scope` for the final readiness run",
-    "then requests non-empty cart with total/payable evidence, checkout handoff, and track coverage with checkout wait enabled",
-    "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence",
+    "then requests non-empty cart with total/payable evidence, safe checkout/payment-link handoff, and track coverage",
+    "A successful `checkout_manual_action_required` checkout step can satisfy checkout handoff coverage when it preserves the fixed `paymentLink`, `paymentLinkSession`, human-action boundary markers, non-empty cart evidence, and payable-total evidence",
     "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings",
     "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings",
     "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings",
-    "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking",
-    "valid manual checkout evidence still sets diagnostic `checkoutManualBoundary` coverage",
+    "Use `--checkout-wait` only when the human wants to continue inside Zepto before checkout JSON returns",
     "Use `--browser-locale <locale>` and `--browser-timezone <timezone>` to pass the same validated browser context to every child `zepo` command",
     "<redacted-browser-locale>",
     "<redacted-browser-timezone>",
@@ -416,7 +415,7 @@ function verifyInstalledReadmeContract(prefixDir) {
     "`verify:live:report` does not contact Zepto or prove a fresh run happened",
     "sanitized non-future `generatedAt` plus data/report path metadata, optional `--max-age-minutes` freshness",
     "the fixed runner note",
-    "Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals",
+    "Production-scope acceptance rejects missing freshness windows and cart evidence without totals",
     "accepted report schema",
     "complete boolean capability summaries",
     "redacted step command contract",
@@ -439,8 +438,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "Use `--require-production-scope` with `--max-age-minutes 1440` for the final readiness gate",
     "For every checkout step, `checkoutWaitCompleted` in `summary` or `manualEvidence` must match whether the stored redacted checkout command includes `--wait`",
     "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it",
-    "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic; it does not satisfy `coverage.checkoutHandoff`",
-    "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence",
+    "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic on incomplete reports",
+    "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout/payment-link handoff, and track to be explicitly requested and covered",
     "stale saved reports or stale order-history tracking cannot be reused as current evidence",
     "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report",
     "`attempted`/`coverage` consistency with `steps`",
@@ -2355,9 +2354,15 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("writeLiveReport(reportPath, report)"),
     "expected installed live verifier to write sanitized partial reports on interrupts"
   );
+  const productionScopeDefaultsSource = liveVerifierSource.slice(
+    liveVerifierSource.indexOf("function applyProductionScopeDefaults"),
+    liveVerifierSource.indexOf("function failUnknownArgument")
+  );
   assert(
-    liveVerifierSource.includes("parsed.checkoutWait = true"),
-    "expected installed verify:live production-scope preset to enable checkout wait"
+    productionScopeDefaultsSource.includes("parsed.checkout = true") &&
+      productionScopeDefaultsSource.includes("parsed.track = true") &&
+      !productionScopeDefaultsSource.includes("parsed.checkoutWait = true"),
+    "expected installed verify:live production-scope preset to use immediate checkout handoff unless --checkout-wait is explicit"
   );
   assert(
     liveVerifierSource.includes("options.cartRemoveLimitItems") &&
@@ -2381,8 +2386,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     liveVerifierSource.includes("shouldContinueAfterManualCheckout(checkoutResult)") &&
       liveVerifierSource.includes("function shouldContinueAfterManualCheckout(result)") &&
       liveVerifierSource.includes("!options.productionScope") &&
-      liveVerifierSource.includes("Production-scope verification stops before tracking because checkout handoff coverage is missing."),
-    "expected installed verify:live production-scope to stop before track when checkout handoff coverage is missing"
+      liveVerifierSource.includes('checkoutResult.payload?.status === "checkout_manual_action_required"'),
+    "expected installed verify:live to distinguish failed manual continuation from successful payment-link handoff"
   );
   assert(
     liveVerifierSource.includes("printManualCheckoutContinuationGuidance()") &&
@@ -2444,13 +2449,9 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live help to explain production-scope preset"
   );
   assert(
-    result.stdout.includes("If checkout remains at checkout_manual_action_required, production-scope verification stops before track"),
-    "expected installed verify:live help to explain production-scope stops before track without checkout handoff"
-  );
-  assert(
-    result.stdout.includes("Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage") &&
-      result.stdout.includes("does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"),
-    "expected installed verify:live help to explain diagnostic manual checkout boundary coverage"
+    result.stdout.includes("can satisfy checkout handoff coverage when emitted as a successful JSON checkout step") &&
+      result.stdout.includes("does not satisfy payment proof or order-placement proof"),
+    "expected installed verify:live help to explain successful manual checkout payment-link handoff coverage"
   );
   assert(
     result.stdout.includes("When --checkout-wait is used") &&
@@ -2520,8 +2521,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     "expected installed verify:live:report production-scope focused-workflow exclusion guidance"
   );
   assert(
-    reportHelpResult.stdout.includes("checkout_manual_action_required is manual continuation evidence only"),
-    "expected installed verify:live:report manual checkout exclusion guidance"
+    reportHelpResult.stdout.includes("checkout_manual_action_required can be accepted as checkout handoff coverage only"),
+    "expected installed verify:live:report manual checkout payment-link handoff guidance"
   );
   assert(
     reportHelpResult.stdout.includes(
@@ -2534,7 +2535,7 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       "coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence"
     ) &&
       reportHelpResult.stdout.includes(
-        "does not satisfy coverage.checkoutHandoff, payment proof, order-placement proof, or production-scope readiness"
+        "a successful checkout_manual_action_required summary can satisfy coverage.checkoutHandoff as payment-link handoff evidence"
       ),
     "expected installed verify:live:report manual checkout diagnostic coverage guidance"
   );
@@ -3653,7 +3654,11 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       step.name === "checkout"
         ? {
             ...step,
-            command: "zepo --data-dir <redacted-data-dir> --visible checkout --json"
+            command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+            summary: {
+              ...step.summary,
+              checkoutWaitCompleted: false
+            }
           }
         : step
     )
@@ -3669,8 +3674,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       expectedVersion: packageJson.version,
       requireProductionScope: true,
       maxAgeMs: 60_000
-    }).issues.some((issue) => issue.code === "live_report_production_scope_checkout_wait_missing"),
-    "expected installed live report acceptance helper to reject production-scope evidence without checkout wait"
+    }).accepted === true,
+    "expected installed live report acceptance helper to accept production-scope immediate payment-link handoff evidence"
   );
   const missingWaitMarkerProductionScopeLiveReport = {
     ...freshProductionScopeLiveReport,
@@ -3701,8 +3706,8 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       expectedVersion: packageJson.version,
       requireProductionScope: true,
       maxAgeMs: 60_000
-    }).issues.some((issue) => issue.code === "live_report_production_scope_checkout_wait_missing"),
-    "expected installed live report acceptance helper to reject production-scope evidence without checkout wait marker"
+    }).issues.some((issue) => issue.code === "live_report_step_contract_mismatch"),
+    "expected installed live report acceptance helper to reject checkout wait command with false wait marker"
   );
   const diagnosticManualCheckoutStep = buildLiveReportStep({
     name: "checkout",
@@ -3731,33 +3736,48 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       orderStatusCommand: "zepo track"
     }),
     stderr: "",
-    summarizePayload: () => {
-      throw new Error("manual checkout should not be summarized as handoff coverage");
-    }
+    summarizePayload: (_name, payload) => ({
+      status: payload.status,
+      humanActionRequired: payload.humanActionRequired,
+      automationBoundary: payload.automationBoundary,
+      handoffUrl: payload.handoffUrl,
+      paymentHandoffUrl: payload.paymentHandoffUrl,
+      paymentLink: payload.paymentLink,
+      paymentLinkSession: payload.paymentLinkSession,
+      handoffSurface: payload.handoffSurface,
+      browserOpenAfterReturn: payload.browserOpenAfterReturn,
+      checkoutWaitCompleted: payload.checkoutWaitCompleted,
+      manualPaymentControlVisible: payload.manualPaymentControlVisible,
+      checkoutCartItemCount: payload.cartEvidence?.itemCount,
+      checkoutHasPayableTotal: payload.cartEvidence?.hasPayableTotal,
+      cartPrecondition: payload.cartPrecondition,
+      paymentStatus: payload.paymentStatus,
+      orderPlacement: payload.orderPlacement,
+      orderStatusCommand: payload.orderStatusCommand
+    })
   }).step;
   assert(
-    diagnosticManualCheckoutStep.ok === false &&
-      diagnosticManualCheckoutStep.error?.code === "live_verification_incomplete" &&
-      diagnosticManualCheckoutStep.manualEvidence?.status === "checkout_manual_action_required" &&
-      diagnosticManualCheckoutStep.manualEvidence?.humanActionRequired === true &&
-      diagnosticManualCheckoutStep.manualEvidence?.automationBoundary ===
+    diagnosticManualCheckoutStep.ok === true &&
+      diagnosticManualCheckoutStep.summary?.status === "checkout_manual_action_required" &&
+      diagnosticManualCheckoutStep.summary?.humanActionRequired === true &&
+      diagnosticManualCheckoutStep.summary?.automationBoundary ===
         "zepocli_did_not_click_payment_or_order_controls" &&
-      diagnosticManualCheckoutStep.manualEvidence?.handoffUrl === "https://www.zepto.com/?cart=open" &&
-      diagnosticManualCheckoutStep.manualEvidence?.paymentHandoffUrl === "https://www.zepto.com/?cart=open" &&
-      diagnosticManualCheckoutStep.manualEvidence?.paymentLink === "https://www.zepto.com/?cart=open" &&
-      diagnosticManualCheckoutStep.manualEvidence?.paymentLinkSession === "user_zepto_session_required" &&
-      diagnosticManualCheckoutStep.manualEvidence?.handoffSurface === "visible_zepto_browser" &&
-      diagnosticManualCheckoutStep.manualEvidence?.browserOpenAfterReturn === false &&
-      diagnosticManualCheckoutStep.manualEvidence?.checkoutWaitCompleted === true &&
-      diagnosticManualCheckoutStep.manualEvidence?.manualPaymentControlVisible === true &&
-      diagnosticManualCheckoutStep.manualEvidence?.checkoutCartItemCount === 2 &&
-      diagnosticManualCheckoutStep.manualEvidence?.checkoutHasPayableTotal === true &&
-      diagnosticManualCheckoutStep.manualEvidence?.cartPrecondition === "non_empty_cart_verified",
-    "expected installed live report checkout manual-continuation steps to keep sanitized manual evidence"
+      diagnosticManualCheckoutStep.summary?.handoffUrl === "https://www.zepto.com/?cart=open" &&
+      diagnosticManualCheckoutStep.summary?.paymentHandoffUrl === "https://www.zepto.com/?cart=open" &&
+      diagnosticManualCheckoutStep.summary?.paymentLink === "https://www.zepto.com/?cart=open" &&
+      diagnosticManualCheckoutStep.summary?.paymentLinkSession === "user_zepto_session_required" &&
+      diagnosticManualCheckoutStep.summary?.handoffSurface === "visible_zepto_browser" &&
+      diagnosticManualCheckoutStep.summary?.browserOpenAfterReturn === false &&
+      diagnosticManualCheckoutStep.summary?.checkoutWaitCompleted === true &&
+      diagnosticManualCheckoutStep.summary?.manualPaymentControlVisible === true &&
+      diagnosticManualCheckoutStep.summary?.checkoutCartItemCount === 2 &&
+      diagnosticManualCheckoutStep.summary?.checkoutHasPayableTotal === true &&
+      diagnosticManualCheckoutStep.summary?.cartPrecondition === "non_empty_cart_verified",
+    "expected installed live report checkout manual-continuation steps to keep sanitized payment-link handoff summary"
   );
   const manualCheckoutReport = {
     ...acceptedLiveReport,
-    ok: false,
+    ok: true,
     steps: acceptedLiveReport.steps.map((step) => (step.name === "checkout" ? diagnosticManualCheckoutStep : step))
   };
   manualCheckoutReport.attempted = summarizeLiveReportAttempts(manualCheckoutReport.steps);
@@ -3767,22 +3787,19 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     manualCheckoutReport.coverage
   );
   assert(
-    manualCheckoutReport.attempted.checkoutManualBoundary === true &&
-      manualCheckoutReport.coverage.checkoutManualBoundary === true &&
-      manualCheckoutReport.coverage.checkoutHandoff === false &&
+    manualCheckoutReport.attempted.checkoutManualBoundary === false &&
+      manualCheckoutReport.coverage.checkoutManualBoundary === false &&
+      manualCheckoutReport.coverage.checkoutHandoff === true &&
+      manualCheckoutReport.missingCoverage.checkoutHandoff === false &&
       manualCheckoutReport.missingCoverage.checkoutManualBoundary === false,
-    "expected installed live report manual checkout boundary to stay diagnostic"
+    "expected installed live report manual checkout payment-link handoff to count as checkout coverage"
   );
   const manualCheckoutIssues = validateLiveReportAcceptance(manualCheckoutReport, {
     expectedVersion: packageJson.version
   }).issues.map((issue) => issue.code);
   assert(
-    manualCheckoutIssues.includes("live_report_not_ok") &&
-      manualCheckoutIssues.includes("live_report_requested_coverage_missing") &&
-      !manualCheckoutIssues.includes("live_report_unexpected_field") &&
-      !manualCheckoutIssues.includes("live_report_step_result_mismatch") &&
-      !manualCheckoutIssues.includes("live_report_step_contract_mismatch"),
-    "expected installed live report manual checkout evidence to remain diagnostic only"
+    manualCheckoutIssues.length === 0,
+    "expected installed live report manual checkout evidence to pass as payment-link handoff coverage"
   );
 
   const staleManualCheckoutStep = {
@@ -5836,12 +5853,32 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       orderStatusCommand: "zepo track"
     }),
     stderr: "",
-    summarizePayload: () => ({ unsafe: true })
+    summarizePayload: (_name, payload) => ({
+      status: payload.status,
+      humanActionRequired: payload.humanActionRequired,
+      automationBoundary: payload.automationBoundary,
+      handoffUrl: payload.handoffUrl,
+      paymentHandoffUrl: payload.paymentHandoffUrl,
+      paymentLink: payload.paymentLink,
+      paymentLinkSession: payload.paymentLinkSession,
+      handoffSurface: payload.handoffSurface,
+      browserOpenAfterReturn: payload.browserOpenAfterReturn,
+      checkoutWaitCompleted: payload.checkoutWaitCompleted,
+      manualPaymentControlVisible: payload.manualPaymentControlVisible,
+      checkoutCartItemCount: payload.cartEvidence?.itemCount,
+      checkoutHasPayableTotal: payload.cartEvidence?.hasPayableTotal,
+      cartPrecondition: payload.cartPrecondition,
+      paymentStatus: payload.paymentStatus,
+      orderPlacement: payload.orderPlacement,
+      orderStatusCommand: payload.orderStatusCommand
+    })
   });
-  assert(manualCheckoutStep.ok === false, "expected installed manual checkout live report to stay incomplete");
   assert(
-    manualCheckoutStep.error?.code === "live_verification_incomplete",
-    "expected installed manual checkout live report to use incomplete coverage code"
+    manualCheckoutStep.ok === true &&
+      manualCheckoutStep.summary?.status === "checkout_manual_action_required" &&
+      manualCheckoutStep.summary?.checkoutCartItemCount === 2 &&
+      manualCheckoutStep.summary?.checkoutHasPayableTotal === true,
+    "expected installed manual checkout live report to accept payment-link handoff summary"
   );
 
   const { step: checkoutWithoutCartPreconditionStep } = buildLiveReportStep({

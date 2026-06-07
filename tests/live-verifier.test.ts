@@ -272,7 +272,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--checkout");
     expect(result.stdout).toContain("--production-scope");
     expect(result.stdout).toContain("Final readiness preset");
-    expect(result.stdout).toContain("with checkout wait enabled");
+    expect(result.stdout).toContain("safe checkout/payment-link handoff");
     expect(result.stdout).toContain("--add-remove-limit-items");
     expect(result.stdout).toContain("--cart-remove-limit-items");
     expect(result.stdout).toContain("--checkout-remove-limit-items");
@@ -283,7 +283,7 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("--reorder-last");
     expect(result.stdout).toContain("--choose-add");
     expect(result.stdout).toContain("--checkout-wait");
-    expect(result.stdout).toContain("manual payment controls still do not count as checkout handoff coverage");
+    expect(result.stdout).toContain("production scope does not require this unless the human wants to continue inside Zepto first");
     expect(result.stdout).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
     );
@@ -292,14 +292,9 @@ describe("live verification runner", () => {
     );
     expect(result.stdout).toContain("accepts 10-digit, +91, or leading-0 Indian mobile formats");
     expect(result.stdout).toContain(
-      "If checkout remains at checkout_manual_action_required, production-scope verification stops before track"
+      "can satisfy checkout handoff coverage when emitted as a successful JSON checkout step with the fixed payment link/session markers and payable cart evidence"
     );
-    expect(result.stdout).toContain(
-      "Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage"
-    );
-    expect(result.stdout).toContain(
-      "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
-    );
+    expect(result.stdout).toContain("does not satisfy payment proof or order-placement proof");
     expect(result.stdout).toContain("When --checkout-wait is used");
     expect(result.stdout).toContain("before launching the waiting checkout command");
     expect(result.stdout).toContain("a later prompt timeout still leaves the Zepto-owned session link in the console");
@@ -326,7 +321,10 @@ describe("live verification runner", () => {
       "If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step."
     );
     expect(result.stdout).toContain(
-      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking."
+      "Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, safe checkout/payment-link handoff, and track coverage."
+    );
+    expect(result.stdout).toContain(
+      "The checkout step may stop at checkout_manual_action_required when Zepto exposes only an amount-bearing cart payment control"
     );
     expect(result.stdout).toContain(
       "Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings"
@@ -357,10 +355,10 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain("generatedAt is not older than the requested freshness window");
     expect(result.stdout).toContain("local status readiness");
     expect(result.stdout).toContain(
-      "core login/session, search, address, non-empty cart with total/payable evidence, checkout handoff, and track workflow was requested and has passing coverage"
+      "core login/session, search, address, non-empty cart with total/payable evidence, checkout/payment-link handoff, and track workflow was requested and has passing coverage"
     );
     expect(result.stdout).toContain(
-      "checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking"
+      "checkout handoff evidence keeps paymentStatus and orderPlacement unconfirmed; payment completion remains a Zepto-side user action"
     );
     expect(result.stdout).toContain(
       "manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, paymentHandoffUrl, paymentLink, paymentLinkSession, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers"
@@ -369,7 +367,7 @@ describe("live verification runner", () => {
       "coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence"
     );
     expect(result.stdout).toContain(
-      "does not satisfy coverage.checkoutHandoff, payment proof, order-placement proof, or production-scope readiness"
+      "a successful checkout_manual_action_required summary can satisfy coverage.checkoutHandoff as payment-link handoff evidence"
     );
     expect(result.stdout).toContain(
       "address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered"
@@ -479,15 +477,19 @@ describe("live verification runner", () => {
     expect(script).toContain('result?.payload?.status === "checkout_manual_action_required"');
   });
 
-  it("stops production-scope verification before tracking when checkout remains manual-only", () => {
+  it("keeps production-scope checkout immediate unless checkout wait is explicit", () => {
     const script = readFileSync(scriptPath, "utf8");
-
-    expect(script).toContain(
-      "Production-scope verification stops before tracking because checkout handoff coverage is missing."
+    const productionDefaults = script.slice(
+      script.indexOf("function applyProductionScopeDefaults"),
+      script.indexOf("function failUnknownArgument")
     );
+
+    expect(productionDefaults).not.toContain("parsed.checkoutWait = true;");
+    expect(productionDefaults).toContain("parsed.checkout = true;");
+    expect(productionDefaults).toContain("parsed.track = true;");
     expect(script.indexOf("!options.productionScope")).toBeGreaterThan(script.indexOf("function shouldContinueAfterManualCheckout"));
     expect(script).toContain(
-      "If checkout remains at checkout_manual_action_required, production-scope verification stops before track"
+      "The checkout step may stop at checkout_manual_action_required when Zepto exposes only an amount-bearing cart payment control"
     );
   });
 
@@ -1061,7 +1063,11 @@ describe("live verification runner", () => {
         step.name === "checkout"
           ? {
               ...step,
-              command: "zepo --data-dir <redacted-data-dir> --visible checkout --json"
+              command: "zepo --data-dir <redacted-data-dir> --visible checkout --json",
+              summary: {
+                ...step.summary,
+                checkoutWaitCompleted: false
+              }
             }
           : step
       )
@@ -1077,8 +1083,11 @@ describe("live verification runner", () => {
         expectedVersion: packageJson.version,
         requireProductionScope: true,
         maxAgeMs: 60_000
-      }).issues.map((issue) => issue.code)
-    ).toContain("live_report_production_scope_checkout_wait_missing");
+      })
+    ).toEqual({
+      accepted: true,
+      issues: []
+    });
     const missingWaitMarkerProductionScope = productionScopeLiveReport({
       generatedAt: new Date().toISOString(),
       steps: productionScopeLiveReport().steps.map((step) =>
@@ -1104,7 +1113,7 @@ describe("live verification runner", () => {
         requireProductionScope: true,
         maxAgeMs: 60_000
       }).issues.map((issue) => issue.code)
-    ).toContain("live_report_production_scope_checkout_wait_missing");
+    ).toContain("live_report_step_contract_mismatch");
     expect(
       validateLiveReportAcceptance(productionScopeLiveReport({ generatedAt: new Date().toISOString() }), {
         expectedVersion: packageJson.version,
@@ -3707,7 +3716,47 @@ describe("live verification runner", () => {
     });
   });
 
-  it("does not count manual checkout action as live checkout handoff coverage", () => {
+  it("counts successful manual checkout action as payment-link handoff coverage", () => {
+    const summarizeCheckoutPayload = (
+      _name: string,
+      payload: {
+        status?: string;
+        humanActionRequired?: boolean;
+        automationBoundary?: string;
+        handoffUrl?: string;
+        paymentHandoffUrl?: string;
+        paymentLink?: string;
+        paymentLinkSession?: string;
+        handoffSurface?: string;
+        browserOpenAfterReturn?: boolean;
+        checkoutWaitCompleted?: boolean;
+        manualPaymentControlVisible?: boolean;
+        cartEvidence?: { itemCount?: number; hasPayableTotal?: boolean };
+        cartPrecondition?: string;
+        paymentStatus?: string;
+        orderPlacement?: string;
+        orderStatusCommand?: string;
+      }
+    ) => ({
+      status: payload.status,
+      humanActionRequired: payload.humanActionRequired,
+      automationBoundary: payload.automationBoundary,
+      handoffUrl: payload.handoffUrl,
+      paymentHandoffUrl: payload.paymentHandoffUrl,
+      paymentLink: payload.paymentLink,
+      paymentLinkSession: payload.paymentLinkSession,
+      handoffSurface: payload.handoffSurface,
+      browserOpenAfterReturn: payload.browserOpenAfterReturn,
+      checkoutWaitCompleted: payload.checkoutWaitCompleted,
+      manualPaymentControlVisible: payload.manualPaymentControlVisible,
+      checkoutCartItemCount: payload.cartEvidence?.itemCount,
+      checkoutHasPayableTotal: payload.cartEvidence?.hasPayableTotal,
+      cartPrecondition: payload.cartPrecondition,
+      paymentStatus: payload.paymentStatus,
+      orderPlacement: payload.orderPlacement,
+      orderStatusCommand: payload.orderStatusCommand
+    });
+
     const { step } = buildLiveReportStep({
       name: "checkout",
       args: ["--data-dir", ".zepo-live", "--visible", "checkout", "--wait", "--json"],
@@ -3735,17 +3784,15 @@ describe("live verification runner", () => {
         orderStatusCommand: "zepo track"
       }),
       stderr: "",
-      summarizePayload: () => {
-        throw new Error("manual checkout payload should not be summarized as handoff coverage");
-      }
+      summarizePayload: summarizeCheckoutPayload
     });
 
     expect(step).toEqual({
       name: "checkout",
       command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
-      exitCode: 1,
-      ok: false,
-      manualEvidence: {
+      exitCode: 0,
+      ok: true,
+      summary: {
         status: "checkout_manual_action_required",
         humanActionRequired: true,
         automationBoundary: "zepocli_did_not_click_payment_or_order_controls",
@@ -3763,15 +3810,11 @@ describe("live verification runner", () => {
         paymentStatus: "not_observed_by_zepocli",
         orderPlacement: "not_confirmed_by_zepocli",
         orderStatusCommand: "zepo track"
-      },
-      error: {
-        code: "live_verification_incomplete",
-        message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
       }
     });
 
     const report = acceptedLiveReport({
-      ok: false,
+      ok: true,
       requested: summarizeLiveReportRequests({
         search: "milk",
         checkout: true
@@ -3782,18 +3825,17 @@ describe("live verification runner", () => {
     report.coverage = summarizeLiveReportCoverage(report.steps);
     report.missingCoverage = summarizeLiveReportMissingCoverage(report.requested, report.coverage);
 
-    expect(report.attempted.checkoutManualBoundary).toBe(true);
-    expect(report.coverage.checkoutManualBoundary).toBe(true);
-    expect(report.coverage.checkoutHandoff).toBe(false);
+    expect(report.attempted.checkoutManualBoundary).toBe(false);
+    expect(report.coverage.checkoutManualBoundary).toBe(false);
+    expect(report.coverage.checkoutHandoff).toBe(true);
+    expect(report.missingCoverage.checkoutHandoff).toBe(false);
     expect(report.missingCoverage.checkoutManualBoundary).toBe(false);
 
     const result = validateLiveReportAcceptance(report, { expectedVersion: packageJson.version });
-    expect(result.accepted).toBe(false);
-    expect(result.issues.map((issue) => issue.code)).toContain("live_report_not_ok");
-    expect(result.issues.map((issue) => issue.code)).toContain("live_report_requested_coverage_missing");
-    expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_unexpected_field");
-    expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_step_result_mismatch");
-    expect(result.issues.map((issue) => issue.code)).not.toContain("live_report_step_contract_mismatch");
+    expect(result).toEqual({
+      accepted: true,
+      issues: []
+    });
   });
 
   it("rejects checkout JSON that omits fixed handoff markers", () => {
