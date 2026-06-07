@@ -256,6 +256,9 @@ describe("README package guidance", () => {
     expect(readme).toContain("Use `zepo --visible checkout --wait` or human text mode");
     expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
     expect(readme).toContain("unless the caller explicitly passes `--wait`");
+    expect(readme).toContain("wait mode prints `Payment link: https://www.zepto.com/?cart=open`");
+    expect(readme).toContain("before the prompt so agents can hand off the Zepto-owned session link");
+    expect(readme).toContain("Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt");
     expect(readme).toContain("Wait mode re-checks the visible page after the human presses Enter");
     expect(readme).toContain("wait mode observes the visible page again after Enter before returning JSON");
     expect(readme).toContain("manual amount-bearing payment control");

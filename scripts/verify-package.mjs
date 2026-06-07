@@ -306,6 +306,9 @@ function verifyInstalledReadmeContract(prefixDir) {
     "zepo --visible checkout",
     "JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt",
     "explicit JSON wait mode (`zepo --visible checkout --json --wait`)",
+    "wait mode prints `Payment link: https://www.zepto.com/?cart=open`",
+    "before the prompt so agents can hand off the Zepto-owned session link",
+    "Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt",
     "Wait mode re-checks the visible page after the human presses Enter",
     "Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`",
     "`Payment link: https://www.zepto.com/?cart=open`",
@@ -632,6 +635,13 @@ function verifyInstalledBackgroundAutomationModeContract(prefixDir) {
     checkoutServiceSource.indexOf("requireVisibleBrowser(this.runtime") <
       checkoutServiceSource.indexOf("assertConfirmedSession(this.runtime"),
     "expected installed checkout service to require explicit --visible before checking session state"
+  );
+  assert(
+    checkoutServiceSource.includes("Payment link: ${ZEPTO_CHECKOUT_HANDOFF_URL}") &&
+      checkoutServiceSource.includes("Payment link session: ${CHECKOUT_PAYMENT_LINK_SESSION}") &&
+      checkoutServiceSource.includes("Open in the user's Zepto session; Zepto handles payment.") &&
+      checkoutServiceSource.includes("After any Zepto-side order action, run `zepo track`."),
+    "expected installed checkout wait prompt to print payment-link handoff guidance"
   );
   console.log("pass installed background automation mode contract");
 }
