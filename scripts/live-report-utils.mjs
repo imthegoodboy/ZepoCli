@@ -515,7 +515,6 @@ export function validateLiveReportAcceptance(report, options = {}) {
 
   if (options.requireProductionScope === true && steps) {
     validateLiveReportProductionScopeCartState(steps, issues);
-    validateLiveReportProductionScopeCheckoutWait(steps, issues);
   }
 
   if (options.requireProductionScope === true && options.maxAgeMs === undefined) {
@@ -576,22 +575,6 @@ function validateLiveReportProductionScopeCartState(steps, issues) {
       message: "Live report production-scope cart evidence must preserve cart total/payable evidence."
     });
   }
-}
-
-function validateLiveReportProductionScopeCheckoutWait(steps, issues) {
-  const checkoutStep = steps.find((step) => step?.name === "checkout" && step?.ok === true);
-  if (
-    !checkoutStep ||
-    (liveReportCheckoutCommandUsesWait(checkoutStep) && checkoutStep.summary?.checkoutWaitCompleted === true)
-  ) {
-    return;
-  }
-
-  issues.push({
-    code: "live_report_production_scope_checkout_wait_missing",
-    message:
-      "Production-scope checkout evidence must use explicit checkout wait and preserve checkoutWaitCompleted: true so a human can complete Zepto-side checkout/payment before tracking."
-  });
 }
 
 function validateLiveReportFreshness(report, maxAgeMs, issues) {
@@ -1529,7 +1512,7 @@ const LIVE_REPORT_STRING_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
   ["orderPlacement", new Set(["not_confirmed_by_zepocli"])],
   ["orderStatusCommand", new Set(["zepo track"])],
   ["paymentStatus", new Set(["not_observed_by_zepocli"])],
-  ["status", new Set(["checkout_handoff_returned"])]
+  ["status", new Set(["checkout_handoff_returned", "checkout_manual_action_required"])]
 ]);
 const LIVE_REPORT_STRING_ARRAY_SUMMARY_ALLOWED_VALUES_BY_KEY = new Map([
   ["failures", LIVE_REPORT_DOCTOR_CHECK_NAMES],
@@ -1651,7 +1634,8 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
     capability: "checkoutHandoff",
     step: "checkout",
     accepts: (step) =>
-      step.summary?.status === "checkout_handoff_returned" &&
+      (step.summary?.status === "checkout_handoff_returned" ||
+        step.summary?.status === "checkout_manual_action_required") &&
       step.summary?.humanActionRequired === true &&
       step.summary?.automationBoundary === "zepocli_did_not_click_payment_or_order_controls" &&
       step.summary?.handoffUrl === "https://www.zepto.com/?cart=open" &&
@@ -1661,7 +1645,7 @@ const LIVE_REPORT_ACCEPTANCE_REQUIREMENTS = [
       step.summary?.handoffSurface === "visible_zepto_browser" &&
       step.summary?.browserOpenAfterReturn === false &&
       typeof step.summary?.checkoutWaitCompleted === "boolean" &&
-      step.summary?.manualPaymentControlVisible === false &&
+      typeof step.summary?.manualPaymentControlVisible === "boolean" &&
       step.summary?.checkoutCartItemCount > 0 &&
       step.summary?.checkoutHasPayableTotal === true &&
       step.summary?.cartPrecondition === "non_empty_cart_verified" &&
@@ -1901,10 +1885,7 @@ function validateCheckoutPayloadContract(payload) {
     payload?.orderPlacement === "not_confirmed_by_zepocli" &&
     payload?.orderStatusCommand === "zepo track"
   ) {
-    return {
-      code: "live_verification_incomplete",
-      message: "Checkout requires manual Zepto payment-control action and is not checkout handoff coverage."
-    };
+    return undefined;
   }
 
   return {

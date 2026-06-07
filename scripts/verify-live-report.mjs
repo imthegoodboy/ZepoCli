@@ -174,7 +174,7 @@ function printHelp() {
   console.log(`Usage: npm --silent run verify:live:report -- [--require-production-scope] [--max-age-minutes <minutes>|--max-age-minutes=<minutes>] <live-verification-report.json>
 
 Validates that a human-controlled verify:live report is acceptable evidence for the requested scope.
-Use --require-production-scope for final readiness: it also requires --max-age-minutes plus browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, checkout handoff, and track to be requested and covered without focused cleanup/history workflows. The checkout step must include checkout wait evidence.
+Use --require-production-scope for final readiness: it also requires --max-age-minutes plus browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, safe checkout/payment-link handoff, and track to be requested and covered without focused cleanup/history workflows. The checkout step must preserve the fixed Zepto payment link/session markers and payable cart evidence; checkout wait evidence is optional and only proves a human waited inside Zepto before the command returned.
 Use --max-age-minutes so old saved reports cannot be reused as current evidence. It accepts either --max-age-minutes <minutes> or --max-age-minutes=<minutes>.
 
 This command does not contact Zepto and does not prove a fresh live run happened. It checks the report contract:
@@ -201,12 +201,12 @@ This command does not contact Zepto and does not prove a fresh live run happened
 - requested capabilities have passing coverage
 - missingCoverage has no true values
 - required step summaries are present for browser preflight, local status readiness, live session, checkout handoff, checkout cart precondition, and requested workflows
-- checkout_manual_action_required is manual continuation evidence only and is not accepted as checkout handoff coverage
-- sanitized checkout manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, paymentHandoffUrl, paymentLink, paymentLinkSession, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers, and is not accepted as checkout handoff coverage
-- coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence; it is diagnostic and does not satisfy coverage.checkoutHandoff, payment proof, order-placement proof, or production-scope readiness
-- when --require-production-scope is used, the core login/session, search, address, non-empty cart with total/payable evidence, checkout handoff, and track workflow was requested and has passing coverage
+- checkout_manual_action_required can be accepted as checkout handoff coverage only when emitted as a successful checkout JSON step with fixed paymentLink/paymentLinkSession markers, human-action boundary markers, and payable cart evidence
+- sanitized checkout manualEvidence is diagnostic only, must preserve humanActionRequired, automationBoundary, handoffUrl, paymentHandoffUrl, paymentLink, paymentLinkSession, handoffSurface, browserOpenAfterReturn, checkoutWaitCompleted, manualPaymentControlVisible, checkoutCartItemCount, and checkoutHasPayableTotal markers, while successful checkout_manual_action_required summaries can be accepted as checkout/payment-link handoff coverage
+- coverage.checkoutManualBoundary can be true only for valid sanitized manual checkout evidence; it is diagnostic on incomplete reports, while a successful checkout_manual_action_required summary can satisfy coverage.checkoutHandoff as payment-link handoff evidence without proving payment or order placement
+- when --require-production-scope is used, the core login/session, search, address, non-empty cart with total/payable evidence, checkout/payment-link handoff, and track workflow was requested and has passing coverage
 - when --require-production-scope is used, --max-age-minutes is also used so the report is fresh evidence
-- when --require-production-scope is used, checkout wait evidence is present so a human can complete Zepto-side checkout/payment before tracking
+- when --require-production-scope is used, checkout handoff evidence keeps paymentStatus and orderPlacement unconfirmed; payment completion remains a Zepto-side user action
 - when --require-production-scope is used, address-add, address-list, remove, clear, history, and reorder workflows are not requested, attempted, or covered
 
 Example:

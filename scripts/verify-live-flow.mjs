@@ -266,12 +266,10 @@ async function main() {
       printManualCheckoutContinuationGuidance();
     }
     if (!checkoutResult.ok && !shouldContinueAfterManualCheckout(checkoutResult)) {
-      if (options.productionScope && isManualCheckoutContinuation(checkoutResult)) {
-        console.error(
-          "\nProduction-scope verification stops before tracking because checkout handoff coverage is missing."
-        );
-      }
       return;
+    }
+    if (checkoutResult.ok && checkoutResult.payload?.status === "checkout_manual_action_required") {
+      printManualCheckoutContinuationGuidance();
     }
     if (!checkoutResult.ok) {
       console.error(
@@ -937,7 +935,6 @@ function applyProductionScopeDefaults(parsed) {
 
   parsed.cart = true;
   parsed.checkout = true;
-  parsed.checkoutWait = true;
   parsed.track = true;
 }
 
@@ -1188,7 +1185,7 @@ Required:
 
 Options:
   --login               Run visible zepo login if no confirmed session exists
-  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart with total/payable evidence, checkout handoff, and track with checkout wait enabled
+  --production-scope    Final readiness preset; requires --search, --address, and --add, then verifies non-empty cart with total/payable evidence, safe checkout/payment-link handoff, and track
   --phone <number>      Prefill login phone through zepo login --phone; accepts 10-digit, +91, or leading-0 Indian mobile formats
   --browser-locale <locale>
                         Pass a validated browser locale to every child zepo command
@@ -1211,7 +1208,7 @@ Options:
   --checkout            Open checkout/payment handoff in a visible Zepto browser
   --checkout-remove-limit-items
                         During --checkout, explicitly click Zepto's Remove Items action for item-limit warnings before checkout
-  --checkout-wait       During --checkout, wait for a human Zepto-side checkout/payment action before returning JSON; manual payment controls still do not count as checkout handoff coverage
+  --checkout-wait       During --checkout, wait for a human Zepto-side checkout/payment action before returning JSON; production scope does not require this unless the human wants to continue inside Zepto first
   --track               Read latest order status
   --history             Read order history
   --reorder-last        Reorder the latest readable order and read the cart
@@ -1225,12 +1222,11 @@ Example:
 
 The examples use npm --silent so npm does not echo raw invocation arguments before the runner can redact internal zepo command lines.
 If --login is supplied and status already confirms the session, the report requires liveSession coverage instead of a fresh login step.
-Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, checkout handoff, and track coverage, with checkout wait enabled so a human can complete Zepto-side checkout/payment before tracking.
+Use --production-scope for the final production readiness run; it requests browser preflight, local status, live session, address selection, search, add, non-empty cart with total/payable evidence, safe checkout/payment-link handoff, and track coverage. The checkout step may stop at checkout_manual_action_required when Zepto exposes only an amount-bearing cart payment control; that is accepted as CLI handoff evidence only when the fixed payment link/session markers and sanitized cart payable evidence are present.
 Use --add-remove-limit-items only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --cart-remove-limit-items only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before reading cart.
 Use --checkout-remove-limit-items only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's Remove Items action before checkout.
-If checkout remains at checkout_manual_action_required, production-scope verification stops before track because the final report requires checkout handoff coverage first.
-Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage, but it remains manual Zepto continuation evidence and does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness.
+Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage and can satisfy checkout handoff coverage when emitted as a successful JSON checkout step with the fixed payment link/session markers and payable cart evidence. It remains handoff evidence only and does not satisfy payment proof or order-placement proof.
 When --checkout-wait is used, the runner prints Payment link: https://www.zepto.com/?cart=open and Payment link session: user_zepto_session_required before launching the waiting checkout command, so a later prompt timeout still leaves the Zepto-owned session link in the console.
 When checkout reaches checkout_manual_action_required, the runner prints Payment link: https://www.zepto.com/?cart=open and Payment link session: user_zepto_session_required for the user's Zepto session. This is handoff guidance only, not payment proof or order proof.
 

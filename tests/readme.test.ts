@@ -263,17 +263,15 @@ describe("README package guidance", () => {
     expect(readme).toContain("wait mode observes the visible page again after Enter before returning JSON");
     expect(readme).toContain("manual amount-bearing payment control");
     expect(readme).toContain("Continue to Payment ₹108");
-    expect(readme).toContain("must not be counted as checkout handoff coverage");
+    expect(readme).toContain("it can count as checkout/payment-link handoff coverage only as a successful JSON checkout step");
     expect(readme).toContain("manual checkout continuation use `live_verification_incomplete`");
     expect(readme).toContain("When `verify:live` reaches `checkout_manual_action_required`");
     expect(readme).toContain("runner console prints the fixed `Payment link: https://www.zepto.com/?cart=open`");
     expect(readme).toContain("`Payment link session: user_zepto_session_required`");
     expect(readme).toContain("That console guidance is not payment proof or order proof");
     expect(readme).toContain(
-      "When checkout wait is requested, the runner prints the fixed `Payment link: https://www.zepto.com/?cart=open`"
+      "Use `--checkout-wait` only when the human wants to continue inside Zepto before checkout JSON returns"
     );
-    expect(readme).toContain("before launching the waiting checkout command");
-    expect(readme).toContain("a later prompt timeout still leaves the Zepto-owned session link in the console");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'
@@ -294,13 +292,10 @@ describe("README package guidance", () => {
     expect(readme).toContain("normal `doctor --json` browser-launch checks");
     expect(readme).toContain("the same doctor checks");
     expect(readme).toContain(
-      "Use `--production-scope` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests non-empty cart with total/payable evidence, checkout handoff, and track coverage with checkout wait enabled"
+      "Use `--production-scope` for the final readiness run; it requires `--search`, `--address`, and `--add`, then requests non-empty cart with total/payable evidence, safe checkout/payment-link handoff, and track coverage"
     );
     expect(readme).toContain(
-      "The wait step lets a human complete Zepto-side checkout/payment before tracking and is required for accepted production-scope evidence"
-    );
-    expect(readme).toContain(
-      "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
+      "A successful `checkout_manual_action_required` checkout step can satisfy checkout handoff coverage when it preserves the fixed `paymentLink`, `paymentLinkSession`, human-action boundary markers, non-empty cart evidence, and payable-total evidence"
     );
     expect(readme).toContain(
       "Use `--cart-remove-limit-items` only when the visible Zepto cart evidence step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
@@ -309,10 +304,7 @@ describe("README package guidance", () => {
       "Use `--checkout-remove-limit-items` only when the visible Zepto cart shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before checkout"
     );
     expect(readme).toContain(
-      "If checkout remains at `checkout_manual_action_required`, production-scope verification stops before `track` because final readiness requires checkout handoff coverage before tracking"
-    );
-    expect(readme).toContain(
-      "valid manual checkout evidence still sets diagnostic `checkoutManualBoundary` coverage"
+      "Use `--add-remove-limit-items` only when the visible Zepto add verification step shows item-limit warnings and the human explicitly wants the runner to click Zepto's `Remove Items` action before reading cart"
     );
     expect(readme).toContain("Run `--clear` as a separate cleanup pass because it cannot be combined with checkout verification");
     expect(readme).toContain(
@@ -381,24 +373,26 @@ describe("README package guidance", () => {
       "an immediate checkout command cannot claim wait completion, and a wait-mode command cannot omit it"
     );
     expect(readme).toContain(
-      "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic; it does not satisfy `coverage.checkoutHandoff`"
+      "`coverage.checkoutManualBoundary: true` is accepted only from valid sanitized manual checkout evidence and remains diagnostic on incomplete reports"
     );
-    expect(readme).toContain("checkout wait evidence from both the sanitized `--wait` command string and `checkoutWaitCompleted: true`");
     expect(readme).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered, with checkout wait evidence"
+      "a successful `checkout_manual_action_required` summary can satisfy `coverage.checkoutHandoff` as payment-link handoff evidence without proving payment or order placement"
+    );
+    expect(readme).toContain(
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout/payment-link handoff, and track to be explicitly requested and covered"
     );
     expect(readme).toContain(
       "without address-add, address-list, remove, clear, history, or reorder evidence mixed into the final report"
     );
     expect(readme).toContain("focused remove coverage requires `removedItems` evidence with readable price or unit detail plus the resulting cart");
     expect(readme).toContain(
-      "Production-scope acceptance rejects missing freshness windows, no-wait checkout evidence, and cart evidence without totals"
+      "Production-scope acceptance rejects missing freshness windows and cart evidence without totals"
     );
     expect(readme).toContain("`verify:live:report --max-age-minutes` also accepts the assignment form");
     expect(readme).toContain("--max-age-minutes=1440");
     expect(readme).toContain("stale saved reports or stale order-history tracking cannot be reused as current evidence");
     expect(readme).toContain(
-      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout handoff, and track to be explicitly requested and covered"
+      "browser preflight, local status, live session, address selection, search, add, a non-empty cart with total/payable evidence, checkout/payment-link handoff, and track to be explicitly requested and covered"
     );
     expect(readme).toContain("`attempted`/`coverage` consistency with `steps`");
     expect(readme).toContain("sensitive-looking key/value redaction");
