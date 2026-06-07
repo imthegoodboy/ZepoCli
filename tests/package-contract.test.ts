@@ -322,6 +322,9 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("before the prompt so agents can hand off the Zepto-owned session link");
     expect(verifier).toContain("Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt");
     expect(verifier).toContain("Wait mode re-checks the visible page after the human presses Enter");
+    expect(verifier).toContain("expected checkout terminal QR option");
+    expect(verifier).toContain("expected checkout QR file option");
+    expect(verifier).toContain("expected installed checkout-link QR non-payment-proof note");
     expect(verifier).toContain("Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`");
     expect(verifier).toContain("`Payment link: https://www.zepto.com/?cart=open`");
     expect(verifier).toContain("Open in the user's Zepto session; Zepto handles payment.");

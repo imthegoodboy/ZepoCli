@@ -764,6 +764,7 @@ async function verifyInstalledFinalActionLabelContract(prefixDir) {
 
 async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   const checkoutModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "commands", "checkout.js");
+  const checkoutQrModulePath = join(prefixDir, "node_modules", packageJson.name, "dist", "utils", "checkout-qr.js");
   const checkoutAutomationModulePath = join(
     prefixDir,
     "node_modules",
@@ -773,6 +774,7 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
     "checkout.js"
   );
   const { checkoutHandoffOutput } = await import(pathToFileURL(checkoutModulePath).href);
+  const { checkoutLinkQrMetadata } = await import(pathToFileURL(checkoutQrModulePath).href);
   const {
     detectCheckoutHandoffMode,
     isCheckoutHandoffClickText,
@@ -785,6 +787,11 @@ async function verifyInstalledCheckoutHandoffContract(prefixDir) {
   assertCheckoutEvidenceContract(
     checkoutHandoffOutput("manual_payment_control_visible", {
       cartEvidence: { itemCount: 2, hasPayableTotal: true }
+    })
+  );
+  assertCheckoutLinkQrContract(
+    checkoutHandoffOutput("manual_payment_control_visible", {
+      paymentQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true })
     })
   );
   assert(
@@ -6492,6 +6499,8 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stdout.includes("--json"), "expected checkout json option");
         assert(stdout.includes("--wait"), "expected checkout wait option");
         assert(stdout.includes("--remove-limit-items"), "expected checkout limit-warning removal option");
+        assert(stdout.includes("--qr"), "expected checkout terminal QR option");
+        assert(stdout.includes("--qr-file"), "expected checkout QR file option");
       }
     },
     {
@@ -7621,6 +7630,25 @@ function assertCheckoutEvidenceContract(payload) {
   assert(payload.manualPaymentControlVisible === true, "expected installed checkout evidence payment-control marker");
   assert(payload.cartEvidence?.itemCount === 2, "expected installed checkout evidence item count");
   assert(payload.cartEvidence?.hasPayableTotal === true, "expected installed checkout evidence payable-total marker");
+}
+
+function assertCheckoutLinkQrContract(payload) {
+  assert(payload.status === "checkout_manual_action_required", "expected installed checkout QR manual-action status");
+  assert(payload.paymentQr?.payload === "https://www.zepto.com/?cart=open", "expected installed checkout QR payload");
+  assert(
+    payload.paymentQr?.payloadSession === "user_zepto_session_required",
+    "expected installed checkout QR session marker"
+  );
+  assert(payload.paymentQr?.format === "zepto_checkout_link_qr", "expected installed checkout-link QR format");
+  assert(payload.paymentQr?.payment === "handled_by_zepto", "expected installed checkout-link QR payment marker");
+  assert(payload.paymentQr?.terminal === true, "expected installed checkout-link QR terminal marker");
+  assert(payload.paymentQr?.fileSaved === true, "expected installed checkout-link QR file marker");
+  assert(
+    String(payload.paymentQr?.note).includes("not a UPI QR") &&
+      String(payload.paymentQr?.note).includes("payment proof") &&
+      String(payload.paymentQr?.note).includes("order proof"),
+    "expected installed checkout-link QR non-payment-proof note"
+  );
 }
 
 function assertCommonCheckoutOutputContract(payload) {

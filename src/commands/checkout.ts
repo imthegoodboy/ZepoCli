@@ -7,6 +7,12 @@ import {
   CHECKOUT_PAYMENT_LINK_SESSION,
   ZEPTO_CHECKOUT_HANDOFF_URL
 } from "../config/constants.js";
+import {
+  checkoutLinkQrMetadata,
+  type CheckoutLinkQrMetadata,
+  renderCheckoutLinkTerminalQr,
+  saveCheckoutLinkQrFile
+} from "../utils/checkout-qr.js";
 import { printJson } from "../utils/output.js";
 import { wantsJson, withRuntime } from "./shared.js";
 
@@ -17,17 +23,32 @@ export function registerCheckoutCommand(program: Command): void {
     .option("--json", "print machine-readable JSON")
     .option("--wait", "wait for a human Zepto-side checkout/payment action before returning")
     .option("--remove-limit-items", "click Zepto's Remove Items action for item-limit warnings before checkout")
-    .action((options: { json?: boolean; wait?: boolean; removeLimitItems?: boolean }, command: Command) =>
+    .option("--qr", "print a terminal QR code for the Zepto checkout link")
+    .option("--qr-file <path>", "save a PNG QR code for the Zepto checkout link")
+    .action((options: { json?: boolean; wait?: boolean; removeLimitItems?: boolean; qr?: boolean; qrFile?: string }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
         const waitForCompletion = !json || options.wait === true;
+        const qrFileRequested = typeof options.qrFile === "string";
+        const qrRequested = options.qr === true || qrFileRequested;
         const handoff = await new ZeptoService(runtime).checkout.checkout({
           waitForCompletion,
           removeLimitItems: options.removeLimitItems === true
         });
+        const savedQrPath = qrFileRequested ? await saveCheckoutLinkQrFile(options.qrFile ?? "") : undefined;
+        const qrMetadata = qrRequested
+          ? checkoutLinkQrMetadata({ terminal: options.qr === true, fileSaved: savedQrPath !== undefined })
+          : undefined;
         if (json) {
-          printJson(checkoutHandoffOutput(handoff.mode, { waitForCompletion, cartEvidence: handoff.cartEvidence }));
+          if (options.qr === true) {
+            console.error(await renderCheckoutLinkTerminalQr());
+            console.error("Scan to open Zepto checkout in the user's Zepto session. Zepto handles UPI/COD.");
+          }
+          if (savedQrPath) {
+            console.error(`Checkout link QR saved: ${savedQrPath}`);
+          }
+          printJson(checkoutHandoffOutput(handoff.mode, { waitForCompletion, cartEvidence: handoff.cartEvidence, paymentQr: qrMetadata }));
           return;
         }
 
@@ -40,6 +61,13 @@ export function registerCheckoutCommand(program: Command): void {
         );
         console.log(chalk.dim(`Payment link: ${ZEPTO_CHECKOUT_HANDOFF_URL}`));
         console.log(chalk.dim("Open in the user's Zepto session; Zepto handles payment."));
+        if (options.qr === true) {
+          console.log(await renderCheckoutLinkTerminalQr());
+          console.log(chalk.dim("Scan to open Zepto checkout in the user's Zepto session. Zepto handles UPI/COD."));
+        }
+        if (savedQrPath) {
+          console.log(chalk.dim(`Checkout link QR saved: ${savedQrPath}`));
+        }
       })
     );
 }
@@ -59,6 +87,7 @@ export interface CheckoutHandoffOutput {
   cartPrecondition: "non_empty_cart_verified";
   manualPaymentControlVisible: boolean;
   cartEvidence?: CheckoutCartEvidence;
+  paymentQr?: CheckoutLinkQrMetadata;
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
   orderStatusCommand: "zepo track";
@@ -67,7 +96,7 @@ export interface CheckoutHandoffOutput {
 
 export function checkoutHandoffOutput(
   mode: CheckoutHandoffMode = "checkout_or_payment_page",
-  options: { waitForCompletion?: boolean; cartEvidence?: CheckoutCartEvidence } = {}
+  options: { waitForCompletion?: boolean; cartEvidence?: CheckoutCartEvidence; paymentQr?: CheckoutLinkQrMetadata } = {}
 ): CheckoutHandoffOutput {
   const waitForCompletion = options.waitForCompletion === true;
 
@@ -87,6 +116,7 @@ export function checkoutHandoffOutput(
       cartPrecondition: "non_empty_cart_verified",
       manualPaymentControlVisible: true,
       ...(options.cartEvidence ? { cartEvidence: options.cartEvidence } : {}),
+      ...(options.paymentQr ? { paymentQr: options.paymentQr } : {}),
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
@@ -111,6 +141,7 @@ export function checkoutHandoffOutput(
     cartPrecondition: "non_empty_cart_verified",
     manualPaymentControlVisible: false,
     ...(options.cartEvidence ? { cartEvidence: options.cartEvidence } : {}),
+    ...(options.paymentQr ? { paymentQr: options.paymentQr } : {}),
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",
     orderStatusCommand: "zepo track",

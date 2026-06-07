@@ -67,11 +67,13 @@
     "ora": "^9.0.0",
     "pino": "^10.1.0",
     "playwright": "^1.57.0",
+    "qrcode": "^1.5.4",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.10.1",
+    "@types/qrcode": "^1.5.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14"

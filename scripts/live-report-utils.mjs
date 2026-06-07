@@ -123,6 +123,7 @@ const SAFE_REPORT_ERROR_CODES = new Set([
   "headless_browser_throttle",
   "interactive_input_required",
   "invalid_input",
+  "qr_write_failed",
   "live_add_contract_mismatch",
   "live_address_contract_mismatch",
   "live_cart_contract_mismatch",

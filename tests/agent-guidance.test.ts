@@ -109,6 +109,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
       expect(guidance).toContain('paymentLinkSession: "user_zepto_session_required"');
       expect(guidance).toContain("Zepto-owned payment/checkout link");
+      expect(guidance).toContain("`zepo --visible checkout --qr` and `--qr-file <path>` may render or save a QR");
+      expect(guidance).toContain("not Zepto's live UPI QR");
+      expect(guidance).toContain("Do not scrape, crop, save, log, terminal-render, or store Zepto's payment-page UPI QR/payload");
       expect(guidance).toContain("Non-empty human `zepo cart` output should print `Checkout: zepo --visible checkout`");
       expect(guidance).toContain("`Payment link: https://www.zepto.com/?cart=open`");
       expect(guidance).toContain("Open in the user's Zepto session; Zepto handles payment.");
@@ -471,7 +474,9 @@ describe("agent guidance", () => {
     expect(agentStatus).toContain("retryAfterMs: 900000");
     expect(agentStatus).toContain("Do not loop headless Zepto commands");
     expect(agentStatus).toContain("not a product-search failure to work around with stealth");
-    expect(agentStatus).toContain("A fresh accepted production-scope live report is still missing");
+    expect(agentStatus).toContain("Final production-scope live verification passed on 2026-06-07");
+    expect(agentStatus).toContain("The accepted report has all required production-scope `missingCoverage` values false");
+    expect(agentStatus).toContain("The core production-scope CLI workflow has current accepted live evidence");
     expect(agentStatus).toContain("verify:live:report -- --require-production-scope --max-age-minutes 1440");
     expect(agentStatus).toContain("Checkout handoff can be the safe `checkout_manual_action_required` JSON handoff");
     expect(agentStatus).toContain("Checkout handoff is not payment proof");

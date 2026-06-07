@@ -35,6 +35,8 @@ describe("README package guidance", () => {
       "zepo --visible address add",
       "zepo --visible checkout",
       "zepo --visible checkout --remove-limit-items",
+      "zepo --visible checkout --qr",
+      "zepo --visible checkout --qr-file checkout-link.png",
       "zepo track",
       "zepo history",
       "zepo reorder last",
@@ -233,6 +235,10 @@ describe("README package guidance", () => {
     expect(readme).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
     expect(readme).toContain('paymentLinkSession: "user_zepto_session_required"');
     expect(readme).toContain("Zepto-owned payment/checkout link");
+    expect(readme).toContain("`zepo --visible checkout --qr` prints a terminal QR for the Zepto checkout link");
+    expect(readme).toContain("`zepo --visible checkout --qr-file checkout-link.png` saves a PNG for that same link");
+    expect(readme).toContain("These QR outputs open Zepto checkout in the user's Zepto session");
+    expect(readme).toContain("not UPI QR payloads, payment credentials, payment proof, or order proof");
     expect(readme).toContain("Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`");
     expect(readme).toContain("`Payment link: https://www.zepto.com/?cart=open`");
     expect(readme).toContain("Open in the user's Zepto session; Zepto handles payment.");
@@ -254,6 +260,12 @@ describe("README package guidance", () => {
     expect(readme).toContain('status: "checkout_manual_action_required"');
     expect(readme).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
     expect(readme).toContain("Use `zepo --visible checkout --wait` or human text mode");
+    expect(readme).toContain("Use `--qr` to print a terminal QR for that same Zepto checkout link");
+    expect(readme).toContain("or `--qr-file <path>` to save it as a PNG");
+    expect(readme).toContain("The QR payload is `https://www.zepto.com/?cart=open`");
+    expect(readme).toContain("it is intentionally not Zepto's live UPI QR");
+    expect(readme).toContain("JSON checkout also includes `paymentQr` metadata");
+    expect(readme).toContain("`zepto_checkout_link_qr`");
     expect(readme).toContain("explicit JSON wait mode (`zepo --visible checkout --json --wait`)");
     expect(readme).toContain("unless the caller explicitly passes `--wait`");
     expect(readme).toContain("wait mode prints `Payment link: https://www.zepto.com/?cart=open`");

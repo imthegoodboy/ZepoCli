@@ -12,6 +12,7 @@ import {
   isUnsafeCheckoutAutomationClickText
 } from "../src/automation/checkout.js";
 import { checkoutHandoffOutput } from "../src/commands/checkout.js";
+import { checkoutLinkQrMetadata } from "../src/utils/checkout-qr.js";
 
 describe("checkout handoff detection", () => {
   it("detects payment handoff text", () => {
@@ -466,6 +467,27 @@ describe("checkout handoff detection", () => {
         itemCount: 2,
         hasPayableTotal: true
       }
+    });
+  });
+
+  it("reports checkout-link QR metadata without turning it into payment proof", () => {
+    expect(
+      checkoutHandoffOutput("manual_payment_control_visible", {
+        paymentQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true })
+      })
+    ).toMatchObject({
+      status: "checkout_manual_action_required",
+      paymentQr: {
+        payload: "https://www.zepto.com/?cart=open",
+        payloadSession: "user_zepto_session_required",
+        format: "zepto_checkout_link_qr",
+        payment: "handled_by_zepto",
+        terminal: true,
+        fileSaved: true,
+        note: "QR opens Zepto checkout in the user's Zepto session; it is not a UPI QR, payment credential, payment proof, or order proof."
+      },
+      paymentStatus: "not_observed_by_zepocli",
+      orderPlacement: "not_confirmed_by_zepocli"
     });
   });
 
