@@ -8,6 +8,7 @@ import {
   ZEPTO_CHECKOUT_HANDOFF_URL
 } from "../config/constants.js";
 import type { Address, CartItem, CartRemoveResult, CartSnapshot, OrderSnapshot, Product } from "../types.js";
+import type { CheckoutLinkQrMetadata } from "./checkout-qr.js";
 import { redactedStructuredValueForKey, redactSensitiveText } from "./redaction.js";
 
 export { redactSensitiveText } from "./redaction.js";
@@ -74,9 +75,13 @@ export function printCartRemoveResult(result: CartRemoveResult): void {
   });
 }
 
-export function printCart(cart: CartSnapshot, json = false): void {
+export function printCart(
+  cart: CartSnapshot,
+  json = false,
+  options: { checkoutLinkQr?: CheckoutLinkQrMetadata } = {}
+): void {
   if (json) {
-    printJson(toPublicCartSnapshot(cart));
+    printJson(toPublicCartSnapshot(cart, options));
     return;
   }
 
@@ -164,6 +169,7 @@ interface PublicCartCheckoutHandoff {
   handoffSurface: "visible_zepto_browser";
   humanActionRequired: true;
   automationBoundary: typeof CHECKOUT_AUTOMATION_BOUNDARY;
+  checkoutLinkQr?: CheckoutLinkQrMetadata;
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
   orderStatusCommand: "zepo track";
@@ -173,15 +179,18 @@ type PublicCartSnapshot = Omit<CartSnapshot, "rawText"> & {
   checkout?: PublicCartCheckoutHandoff;
 };
 
-function toPublicCartSnapshot(cart: CartSnapshot): PublicCartSnapshot {
+function toPublicCartSnapshot(
+  cart: CartSnapshot,
+  options: { checkoutLinkQr?: CheckoutLinkQrMetadata } = {}
+): PublicCartSnapshot {
   return {
     items: cart.items.map(toPublicCartItem),
     ...(cart.total ? { total: cart.total } : {}),
-    ...(cart.items.length > 0 ? { checkout: publicCartCheckoutHandoff() } : {})
+    ...(cart.items.length > 0 ? { checkout: publicCartCheckoutHandoff(options.checkoutLinkQr) } : {})
   };
 }
 
-function publicCartCheckoutHandoff(): PublicCartCheckoutHandoff {
+function publicCartCheckoutHandoff(checkoutLinkQr?: CheckoutLinkQrMetadata): PublicCartCheckoutHandoff {
   return {
     command: CHECKOUT_COMMAND,
     waitCommand: CHECKOUT_WAIT_COMMAND,
@@ -191,6 +200,7 @@ function publicCartCheckoutHandoff(): PublicCartCheckoutHandoff {
     handoffSurface: "visible_zepto_browser",
     humanActionRequired: true,
     automationBoundary: CHECKOUT_AUTOMATION_BOUNDARY,
+    ...(checkoutLinkQr ? { checkoutLinkQr } : {}),
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",
     orderStatusCommand: "zepo track"

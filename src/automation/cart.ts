@@ -1068,6 +1068,11 @@ async function assertCartRemoveControlReady(locator: Locator, query?: string): P
 }
 
 function cartItemFromRemovableRowText(text: string, query?: string): CartItem | undefined {
+  const compactParsed = parseActiveCartItemFromControlText(text);
+  if (compactParsed && (!query || cartItemMatchesQuery(compactParsed, query))) {
+    return compactParsed;
+  }
+
   const parsed = parseCartItemsFromText(text);
   const matchingParsed = query ? parsed.find((item) => cartItemMatchesQuery(item, query)) : parsed[0];
   if (matchingParsed && hasCartItemDetail(matchingParsed)) {
@@ -1894,6 +1899,7 @@ function isDiscountOnlyPriceText(text: string, price: string): boolean {
 function extractActiveCartQuantity(text: string): string | undefined {
   return (
     text.match(/\b(?:qty|quantity)\s*:?\s*(\d{1,2})\b/i)?.[1] ??
+    text.match(/(?:^|\s)[-−]\s*(\d{1,2})\s*\+/)?.[1] ??
     text.match(/(?:^|\s)x\s*(\d{1,2})\b/i)?.[1] ??
     text.match(/\b(\d{1,2})\s*x(?:\s|$)/i)?.[1] ??
     text.match(/^\s*(\d{1,2})\s+(?=(?:₹|rs\.?\s*\d|inr\s*\d))/i)?.[1]
@@ -1934,7 +1940,7 @@ function nameFromActiveCartText(text: string, price: string | undefined, unit: s
     .replace(/\b\d{1,2}\s*x(?:\s|$)/gi, " ")
     .replace(/^\s*\d{1,2}\s+(?=(?:₹|rs\.?\s*\d|inr\s*\d))/i, " ")
     .replace(/\b(?:remove|delete|decrease|increase|increment)(?:\s+(?:qty|quantity|item|items?))?\b/gi, " ")
-    .replace(/[+\-−]/g, " ")
+    .replace(/(?:^|\s)[+\-−](?=\s|$)/g, " ")
     .replace(/\b\d(?:\.\d)?\s*\([\d,.]+[km]?\)\b/gi, " ")
     .replace(/\b\d(?:\.\d)?\b/g, " ");
 }

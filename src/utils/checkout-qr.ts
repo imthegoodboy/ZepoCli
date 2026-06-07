@@ -45,7 +45,7 @@ export async function saveCheckoutLinkQrFile(filePath: string): Promise<string> 
   if (!trimmedPath) {
     throw new UserFacingError("QR file path cannot be blank.", {
       code: "invalid_input",
-      hint: "Pass a writable PNG path, for example `zepo --visible checkout --qr-file checkout.png`."
+      hint: "Pass a writable PNG path, for example `zepo cart --qr-file checkout-link.png`."
     });
   }
 

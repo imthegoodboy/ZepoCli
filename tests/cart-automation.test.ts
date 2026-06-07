@@ -1134,6 +1134,29 @@ describe("cart automation helpers", () => {
     expect(page.clicked).toBe(true);
   });
 
+  it("clicks tagged cart remove controls for Zepto's compact stepper rows", async () => {
+    const page = createTaggedCartRemovePage(
+      {},
+      [
+        "Coca-Cola Diet Coke Soft Drink Can | Low-Calorie & Fizzy",
+        "1 pc (300 ml)",
+        "-",
+        "1",
+        "+",
+        "₹40"
+      ].join("\n")
+    );
+
+    await expect(clickTaggedCartRemoveButton(page as never, 3, "diet coke")).resolves.toMatchObject({
+      name: "Coca-Cola Diet Coke Soft Drink Can | Low-Calorie & Fizzy",
+      unit: "1 pc (300 ml)",
+      price: "₹40",
+      quantity: "1"
+    });
+
+    expect(page.clicked).toBe(true);
+  });
+
   it("does not click tagged cart remove controls when the row lacks item detail", async () => {
     const page = createTaggedCartRemovePage({}, "Amul Taaza Toned Milk Qty 1 Remove");
 

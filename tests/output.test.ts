@@ -12,6 +12,7 @@ import {
   printProducts
 } from "../src/utils/output.js";
 import type { Address, CartItem } from "../src/types.js";
+import { checkoutLinkQrMetadata } from "../src/utils/checkout-qr.js";
 
 describe("command JSON output", () => {
   afterEach(() => {
@@ -73,6 +74,40 @@ describe("command JSON output", () => {
 
     const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as Record<string, unknown>;
     expect(payload.checkout).toEqual(expectedCartCheckoutHandoff());
+  });
+
+  it("can include safe checkout-link QR metadata in non-empty cart JSON output", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    printCart(
+      {
+        items: [
+          {
+            name: "Diet Coke",
+            unit: "1 pc (300 ml)",
+            quantity: "1",
+            price: "₹40"
+          }
+        ]
+      },
+      true,
+      { checkoutLinkQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true }) }
+    );
+
+    const payload = JSON.parse(String(log.mock.calls[0]?.[0])) as {
+      checkout?: { checkoutLinkQr?: Record<string, unknown>; paymentStatus?: string; orderPlacement?: string };
+    };
+    expect(payload.checkout?.checkoutLinkQr).toEqual({
+      payload: "https://www.zepto.com/?cart=open",
+      payloadSession: "user_zepto_session_required",
+      format: "zepto_checkout_link_qr",
+      payment: "handled_by_zepto",
+      terminal: true,
+      fileSaved: true,
+      note: "QR opens Zepto checkout in the user's Zepto session; it is not a UPI QR, payment credential, payment proof, or order proof."
+    });
+    expect(payload.checkout?.paymentStatus).toBe("not_observed_by_zepocli");
+    expect(payload.checkout?.orderPlacement).toBe("not_confirmed_by_zepocli");
   });
 
   it("does not add checkout handoff guidance to empty cart JSON output", () => {

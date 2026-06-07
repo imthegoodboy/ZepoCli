@@ -109,7 +109,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
       expect(guidance).toContain('paymentLinkSession: "user_zepto_session_required"');
       expect(guidance).toContain("Zepto-owned payment/checkout link");
-      expect(guidance).toContain("`zepo --visible checkout --qr` and `--qr-file <path>` may render or save a QR");
+      expect(guidance).toContain("`zepo cart --qr`, `zepo cart --qr-file <path>`, `zepo --visible checkout --qr`, and checkout `--qr-file <path>` may render or save a QR");
       expect(guidance).toContain("not Zepto's live UPI QR");
       expect(guidance).toContain("Do not scrape, crop, save, log, terminal-render, or store Zepto's payment-page UPI QR/payload");
       expect(guidance).toContain("Non-empty human `zepo cart` output should print `Checkout: zepo --visible checkout`");

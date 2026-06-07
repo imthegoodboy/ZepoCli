@@ -63,7 +63,7 @@ zepo status --live
 zepo search milk
 zepo add "Amul Milk 500ml"
 zepo cart
-zepo --visible checkout
+zepo cart --qr
 zepo track
 ```
 
@@ -74,6 +74,7 @@ zepo status --live --json
 zepo search milk --json
 zepo add "milk" --json
 zepo cart --json
+zepo cart --qr-file checkout-link.png
 zepo --visible checkout --json
 zepo track --json
 ```
@@ -87,10 +88,10 @@ Full usage guide: [docs/USAGE.md](docs/USAGE.md)
 | Session | `zepo --visible login`, `zepo logout`, `zepo status`, `zepo status --live` |
 | Diagnostics | `zepo doctor` |
 | Search | `zepo search <query>` |
-| Cart | `zepo add <query>`, `zepo cart`, `zepo remove <query>`, `zepo clear` |
+| Cart | `zepo add <query>`, `zepo cart`, `zepo cart --qr`, `zepo remove <query>`, `zepo clear` |
 | Addresses | `zepo address list`, `zepo address use <query>`, `zepo --visible address add` |
 | Checkout | `zepo --visible checkout`, `zepo --visible checkout --wait` |
-| Payment handoff | `zepo --visible checkout --qr`, `zepo --visible checkout --qr-file <path>` |
+| Payment handoff | `zepo cart --qr`, `zepo cart --qr-file <path>`, `zepo --visible checkout --qr` |
 | Orders | `zepo track`, `zepo history`, `zepo reorder last` |
 | Shells | `zepo completion bash\|zsh\|fish\|powershell` |
 
@@ -135,6 +136,8 @@ zepo --visible checkout
 Safe checkout-link QR:
 
 ```bash
+zepo cart --qr
+zepo cart --qr-file checkout-link.png
 zepo --visible checkout --qr
 zepo --visible checkout --qr-file checkout-link.png
 ```

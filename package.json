@@ -1,6 +1,6 @@
 {
   "name": "zepocli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Terminal-first CLI for user-directed Zepto shopping workflows.",
   "type": "module",
   "bin": {

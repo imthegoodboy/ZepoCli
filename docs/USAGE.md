@@ -148,6 +148,16 @@ For `zepo cart --json`, use:
 
 The cart checkout metadata is not payment proof or order proof.
 
+Safe checkout-link QR from the cart command:
+
+```bash
+zepo cart --qr
+zepo cart --qr-file checkout-link.png
+zepo cart --json --qr
+```
+
+`zepo cart --qr` reads the cart first. If the cart is non-empty, it prints or saves a QR for `https://www.zepto.com/?cart=open`. The QR opens Zepto checkout in the user's Zepto session; it is not a live UPI QR.
+
 ## Addresses
 
 List saved addresses:
@@ -203,6 +213,8 @@ zepo --visible checkout --remove-limit-items
 Safe checkout-link QR:
 
 ```bash
+zepo cart --qr
+zepo cart --qr-file checkout-link.png
 zepo --visible checkout --qr
 zepo --visible checkout --qr-file checkout-link.png
 ```

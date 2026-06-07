@@ -1,5 +1,10 @@
 import type { Command } from "commander";
 
+import {
+  checkoutLinkQrMetadata,
+  renderCheckoutLinkTerminalQr,
+  saveCheckoutLinkQrFile
+} from "../utils/checkout-qr.js";
 import { printCart, printCartRemoveResult } from "../utils/output.js";
 import { joinQuery, wantsJson, withCommandSpinner, withRuntime } from "./shared.js";
 
@@ -9,7 +14,9 @@ export function registerCartCommands(program: Command): void {
     .description("Show Zepto cart")
     .option("--remove-limit-items", "click Zepto's Remove Items action for item-limit warnings before reading")
     .option("--json", "print machine-readable JSON")
-    .action((options: { json?: boolean; removeLimitItems?: boolean }, command: Command) =>
+    .option("--qr", "print a terminal QR code for the Zepto checkout link after reading a non-empty cart")
+    .option("--qr-file <path>", "save a PNG QR code for the Zepto checkout link after reading a non-empty cart")
+    .action((options: { json?: boolean; removeLimitItems?: boolean; qr?: boolean; qrFile?: string }, command: Command) =>
       withRuntime(command, async (runtime) => {
         const { ZeptoService } = await import("../services/zepto.js");
         const json = wantsJson(command, options);
@@ -22,7 +29,41 @@ export function registerCartCommands(program: Command): void {
               "Cart loaded.",
               () => service.read(readOptions)
             );
-        printCart(cart, json);
+        const qrFileRequested = typeof options.qrFile === "string";
+        const qrRequested = options.qr === true || qrFileRequested;
+        const shouldEmitQr = qrRequested && cart.items.length > 0;
+        const savedQrPath = shouldEmitQr && qrFileRequested ? await saveCheckoutLinkQrFile(options.qrFile ?? "") : undefined;
+        const checkoutLinkQr = shouldEmitQr
+          ? checkoutLinkQrMetadata({ terminal: options.qr === true, fileSaved: savedQrPath !== undefined })
+          : undefined;
+
+        if (json) {
+          if (shouldEmitQr && options.qr === true) {
+            console.error(await renderCheckoutLinkTerminalQr());
+            console.error("Scan to open Zepto checkout in the user's Zepto session. This is not a UPI QR.");
+          }
+          if (savedQrPath) {
+            console.error(`Checkout link QR saved: ${savedQrPath}`);
+          }
+          printCart(cart, true, { checkoutLinkQr });
+          return;
+        }
+
+        printCart(cart, false, { checkoutLinkQr });
+        if (!shouldEmitQr) {
+          if (qrRequested) {
+            console.log("Checkout QR omitted because the cart is empty.");
+          }
+          return;
+        }
+
+        if (options.qr === true) {
+          console.log(await renderCheckoutLinkTerminalQr());
+          console.log("Scan to open Zepto checkout in the user's Zepto session. This is not a UPI QR.");
+        }
+        if (savedQrPath) {
+          console.log(`Checkout link QR saved: ${savedQrPath}`);
+        }
       })
     );
 

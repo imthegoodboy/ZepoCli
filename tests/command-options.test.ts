@@ -69,6 +69,15 @@ describe("command options", () => {
       );
     }
   });
+
+  it("exposes safe checkout-link QR options from cart without requiring checkout", () => {
+    const program = new Command();
+    registerCartCommands(program);
+
+    const cart = findCommand(program, ["cart"]);
+    expect(cart.options.some((option) => option.long === "--qr")).toBe(true);
+    expect(cart.options.some((option) => option.long === "--qr-file")).toBe(true);
+  });
 });
 
 function findCommand(program: Command, path: string[]): Command {

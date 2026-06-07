@@ -48,7 +48,13 @@ export function registerCheckoutCommand(program: Command): void {
           if (savedQrPath) {
             console.error(`Checkout link QR saved: ${savedQrPath}`);
           }
-          printJson(checkoutHandoffOutput(handoff.mode, { waitForCompletion, cartEvidence: handoff.cartEvidence, paymentQr: qrMetadata }));
+          printJson(
+            checkoutHandoffOutput(handoff.mode, {
+              waitForCompletion,
+              cartEvidence: handoff.cartEvidence,
+              checkoutLinkQr: qrMetadata
+            })
+          );
           return;
         }
 
@@ -87,7 +93,7 @@ export interface CheckoutHandoffOutput {
   cartPrecondition: "non_empty_cart_verified";
   manualPaymentControlVisible: boolean;
   cartEvidence?: CheckoutCartEvidence;
-  paymentQr?: CheckoutLinkQrMetadata;
+  checkoutLinkQr?: CheckoutLinkQrMetadata;
   paymentStatus: "not_observed_by_zepocli";
   orderPlacement: "not_confirmed_by_zepocli";
   orderStatusCommand: "zepo track";
@@ -96,7 +102,11 @@ export interface CheckoutHandoffOutput {
 
 export function checkoutHandoffOutput(
   mode: CheckoutHandoffMode = "checkout_or_payment_page",
-  options: { waitForCompletion?: boolean; cartEvidence?: CheckoutCartEvidence; paymentQr?: CheckoutLinkQrMetadata } = {}
+  options: {
+    waitForCompletion?: boolean;
+    cartEvidence?: CheckoutCartEvidence;
+    checkoutLinkQr?: CheckoutLinkQrMetadata;
+  } = {}
 ): CheckoutHandoffOutput {
   const waitForCompletion = options.waitForCompletion === true;
 
@@ -116,7 +126,7 @@ export function checkoutHandoffOutput(
       cartPrecondition: "non_empty_cart_verified",
       manualPaymentControlVisible: true,
       ...(options.cartEvidence ? { cartEvidence: options.cartEvidence } : {}),
-      ...(options.paymentQr ? { paymentQr: options.paymentQr } : {}),
+      ...(options.checkoutLinkQr ? { checkoutLinkQr: options.checkoutLinkQr } : {}),
       paymentStatus: "not_observed_by_zepocli",
       orderPlacement: "not_confirmed_by_zepocli",
       orderStatusCommand: "zepo track",
@@ -141,7 +151,7 @@ export function checkoutHandoffOutput(
     cartPrecondition: "non_empty_cart_verified",
     manualPaymentControlVisible: false,
     ...(options.cartEvidence ? { cartEvidence: options.cartEvidence } : {}),
-    ...(options.paymentQr ? { paymentQr: options.paymentQr } : {}),
+    ...(options.checkoutLinkQr ? { checkoutLinkQr: options.checkoutLinkQr } : {}),
     paymentStatus: "not_observed_by_zepocli",
     orderPlacement: "not_confirmed_by_zepocli",
     orderStatusCommand: "zepo track",

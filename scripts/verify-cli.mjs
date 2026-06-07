@@ -80,7 +80,7 @@ const checks = [
       );
       assertCheckoutLinkQrContract(
         checkoutHandoffOutput("manual_payment_control_visible", {
-          paymentQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true })
+          checkoutLinkQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true })
         })
       );
       assert(
@@ -210,6 +210,8 @@ const checks = [
       assert(stdout.includes("Show Zepto cart"), "expected cart description");
       assert(stdout.includes("--remove-limit-items"), "expected cart limit resolution option");
       assert(stdout.includes("--json"), "expected cart json option");
+      assert(stdout.includes("--qr"), "expected cart terminal QR option");
+      assert(stdout.includes("--qr-file"), "expected cart QR file option");
     }
   },
   {
@@ -1324,18 +1326,22 @@ function assertCheckoutEvidenceContract(payload) {
 
 function assertCheckoutLinkQrContract(payload) {
   assert(payload.status === "checkout_manual_action_required", "expected checkout QR manual-action status");
-  assert(payload.paymentQr?.payload === "https://www.zepto.com/?cart=open", "expected checkout QR payload");
-  assert(payload.paymentQr?.payloadSession === "user_zepto_session_required", "expected checkout QR session marker");
-  assert(payload.paymentQr?.format === "zepto_checkout_link_qr", "expected checkout-link QR format");
-  assert(payload.paymentQr?.payment === "handled_by_zepto", "expected checkout-link QR payment marker");
-  assert(payload.paymentQr?.terminal === true, "expected checkout-link QR terminal marker");
-  assert(payload.paymentQr?.fileSaved === true, "expected checkout-link QR file marker");
+  assert(payload.checkoutLinkQr?.payload === "https://www.zepto.com/?cart=open", "expected checkout QR payload");
   assert(
-    String(payload.paymentQr?.note).includes("not a UPI QR") &&
-      String(payload.paymentQr?.note).includes("payment proof") &&
-      String(payload.paymentQr?.note).includes("order proof"),
+    payload.checkoutLinkQr?.payloadSession === "user_zepto_session_required",
+    "expected checkout QR session marker"
+  );
+  assert(payload.checkoutLinkQr?.format === "zepto_checkout_link_qr", "expected checkout-link QR format");
+  assert(payload.checkoutLinkQr?.payment === "handled_by_zepto", "expected checkout-link QR payment marker");
+  assert(payload.checkoutLinkQr?.terminal === true, "expected checkout-link QR terminal marker");
+  assert(payload.checkoutLinkQr?.fileSaved === true, "expected checkout-link QR file marker");
+  assert(
+    String(payload.checkoutLinkQr?.note).includes("not a UPI QR") &&
+      String(payload.checkoutLinkQr?.note).includes("payment proof") &&
+      String(payload.checkoutLinkQr?.note).includes("order proof"),
     "expected checkout-link QR non-payment-proof note"
   );
+  assert(payload.paymentQr === undefined, "expected checkout handoff not to expose paymentQr");
 }
 
 function assertCartPublicCheckoutMetadataContract(printCartFn, labelPrefix) {

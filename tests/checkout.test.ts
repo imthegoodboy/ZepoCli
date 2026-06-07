@@ -473,11 +473,11 @@ describe("checkout handoff detection", () => {
   it("reports checkout-link QR metadata without turning it into payment proof", () => {
     expect(
       checkoutHandoffOutput("manual_payment_control_visible", {
-        paymentQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true })
+        checkoutLinkQr: checkoutLinkQrMetadata({ terminal: true, fileSaved: true })
       })
     ).toMatchObject({
       status: "checkout_manual_action_required",
-      paymentQr: {
+      checkoutLinkQr: {
         payload: "https://www.zepto.com/?cart=open",
         payloadSession: "user_zepto_session_required",
         format: "zepto_checkout_link_qr",
