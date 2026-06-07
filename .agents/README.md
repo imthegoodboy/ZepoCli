@@ -7,6 +7,7 @@ This project is a developer CLI tool, not an autonomous shopping agent.
 - Use `.agents/skills/zepto-cli-builder/SKILL.md` when changing command surface, browser automation, storage, output contracts, or docs.
 - Use `.agents/skills/zepto-live-verifier/SKILL.md` when proving real human-controlled Zepto login, address, cart, checkout handoff, tracking, history, or reorder behavior. Local tests and package smoke checks are not full end-to-end live proof.
 - Read `.agents/STATUS.md` before claiming completion; it records the latest local gate and live-verification evidence gap.
+- Keep `README.md` concise and product-facing for npm/GitHub. Put detailed human/agent workflows in `docs/USAGE.md`, and keep implementation/safety invariants in these `.agents` notes and skills.
 
 ## Product Boundary
 

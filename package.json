@@ -21,6 +21,7 @@
     ".env.example",
     ".npmrc.example",
     "README.md",
+    "docs",
     "LICENSE"
   ],
   "scripts": {

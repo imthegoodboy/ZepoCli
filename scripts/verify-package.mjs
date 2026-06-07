@@ -133,6 +133,7 @@ try {
   const installedCliPath = verifyInstalledCliEntryContract(installDir);
   verifyInstalledBinShim(zepoBin);
   verifyInstalledReadmeContract(installDir);
+  verifyInstalledUsageGuideContract(installDir);
   await verifyInstalledEnvSanitizerContract(installDir);
   await verifyInstalledBrowserDiagnosticsContract(installDir);
   await verifyInstalledPublicOutputContract(installDir);
@@ -279,6 +280,29 @@ function verifyInstalledReadmeContract(prefixDir) {
   assert(existsSync(readmePath), "expected installed package README");
 
   const readme = readFileSync(readmePath, "utf8");
+  assert(readme.length < 12_000, "expected installed README to stay concise");
+  for (const text of [
+    "A terminal-first developer CLI for user-directed Zepto workflows.",
+    "https://upload.wikimedia.org/wikipedia/commons/8/81/Zepto_Logo.svg",
+    "Requires Node.js 20.19 or newer.",
+    "npm install -g zepocli",
+    "npx playwright install chromium",
+    "zepo --visible login",
+    "zepo search milk",
+    "zepo --visible checkout",
+    "zepo --visible checkout --qr",
+    "https://www.zepto.com/?cart=open",
+    "It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.",
+    "See [docs/USAGE.md](docs/USAGE.md) for the full agent runbook.",
+    "Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config.",
+    "ZepoCli is an independent developer tool and is not affiliated with Zepto."
+  ]) {
+    assert(readme.includes(text), `expected installed README to document: ${text}`);
+  }
+
+  console.log("pass installed README contract");
+  return;
+
   for (const text of [
     "Requires Node.js 20.19 or newer.",
     "npm ci --include=prod --include=dev",
@@ -455,6 +479,38 @@ function verifyInstalledReadmeContract(prefixDir) {
   }
 
   console.log("pass installed README contract");
+}
+
+function verifyInstalledUsageGuideContract(prefixDir) {
+  const usageGuidePath = join(prefixDir, "node_modules", packageJson.name, "docs", "USAGE.md");
+  assert(existsSync(usageGuidePath), "expected installed package usage guide");
+
+  const guide = readFileSync(usageGuidePath, "utf8");
+  for (const text of [
+    "ZepoCli uses the user's Zepto session and Zepto website state.",
+    "npm install -g zepocli",
+    "zepo --visible login --phone 9876543210",
+    "zepo search milk --json",
+    'zepo add "protein bars" --choose --json',
+    "zepo cart --json",
+    "zepo address list --json",
+    "zepo address use home --json",
+    "zepo --visible checkout --json --wait",
+    "zepo --visible checkout --qr-file checkout-link.png",
+    "The QR payload is only:",
+    "https://www.zepto.com/?cart=open",
+    "It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.",
+    "checkout_manual_action_required",
+    "zepo track --json",
+    "Agent rules:",
+    "Branch on `error.code`, not human error text.",
+    "Do not scrape, save, crop, or terminal-render Zepto's live UPI QR.",
+    "Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config."
+  ]) {
+    assert(guide.includes(text), `expected installed usage guide to document: ${text}`);
+  }
+
+  console.log("pass installed usage guide contract");
 }
 
 async function verifyInstalledEnvSanitizerContract(prefixDir) {

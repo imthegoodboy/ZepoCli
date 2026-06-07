@@ -190,6 +190,7 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("scripts/verify-secrets.mjs");
     expect(packageJson.files).toContain(".env.example");
     expect(packageJson.files).toContain(".npmrc.example");
+    expect(packageJson.files).toContain("docs");
   });
 
   it("keeps secret verification redacted and scoped to project text", () => {
@@ -276,6 +277,7 @@ describe("package CLI contract", () => {
     const verifier = readFileSync(resolve(rootDir, "scripts", "verify-package.mjs"), "utf8");
 
     expect(verifier).toContain("verifyInstalledReadmeContract");
+    expect(verifier).toContain("verifyInstalledUsageGuideContract");
     expect(verifier).toContain("verifyInstalledEnvSanitizerContract");
     expect(verifier).toContain("expected installed env sanitizer to remove Yarn npm auth tokens");
     expect(verifier).toContain("expected installed env sanitizer to remove Corepack npm tokens");
@@ -314,6 +316,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed guarded command not to write browser profile data");
     expect(verifier).toContain("expected installed guarded command not to launch headless browser");
     expect(verifier).toContain("expected installed package README");
+    expect(verifier).toContain("expected installed package usage guide");
     expect(verifier).toContain("npm run verify:dependencies");
     expect(verifier).toContain("declared runtime packages load and required dev-tool binaries are present");
     expect(verifier).toContain("JSON checkout returns handoff evidence immediately for agents instead of waiting for a prompt");
