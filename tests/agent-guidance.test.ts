@@ -172,6 +172,9 @@ describe("agent guidance", () => {
       expect(guidance).toContain("live runner command echoes");
       expect(guidance).toContain("final report-path line");
       expect(guidance).toContain("stored step commands must match the runner's redacted command shapes");
+      expect(guidance).toContain("A checkout `--wait` timeout report may include the fixed `Payment link: https://www.zepto.com/?cart=open`");
+      expect(guidance).toContain("`Payment link session: user_zepto_session_required` in `error.hint`");
+      expect(guidance).toContain("must still leave checkout and track coverage missing");
       expect(guidance).toContain("npm --silent run verify:live");
       expect(guidance).toContain("interrupted with Ctrl+C/SIGTERM");
       expect(guidance).toContain("write the same sanitized partial report when possible");
@@ -409,6 +412,9 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("runner console should print the fixed `Payment link: https://www.zepto.com/?cart=open`");
     expect(liveVerifierSkill).toContain("`Payment link session: user_zepto_session_required`");
     expect(liveVerifierSkill).toContain("handoff guidance only, not payment proof or order proof");
+    expect(liveVerifierSkill).toContain("A checkout `--wait` timeout report may include the fixed `Payment link: https://www.zepto.com/?cart=open`");
+    expect(liveVerifierSkill).toContain("`Payment link session: user_zepto_session_required` in `error.hint`");
+    expect(liveVerifierSkill).toContain("must still leave checkout and track coverage missing");
     expect(liveVerifierSkill).toContain('Checkout coverage requires `status: "checkout_handoff_returned"`');
     expect(builderSkill).toContain("`zepo remove --json` should include `removedItems` evidence");
     expect(builderSkill).toContain("Remove JSON should expose structured `removedItems` plus the resulting `cart` only");

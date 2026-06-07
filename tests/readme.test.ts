@@ -407,6 +407,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("Use `--step-timeout <ms>` only when a human-controlled Zepto step legitimately needs more than the default per-command timeout");
     expect(readme).toContain("`verify:live --phone` accepts the same 10-digit, `+91`, or leading-0 Indian mobile formats");
     expect(readme).toContain("normalizes the value before invoking the CLI");
+    expect(readme).toContain(
+      "A checkout `--wait` timeout report keeps the fixed `Payment link: https://www.zepto.com/?cart=open`"
+    );
+    expect(readme).toContain("`Payment link session: user_zepto_session_required` in `error.hint`");
+    expect(readme).toContain("still leaves checkout and track coverage missing");
     for (const code of [
       "live_doctor_contract_mismatch",
       "live_login_contract_mismatch",

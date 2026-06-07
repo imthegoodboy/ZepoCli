@@ -6163,6 +6163,26 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       !JSON.stringify(commandTimeoutFailure).includes("parth"),
     "expected installed live command timeout redaction"
   );
+  const checkoutWaitTimeoutFailure = buildLiveCommandTimeoutStep(
+    "checkout",
+    ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "checkout", "--wait", "--json"],
+    1_000
+  );
+  assert(
+    checkoutWaitTimeoutFailure.command ===
+      "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+    "expected installed checkout-wait timeout command to preserve wait marker"
+  );
+  assert(
+    checkoutWaitTimeoutFailure.error?.code === "live_command_timeout" &&
+      String(checkoutWaitTimeoutFailure.error?.hint).includes(
+        "Checkout wait timed out after the fixed Zepto payment link was printed"
+      ) &&
+      String(checkoutWaitTimeoutFailure.error?.hint).includes("Payment link: https://www.zepto.com/?cart=open") &&
+      String(checkoutWaitTimeoutFailure.error?.hint).includes("Payment link session: user_zepto_session_required") &&
+      !JSON.stringify(checkoutWaitTimeoutFailure).includes("parth"),
+    "expected installed checkout-wait timeout to keep fixed handoff guidance"
+  );
   const malformedCodeFailure = summarizeCommandError(
     {
       code: "Order ZEP1234 at C:\\Users\\parth\\.zepo-live",

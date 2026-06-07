@@ -29,6 +29,10 @@ export const LIVE_REPORT_NOTE =
   "Sanitized ZepoCli live verification report. It omits raw Zepto page text, addresses, cart item names, payment credentials, order ids, phone input, local filesystem paths, standalone percent-encoded sensitive fragments, and unredacted workflow query arguments. It also redacts npm-token-shaped values.";
 const LIVE_REPORT_GENERATED_AT_FUTURE_SKEW_MS = 5 * 60 * 1_000;
 const LIVE_REPORT_ERROR_RETRY_AFTER_MAX_MS = 60 * 60 * 1_000;
+const LIVE_COMMAND_TIMEOUT_HINT =
+  "Increase --step-timeout only when a human-controlled Zepto step legitimately needs more time.";
+const CHECKOUT_WAIT_COMMAND_TIMEOUT_HINT =
+  "Checkout wait timed out after the fixed Zepto payment link was printed. Payment link: https://www.zepto.com/?cart=open. Payment link session: user_zepto_session_required. Open in the user's Zepto session; Zepto handles payment, then rerun verify:live or increase --step-timeout only when the human-controlled step needs more time.";
 const LIVE_CONSOLE_BUFFERED_TAIL_CHARS = 1024;
 const LIVE_CONSOLE_BUFFERED_FLUSH_CHARS = 4096;
 const LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES = [
@@ -211,7 +215,7 @@ export function buildLiveCommandTimeoutStep(name, args, timeoutMs) {
       {
         code: "live_command_timeout",
         message: `Command timed out after ${timeoutMs} ms.`,
-        hint: "Increase --step-timeout only when a human-controlled Zepto step legitimately needs more time."
+        hint: liveCommandTimeoutHint(name, args)
       },
       "",
       args
@@ -239,6 +243,14 @@ export function buildLiveCommandTimeoutOrErrorStep({
   }
 
   return buildLiveCommandTimeoutStep(name, args, timeoutMs);
+}
+
+function liveCommandTimeoutHint(name, args) {
+  if (name === "checkout" && Array.isArray(args) && args.includes("checkout") && args.includes("--wait")) {
+    return CHECKOUT_WAIT_COMMAND_TIMEOUT_HINT;
+  }
+
+  return LIVE_COMMAND_TIMEOUT_HINT;
 }
 
 export function buildLiveReportStep({ name, args, status, stdout, stderr, summarizePayload }) {

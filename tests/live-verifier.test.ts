@@ -3222,6 +3222,38 @@ describe("live verification runner", () => {
       }
     });
     expect(JSON.stringify(step)).not.toContain("parth");
+
+    const checkoutWaitStep = buildLiveCommandTimeoutStep(
+      "checkout",
+      ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "checkout", "--wait", "--json"],
+      1_000
+    );
+
+    expect(checkoutWaitStep).toMatchObject({
+      name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "live_command_timeout",
+        message: "Command timed out after 1000 ms.",
+        hint:
+          "Checkout wait timed out after the fixed Zepto payment link was printed. Payment link: https://www.zepto.com/?cart=open. Payment link session: user_zepto_session_required. Open in the user's Zepto session; Zepto handles payment, then rerun verify:live or increase --step-timeout only when the human-controlled step needs more time."
+      }
+    });
+
+    const timeoutReport = acceptedLiveReport({
+      ok: false,
+      steps: [...acceptedLiveReport().steps.slice(0, 4), checkoutWaitStep]
+    });
+    timeoutReport.attempted = summarizeLiveReportAttempts(timeoutReport.steps);
+    timeoutReport.coverage = summarizeLiveReportCoverage(timeoutReport.steps);
+    timeoutReport.missingCoverage = summarizeLiveReportMissingCoverage(timeoutReport.requested, timeoutReport.coverage);
+    const timeoutReportResult = validateLiveReportAcceptance(timeoutReport, { expectedVersion: packageJson.version });
+    expect(timeoutReportResult.accepted).toBe(false);
+    expect(timeoutReportResult.issues.map((issue) => issue.code)).not.toContain("live_report_sensitive_text");
+    expect(timeoutReportResult.issues.map((issue) => issue.code)).not.toContain("live_report_error_mismatch");
+    expect(JSON.stringify(checkoutWaitStep)).not.toContain("parth");
   });
 
   it("preserves structured CLI errors emitted by timed-out live commands", () => {

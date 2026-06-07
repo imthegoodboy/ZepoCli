@@ -865,6 +865,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("spawnSync(process.execPath, commandArgs");
     expect(verifier).toContain("buildLiveCommandTimeoutStep");
     expect(verifier).toContain("expected installed live command timeout redaction");
+    expect(verifier).toContain("expected installed checkout-wait timeout to keep fixed handoff guidance");
     expect(verifier).toContain("expected installed checkout live report contract to require non-empty cart precondition");
     expect(verifier).toContain("expected installed manual checkout live report to use incomplete coverage code");
     expect(verifier).toContain("checkout_manual_action_required is manual continuation evidence only");
