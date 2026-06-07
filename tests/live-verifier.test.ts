@@ -300,6 +300,9 @@ describe("live verification runner", () => {
     expect(result.stdout).toContain(
       "does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"
     );
+    expect(result.stdout).toContain("When --checkout-wait is used");
+    expect(result.stdout).toContain("before launching the waiting checkout command");
+    expect(result.stdout).toContain("a later prompt timeout still leaves the Zepto-owned session link in the console");
     expect(result.stdout).toContain("When checkout reaches checkout_manual_action_required");
     expect(result.stdout).toContain("Payment link: https://www.zepto.com/?cart=open");
     expect(result.stdout).toContain("Payment link session: user_zepto_session_required");
@@ -457,6 +460,10 @@ describe("live verification runner", () => {
 
     expect(script).toContain("options.checkoutWait");
     expect(script).toContain("parsed.checkoutWait = true");
+    expect(script).toContain("printCheckoutWaitHandoffGuidance()");
+    expect(script).toContain("function printCheckoutWaitHandoffGuidance()");
+    expect(script).toContain("Checkout wait handoff guidance:");
+    expect(script).toContain("Press Enter only after the Zepto-side checkout/payment action you choose is complete.");
     expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--wait")');
     expect(script).toContain("options.checkoutRemoveLimitItems");
     expect(script).toContain('checkoutArgs.splice(checkoutArgs.length - 1, 0, "--remove-limit-items")');

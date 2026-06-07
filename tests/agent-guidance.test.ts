@@ -130,6 +130,7 @@ describe("agent guidance", () => {
       expect(guidance).toContain("`zepo --visible checkout --json` returns structured handoff evidence immediately instead of waiting for a prompt");
       expect(guidance).toContain("Explicit wait mode must print `Payment link: https://www.zepto.com/?cart=open`");
       expect(guidance).toContain("`Payment link session: user_zepto_session_required` to stderr before prompting");
+      expect(guidance).toContain("so a later prompt timeout still leaves the Zepto-owned session link in the console");
       expect(guidance).toContain("Explicit wait mode may re-check the visible page after Enter");
       expect(guidance).toContain("production-scope checkout handoff coverage");
       expect(guidance).toContain("manual checkout continuation use `live_verification_incomplete`");
@@ -395,8 +396,10 @@ describe("agent guidance", () => {
     expect(liveVerifierSkill).toContain("Continue to Payment ₹...");
     expect(liveVerifierSkill).toContain("Proceed to Payment ₹...");
     expect(liveVerifierSkill).toContain("returns structured handoff evidence immediately instead of waiting for an Enter prompt");
-    expect(liveVerifierSkill).toContain("JSON wait mode prints `Payment link: https://www.zepto.com/?cart=open`");
-    expect(liveVerifierSkill).toContain("`Payment link session: user_zepto_session_required` to stderr before the prompt");
+    expect(liveVerifierSkill).toContain("the live runner prints `Payment link: https://www.zepto.com/?cart=open`");
+    expect(liveVerifierSkill).toContain("before launching the waiting checkout command");
+    expect(liveVerifierSkill).toContain("so a later prompt timeout still leaves the Zepto-owned session link in the console");
+    expect(liveVerifierSkill).toContain("JSON wait mode also prints the same link/session marker to stderr before the prompt");
     expect(liveVerifierSkill).toContain("Use `--checkout-remove-limit-items` only for the explicit Zepto item-limit warning removal before that checkout handoff");
     expect(liveVerifierSkill).toContain("Wait mode re-checks the visible page after Enter");
     expect(liveVerifierSkill).toContain("reports it as `live_verification_incomplete`");

@@ -269,6 +269,11 @@ describe("README package guidance", () => {
     expect(readme).toContain("runner console prints the fixed `Payment link: https://www.zepto.com/?cart=open`");
     expect(readme).toContain("`Payment link session: user_zepto_session_required`");
     expect(readme).toContain("That console guidance is not payment proof or order proof");
+    expect(readme).toContain(
+      "When checkout wait is requested, the runner prints the fixed `Payment link: https://www.zepto.com/?cart=open`"
+    );
+    expect(readme).toContain("before launching the waiting checkout command");
+    expect(readme).toContain("a later prompt timeout still leaves the Zepto-owned session link in the console");
     expect(readme).toContain("npm --silent run verify:live -- --data-dir ./.zepo-live");
     expect(readme).toContain(
       'npm --silent run verify:live -- --data-dir ./.zepo-live --login --production-scope --search milk --address home --add "Amul Milk 500ml"'

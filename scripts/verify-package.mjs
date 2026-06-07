@@ -2392,6 +2392,13 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
       liveVerifierSource.includes("ZepoCli did not observe payment or order placement"),
     "expected installed verify:live manual checkout console handoff guidance"
   );
+  assert(
+    liveVerifierSource.includes("printCheckoutWaitHandoffGuidance()") &&
+      liveVerifierSource.includes("function printCheckoutWaitHandoffGuidance()") &&
+      liveVerifierSource.includes("Checkout wait handoff guidance:") &&
+      liveVerifierSource.includes("Press Enter only after the Zepto-side checkout/payment action you choose is complete."),
+    "expected installed verify:live checkout-wait preflight handoff guidance"
+  );
 
   const result = runNpm(installedVerifyLiveArgs(packageDir, "--help"), { cwd: rootDir });
   assert(result.stdout.includes("Usage: npm --silent run verify:live"), "expected installed verify:live usage to use silent npm");
@@ -2444,6 +2451,12 @@ async function verifyInstalledLiveVerifierContract(prefixDir) {
     result.stdout.includes("Valid checkout_manual_action_required evidence may set diagnostic checkoutManualBoundary coverage") &&
       result.stdout.includes("does not satisfy checkout handoff, payment proof, order-placement proof, or production-scope readiness"),
     "expected installed verify:live help to explain diagnostic manual checkout boundary coverage"
+  );
+  assert(
+    result.stdout.includes("When --checkout-wait is used") &&
+      result.stdout.includes("before launching the waiting checkout command") &&
+      result.stdout.includes("a later prompt timeout still leaves the Zepto-owned session link in the console"),
+    "expected installed verify:live help to explain checkout-wait preflight payment-link handoff"
   );
   assert(
     result.stdout.includes("When checkout reaches checkout_manual_action_required") &&
