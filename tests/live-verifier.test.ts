@@ -3254,6 +3254,32 @@ describe("live verification runner", () => {
     expect(timeoutReportResult.issues.map((issue) => issue.code)).not.toContain("live_report_sensitive_text");
     expect(timeoutReportResult.issues.map((issue) => issue.code)).not.toContain("live_report_error_mismatch");
     expect(JSON.stringify(checkoutWaitStep)).not.toContain("parth");
+
+    const checkoutManualControlTimeoutStep = buildLiveCommandTimeoutOrErrorStep({
+      name: "checkout",
+      args: ["--data-dir", "C:\\Users\\parth\\.zepo-live", "--visible", "checkout", "--wait", "--json"],
+      timeoutMs: 1_000,
+      stdout: "",
+      stderr:
+        "Zepto shows a human-only cart payment control. ZepoCli will not click it.\nPayment link: https://www.zepto.com/?cart=open"
+    });
+
+    expect(checkoutManualControlTimeoutStep).toMatchObject({
+      name: "checkout",
+      command: "zepo --data-dir <redacted-data-dir> --visible checkout --wait --json",
+      exitCode: 1,
+      ok: false,
+      error: {
+        code: "live_command_timeout",
+        message: "Command timed out after 1000 ms.",
+        hint: expect.stringContaining(
+          "Zepto exposed a human-only cart payment control before the timeout; this remains manual continuation evidence only and does not satisfy checkout handoff or track coverage."
+        )
+      }
+    });
+    expect(checkoutManualControlTimeoutStep.error.hint).toContain("Payment link: https://www.zepto.com/?cart=open");
+    expect(checkoutManualControlTimeoutStep.manualEvidence).toBeUndefined();
+    expect(JSON.stringify(checkoutManualControlTimeoutStep)).not.toContain("parth");
   });
 
   it("preserves structured CLI errors emitted by timed-out live commands", () => {

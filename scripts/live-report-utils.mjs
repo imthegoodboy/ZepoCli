@@ -33,6 +33,10 @@ const LIVE_COMMAND_TIMEOUT_HINT =
   "Increase --step-timeout only when a human-controlled Zepto step legitimately needs more time.";
 const CHECKOUT_WAIT_COMMAND_TIMEOUT_HINT =
   "Checkout wait timed out after the fixed Zepto payment link was printed. Payment link: https://www.zepto.com/?cart=open. Payment link session: user_zepto_session_required. Open in the user's Zepto session; Zepto handles payment, then rerun verify:live or increase --step-timeout only when the human-controlled step needs more time.";
+const CHECKOUT_WAIT_MANUAL_CONTROL_TIMEOUT_HINT =
+  " Zepto exposed a human-only cart payment control before the timeout; this remains manual continuation evidence only and does not satisfy checkout handoff or track coverage.";
+const CHECKOUT_WAIT_MANUAL_CONTROL_TEXT =
+  "Zepto shows a human-only cart payment control. ZepoCli will not click it.";
 const LIVE_CONSOLE_BUFFERED_TAIL_CHARS = 1024;
 const LIVE_CONSOLE_BUFFERED_FLUSH_CHARS = 4096;
 const LIVE_REPORT_PRODUCTION_SCOPE_CAPABILITIES = [
@@ -205,7 +209,7 @@ export function buildLiveCommandLaunchFailureStep(name, args, error) {
   };
 }
 
-export function buildLiveCommandTimeoutStep(name, args, timeoutMs) {
+export function buildLiveCommandTimeoutStep(name, args, timeoutMs, output = {}) {
   return {
     name,
     command: `zepo ${redactArgsForLiveReport(args).join(" ")}`,
@@ -215,7 +219,7 @@ export function buildLiveCommandTimeoutStep(name, args, timeoutMs) {
       {
         code: "live_command_timeout",
         message: `Command timed out after ${timeoutMs} ms.`,
-        hint: liveCommandTimeoutHint(name, args)
+        hint: liveCommandTimeoutHint(name, args, output)
       },
       "",
       args
@@ -242,11 +246,16 @@ export function buildLiveCommandTimeoutOrErrorStep({
     }).step;
   }
 
-  return buildLiveCommandTimeoutStep(name, args, timeoutMs);
+  return buildLiveCommandTimeoutStep(name, args, timeoutMs, { stdout, stderr });
 }
 
-function liveCommandTimeoutHint(name, args) {
+function liveCommandTimeoutHint(name, args, output = {}) {
   if (name === "checkout" && Array.isArray(args) && args.includes("checkout") && args.includes("--wait")) {
+    const observedText = `${String(output.stdout ?? "")}\n${String(output.stderr ?? "")}`;
+    if (observedText.includes(CHECKOUT_WAIT_MANUAL_CONTROL_TEXT)) {
+      return `${CHECKOUT_WAIT_COMMAND_TIMEOUT_HINT}${CHECKOUT_WAIT_MANUAL_CONTROL_TIMEOUT_HINT}`;
+    }
+
     return CHECKOUT_WAIT_COMMAND_TIMEOUT_HINT;
   }
 
