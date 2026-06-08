@@ -36,6 +36,10 @@ const accountDependentNoSessionCommands = [
     args: ["cart", "--json"]
   },
   {
+    name: "payment",
+    args: ["payment", "--json"]
+  },
+  {
     name: "remove",
     args: ["remove", "milk", "--json"]
   },
@@ -130,6 +134,7 @@ const checks = [
       assert(stdout.includes("--browser-locale <locale>"), "expected browser locale option in help output");
       assert(stdout.includes("--browser-timezone <timezone>"), "expected browser timezone option in help output");
       assert(stdout.includes("checkout"), "expected checkout command in help output");
+      assert(stdout.includes("payment"), "expected payment command in help output");
       assert(stdout.includes("completion"), "expected completion command in help output");
     }
   },
@@ -212,6 +217,22 @@ const checks = [
       assert(stdout.includes("--json"), "expected cart json option");
       assert(stdout.includes("--qr"), "expected cart terminal QR option");
       assert(stdout.includes("--qr-file"), "expected cart QR file option");
+    }
+  },
+  {
+    name: "payment help",
+    args: ["payment", "--help"],
+    expect: ({ status, stdout, stderr }) => {
+      assert(status === 0, "expected exit code 0");
+      assert(stderr === "", "expected empty stderr");
+      assert(stdout.includes("Show Zepto's live UPI payment QR"), "expected payment description");
+      assert(stdout.includes("--address <query>"), "expected payment address option");
+      assert(stdout.includes("--add <query>"), "expected payment add option");
+      assert(stdout.includes("quantity to add when --add is used"), "expected payment quantity option");
+      assert(stdout.includes("--remove-limit-items"), "expected payment limit resolution option");
+      assert(stdout.includes("--json"), "expected payment json option");
+      assert(stdout.includes("--qr"), "expected payment terminal QR option");
+      assert(stdout.includes("--qr-file"), "expected payment QR file option");
     }
   },
   {
@@ -339,8 +360,8 @@ const checks = [
       assert(status === 0, "expected exit code 0");
       assert(stderr === "", "expected empty stderr");
       assert(stdout.includes("complete -F _zepo_completion zepo"), "expected bash completion registration");
-      assert(stdout.includes("login logout status doctor search add cart remove clear address checkout track history reorder completion help"), "expected root command completions");
-      assert(stdout.includes("help) candidates='login logout status doctor search add cart"), "expected help command completions");
+      assert(stdout.includes("login logout status doctor search add cart remove clear payment address checkout track history reorder completion help"), "expected root command completions");
+      assert(stdout.includes("help) candidates='login logout status doctor search add cart remove clear payment"), "expected help command completions");
       assert(stdout.includes("help\\ address) candidates='list use add"), "expected nested help command completions");
       assert(stdout.includes("--data-dir --debug --json --no-input --visible"), "expected global option completions");
     }
@@ -1423,19 +1444,16 @@ function assertCartPublicCheckoutMetadataContract(printCartFn, labelPrefix) {
       false
     )
   ).join("\n");
-  assert(humanOutput.includes("Checkout: zepo --visible checkout"), `expected ${prefix}human cart checkout command`);
+  assert(humanOutput.includes("Payment QR: zepo payment"), `expected ${prefix}human cart payment QR command`);
   assert(
-    humanOutput.includes("Payment link: https://www.zepto.com/?cart=open"),
-    `expected ${prefix}human cart payment link`
-  );
-  assert(
-    humanOutput.includes("Open in the user's Zepto session; Zepto handles payment."),
-    `expected ${prefix}human cart payment session guidance`
+    humanOutput.includes("Shows Zepto's live UPI QR in the terminal without opening a browser."),
+    `expected ${prefix}human cart UPI QR guidance`
   );
 
   const emptyHumanOutput = capturePrintedLines(() => printCartFn({ items: [] }, false)).join("\n");
   assert(emptyHumanOutput.includes("Cart is empty."), `expected ${prefix}empty human cart message`);
   assert(!emptyHumanOutput.includes("Checkout:"), `expected ${prefix}empty human cart to omit checkout command`);
+  assert(!emptyHumanOutput.includes("Payment QR:"), `expected ${prefix}empty human cart to omit payment QR command`);
   assert(!emptyHumanOutput.includes("Payment link:"), `expected ${prefix}empty human cart to omit payment link`);
   assert(!emptyHumanOutput.includes("Zepto session"), `expected ${prefix}empty human cart to omit payment session guidance`);
 }

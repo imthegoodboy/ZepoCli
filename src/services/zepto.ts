@@ -4,6 +4,7 @@ import { AuthService } from "./auth.js";
 import { CartService } from "./cart.js";
 import { CheckoutService } from "./checkout.js";
 import { OrdersService } from "./orders.js";
+import { PaymentService } from "./payment.js";
 import { SearchService } from "./search.js";
 
 export class ZeptoService {
@@ -12,6 +13,7 @@ export class ZeptoService {
   readonly cart: CartService;
   readonly addresses: AddressService;
   readonly checkout: CheckoutService;
+  readonly payment: PaymentService;
   readonly orders: OrdersService;
 
   constructor(runtime: AppRuntime) {
@@ -20,6 +22,7 @@ export class ZeptoService {
     this.cart = new CartService(runtime);
     this.addresses = new AddressService(runtime);
     this.checkout = new CheckoutService(runtime);
+    this.payment = new PaymentService(runtime);
     this.orders = new OrdersService(runtime);
   }
 }

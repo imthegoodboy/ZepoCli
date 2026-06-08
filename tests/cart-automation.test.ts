@@ -325,6 +325,22 @@ describe("cart automation helpers", () => {
     expect(
       requireReadableCartSnapshot(`
         My Cart
+        Monster Energy Ultra Zero Sugar | Carbonated Caffeinated Beverage
+        1 pc (350 ml)
+        ₹125
+        Qty 1
+        Bill Summary
+        To Pay
+        ₹200
+        ₹104
+      `)
+    ).toMatchObject({
+      total: "₹104"
+    });
+
+    expect(
+      requireReadableCartSnapshot(`
+        My Cart
         Amul Taaza Toned Milk
         1 pack (500 ml)
         ₹32
@@ -835,6 +851,8 @@ describe("cart automation helpers", () => {
       "My Cart",
       "My Cart 2",
       "2 My Cart",
+      "Cart 1 You have 1 item in your cart.",
+      "You have 1 item in your cart.",
       "View Cart",
       "Go to Cart"
     ]) {

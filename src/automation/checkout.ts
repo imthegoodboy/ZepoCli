@@ -1,7 +1,7 @@
 import type { Locator, Page } from "playwright";
 
 import { UserFacingError } from "../utils/errors.js";
-import { hasStrongCartSurfaceEvidence, parseReadableCartItemsFromText, readCart } from "./cart.js";
+import { clickCartOpenButton, hasStrongCartSurfaceEvidence, parseReadableCartItemsFromText, readCart } from "./cart.js";
 import { assertNoAccessChallenge, gotoZepto } from "./browser.js";
 import { isDisabledControl, readControlLabels } from "./control-state.js";
 import { isFinalCheckoutSurfaceText, isFinalPaymentOrOrderActionText } from "./final-action-labels.js";
@@ -167,13 +167,16 @@ async function scrollControlIntoViewIfNeeded(locator: Locator): Promise<void> {
   await scrollable.scrollIntoViewIfNeeded?.().catch(() => undefined);
 }
 
-async function readCheckoutCartPrecondition(page: Page, options: CheckoutOptions) {
+export async function readCheckoutCartPrecondition(page: Page, options: CheckoutOptions = {}) {
   try {
     const readOptions = { removeLimitItems: options.removeLimitItems === true };
     let cart = await readCart(page, readOptions);
     for (let attempt = 1; cart.items.length === 0 && attempt < CHECKOUT_EMPTY_CART_REREAD_ATTEMPTS; attempt += 1) {
       await page.waitForTimeout(CHECKOUT_EMPTY_CART_REREAD_DELAY_MS);
       await gotoZepto(page);
+      await page.waitForTimeout(1_500);
+      await clickCartOpenButton(page).catch(() => false);
+      await page.waitForTimeout(1_500);
       cart = await readCart(page, readOptions);
     }
 

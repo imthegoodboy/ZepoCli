@@ -129,7 +129,7 @@ describe("address automation helpers", () => {
     ).toThrow('Zepto did not show a selected address matching "home" after the selection click.');
   });
 
-  it("accepts the current delivery address when it already matches the requested query", async () => {
+  it("opens address controls before trusting a matching current delivery address", async () => {
     const page = createCurrentDeliveryAddressInUsePage(
       "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     );
@@ -139,10 +139,10 @@ describe("address automation helpers", () => {
       text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     });
 
-    expect(page.managerOpened).toBe(false);
+    expect(page.managerOpened).toBe(true);
   });
 
-  it("accepts current delivery address text from a delivery-context header", async () => {
+  it("opens address controls before trusting delivery-context header text", async () => {
     const page = createCurrentDeliveryAddressInUsePage(
       "Delivery in 8 mins Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     );
@@ -152,7 +152,7 @@ describe("address automation helpers", () => {
       text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     });
 
-    expect(page.managerOpened).toBe(false);
+    expect(page.managerOpened).toBe(true);
   });
 
   it("waits briefly for the current delivery address to render before opening the manager", async () => {
@@ -165,7 +165,7 @@ describe("address automation helpers", () => {
       text: "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
     });
 
-    expect(page.managerOpened).toBe(false);
+    expect(page.managerOpened).toBe(true);
     expect(page.waits).toBeGreaterThan(0);
   });
 
@@ -183,7 +183,7 @@ describe("address automation helpers", () => {
     expect(page.selectionClicked).toBe(false);
   });
 
-  it("does not click a matching saved address that Zepto already marks selected", async () => {
+  it("clicks a matching saved address even when Zepto already marks the row selected", async () => {
     const page = createSelectedSavedAddressCandidatePage(
       "Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India",
       "Selected Other - Study Home PG, Ramakrishna Ashrama Road, Bengaluru, Karnataka 560001 India"
@@ -195,7 +195,7 @@ describe("address automation helpers", () => {
     });
 
     expect(page.managerOpened).toBe(true);
-    expect(page.selectionClicked).toBe(false);
+    expect(page.selectionClicked).toBe(true);
   });
 
   it("chooses a unique saved-address candidate by specific visible text", () => {
@@ -1023,7 +1023,11 @@ function createDelayedCurrentDeliveryAddressInUsePage(text: string) {
       }
 
       return [text];
-    }
+    },
+    getByRole: () =>
+      createVisibleLocator("Delivery Address", async () => {
+        delayedPage.managerOpened = true;
+      })
   };
 
   return delayedPage;
@@ -1073,7 +1077,7 @@ function createSelectedSavedAddressCandidatePage(text: string, clickText: string
           }),
     evaluate: async (_callback: unknown, args: { currentContextPattern?: string } = {}) => {
       if (args.currentContextPattern) {
-        return [];
+        return page.selectionClicked ? [`Delivering to ${text}`] : [];
       }
 
       return [{ index: 0, text, clickText }];

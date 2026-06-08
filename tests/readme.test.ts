@@ -28,7 +28,8 @@ describe("README and usage documentation", () => {
       "zepo search milk",
       'zepo add "Amul Milk 500ml"',
       "zepo cart",
-      "zepo cart --qr",
+      "zepo payment",
+      'zepo payment --address "home" --add "White Monster" --qr-file upi-payment.png',
       "zepo cart --qr-file checkout-link.png",
       "zepo --visible checkout",
       "zepo track",
@@ -46,13 +47,14 @@ describe("README and usage documentation", () => {
   it("keeps checkout and payment boundaries visible in README", () => {
     for (const text of [
       "ZepoCli does not process payments and does not click final payment/order controls.",
+      "zepo payment",
+      "zepo payment --qr-file upi-payment.png",
+      "shows the real payment QR in your terminal",
       "zepo cart --qr",
       "zepo cart --qr-file checkout-link.png",
       "zepo --visible checkout --qr",
       "zepo --visible checkout --qr-file checkout-link.png",
       "https://www.zepto.com/?cart=open",
-      "It must be opened in the user's Zepto session.",
-      "It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.",
       "Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config."
     ]) {
       expect(readme).toContain(text);
@@ -67,6 +69,8 @@ describe("README and usage documentation", () => {
       "zepo search milk --json",
       'zepo add "protein bars" --choose --json',
       "zepo cart --json",
+      "zepo payment --json",
+      'zepo payment --address "home" --add "White Monster" --json',
       "zepo cart --json --qr",
       "zepo address list --json",
       "zepo address use home --json",
@@ -83,7 +87,8 @@ describe("README and usage documentation", () => {
       "zepo reorder last --json",
       "Agent rules:",
       "Branch on `error.code`, not human error text.",
-      "Do not scrape, save, crop, or terminal-render Zepto's live UPI QR.",
+      "Use `zepo payment` for Zepto's live UPI payment QR in the terminal",
+      'zepo payment --address "study home" --add "white monster" --qr-file upi-payment.png',
       "npm-token-shaped values"
     ]) {
       expect(usageGuide).toContain(text);

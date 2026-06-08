@@ -11,6 +11,7 @@ import { registerCheckoutCommand } from "../src/commands/checkout.js";
 import { registerDoctorCommand } from "../src/commands/doctor.js";
 import { registerLoginCommand } from "../src/commands/login.js";
 import { registerOrderCommands } from "../src/commands/orders.js";
+import { registerPaymentCommand } from "../src/commands/payment.js";
 import { registerSearchCommand } from "../src/commands/search.js";
 import { registerStatusCommand } from "../src/commands/status.js";
 
@@ -23,6 +24,7 @@ describe("command options", () => {
     registerSearchCommand(program);
     registerAddCommand(program);
     registerCartCommands(program);
+    registerPaymentCommand(program);
     registerAddressCommand(program);
     registerCheckoutCommand(program);
     registerOrderCommands(program);
@@ -35,6 +37,7 @@ describe("command options", () => {
       ["search"],
       ["add"],
       ["cart"],
+      ["payment"],
       ["remove"],
       ["clear"],
       ["address", "list"],
@@ -58,6 +61,7 @@ describe("command options", () => {
       "search.ts",
       "add.ts",
       "cart.ts",
+      "payment.ts",
       "address.ts",
       "checkout.ts",
       "orders.ts",

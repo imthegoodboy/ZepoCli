@@ -4,7 +4,7 @@ import { select } from "@inquirer/prompts";
 import type { AppRuntime } from "../config/runtime.js";
 import type { CartItem, CartRemoveResult, CartSnapshot, Product } from "../types.js";
 import { BrowserAutomation, gotoZepto } from "../automation/browser.js";
-import { clearCart, readCart, removeCartItem } from "../automation/cart.js";
+import { clearCart, clickCartOpenButton, readCart, removeCartItem } from "../automation/cart.js";
 import { clickProductAdd, increaseProductQuantity, searchProducts, waitForProductAddSettled } from "../automation/search.js";
 import { UserFacingError, requireNonEmpty } from "../utils/errors.js";
 import { requireInteractiveInput } from "../utils/interactive.js";
@@ -161,6 +161,9 @@ async function readCartWithEmptyRecovery(
   for (let attempt = 1; cart.items.length === 0 && attempt < attempts; attempt += 1) {
     await page.waitForTimeout(EMPTY_CART_REREAD_DELAY_MS);
     await gotoZepto(page);
+    await page.waitForTimeout(1_500);
+    await clickCartOpenButton(page).catch(() => false);
+    await page.waitForTimeout(1_500);
     cart = await readCart(page, options);
   }
 

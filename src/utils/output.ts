@@ -101,9 +101,8 @@ export function printCart(
     console.log(chalk.bold(`Total: ${cart.total}`));
   }
 
-  console.log(chalk.dim(`Checkout: ${CHECKOUT_COMMAND}`));
-  console.log(chalk.dim(`Payment link: ${ZEPTO_CHECKOUT_HANDOFF_URL}`));
-  console.log(chalk.dim("Open in the user's Zepto session; Zepto handles payment."));
+  console.log(chalk.dim("Payment QR: zepo payment"));
+  console.log(chalk.dim("Shows Zepto's live UPI QR in the terminal without opening a browser."));
 }
 
 export function printAddresses(addresses: Address[], json = false): void {

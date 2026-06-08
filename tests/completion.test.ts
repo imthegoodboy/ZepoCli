@@ -14,6 +14,7 @@ import {
 import { registerDoctorCommand } from "../src/commands/doctor.js";
 import { registerLoginCommand } from "../src/commands/login.js";
 import { registerOrderCommands } from "../src/commands/orders.js";
+import { registerPaymentCommand } from "../src/commands/payment.js";
 import { registerSearchCommand } from "../src/commands/search.js";
 import { registerStatusCommand } from "../src/commands/status.js";
 import { UserFacingError } from "../src/utils/errors.js";
@@ -34,6 +35,7 @@ describe("shell completion", () => {
       "cart",
       "remove",
       "clear",
+      "payment",
       "address",
       "checkout",
       "track",
@@ -67,7 +69,7 @@ describe("shell completion", () => {
 
     expect(bash).toContain("complete -F _zepo_completion zepo");
     expect(bash).toContain("address\\ list");
-    expect(bash).toContain("help) candidates='login logout status doctor search add cart");
+    expect(bash).toContain("help) candidates='login logout status doctor search add cart remove clear payment");
     expect(bash).toContain("help\\ address) candidates='list use add");
     expect(bash).toContain("-h --help");
     expect(bash).toContain("--data-dir --debug --json --no-input --visible");
@@ -114,6 +116,7 @@ function createProgram(): Command {
   registerSearchCommand(program);
   registerAddCommand(program);
   registerCartCommands(program);
+  registerPaymentCommand(program);
   registerAddressCommand(program);
   registerCheckoutCommand(program);
   registerOrderCommands(program);

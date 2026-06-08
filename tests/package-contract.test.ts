@@ -288,9 +288,10 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("verifyInstalledPublicOutputContract");
     expect(verifier).toContain("cart JSON payment link metadata");
     expect(verifier).toContain("cart JSON payment link session marker");
-    expect(verifier).toContain("human cart payment link");
-    expect(verifier).toContain("human cart payment session guidance");
+    expect(verifier).toContain("human cart payment QR command");
+    expect(verifier).toContain("human cart UPI QR guidance");
     expect(verifier).toContain("empty human cart to omit payment link");
+    expect(verifier).toContain("empty human cart to omit payment QR command");
     expect(verifier).toContain("empty human cart to omit payment session guidance");
     expect(verifier).toContain("pass installed public output contract");
     expect(verifier).toContain("verifyInstalledBackgroundAutomationModeContract");
@@ -328,7 +329,8 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected checkout terminal QR option");
     expect(verifier).toContain("expected checkout QR file option");
     expect(verifier).toContain("expected installed checkout-link QR non-payment-proof note");
-    expect(verifier).toContain("Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`");
+    expect(verifier).toContain("Non-empty human `zepo cart` output prints `Payment QR: zepo payment`");
+    expect(verifier).toContain("Shows Zepto's live UPI QR in the terminal without opening a browser.");
     expect(verifier).toContain("`Payment link: https://www.zepto.com/?cart=open`");
     expect(verifier).toContain("Open in the user's Zepto session; Zepto handles payment.");
     expect(verifier).toContain("empty cart output does not show payment handoff guidance");
