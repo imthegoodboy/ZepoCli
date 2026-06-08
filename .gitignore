@@ -16,3 +16,8 @@ coverage/
 .zepo-*/
 .zepto/
 .zepto-*/
+
+# Local QR artifacts from manual Zepto payment/checkout runs
+zepto-*-upi.png
+upi-payment*.png
+checkout-link*.png

@@ -138,9 +138,8 @@ describe("command JSON output", () => {
     const output = log.mock.calls.map(([line]) => String(line)).join("\n");
     expect(output).toContain("1. Amul Milk");
     expect(output).toContain("Total: ₹32");
-    expect(output).toContain("Checkout: zepo --visible checkout");
-    expect(output).toContain("Payment link: https://www.zepto.com/?cart=open");
-    expect(output).toContain("Open in the user's Zepto session; Zepto handles payment.");
+    expect(output).toContain("Payment QR: zepo payment");
+    expect(output).toContain("Shows Zepto's live UPI QR in the terminal without opening a browser.");
   });
 
   it("does not print payment handoff guidance for empty human cart output", () => {

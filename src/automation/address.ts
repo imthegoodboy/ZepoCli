@@ -198,16 +198,47 @@ export async function listAddresses(page: Page): Promise<Address[]> {
 export async function useAddress(page: Page, query: string): Promise<Address> {
   await gotoZepto(page);
   const currentAddress = await readCurrentDeliveryAddress(page, query);
-  if (currentAddress) {
-    return currentAddress;
+
+  try {
+    await openAddressManager(page);
+  } catch (error) {
+    if (currentAddress) {
+      return currentAddress;
+    }
+
+    throw error;
   }
 
-  await openAddressManager(page);
   const currentAddressAfterManagerOpen = await readCurrentDeliveryAddress(page, query);
-  if (currentAddressAfterManagerOpen) {
-    return currentAddressAfterManagerOpen;
+  const fallbackCurrentAddress = currentAddressAfterManagerOpen ?? currentAddress;
+  const candidates = await readAddressSelectionCandidates(page);
+  const matched = chooseAddressSelectionCandidate(candidates, query);
+
+  if (!matched) {
+    if (fallbackCurrentAddress) {
+      return fallbackCurrentAddress;
+    }
+
+    throw new UserFacingError(`Could not find a saved address matching "${query}".`, {
+      code: "address_not_found"
+    });
   }
 
+  await clickTaggedAddressSelection(page, matched);
+  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+  await assertNoAccessChallenge(page);
+
+  await gotoZepto(page);
+  const selectedCurrentAddress = await readCurrentDeliveryAddress(page, query);
+  if (selectedCurrentAddress) {
+    return selectedCurrentAddress;
+  }
+
+  const addresses = await listAddresses(page);
+  return requireSelectedAddress(addresses, query);
+}
+
+async function readAddressSelectionCandidates(page: Page): Promise<AddressSelectionCandidate[]> {
   const candidates = await page.evaluate(({ detailPattern, placeholderPattern, nonAddressPattern }) => {
     const detailRegex = new RegExp(detailPattern, "i");
     const placeholderRegex = new RegExp(placeholderPattern, "i");
@@ -292,31 +323,21 @@ export async function useAddress(page: Page, query: string): Promise<Address> {
     nonAddressPattern: NON_ADDRESS_SURFACE_PATTERN
   });
 
-  const matched = chooseAddressSelectionCandidate(candidates, query);
+  return candidates.filter(isAddressSelectionCandidate);
+}
 
-  if (!matched) {
-    throw new UserFacingError(`Could not find a saved address matching "${query}".`, {
-      code: "address_not_found"
-    });
+function isAddressSelectionCandidate(candidate: unknown): candidate is AddressSelectionCandidate {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
   }
 
-  const selectedAddress = selectedAddressFromSelectionCandidates(candidates, query);
-  if (selectedAddress) {
-    return selectedAddress;
-  }
-
-  await clickTaggedAddressSelection(page, matched);
-  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
-  await assertNoAccessChallenge(page);
-
-  await gotoZepto(page);
-  const selectedCurrentAddress = await readCurrentDeliveryAddress(page, query);
-  if (selectedCurrentAddress) {
-    return selectedCurrentAddress;
-  }
-
-  const addresses = await listAddresses(page);
-  return requireSelectedAddress(addresses, query);
+  const value = candidate as Partial<AddressSelectionCandidate>;
+  return (
+    Number.isInteger(value.index) &&
+    typeof value.text === "string" &&
+    (value.label === undefined || typeof value.label === "string") &&
+    (value.clickText === undefined || typeof value.clickText === "string")
+  );
 }
 
 function selectedAddressFromSelectionCandidates(

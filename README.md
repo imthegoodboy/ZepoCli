@@ -63,7 +63,9 @@ zepo status --live
 zepo search milk
 zepo add "Amul Milk 500ml"
 zepo cart
-zepo cart --qr
+zepo payment
+zepo payment --address "home" --add "White Monster" --qr-file upi-payment.png
+zepo payment --qr-file upi-payment.png
 zepo track
 ```
 
@@ -74,6 +76,8 @@ zepo status --live --json
 zepo search milk --json
 zepo add "milk" --json
 zepo cart --json
+zepo payment --json
+zepo payment --address "home" --add "White Monster" --json
 zepo cart --qr-file checkout-link.png
 zepo --visible checkout --json
 zepo track --json
@@ -89,9 +93,9 @@ Full usage guide: [docs/USAGE.md](docs/USAGE.md)
 | Diagnostics | `zepo doctor` |
 | Search | `zepo search <query>` |
 | Cart | `zepo add <query>`, `zepo cart`, `zepo cart --qr`, `zepo remove <query>`, `zepo clear` |
+| Payment | `zepo payment`, `zepo payment --address <query> --add <query>`, `zepo payment --qr-file <path>`, `zepo cart --qr`, `zepo cart --qr-file <path>`, `zepo --visible checkout --qr` |
 | Addresses | `zepo address list`, `zepo address use <query>`, `zepo --visible address add` |
 | Checkout | `zepo --visible checkout`, `zepo --visible checkout --wait` |
-| Payment handoff | `zepo cart --qr`, `zepo cart --qr-file <path>`, `zepo --visible checkout --qr` |
 | Orders | `zepo track`, `zepo history`, `zepo reorder last` |
 | Shells | `zepo completion bash\|zsh\|fish\|powershell` |
 
@@ -127,13 +131,22 @@ Those commands fail early with `visible_browser_required` in background mode ins
 
 ZepoCli does not process payments and does not click final payment/order controls.
 
-Checkout is a handoff:
+Live UPI payment QR in the terminal (headless, no browser window):
 
 ```bash
-zepo --visible checkout
+zepo payment
+zepo payment --qr-file upi-payment.png
 ```
 
-Safe checkout-link QR:
+`zepo payment` reads the live cart, opens Zepto's payment choices in a background browser, selects the UPI QR option, and shows the real payment QR in your terminal. It may click Zepto's cart-side `Click to Pay ₹...` control only to reveal payment choices. Scan the QR with any UPI app to pay. ZepoCli does not enter payment credentials, observe payment proof, or place orders.
+
+For fewer browser launches, combine saved-address selection, add, cart verification, and live UPI QR in one explicit command:
+
+```bash
+zepo payment --address "home" --add "White Monster" --qr-file upi-payment.png
+```
+
+Optional checkout-link QR (opens Zepto checkout in the user's session):
 
 ```bash
 zepo cart --qr
@@ -142,15 +155,15 @@ zepo --visible checkout --qr
 zepo --visible checkout --qr-file checkout-link.png
 ```
 
-The QR payload is the fixed Zepto checkout link:
+Checkout-link QR payload: `https://www.zepto.com/?cart=open`. It is not a UPI QR, payment credential, payment proof, or order proof.
 
-```txt
-https://www.zepto.com/?cart=open
+Checkout browser handoff when needed:
+
+```bash
+zepo --visible checkout
 ```
 
-It must be opened in the user's Zepto session. It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.
-
-After the user completes payment inside Zepto:
+After payment completes in Zepto:
 
 ```bash
 zepo track

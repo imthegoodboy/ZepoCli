@@ -109,12 +109,10 @@ describe("agent guidance", () => {
       expect(guidance).toContain('paymentLink: "https://www.zepto.com/?cart=open"');
       expect(guidance).toContain('paymentLinkSession: "user_zepto_session_required"');
       expect(guidance).toContain("Zepto-owned payment/checkout link");
-      expect(guidance).toContain("`zepo cart --qr`, `zepo cart --qr-file <path>`, `zepo --visible checkout --qr`, and checkout `--qr-file <path>` may render or save a QR");
-      expect(guidance).toContain("not Zepto's live UPI QR");
-      expect(guidance).toContain("Do not scrape, crop, save, log, terminal-render, or store Zepto's payment-page UPI QR/payload");
-      expect(guidance).toContain("Non-empty human `zepo cart` output should print `Checkout: zepo --visible checkout`");
-      expect(guidance).toContain("`Payment link: https://www.zepto.com/?cart=open`");
-      expect(guidance).toContain("Open in the user's Zepto session; Zepto handles payment.");
+      expect(guidance).toContain("`zepo payment` and `zepo payment --qr-file <path>` fetch Zepto's live UPI payment QR headlessly");
+      expect(guidance).toContain("`zepo cart --qr`, `zepo cart --qr-file <path>`, `zepo --visible checkout --qr`, and checkout `--qr-file <path>` may still render or save a QR");
+      expect(guidance).toContain("Non-empty human `zepo cart` output should print `Payment QR: zepo payment`");
+      expect(guidance).toContain("Shows Zepto's live UPI QR in the terminal without opening a browser.");
       expect(guidance).toContain("empty cart output should not show payment handoff guidance");
       expect(guidance).toContain('checkout.command: "zepo --visible checkout"');
       expect(guidance).toContain('checkout.waitCommand: "zepo --visible checkout --wait"');

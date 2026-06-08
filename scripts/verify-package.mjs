@@ -83,6 +83,10 @@ const accountDependentNoSessionCommands = [
     args: ["cart", "--json"]
   },
   {
+    name: "payment",
+    args: ["payment", "--json"]
+  },
+  {
     name: "remove",
     args: ["remove", "milk", "--json"]
   },
@@ -289,11 +293,13 @@ function verifyInstalledReadmeContract(prefixDir) {
     "npx playwright install chromium",
     "zepo --visible login",
     "zepo search milk",
+    "zepo payment",
     "zepo cart --qr",
     "zepo --visible checkout",
     "zepo --visible checkout --qr",
     "https://www.zepto.com/?cart=open",
-    "It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.",
+    "Checkout-link QR payload: `https://www.zepto.com/?cart=open`.",
+    "It is not a UPI QR, payment credential, payment proof, or order proof.",
     "See [docs/USAGE.md](docs/USAGE.md) for the full agent runbook.",
     "Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config.",
     "ZepoCli is an independent developer tool and is not affiliated with Zepto."
@@ -335,9 +341,8 @@ function verifyInstalledReadmeContract(prefixDir) {
     "before the prompt so agents can hand off the Zepto-owned session link",
     "Wait mode prints the fixed payment link and `user_zepto_session_required` session marker to stderr before the prompt",
     "Wait mode re-checks the visible page after the human presses Enter",
-    "Non-empty human `zepo cart` output prints `Checkout: zepo --visible checkout`",
-    "`Payment link: https://www.zepto.com/?cart=open`",
-    "Open in the user's Zepto session; Zepto handles payment.",
+    "Non-empty human `zepo cart` output prints `Payment QR: zepo payment`",
+    "Shows Zepto's live UPI QR in the terminal without opening a browser.",
     "empty cart output does not show payment handoff guidance",
     "checkout.command: \"zepo --visible checkout\"",
     "checkout.waitCommand: \"zepo --visible checkout --wait\"",
@@ -494,20 +499,23 @@ function verifyInstalledUsageGuideContract(prefixDir) {
     "zepo search milk --json",
     'zepo add "protein bars" --choose --json',
     "zepo cart --json",
+    "zepo payment --json",
     "zepo cart --json --qr",
     "zepo address list --json",
     "zepo address use home --json",
     "zepo --visible checkout --json --wait",
     "zepo cart --qr-file checkout-link.png",
     "zepo --visible checkout --qr-file checkout-link.png",
-    "The QR payload is only:",
+    "Checkout-link QR payload:",
     "https://www.zepto.com/?cart=open",
-    "It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.",
+    "It opens Zepto checkout in the user's Zepto session. It is not payment proof or order proof.",
+    "Live UPI payment QR:",
+    "zepo payment --qr-file upi-payment.png",
     "checkout_manual_action_required",
     "zepo track --json",
     "Agent rules:",
     "Branch on `error.code`, not human error text.",
-    "Do not scrape, save, crop, or terminal-render Zepto's live UPI QR.",
+    "Use `zepo payment` for Zepto's live UPI payment QR in the terminal",
     "Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config."
   ]) {
     assert(guide.includes(text), `expected installed usage guide to document: ${text}`);
@@ -6402,6 +6410,7 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         );
         assert(stdout.includes("default is background/headless"), "expected installed visible option to document headless default");
         assert(stdout.includes("checkout"), "expected checkout command in help output");
+        assert(stdout.includes("payment"), "expected installed payment command in help output");
         assert(stdout.includes("completion"), "expected installed completion command in help output");
       }
     },
@@ -6484,6 +6493,22 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stdout.includes("--json"), "expected cart json option");
         assert(stdout.includes("--qr"), "expected cart terminal QR option");
         assert(stdout.includes("--qr-file"), "expected cart QR file option");
+      }
+    },
+    {
+      name: "installed payment help",
+      args: ["payment", "--help"],
+      expect: ({ status, stdout, stderr }) => {
+        assert(status === 0, "expected exit code 0");
+        assert(stderr === "", "expected empty stderr");
+        assert(stdout.includes("Show Zepto's live UPI payment QR"), "expected installed payment description");
+        assert(stdout.includes("--address <query>"), "expected installed payment address option");
+        assert(stdout.includes("--add <query>"), "expected installed payment add option");
+        assert(stdout.includes("quantity to add when --add is used"), "expected installed payment quantity option");
+        assert(stdout.includes("--remove-limit-items"), "expected installed payment limit resolution option");
+        assert(stdout.includes("--json"), "expected installed payment json option");
+        assert(stdout.includes("--qr"), "expected installed payment terminal QR option");
+        assert(stdout.includes("--qr-file"), "expected installed payment QR file option");
       }
     },
     {
@@ -6613,11 +6638,11 @@ function verifyInstalledCli(installedCliPath, runtimeModules) {
         assert(stderr === "", "expected empty stderr");
         assert(stdout.includes("complete -F _zepo_completion zepo"), "expected installed bash completion registration");
         assert(
-          stdout.includes("login logout status doctor search add cart remove clear address checkout track history reorder completion help"),
+          stdout.includes("login logout status doctor search add cart remove clear payment address checkout track history reorder completion help"),
           "expected installed root command completions"
         );
         assert(
-          stdout.includes("help) candidates='login logout status doctor search add cart"),
+          stdout.includes("help) candidates='login logout status doctor search add cart remove clear payment"),
           "expected installed help command completions"
         );
         assert(
@@ -7824,19 +7849,16 @@ function assertCartPublicCheckoutMetadataContract(printCartFn, labelPrefix) {
       false
     )
   ).join("\n");
-  assert(humanOutput.includes("Checkout: zepo --visible checkout"), `expected ${prefix}human cart checkout command`);
+  assert(humanOutput.includes("Payment QR: zepo payment"), `expected ${prefix}human cart payment QR command`);
   assert(
-    humanOutput.includes("Payment link: https://www.zepto.com/?cart=open"),
-    `expected ${prefix}human cart payment link`
-  );
-  assert(
-    humanOutput.includes("Open in the user's Zepto session; Zepto handles payment."),
-    `expected ${prefix}human cart payment session guidance`
+    humanOutput.includes("Shows Zepto's live UPI QR in the terminal without opening a browser."),
+    `expected ${prefix}human cart UPI QR guidance`
   );
 
   const emptyHumanOutput = capturePrintedLines(() => printCartFn({ items: [] }, false)).join("\n");
   assert(emptyHumanOutput.includes("Cart is empty."), `expected ${prefix}empty human cart message`);
   assert(!emptyHumanOutput.includes("Checkout:"), `expected ${prefix}empty human cart to omit checkout command`);
+  assert(!emptyHumanOutput.includes("Payment QR:"), `expected ${prefix}empty human cart to omit payment QR command`);
   assert(!emptyHumanOutput.includes("Payment link:"), `expected ${prefix}empty human cart to omit payment link`);
   assert(!emptyHumanOutput.includes("Zepto session"), `expected ${prefix}empty human cart to omit payment session guidance`);
 }

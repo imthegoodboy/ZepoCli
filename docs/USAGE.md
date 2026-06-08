@@ -134,9 +134,8 @@ zepo clear --json
 For a non-empty cart, human output includes:
 
 ```txt
-Checkout: zepo --visible checkout
-Payment link: https://www.zepto.com/?cart=open
-Open in the user's Zepto session; Zepto handles payment.
+Payment QR: zepo payment
+Shows Zepto's live UPI QR in the terminal without opening a browser.
 ```
 
 For `zepo cart --json`, use:
@@ -148,7 +147,27 @@ For `zepo cart --json`, use:
 
 The cart checkout metadata is not payment proof or order proof.
 
-Safe checkout-link QR from the cart command:
+Live UPI payment QR (headless, no browser window):
+
+```bash
+zepo payment
+zepo payment --qr-file upi-payment.png
+zepo payment --json
+zepo payment --address home --add "White Monster" --qr-file upi-payment.png
+```
+
+`zepo payment` reads the cart first, opens Zepto's payment choices in a background browser, selects the UPI QR option, and shows the real payment QR in the terminal. It may click Zepto's cart-side `Click to Pay ₹...` control only to reveal payment choices. Scan the QR with any UPI app to pay. ZepoCli does not enter payment credentials, observe payment proof, or place orders.
+
+Use the one-shot payment preparation options when you want a single browser run to select a saved address, add a product, verify the cart, and show the live UPI QR:
+
+```bash
+zepo payment --address "study home" --add "white monster" --qr-file upi-payment.png
+zepo payment --address "home" --add "White Monster" --json
+```
+
+The `--address` option only selects a saved address. It does not add or confirm a new address. The `--add` option uses the same product matching and cart verification as `zepo add`.
+
+Optional checkout-link QR from the cart command:
 
 ```bash
 zepo cart --qr
@@ -156,7 +175,7 @@ zepo cart --qr-file checkout-link.png
 zepo cart --json --qr
 ```
 
-`zepo cart --qr` reads the cart first. If the cart is non-empty, it prints or saves a QR for `https://www.zepto.com/?cart=open`. The QR opens Zepto checkout in the user's Zepto session; it is not a live UPI QR.
+`zepo cart --qr` prints or saves a QR for `https://www.zepto.com/?cart=open` when the cart is non-empty.
 
 ## Addresses
 
@@ -210,7 +229,15 @@ If Zepto shows item-limit warnings and the user wants the CLI to click Zepto's v
 zepo --visible checkout --remove-limit-items
 ```
 
-Safe checkout-link QR:
+Live UPI payment QR:
+
+```bash
+zepo payment
+zepo payment --qr-file upi-payment.png
+zepo payment --address home --add "white monster" --qr-file upi-payment.png
+```
+
+Optional checkout-link QR:
 
 ```bash
 zepo cart --qr
@@ -219,15 +246,15 @@ zepo --visible checkout --qr
 zepo --visible checkout --qr-file checkout-link.png
 ```
 
-The QR payload is only:
+Checkout-link QR payload:
 
 ```txt
 https://www.zepto.com/?cart=open
 ```
 
-It opens Zepto checkout in the user's Zepto session. It is not Zepto's live UPI QR, not a payment credential, not payment proof, and not order proof.
+It opens Zepto checkout in the user's Zepto session. It is not payment proof or order proof.
 
-ZepoCli does not click amount-bearing final payment or order-placement controls such as `Click to Pay`, `Pay Now`, `Place Order`, or equivalent controls. If Zepto exposes only a manual amount-bearing payment control, JSON checkout returns:
+`zepo checkout` does not click amount-bearing final payment or order-placement controls such as `Click to Pay`, `Pay Now`, `Place Order`, or equivalent controls. If Zepto exposes only a manual amount-bearing payment control, JSON checkout returns:
 
 ```json
 {
@@ -281,6 +308,7 @@ zepo --data-dir ./.zepo-agent status --live --json
 zepo --data-dir ./.zepo-agent search milk --json
 zepo --data-dir ./.zepo-agent add "milk" --json
 zepo --data-dir ./.zepo-agent cart --json
+zepo --data-dir ./.zepo-agent payment --json
 zepo --data-dir ./.zepo-agent --visible checkout --json
 zepo --data-dir ./.zepo-agent track --json
 ```
@@ -294,7 +322,7 @@ Agent rules:
 - Do not retry headless commands through Zepto access challenges or cooldowns.
 - Use `--visible` only for human-controlled login, address-add, checkout, and Zepto verification.
 - Do not ask for OTPs, card numbers, CVV, UPI PIN, payment handles, or payment tokens.
-- Do not scrape, save, crop, or terminal-render Zepto's live UPI QR.
+- Use `zepo payment` for Zepto's live UPI payment QR in the terminal; do not log or store decoded UPI payloads outside the user's payment flow.
 
 Important error codes include:
 

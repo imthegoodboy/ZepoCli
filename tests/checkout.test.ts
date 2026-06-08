@@ -582,7 +582,7 @@ describe("checkout handoff detection", () => {
       manualPaymentControlVisible: false
     });
 
-    expect(page.waits).toEqual([5000]);
+    expect(page.waits).toEqual([5000, 1500, 1500]);
     expect(page.cartClicks).toBe(1);
     expect(page.checkoutClicked).toBe(true);
     expect(page.urls.map((url) => new URL(url).pathname)).toEqual(["/"]);

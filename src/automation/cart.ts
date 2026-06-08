@@ -20,9 +20,11 @@ export const CART_OPEN_CLICK_LABELS = [
   /^[1-9]\d*\s+my cart$/i,
   /^[1-9]\d*\s+cart$/i,
   /^my cart(?:\s+[1-9]\d*)?$/i,
-  /^cart(?:\s+[1-9]\d*)?$/i
+  /^cart(?:\s+[1-9]\d*)?$/i,
+  /^cart\s+[1-9]\d*\s+you have\s+[1-9]\d*\s+items?\s+in your cart\.?$/i,
+  /^you have\s+[1-9]\d*\s+items?\s+in your cart\.?$/i
 ] as const;
-const CART_OPEN_CONTROL_SCAN_LIMIT = 8;
+const CART_OPEN_CONTROL_SCAN_LIMIT = 48;
 const CART_OPEN_CLICK_TIMEOUT_MS = 3_000;
 const CART_READ_RECOVERY_ATTEMPTS = 2;
 const CART_RENDER_SIGNAL_TIMEOUT_MS = 12_000;
@@ -1255,7 +1257,7 @@ async function readVisibleCartOnce(
   }
 
   const preScrollSnapshot = tryRequireReadableCartSnapshot(rawTextBeforeScroll);
-  if (preScrollSnapshot) {
+  if (preScrollSnapshot && (preScrollSnapshot.items.length > 0 || !hasNonEmptyCartEvidence(rawTextBeforeScroll))) {
     return preScrollSnapshot;
   }
 
@@ -1983,6 +1985,7 @@ function extractLabeledCartTotal(lines: string[], matchesTotalLabel: (label: str
       continue;
     }
 
+    let total: string | undefined;
     for (let offset = 1; offset <= 2; offset += 1) {
       const candidate = lines[index + offset] ?? "";
       if (!candidate || isCartTotalStopLine(candidate)) {
@@ -1991,8 +1994,11 @@ function extractLabeledCartTotal(lines: string[], matchesTotalLabel: (label: str
 
       const prices = extractPrices(candidate);
       if (prices.length > 0) {
-        return prices.at(-1);
+        total = prices.at(-1);
       }
+    }
+    if (total) {
+      return total;
     }
   }
 
