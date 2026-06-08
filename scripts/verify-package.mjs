@@ -169,6 +169,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   const installedVerifyDependenciesPath = join(packageDir, "scripts", "verify-dependencies.mjs");
   const installedVerifyCliPath = join(packageDir, "scripts", "verify-cli.mjs");
   const installedVerifyPackagePath = join(packageDir, "scripts", "verify-package.mjs");
+  const installedVerifyPublishDryRunPath = join(packageDir, "scripts", "verify-publish-dry-run.mjs");
   const installedEnvUtilsPath = join(packageDir, "scripts", "env-utils.mjs");
   const installedVerifySecretsPath = join(packageDir, "scripts", "verify-secrets.mjs");
   const installedVerifyLiveFlowPath = join(packageDir, "scripts", "verify-live-flow.mjs");
@@ -206,7 +207,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
     "expected installed verify:live:report package script"
   );
   assert(
-    installedPackageJson.scripts?.["verify:publish-dry-run"] === "npm publish --dry-run --access public",
+    installedPackageJson.scripts?.["verify:publish-dry-run"] === "node scripts/verify-publish-dry-run.mjs",
     "expected installed verify:publish-dry-run package script"
   );
   assert(
@@ -219,6 +220,7 @@ function verifyInstalledCliEntryContract(prefixDir) {
   assert(existsSync(installedVerifyDependenciesPath), "expected installed verify-dependencies script");
   assert(existsSync(installedVerifyCliPath), "expected installed verify-cli script");
   assert(existsSync(installedVerifyPackagePath), "expected installed verify-package script");
+  assert(existsSync(installedVerifyPublishDryRunPath), "expected installed verify-publish-dry-run script");
   assert(existsSync(installedEnvUtilsPath), "expected installed env sanitizer script");
   assert(existsSync(installedVerifySecretsPath), "expected installed verify-secrets script");
   assert(existsSync(installedVerifyLiveFlowPath), "expected installed live verifier runner");

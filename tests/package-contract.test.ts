@@ -173,7 +173,7 @@ describe("package CLI contract", () => {
 
   it("exposes audit verification and keeps live verification opt-in", () => {
     expect(packageJson.scripts?.["verify:audit"]).toBe("npm audit --omit=dev");
-    expect(packageJson.scripts?.["verify:publish-dry-run"]).toBe("npm publish --dry-run --access public");
+    expect(packageJson.scripts?.["verify:publish-dry-run"]).toBe("node scripts/verify-publish-dry-run.mjs");
     expect(packageJson.scripts?.["verify:live"]).toBe("node scripts/verify-live-flow.mjs");
     expect(packageJson.scripts?.["verify:live:report"]).toBe("node scripts/verify-live-report.mjs");
     expect(packageJson.files).toContain("README.md");
@@ -183,6 +183,7 @@ describe("package CLI contract", () => {
     expect(packageJson.files).toContain("scripts/verify-dependencies.mjs");
     expect(packageJson.files).toContain("scripts/verify-cli.mjs");
     expect(packageJson.files).toContain("scripts/verify-package.mjs");
+    expect(packageJson.files).toContain("scripts/verify-publish-dry-run.mjs");
     expect(packageJson.files).toContain("scripts/env-utils.mjs");
     expect(packageJson.files).toContain("scripts/live-report-utils.mjs");
     expect(packageJson.files).toContain("scripts/verify-live-flow.mjs");
@@ -601,6 +602,7 @@ describe("package CLI contract", () => {
     expect(verifier).toContain("expected installed verify:publish-dry-run package script");
     expect(verifier).toContain("expected installed verify:cli package script");
     expect(verifier).toContain("expected installed verify:package package script");
+    expect(verifier).toContain("expected installed verify-publish-dry-run script");
     expect(verifier).toContain("expected installed verify:live package script");
     expect(verifier).toContain("expected installed verify-cli script");
     expect(verifier).toContain("expected installed verify-package script");

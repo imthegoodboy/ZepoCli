@@ -165,7 +165,7 @@ npm pack --dry-run
 npm publish --dry-run --access public
 ```
 
-Keep package verification checking that `package.json` maps `zepo` to `dist/index.js` and that the compiled entry keeps the `#!/usr/bin/env node` shebang. Keep `verify:publish-dry-run` in the local release gate so `npm publish --dry-run --access public` catches npm manifest/package issues before a real tag publish.
+Keep package verification checking that `package.json` maps `zepo` to `dist/index.js` and that the compiled entry keeps the `#!/usr/bin/env node` shebang. Keep `verify:publish-dry-run` in the local release gate so `npm publish --dry-run --access public` catches npm manifest/package issues before a real tag publish; when the exact package version is already published, the verifier may skip that dry-run so post-release CI still verifies the rest of the package.
 
 Keep `verify:cli` and `verify:package` checking both `doctor --skip-browser --json` and normal `doctor --json` so release gates prove Playwright Chromium launches for the compiled and installed CLI.
 

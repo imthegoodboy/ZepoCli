@@ -173,7 +173,7 @@ Before claiming production readiness:
 - `node dist/index.js --help` shows the intended command surface.
 - `npm audit --omit=dev` passes before publishing or claiming package readiness.
 - `npm pack --dry-run` passes before publishing or claiming package readiness.
-- `npm publish --dry-run --access public` passes before publishing or claiming package readiness, so npm manifest/package issues are caught before a real tag publish.
+- `npm run verify:publish-dry-run` runs `npm publish --dry-run --access public` before an unpublished version is released, so npm manifest/package issues are caught before a real tag publish. If the exact package version is already published, it skips cleanly so post-release CI still verifies the rest of the package.
 - Build and package gates that clean or rebuild `dist` must run serially. Do not run `npm run verify:cli` in parallel with `npm run verify:package`, `npm pack`, or any command that triggers `prepack`, because those commands can rebuild `dist` while the compiled CLI verifier is reading it.
 - Release publishing is tag-driven through `.github/workflows/release.yml`; it must run `npm run check` before `npm publish --provenance --access public` and must not include `verify:live` because live Zepto account verification is a manual human-controlled gate.
 - Never store npm tokens in source, tests, README, `.npmrc`, or agent guidance. Keep local `.npmrc` and `.env*` files ignored; use the GitHub Actions secret name `NPM_TOKEN` or a local environment variable only. `.npmrc.example` and `.env.example` may contain placeholder names only. `verify:secrets` must fail on npm-token-shaped values without printing the raw token.

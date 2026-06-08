@@ -373,6 +373,8 @@ npm run check
 npm publish --access public
 ```
 
+`npm run check` includes a publish dry-run. If the exact package version is already published, that dry-run gate skips cleanly; set `ZEPO_FORCE_PUBLISH_DRY_RUN=1` when you need to force npm's dry-run behavior for an already-published version.
+
 Current published package:
 
 ```txt

@@ -193,7 +193,7 @@ Release gate:
 npm run check
 ```
 
-This runs secret scanning, dependency readiness, TypeScript build, the test suite, compiled CLI verification, installed-package verification, help smoke, audit, pack dry-run, and publish dry-run.
+This runs secret scanning, dependency readiness, TypeScript build, the test suite, compiled CLI verification, installed-package verification, help smoke, audit, pack dry-run, and publish dry-run. If the exact package version is already published, the publish dry-run gate skips cleanly so post-release CI can still verify the rest of the package.
 
 Live Zepto verification is manual and opt-in:
 
@@ -210,6 +210,8 @@ Local publish flow:
 npm run check
 npm publish --access public
 ```
+
+Use `ZEPO_FORCE_PUBLISH_DRY_RUN=1 npm run verify:publish-dry-run` when you explicitly want to rerun npm's publish dry-run for an already-published version.
 
 Tag-driven release workflow:
 
