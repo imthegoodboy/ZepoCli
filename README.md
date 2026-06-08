@@ -30,6 +30,8 @@ It is a CLI tool, not an autonomous shopping agent. ZepoCli uses Playwright with
 
 Current package state:
 
+- Published npm release: `zepocli@0.1.6`.
+- GitHub release tag for this package: `v0.1.6`.
 - Production CLI command surface is implemented.
 - Local package verification passes.
 - Production-scope live verification has accepted checkout/payment-link handoff evidence.
@@ -212,9 +214,11 @@ npm publish --access public
 Tag-driven release workflow:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.6
+git push origin v0.1.6
 ```
+
+The `v0.1.6` tag corresponds to the published `zepocli@0.1.6` package, including the live UPI payment QR command and one-shot payment preparation options.
 
 Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config. Use `NPM_TOKEN` or `NODE_AUTH_TOKEN` only as an environment variable.
 

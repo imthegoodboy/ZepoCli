@@ -373,4 +373,17 @@ npm run check
 npm publish --access public
 ```
 
+Current published package:
+
+```txt
+zepocli@0.1.6
+```
+
+Create and push the matching Git tag after the published package and docs are on `main`:
+
+```bash
+git tag v0.1.6
+git push origin v0.1.6
+```
+
 Never put npm tokens in the app, README, docs, tests, `.npmrc`, or committed config. Use `NPM_TOKEN` or `NODE_AUTH_TOKEN` only as a temporary environment variable for publish commands.
